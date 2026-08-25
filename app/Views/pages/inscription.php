@@ -1,62 +1,74 @@
-<div style="display: grid; grid-template-columns: 1fr 480px;">
-  <div style="padding: 44px;">
-    <h1 style="font-family: 'Space Grotesk', sans-serif; font-size: 32px; font-weight: 700; color: #022746; margin: 0 0 8px;">Créer un compte</h1>
-    <p style="font-size: 15px; color: #66768A; margin: 0 0 26px;">Un seul compte : vous pouvez commander et proposer vos services.</p>
+<?php
+$seeksOn = old('seeks_services', '1') !== '';
+$offersOn = old('offers_services', '1') !== '';
+?>
+<div class="auth-split">
+  <div class="auth-split-form">
+    <h1 class="auth-title">Créer un compte</h1>
+    <p class="auth-lead">Un seul compte : vous pouvez chercher des prestataires, proposer vos services, ou les deux.</p>
     <?php if (!empty($error)): ?>
       <div class="flash flash-error"><?= e($error) ?></div>
     <?php endif; ?>
-    <form method="post" action="<?= e(url('/inscription')) ?>" style="display: flex; flex-direction: column; gap: 18px; max-width: 560px;">
+    <form method="post" action="<?= e(url('/inscription')) ?>" class="auth-form">
       <?= csrf_field() ?>
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
-        <?php foreach ($roles ?? [] as $i => $r): ?>
-          <label style="<?= e($r['style']) ?>">
-            <input type="radio" name="role" value="<?= $i === 0 ? 'client' : 'prestataire' ?>" <?= $i === 1 ? 'checked' : '' ?> style="margin-bottom: 8px;">
-            <div style="font-family: 'Space Grotesk', sans-serif; font-size: 17px; font-weight: 500; color: #022746;"><?= e($r['title']) ?></div>
-            <p style="font-size: 14px; color: #66768A; line-height: 1.55; margin: 8px 0 0;"><?= e($r['desc']) ?></p>
-          </label>
-        <?php endforeach; ?>
+      <p class="field" style="margin-bottom: 0;">Que souhaitez-vous faire ?</p>
+      <div class="intent-grid">
+        <label class="intent-card<?= $seeksOn ? ' is-on' : '' ?>" data-intent-card>
+          <input type="checkbox" name="seeks_services" value="1"<?= $seeksOn ? ' checked' : '' ?>>
+          <div class="intent-card-title">Je cherche des prestataires</div>
+          <p>Auteur, éditeur, collectif : commandez des prestations ou publiez vos missions.</p>
+        </label>
+        <label class="intent-card<?= $offersOn ? ' is-on' : '' ?>" data-intent-card>
+          <input type="checkbox" name="offers_services" value="1"<?= $offersOn ? ' checked' : '' ?>>
+          <div class="intent-card-title">Je propose mes services</div>
+          <p>Correcteur, illustrateur, imprimeur, libraire : créez votre vitrine et vos formules.</p>
+        </label>
       </div>
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+      <div class="auth-name-grid">
         <div>
           <label class="field" for="first_name">Prénom</label>
-          <input class="input" id="first_name" name="first_name" placeholder="Marion" required>
+          <input class="input" id="first_name" name="first_name" value="<?= e((string) old('first_name')) ?>" placeholder="Marion" required>
         </div>
         <div>
           <label class="field" for="last_name">Nom</label>
-          <input class="input" id="last_name" name="last_name" placeholder="Vasseur" required>
+          <input class="input" id="last_name" name="last_name" value="<?= e((string) old('last_name')) ?>" placeholder="Vasseur" required>
         </div>
       </div>
       <div>
         <label class="field" for="email">E-mail professionnel</label>
-        <input class="input" id="email" type="email" name="email" placeholder="marion@exemple.fr" required>
+        <input class="input" id="email" type="email" name="email" value="<?= e((string) old('email')) ?>" placeholder="marion@exemple.fr" required>
       </div>
       <div>
         <label class="field" for="password">Mot de passe</label>
         <input class="input" id="password" type="password" name="password" placeholder="8 caractères minimum" minlength="8" required>
       </div>
-      <div style="border: 1.5px solid #D85D3F; background: #FDF3F0; border-radius: 12px; padding: 18px 20px;">
-        <div style="font-family: 'Space Grotesk', sans-serif; font-size: 16px; color: #022746; font-weight: 500;">Engagement sans IA générative</div>
-        <p style="font-size: 14px; color: #4A5A6B; line-height: 1.6; margin: 6px 0 0;">Obligatoire pour créer un compte prestataire. Les outils de métier restent autorisés.</p>
+      <div class="ia-box" data-if-offers<?= $offersOn ? '' : ' hidden' ?>>
+        <div class="ia-box-title">Engagement sans IA générative</div>
+        <p>Obligatoire pour proposer vos services. Les outils de métier — correcteur orthographique, mémoire de traduction — restent autorisés.</p>
+        <label class="ia-box-check">
+          <input type="checkbox" name="charte_ia" value="1"<?= $offersOn ? ' required' : '' ?>>
+          Je m'engage à ne fournir aucun livrable produit par une IA générative.
+        </label>
       </div>
-      <label style="display: flex; gap: 10px; align-items: flex-start; font-size: 14px; color: #4A5A6B; line-height: 1.55;">
+      <label class="auth-legal">
         <input type="checkbox" name="charte" value="1" required>
         J'accepte la charte qualité, les <a href="<?= e(url('/cgu')) ?>">CGU</a> et la <a href="<?= e(url('/confidentialite')) ?>">politique de confidentialité</a>.
       </label>
-      <div style="display: flex; gap: 14px; align-items: center;">
+      <div class="auth-actions">
         <button class="btn-orange" type="submit">Créer mon compte</button>
-        <span style="font-size: 14px; color: #66768A;">Déjà inscrit ? <a href="<?= e(url('/connexion')) ?>">Se connecter</a></span>
+        <span>Déjà inscrit ? <a href="<?= e(url('/connexion')) ?>">Se connecter</a></span>
       </div>
     </form>
   </div>
-  <div style="background: #022746; color: #E4EDF5; padding: 44px;">
-    <div style="font-family: 'Space Grotesk', sans-serif; font-size: 22px; color: #FFF; font-weight: 500; margin-bottom: 22px;">Ce que vous obtenez en trois étapes</div>
-    <div style="display: flex; flex-direction: column; gap: 22px;">
+  <div class="auth-split-aside">
+    <div class="auth-aside-title">Ce que vous obtenez</div>
+    <div class="auth-steps">
       <?php foreach ($onboarding ?? [] as $o): ?>
-        <div style="display: flex; gap: 14px;">
-          <span style="font-family: 'Space Grotesk', monospace; font-size: 13px; color: #E8845F; min-width: 26px;"><?= e($o['num']) ?></span>
+        <div class="auth-step">
+          <span><?= e($o['num']) ?></span>
           <div>
-            <div style="font-size: 16px; color: #FFF;"><?= e($o['title']) ?></div>
-            <p style="font-size: 14px; color: #A9C0D5; line-height: 1.6; margin: 6px 0 0;"><?= e($o['body']) ?></p>
+            <div><?= e($o['title']) ?></div>
+            <p><?= e($o['body']) ?></p>
           </div>
         </div>
       <?php endforeach; ?>

@@ -164,7 +164,7 @@ final class LegalPages
                 'title' => '5. Accès et compte',
                 'blocks' => [
                     ['p' => 'La consultation du site est libre. La création d\'un compte est nécessaire pour publier, commander, candidater ou utiliser la messagerie.'],
-                    ['p' => 'Un seul compte permet de chercher des prestataires et de proposer ses services. Lors de l\'inscription, l\'Utilisateur indique un prénom, un nom, un e-mail, un mot de passe d\'au moins huit caractères, et choisit un rôle initial (client ou prestataire).'],
+                    ['p' => 'Un seul compte permet de chercher des prestataires et de proposer ses services. Lors de l\'inscription, l\'Utilisateur indique un prénom, un nom, un e-mail, un mot de passe d\'au moins huit caractères, et choisit s\'il cherche des prestataires, propose ses services, ou les deux. Ce choix peut être modifié ensuite dans l\'espace personnel.'],
                     ['p' => 'L\'Utilisateur garantit l\'exactitude des informations fournies et la confidentialité de ses identifiants. Toute action réalisée depuis le compte est réputée effectuée par son titulaire, sauf preuve contraire.'],
                     ['p' => 'La Plateforme s\'adresse à des personnes majeures. Les prestataires doivent être en mesure d\'exercer une activité indépendante ou sociétaire conforme au droit applicable (immatriculation, facturation, TVA le cas échéant).'],
                 ],

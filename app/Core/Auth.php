@@ -84,4 +84,24 @@ final class Auth
         }
         return $user;
     }
+
+    public static function requireSeeker(): array
+    {
+        $user = self::requireUser();
+        if (!User::seeksServices($user)) {
+            flash('error', 'Cette action est disponible si vous cherchez des prestataires. Vous pouvez l\'activer dans vos paramètres.');
+            redirect('/espace');
+        }
+        return $user;
+    }
+
+    public static function requireOfferer(): array
+    {
+        $user = self::requireUser();
+        if (!User::offersServices($user)) {
+            flash('error', 'Cette action est disponible si vous proposez vos services. Vous pouvez l\'activer dans vos paramètres.');
+            redirect('/espace');
+        }
+        return $user;
+    }
 }

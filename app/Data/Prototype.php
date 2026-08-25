@@ -22,6 +22,8 @@ final class Prototype
         }
         $logged = $user !== null;
         $data = array_merge(self::shared($user, $logged, $screen), self::content($screen), $extra);
+        $data['seeksServices'] = User::seeksServices($user);
+        $data['offersServices'] = User::offersServices($user);
         $data['screen'] = $screen;
         $data['logged'] = $logged;
         $data['visitor'] = !$logged;
@@ -138,6 +140,11 @@ final class Prototype
             'userFirst' => $first,
             'userName' => $user ? User::displayName($user) : 'Marion Vasseur',
             'isAdmin' => ($user['role'] ?? '') === 'admin',
+            'seeksServices' => User::seeksServices($user),
+            'offersServices' => User::offersServices($user),
+            'inEspace' => $logged && self::isEspaceScreen($screen),
+            'espaceNav' => $logged ? self::espaceNav($screen, User::seeksServices($user), User::offersServices($user)) : [],
+            'headerCta' => self::headerCta(User::seeksServices($user), User::offersServices($user)),
             'routes' => DcEngine::routes(),
             'unreadMessages' => 3,
             'unreadAlerts' => 6,
@@ -455,10 +462,10 @@ final class Prototype
                 ['title' => 'Je propose mes services', 'desc' => 'Correcteur, illustrateur, imprimeur, libraire : créez votre vitrine et vos formules.', 'style' => 'border: 1.5px solid #022746; background: #FBFCFE; border-radius: 12px; padding: 20px; cursor: pointer;'],
             ],
             'onboarding' => [
-                ['num' => '01', 'title' => 'Votre vitrine en 10 minutes', 'body' => 'Métiers, spécialités, tarifs, deux ou trois réalisations. Vous pouvez la compléter plus tard.'],
-                ['num' => '02', 'title' => 'Vérification du profil', 'body' => 'Justificatif d\'activité et une référence professionnelle : le badge « vérifié » double le taux de contact.'],
-                ['num' => '03', 'title' => 'L\'engagement sans IA', 'body' => 'Vous signez l\'engagement : aucun livrable produit par une IA générative. C\'est la condition d\'entrée, et ce que les clients viennent chercher ici.'],
-                ['num' => '04', 'title' => 'Vos premières demandes', 'body' => 'Vous apparaissez dans l\'annuaire et vous pouvez candidater aux appels d\'offres, gratuitement.'],
+                ['num' => '01', 'title' => 'Un compte, deux usages', 'body' => 'Cherchez des prestataires, proposez vos services, ou les deux. Rien n\'est exclusif.'],
+                ['num' => '02', 'title' => 'Un espace qui s\'adapte', 'body' => 'Les menus et actions correspondent à ce que vous avez choisi. Vous pourrez modifier ce choix plus tard.'],
+                ['num' => '03', 'title' => 'L\'engagement sans IA', 'body' => 'Si vous proposez vos services, vous signez l\'engagement : aucun livrable produit par une IA générative.'],
+                ['num' => '04', 'title' => 'Vous commencez tout de suite', 'body' => 'Publiez une mission, complétez votre vitrine, ou parcourez l\'annuaire — selon votre choix.'],
             ],
             'inscriptionProof' => [
                 ['v' => '5 890', 'k' => 'professionnels du livre inscrits'],
@@ -1261,5 +1268,79 @@ final class Prototype
             $out[] = ['m' => $m, 'bar' => 'width: 100%; height: ' . $h . '%; background: ' . ($h > 90 ? self::ORANGE : '#C9D8E6') . '; border-radius: 4px 4px 0 0;'];
         }
         return $out;
+    }
+
+    private static function isEspaceScreen(string $screen): bool
+    {
+        return in_array($screen, [
+            'dashboard', 'publier', 'commande', 'suivi', 'commandes', 'mesmissions',
+            'candidatures', 'mesprestations', 'creer', 'messagerie', 'notifications',
+            'favoris', 'avis', 'vitrine', 'parametres', 'facturation',
+        ], true);
+    }
+
+    private static function headerCta(bool $seeks, bool $offers): ?array
+    {
+        if ($seeks) {
+            return ['label' => 'Publier une mission', 'href' => '/espace/publier'];
+        }
+        if ($offers) {
+            return ['label' => 'Créer une prestation', 'href' => '/espace/prestations/creer'];
+        }
+        return null;
+    }
+
+    private static function espaceNav(string $screen, bool $seeks, bool $offers): array
+    {
+        $item = static function (string $label, string $href, string $key) use ($screen): array {
+            return [
+                'label' => $label,
+                'href' => $href,
+                'active' => $screen === $key,
+            ];
+        };
+
+        $groups = [[
+            'title' => 'Espace',
+            'items' => [$item('Tableau de bord', '/espace', 'dashboard')],
+        ]];
+
+        if ($seeks) {
+            $groups[] = [
+                'title' => 'Chercher',
+                'items' => [
+                    $item('Annuaire', '/recherche', ''),
+                    $item('Publier une mission', '/espace/publier', 'publier'),
+                    $item('Mes missions', '/espace/missions', 'mesmissions'),
+                    $item('Mes commandes', '/espace/commandes', 'commandes'),
+                    $item('Favoris', '/espace/favoris', 'favoris'),
+                ],
+            ];
+        }
+
+        if ($offers) {
+            $groups[] = [
+                'title' => 'Proposer',
+                'items' => [
+                    $item('Ma vitrine', '/espace/vitrine', 'vitrine'),
+                    $item('Créer une prestation', '/espace/prestations/creer', 'creer'),
+                    $item('Mes prestations', '/espace/prestations', 'mesprestations'),
+                    $item('Appels d\'offres', '/missions', ''),
+                    $item('Mes candidatures', '/espace/candidatures', 'candidatures'),
+                    $item('Facturation', '/espace/facturation', 'facturation'),
+                ],
+            ];
+        }
+
+        $groups[] = [
+            'title' => 'Compte',
+            'items' => [
+                $item('Messages', '/espace/messages', 'messagerie'),
+                $item('Alertes', '/espace/notifications', 'notifications'),
+                $item('Paramètres', '/espace/parametres', 'parametres'),
+            ],
+        ];
+
+        return $groups;
     }
 }

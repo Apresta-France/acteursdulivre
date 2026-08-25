@@ -309,177 +309,24 @@
     });
   })();
 
-  (function writingBg() {
-    var layer = document.querySelector('.writing-bg');
-    if (!layer) return;
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-
-    var WORDS = [
-      'manuscrit', 'chapitre', 'brouillon', 'correction', 'réécriture',
-      'épreuves', 'bon à tirer', 'lettrine', 'incipit', 'colophon',
-      'dédicace', 'sommaire', 'reliure', 'typographie', 'maquette',
-      'traduction', 'illustration', 'narrateur', 'libraire', 'éditeur',
-      'imprimeur', 'correcteur', 'interligne', 'italique', 'folio',
-      'errata', 'postface', 'avant-propos', 'cahier', 'signature',
-      'page de garde', 'achevé d’imprimer', 'notes', 'index',
-      '« Il était une fois »', 'Elle tourna la page.', 'Corriger, encore.',
-      'Un livre se fait à plusieurs.', 'première épreuve', 'quatrième'
-    ];
-
-    function wait(ms) {
-      return new Promise(function (resolve) { setTimeout(resolve, ms); });
-    }
-    function whenVisible() {
-      if (!document.hidden) return Promise.resolve();
-      return new Promise(function (resolve) {
-        document.addEventListener('visibilitychange', function onVis() {
-          if (!document.hidden) {
-            document.removeEventListener('visibilitychange', onVis);
-            resolve();
-          }
-        });
+  function syncIntentCards() {
+    var offers = document.querySelector('[name="offers_services"]');
+    var offersOn = !!(offers && offers.checked);
+    document.querySelectorAll('[data-if-offers]').forEach(function (box) {
+      box.hidden = !offersOn;
+      box.querySelectorAll('input[name="charte_ia"]').forEach(function (input) {
+        input.required = offersOn;
       });
-    }
-    function rand(min, max) {
-      return min + Math.random() * (max - min);
-    }
-    function pick(list) {
-      return list[Math.floor(Math.random() * list.length)];
-    }
-
-    function margins() {
-      var canvas = document.querySelector('.site-canvas');
-      if (!canvas) return null;
-      var box = canvas.getBoundingClientRect();
-      var vw = window.innerWidth;
-      var vh = window.innerHeight;
-      return {
-        left: Math.max(0, box.left),
-        right: Math.max(0, vw - box.right),
-        top: 48,
-        bottom: vh - 36,
-        vh: vh
-      };
-    }
-
-    function canRun() {
-      if (window.innerWidth < 1280) return false;
-      var m = margins();
-      return !!(m && (m.left >= 56 || m.right >= 56));
-    }
-
-    function place(el, text, size) {
-      var m = margins();
-      if (!m) return false;
-      var sides = [];
-      if (m.left >= 56) sides.push('left');
-      if (m.right >= 56) sides.push('right');
-      if (!sides.length) return false;
-      var side = pick(sides);
-      var gutter = side === 'left' ? m.left : m.right;
-      var maxW = Math.max(64, gutter - 16);
-      if (text.length * size * 0.46 > maxW + 48) return false;
-      el.style.fontSize = size + 'px';
-      el.style.maxWidth = maxW + 56 + 'px';
-      var y = rand(m.top, Math.max(m.top + 8, m.bottom - size * 1.4));
-      el.style.top = y + 'px';
-      if (side === 'left') {
-        el.style.left = rand(10, Math.max(12, gutter - Math.min(maxW, text.length * size * 0.42))) + 'px';
-        el.style.right = 'auto';
-      } else {
-        el.style.right = rand(10, Math.max(12, gutter - Math.min(maxW, text.length * size * 0.42))) + 'px';
-        el.style.left = 'auto';
-      }
-      return true;
-    }
-
-    function chooseText(size) {
-      var m = margins();
-      var gutter = Math.max(m ? m.left : 0, m ? m.right : 0);
-      var maxChars = Math.max(8, Math.floor((gutter + 40) / (size * 0.42)));
-      var pool = WORDS.filter(function (w) { return w.length <= maxChars; });
-      return pick(pool.length ? pool : WORDS.filter(function (w) { return w.length <= 12; }));
-    }
-
-    async function typeInto(el, text, speed) {
-      var node = document.createTextNode('');
-      var caret = document.createElement('i');
-      caret.className = 'writing-caret';
-      el.textContent = '';
-      el.appendChild(node);
-      el.appendChild(caret);
-      for (var i = 0; i < text.length; i++) {
-        await whenVisible();
-        node.nodeValue = text.slice(0, i + 1);
-        var pause = speed + rand(0, 42);
-        if (/[\s,.’]/.test(text[i])) pause += rand(80, 180);
-        await wait(pause);
-      }
-      return caret;
-    }
-
-    async function eraseFrom(el, caret) {
-      var node = el.firstChild;
-      if (!node || node.nodeType !== 3) return;
-      var text = node.nodeValue || '';
-      for (var i = text.length; i >= 0; i--) {
-        await whenVisible();
-        node.nodeValue = text.slice(0, i);
-        await wait(rand(18, 42));
-      }
-      if (caret && caret.parentNode) caret.remove();
-    }
-
-    async function runWriter(delay) {
-      await wait(delay);
-      var el = document.createElement('span');
-      el.className = 'writing-line';
-      layer.appendChild(el);
-
-      while (true) {
-        if (!canRun()) {
-          el.classList.remove('is-on');
-          el.classList.add('is-off');
-          await wait(1400);
-          continue;
-        }
-        var space = margins();
-        var gutter = Math.max(space ? space.left : 0, space ? space.right : 0);
-        var size = gutter >= 160
-          ? Math.round(rand(18, 30))
-          : Math.round(rand(14, 18));
-        var text = chooseText(size);
-        if (!place(el, text, size)) {
-          await wait(800);
-          continue;
-        }
-        el.classList.toggle('is-accent', Math.random() < 0.18);
-        el.style.setProperty('--w-op', String(rand(0.22, 0.42)));
-        el.classList.remove('is-off');
-        el.classList.add('is-on');
-        var mode = Math.random() < 0.35 ? 'read' : 'write';
-        var caret = await typeInto(el, text, mode === 'read' ? rand(16, 28) : rand(42, 78));
-        await wait(rand(mode === 'read' ? 900 : 1400, mode === 'read' ? 2200 : 3600));
-        if (Math.random() < 0.55) {
-          await eraseFrom(el, caret);
-        } else {
-          el.classList.remove('is-on');
-          el.classList.add('is-off');
-          await wait(720);
-          if (caret && caret.parentNode) caret.remove();
-          el.textContent = '';
-        }
-        await wait(rand(400, 1600));
-      }
-    }
-
-    function start() {
-      if (layer.dataset.started || !canRun()) return;
-      layer.dataset.started = '1';
-      var count = window.innerWidth >= 1800 ? 4 : 3;
-      for (var n = 0; n < count; n++) runWriter(n * rand(280, 900));
-    }
-    start();
-    window.addEventListener('resize', start);
-  })();
+    });
+    document.querySelectorAll('[data-intent-card]').forEach(function (card) {
+      var input = card.querySelector('input[type="checkbox"]');
+      card.classList.toggle('is-on', !!(input && input.checked));
+    });
+  }
+  document.querySelectorAll('[data-intent-card]').forEach(function (card) {
+    var input = card.querySelector('input[type="checkbox"]');
+    if (!input) return;
+    input.addEventListener('change', syncIntentCards);
+  });
+  syncIntentCards();
 })();

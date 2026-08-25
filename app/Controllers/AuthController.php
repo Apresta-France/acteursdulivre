@@ -56,20 +56,41 @@ final class AuthController
         $password = $request->string('password');
         $first = $request->string('first_name');
         $last = $request->string('last_name');
-        $role = $request->string('role', 'prestataire');
+        $seeks = $request->bool('seeks_services');
+        $offers = $request->bool('offers_services');
+
+        $remember = static function () use ($email, $first, $last, $seeks, $offers): void {
+            $_SESSION['_old'] = [
+                'email' => $email,
+                'first_name' => $first,
+                'last_name' => $last,
+                'seeks_services' => $seeks ? '1' : '',
+                'offers_services' => $offers ? '1' : '',
+            ];
+        };
 
         if (!filter_var($email, FILTER_VALIDATE_EMAIL) || strlen($password) < 8 || $first === '' || $last === '') {
             flash('error', 'Merci de renseigner un e-mail valide, un mot de passe de 8 caractères, un prénom et un nom.');
+            $remember();
+            redirect('/inscription');
+        }
+
+        if (!$seeks && !$offers) {
+            flash('error', 'Choisissez au moins un usage : chercher des prestataires, proposer vos services, ou les deux.');
+            $remember();
+            redirect('/inscription');
+        }
+
+        if ($offers && !$request->bool('charte_ia')) {
+            flash('error', 'Pour proposer vos services, l\'engagement sans IA générative est obligatoire.');
+            $remember();
             redirect('/inscription');
         }
 
         if (User::findByEmail($email)) {
             flash('error', 'Un compte existe déjà avec cet e-mail.');
+            $remember();
             redirect('/inscription');
-        }
-
-        if (!in_array($role, ['client', 'prestataire'], true)) {
-            $role = 'prestataire';
         }
 
         $id = User::create([
@@ -77,9 +98,12 @@ final class AuthController
             'password' => $password,
             'first_name' => $first,
             'last_name' => $last,
-            'role' => $role,
+            'seeks_services' => $seeks,
+            'offers_services' => $offers,
+            'role' => User::roleFromIntents($seeks, $offers),
         ]);
 
+        unset($_SESSION['_old']);
         $user = User::find($id);
         Auth::login($user);
 

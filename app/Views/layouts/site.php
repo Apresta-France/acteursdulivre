@@ -6,14 +6,13 @@
   <title><?= e(($title ?? 'Acteurs du Livre') . ' — acteursdulivre.fr') ?></title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,500;1,500;1,600&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="<?= e(asset('css/app.css')) ?>?v=m16">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="<?= e(asset('css/app.css')) ?>?v=m19">
   <link rel="icon" href="<?= e(asset('img/favicon.ico')) ?>?v=3" sizes="any">
   <link rel="icon" type="image/png" href="<?= e(asset('img/favicon-32x32.png')) ?>?v=3" sizes="32x32">
   <link rel="apple-touch-icon" href="<?= e(asset('img/apple-touch-icon.png')) ?>?v=3">
 </head>
 <body>
-  <div class="writing-bg" aria-hidden="true"></div>
   <div class="nav-backdrop" data-nav-close hidden></div>
   <div class="site-shell">
     <div class="site-canvas">
@@ -58,7 +57,9 @@
         <div class="header-panel" id="header-panel">
           <?php if (!empty($logged)): ?>
             <nav class="header-nav">
-              <a href="<?= e(url('/espace/publier')) ?>">Publier une mission</a>
+              <?php if (!empty($headerCta)): ?>
+                <a href="<?= e(url($headerCta['href'])) ?>"><?= e($headerCta['label']) ?></a>
+              <?php endif; ?>
               <a href="<?= e(url('/espace/messages')) ?>">Messages <span class="badge-orange"><?= (int) ($unreadMessages ?? 0) ?></span></a>
               <a href="<?= e(url('/espace/notifications')) ?>">Alertes <span class="badge-soft"><?= (int) ($unreadAlerts ?? 0) ?></span></a>
               <a href="<?= e(url('/espace')) ?>">Mon espace</a>
@@ -80,7 +81,7 @@
               <a href="<?= e(url('/missions')) ?>">Appels d'offres</a>
               <a href="<?= e(url('/connexion')) ?>">Se connecter</a>
             </nav>
-            <a class="btn-navy" href="<?= e(url('/inscription')) ?>">Proposer mes services</a>
+            <a class="btn-navy" href="<?= e(url('/inscription')) ?>">Créer un compte</a>
           <?php endif; ?>
         </div>
       </header>
@@ -107,7 +108,16 @@
       </div>
 
       <main>
-        <?= $content ?? '' ?>
+        <?php if (!empty($inEspace)): ?>
+          <div class="espace-shell r-done r-cols-keep">
+            <?php require ADL_ROOT . '/app/Views/partials/espace-nav.php'; ?>
+            <div class="espace-main">
+              <?= $content ?? '' ?>
+            </div>
+          </div>
+        <?php else: ?>
+          <?= $content ?? '' ?>
+        <?php endif; ?>
       </main>
 
       <footer class="site-footer">
@@ -169,6 +179,6 @@
       </footer>
     </div>
   </div>
-  <script src="<?= e(asset('js/app.js')) ?>?v=m16"></script>
+  <script src="<?= e(asset('js/app.js')) ?>?v=m19"></script>
 </body>
 </html>

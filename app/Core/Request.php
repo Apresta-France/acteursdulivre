@@ -40,4 +40,10 @@ final class Request
     {
         return trim((string) $this->input($key, $default));
     }
+
+    public function bool(string $key): bool
+    {
+        $value = $this->input($key);
+        return $value === true || $value === 1 || $value === '1' || $value === 'on';
+    }
 }
