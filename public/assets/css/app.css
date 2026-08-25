@@ -34,6 +34,8 @@ button { cursor: pointer; }
 img { max-width: 100%; }
 
 .site-shell {
+  position: relative;
+  z-index: 1;
   min-height: 100vh;
   padding: 32px 24px 60px;
   display: flex;
@@ -45,6 +47,52 @@ img { max-width: 100%; }
   color: var(--ink);
   box-shadow: 0 24px 60px rgba(var(--navy-rgb), .18);
   overflow: hidden;
+}
+
+.writing-bg {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+.writing-line {
+  position: absolute;
+  font-family: "EB Garamond", Georgia, "Times New Roman", serif;
+  font-style: italic;
+  font-weight: 500;
+  color: var(--navy);
+  opacity: 0;
+  letter-spacing: .01em;
+  line-height: 1.15;
+  white-space: nowrap;
+  user-select: none;
+  transition: opacity .7s ease;
+}
+.writing-line.is-on { opacity: var(--w-op, .2); }
+.writing-line.is-off { opacity: 0; }
+.writing-line.is-accent { color: var(--orange); }
+.writing-caret {
+  display: inline-block;
+  width: 1.5px;
+  height: .92em;
+  margin-left: 1px;
+  background: currentColor;
+  vertical-align: -.06em;
+  opacity: .5;
+  animation: writing-blink 1.05s step-end infinite;
+}
+@keyframes writing-blink {
+  50% { opacity: 0; }
+}
+@media (min-width: 1280px) {
+  .site-shell { padding: 36px 72px 68px; }
+}
+@media (min-width: 1600px) {
+  .site-shell { padding: 40px 96px 80px; }
+}
+@media (max-width: 1279px), (prefers-reduced-motion: reduce) {
+  .writing-bg { display: none; }
 }
 
 .preopen {
@@ -304,6 +352,67 @@ body.is-admin-open .admin-nav-toggle span:nth-child(3) { transform: translateY(-
 .footer-legal div { display: flex; gap: 22px; }
 .footer-legal a { color: #7B93AC; }
 
+.legal-page {
+  padding: 44px;
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  gap: 44px;
+  align-items: start;
+}
+.legal-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  position: sticky;
+  top: 20px;
+}
+.legal-nav a {
+  padding: 11px 14px;
+  border-radius: 9px;
+  font-size: 14px;
+  color: var(--muted-2);
+}
+.legal-nav a:hover { color: var(--navy); background: var(--fog); }
+.legal-nav a.is-active {
+  background: var(--fog);
+  color: var(--navy);
+  font-weight: 500;
+}
+.legal-doc { max-width: 760px; }
+.legal-doc h1 {
+  font-family: var(--display);
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--navy);
+  margin: 0 0 28px;
+  line-height: 1.15;
+}
+.legal-doc h2 {
+  font-family: var(--display);
+  font-size: 19px;
+  font-weight: 500;
+  color: var(--navy);
+  margin: 0 0 10px;
+}
+.legal-doc section { margin-bottom: 28px; }
+.legal-doc p, .legal-doc li {
+  font-size: 15px;
+  color: var(--muted);
+  line-height: 1.8;
+  margin: 0 0 12px;
+}
+.legal-doc ul, .legal-doc ol { margin: 0 0 12px; padding-left: 1.2em; }
+.legal-doc li { margin-bottom: 6px; }
+.legal-doc a { color: var(--orange); }
+.legal-doc a:hover { text-decoration: underline; }
+.legal-meta {
+  font-size: 14px;
+  color: #8496A8;
+  border-top: 1px solid #EEF1F5;
+  padding-top: 18px;
+  margin: 8px 0 0;
+}
+
 .flash { border-radius: 10px; padding: 12px 14px; margin-bottom: 16px; font-size: 14px; }
 .flash-error { background: #FDF3F0; color: var(--orange); border: 1px solid #F4DFD8; }
 .flash-ok { background: #ECF5EF; color: #2E6B45; }
@@ -534,6 +643,9 @@ main, main > * { min-width: 0; }
   .rail-spacer { display: none; }
   .mega { grid-template-columns: 1fr 1fr; }
   .footer-cols { grid-template-columns: 1fr 1fr; }
+  .legal-page { padding: 28px 20px 44px; grid-template-columns: 1fr; gap: 22px; }
+  .legal-nav { position: static; flex-direction: row; flex-wrap: wrap; gap: 6px; }
+  .legal-nav a { padding: 8px 12px; }
   .install-grid { grid-template-columns: 1fr; }
   .footer-news-form { flex-wrap: wrap; width: 100%; }
   .footer-news-form input { width: 100%; min-width: 0; }
@@ -581,7 +693,7 @@ main, main > * { min-width: 0; }
     -webkit-box-orient: vertical;
     overflow: hidden;
   }
-  .brand img { height: 44px; }
+  .brand img { height: 44px; width: auto; }
   .site-header, .preopen, .topbar, .rail, .mega, .footer-news, .footer-cols, .footer-metiers, .footer-legal {
     padding-left: 16px;
     padding-right: 16px;

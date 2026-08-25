@@ -120,6 +120,7 @@ final class Prototype
                 ['label' => 'Litiges & médiation', 'href' => '/confiance'],
                 ['label' => 'Signaler un abus', 'href' => '/contact'],
                 ['label' => 'Mentions & CGU', 'href' => '/mentions-legales'],
+                ['label' => 'CGV', 'href' => '/cgv'],
             ]],
         ];
 
@@ -284,13 +285,13 @@ final class Prototype
                 ['k' => 'E-mail', 'v' => 'bonjour@acteursdulivre.fr'],
                 ['k' => 'Litiges', 'v' => 'mediation@acteursdulivre.fr'],
                 ['k' => 'Presse', 'v' => 'presse@acteursdulivre.fr'],
-                ['k' => 'Adresse', 'v' => '12 rue du Calvaire, Nantes'],
+                ['k' => 'Adresse', 'v' => '486 rue Sadi Carnot, Sainghin-en-Weppes'],
             ],
-            'legalNav' => self::sideNav(['Mentions légales', 'Conditions générales', 'Conditions prestataires', 'Confidentialité', 'Cookies', 'Médiation'], 0),
+            'legalNav' => self::sideNav(['Mentions légales', 'CGU', 'CGV', 'Confidentialité', 'Cookies'], 0),
             'legalTitle' => 'Mentions légales',
             'legalBlocks' => [
-                ['title' => 'Éditeur du site', 'body' => 'acteursdulivre.fr est édité par la société Acteurs du Livre, SAS au capital de 20 000 €, immatriculée au RCS de Nantes, dont le siège social est situé 12 rue du Calvaire, 44000 Nantes. Directeur de la publication : Samuel Ohayon.'],
-                ['title' => 'Hébergement', 'body' => 'Le site est hébergé sur des serveurs situés dans l\'Union européenne. Les données de paiement sont traitées par un prestataire de paiement agréé.'],
+                ['title' => 'Éditeur du site', 'body' => 'acteursdulivre.fr est édité par EDITIONS TESSERACT, SAS au capital de 6 100 €, RCS Lille Métropole 980 005 292, 486 rue Sadi Carnot, 59184 Sainghin-en-Weppes.'],
+                ['title' => 'Hébergement', 'body' => 'Le site est hébergé en Suisse, en Europe, par Infomaniak Network SA, Rue Eugène Marziano 25, 1227 Les Acacias (GE).'],
                 ['title' => 'Objet de la plateforme', 'body' => 'La plateforme met en relation des porteurs de projet et des prestataires des métiers du livre. Elle n\'est ni éditeur, ni employeur, ni agent des prestataires : les contrats sont conclus directement entre les parties, la plateforme n\'intervenant qu\'au titre de l\'intermédiation.'],
                 ['title' => 'Propriété intellectuelle', 'body' => 'Les textes, visuels et manuscrits déposés par les utilisateurs restent leur propriété. Aucune réutilisation n\'est faite au-delà de ce qui est strictement nécessaire à l\'affichage des vitrines et au bon déroulement des missions.'],
             ],

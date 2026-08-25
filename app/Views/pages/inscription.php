@@ -40,7 +40,7 @@
       </div>
       <label style="display: flex; gap: 10px; align-items: flex-start; font-size: 14px; color: #4A5A6B; line-height: 1.55;">
         <input type="checkbox" name="charte" value="1" required>
-        J'accepte la charte qualité et les conditions de la plateforme.
+        J'accepte la charte qualité, les <a href="<?= e(url('/cgu')) ?>">CGU</a> et la <a href="<?= e(url('/confidentialite')) ?>">politique de confidentialité</a>.
       </label>
       <div style="display: flex; gap: 14px; align-items: center;">
         <button class="btn-orange" type="submit">Créer mon compte</button>

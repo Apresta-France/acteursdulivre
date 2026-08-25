@@ -7,6 +7,7 @@ namespace Adl\Controllers;
 use Adl\Core\Mailer;
 use Adl\Core\Request;
 use Adl\Core\View;
+use Adl\Data\LegalPages;
 
 final class PageController
 {
@@ -85,7 +86,11 @@ final class PageController
 
     public function legal(Request $request): void
     {
-        View::page('legal', ['title' => 'Mentions légales']);
+        $doc = LegalPages::get(LegalPages::slugFromPath($request->path()));
+        View::page('legal', [
+            'title' => $doc['title'],
+            'legalDoc' => $doc,
+        ]);
     }
 
     public function contact(Request $request): void

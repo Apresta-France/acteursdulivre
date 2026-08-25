@@ -28,6 +28,10 @@ return static function (Router $router): void {
     $router->get('/journal/{slug}', [PageController::class, 'article']);
     $router->get('/aide', [PageController::class, 'aide']);
     $router->get('/mentions-legales', [PageController::class, 'legal']);
+    $router->get('/cgu', [PageController::class, 'legal']);
+    $router->get('/cgv', [PageController::class, 'legal']);
+    $router->get('/confidentialite', [PageController::class, 'legal']);
+    $router->get('/cookies', [PageController::class, 'legal']);
     $router->get('/contact', [PageController::class, 'contact']);
     $router->post('/contact', [PageController::class, 'contactSubmit']);
 
