@@ -1,0 +1,407 @@
+<div>
+        <!-- hero -->
+        <div style="padding: 52px 44px 40px; display: grid; grid-template-columns: 1fr 440px; gap: 48px; align-items: center; background: linear-gradient(180deg, #FBFCFE, #FFFFFF);">
+          <div>
+            <div style="font-family: 'Space Grotesk', monospace; font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: #D85D3F; margin-bottom: 18px;">La place de marché des métiers du livre</div>
+            <h1 style="font-family: 'Space Grotesk', sans-serif; font-size: 52px; line-height: 1.04; font-weight: 700; color: #022746; margin: 0 0 18px; letter-spacing: -.02em;">Un livre, ça se fait à plusieurs.</h1>
+            <p style="font-size: 18px; line-height: 1.65; color: #4A5A6B; margin: 0 0 26px; max-width: 34em;">Correcteurs, illustrateurs, traducteurs, maquettistes, imprimeurs, attachés de presse, libraires, narrateurs : trouvez les bonnes personnes, comparez des prestations à prix affichés, ou publiez votre mission.</p>
+            <div style="display: flex; align-items: center; background: #FFF; border: 1px solid #E1E7ED; border-radius: 12px; padding: 0 6px 0 18px; height: 58px; box-shadow: 0 10px 30px rgba(2,39,70,.07); max-width: 620px;">
+              <input value="{{ query }}" sc-camel-on-change="{{ onQuery }}" placeholder="De quoi votre livre a-t-il besoin ?" style="flex: 1; border: 0; outline: none; font-size: 16px; color: #14202C;">
+              <button sc-camel-on-click="{{ goResultats }}" style="background: #D85D3F; border: 0; color: #FFF; height: 44px; padding: 0 24px; border-radius: 8px; font-size: 15px; font-weight: 500;">Chercher</button>
+            </div>
+            <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px;">
+              <sc-for list="{{ homeQuick }}" as="q" hint-placeholder-count="5">
+                <span sc-camel-on-click="{{ goResultats }}" style="border: 1px solid #E1E7ED; background: #FFF; color: #4A5A6B; border-radius: 999px; padding: 8px 14px; font-size: 14px; cursor: pointer;" style-hover="border-color: #D85D3F; color: #D85D3F;">{{ q }}</span>
+              </sc-for>
+            </div>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 150px 150px; gap: 12px;">
+            <div style="position: relative; grid-row: span 2; border-radius: 14px; overflow: hidden; background: #F4F6F9;">
+              <image-slot id="home-1" shape="rect" fit="cover" src="{{ homeImg1 }}" placeholder="photo"></image-slot>
+            </div>
+            <div style="position: relative; border-radius: 14px; overflow: hidden; background: #F4F6F9;">
+              <image-slot id="home-2" shape="rect" fit="cover" src="{{ homeImg2 }}" placeholder="photo"></image-slot>
+            </div>
+            <div style="position: relative; border-radius: 14px; overflow: hidden; background: #F4F6F9;">
+              <image-slot id="home-3" shape="rect" fit="cover" src="{{ homeImg3 }}" placeholder="photo"></image-slot>
+            </div>
+          </div>
+        </div>
+
+        <!-- chiffres -->
+        <div style="border-top: 1px solid #E8ECF1; border-bottom: 1px solid #E8ECF1; padding: 26px 44px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 30px;">
+          <sc-for list="{{ homeStats }}" as="s" hint-placeholder-count="4">
+            <div style="display: flex; gap: 14px; align-items: baseline;">
+              <span style="font-family: 'Space Grotesk', sans-serif; font-size: 30px; font-weight: 700; color: #022746;">{{ s.v }}</span>
+              <span style="font-size: 14px; color: #66768A; line-height: 1.4;">{{ s.k }}</span>
+            </div>
+          </sc-for>
+        </div>
+
+        <!-- douze métiers -->
+        <div style="padding: 44px;">
+          <div style="display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 20px;">
+            <h2 style="font-family: 'Space Grotesk', sans-serif; font-size: 27px; font-weight: 700; color: #022746; margin: 0;">Douze métiers réunis</h2>
+            <span sc-camel-on-click="{{ goMetier }}" style="font-size: 14px; color: #D85D3F; cursor: pointer;">Parcourir l'annuaire →</span>
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px;">
+            <div sc-camel-on-click="{{ goMetier }}" style="background: #FFF; border: 1px solid #E8ECF1; border-radius: 10px; padding: 16px; cursor: pointer;" style-hover="border-color: #D85D3F;">
+              <div style="display: flex; align-items: center; gap: 11px;">
+              <span style="width: 38px; height: 38px; border-radius: 9px; background: #F4F6F9; color: #022746; display: flex; align-items: center; justify-content: center;">
+                <svg width="21" height="21" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20l3-1 11-11-2-2L5 17l-1 3z"></path><path d="M14 6l4 4"></path></svg>
+              </span>
+              <div>
+                <div style="font-size: 15px; color: #022746; font-weight: 500; line-height: 1.25;">Auteurs</div>
+                <div style="font-size: 12px; color: #8496A8; margin-top: 3px;">1 240 profils</div>
+              </div>
+              </div>
+            </div>
+            <div sc-camel-on-click="{{ goMetier }}" style="background: #FFF; border: 1px solid #E8ECF1; border-radius: 10px; padding: 16px; cursor: pointer;" style-hover="border-color: #D85D3F;">
+              <div style="display: flex; align-items: center; gap: 11px;">
+              <span style="width: 38px; height: 38px; border-radius: 9px; background: #F4F6F9; color: #022746; display: flex; align-items: center; justify-content: center;">
+                <svg width="21" height="21" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"></circle><circle cx="9" cy="9.5" r="1.1" fill="currentColor" stroke="none"></circle><circle cx="14.5" cy="9" r="1.1" fill="currentColor" stroke="none"></circle><circle cx="15.5" cy="14" r="1.1" fill="currentColor" stroke="none"></circle><path d="M12 20.5a3 3 0 010-6"></path></svg>
+              </span>
+              <div>
+                <div style="font-size: 15px; color: #022746; font-weight: 500; line-height: 1.25;">Illustrateurs</div>
+                <div style="font-size: 12px; color: #8496A8; margin-top: 3px;">860 profils</div>
+              </div>
+              </div>
+            </div>
+            <div sc-camel-on-click="{{ goMetier }}" style="background: #FFF; border: 1px solid #E8ECF1; border-radius: 10px; padding: 16px; cursor: pointer;" style-hover="border-color: #D85D3F;">
+              <div style="display: flex; align-items: center; gap: 11px;">
+              <span style="width: 38px; height: 38px; border-radius: 9px; background: #F4F6F9; color: #022746; display: flex; align-items: center; justify-content: center;">
+                <svg width="21" height="21" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h9"></path><path d="M4 12h6"></path><path d="M4 17h11"></path><path d="M14 9.5l2.5 2.5L21 7"></path></svg>
+              </span>
+              <div>
+                <div style="font-size: 15px; color: #022746; font-weight: 500; line-height: 1.25;">Correcteurs</div>
+                <div style="font-size: 12px; color: #8496A8; margin-top: 3px;">1 105 profils</div>
+              </div>
+              </div>
+            </div>
+            <div sc-camel-on-click="{{ goMetier }}" style="background: #FFF; border: 1px solid #E8ECF1; border-radius: 10px; padding: 16px; cursor: pointer;" style-hover="border-color: #D85D3F;">
+              <div style="display: flex; align-items: center; gap: 11px;">
+              <span style="width: 38px; height: 38px; border-radius: 9px; background: #F4F6F9; color: #022746; display: flex; align-items: center; justify-content: center;">
+                <svg width="21" height="21" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h7"></path><path d="M7.5 6v2c0 2.5-1.4 4.6-3.5 5.6"></path><path d="M5 9c.6 2.6 2.6 4.4 5.5 4.6"></path><path d="M13 20l3.5-9 3.5 9"></path><path d="M14.3 17h4.4"></path></svg>
+              </span>
+              <div>
+                <div style="font-size: 15px; color: #022746; font-weight: 500; line-height: 1.25;">Traducteurs</div>
+                <div style="font-size: 12px; color: #8496A8; margin-top: 3px;">520 profils</div>
+              </div>
+              </div>
+            </div>
+            <div sc-camel-on-click="{{ goMetier }}" style="background: #FFF; border: 1px solid #E8ECF1; border-radius: 10px; padding: 16px; cursor: pointer;" style-hover="border-color: #D85D3F;">
+              <div style="display: flex; align-items: center; gap: 11px;">
+              <span style="width: 38px; height: 38px; border-radius: 9px; background: #F4F6F9; color: #022746; display: flex; align-items: center; justify-content: center;">
+                <svg width="21" height="21" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"></rect><path d="M4 9h16"></path><path d="M13 9v11"></path></svg>
+              </span>
+              <div>
+                <div style="font-size: 15px; color: #022746; font-weight: 500; line-height: 1.25;">Maquettistes</div>
+                <div style="font-size: 12px; color: #8496A8; margin-top: 3px;">470 profils</div>
+              </div>
+              </div>
+            </div>
+            <div sc-camel-on-click="{{ goMetier }}" style="background: #FFF; border: 1px solid #E8ECF1; border-radius: 10px; padding: 16px; cursor: pointer;" style-hover="border-color: #D85D3F;">
+              <div style="display: flex; align-items: center; gap: 11px;">
+              <span style="width: 38px; height: 38px; border-radius: 9px; background: #F4F6F9; color: #022746; display: flex; align-items: center; justify-content: center;">
+                <svg width="21" height="21" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 7.5C10.5 6 8 5.5 4 5.5v12c4 0 6.5.5 8 2 1.5-1.5 4-2 8-2v-12c-4 0-6.5.5-8 2z"></path><path d="M12 7.5v14"></path></svg>
+              </span>
+              <div>
+                <div style="font-size: 15px; color: #022746; font-weight: 500; line-height: 1.25;">Éditeurs</div>
+                <div style="font-size: 12px; color: #8496A8; margin-top: 3px;">310 profils</div>
+              </div>
+              </div>
+            </div>
+            <div sc-camel-on-click="{{ goMetier }}" style="background: #FFF; border: 1px solid #E8ECF1; border-radius: 10px; padding: 16px; cursor: pointer;" style-hover="border-color: #D85D3F;">
+              <div style="display: flex; align-items: center; gap: 11px;">
+              <span style="width: 38px; height: 38px; border-radius: 9px; background: #F4F6F9; color: #022746; display: flex; align-items: center; justify-content: center;">
+                <svg width="21" height="21" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7 9V4h10v5"></path><rect x="3.5" y="9" width="17" height="7" rx="1.5"></rect><path d="M7 14h10v6H7z"></path></svg>
+              </span>
+              <div>
+                <div style="font-size: 15px; color: #022746; font-weight: 500; line-height: 1.25;">Imprimeurs</div>
+                <div style="font-size: 12px; color: #8496A8; margin-top: 3px;">148 profils</div>
+              </div>
+              </div>
+            </div>
+            <div sc-camel-on-click="{{ goMetier }}" style="background: #FFF; border: 1px solid #E8ECF1; border-radius: 10px; padding: 16px; cursor: pointer;" style-hover="border-color: #D85D3F;">
+              <div style="display: flex; align-items: center; gap: 11px;">
+              <span style="width: 38px; height: 38px; border-radius: 9px; background: #F4F6F9; color: #022746; display: flex; align-items: center; justify-content: center;">
+                <svg width="21" height="21" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10.5l10-4.5v12l-10-4.5z"></path><path d="M14 9h4a3 3 0 010 6h-4"></path><path d="M7.5 15v4"></path></svg>
+              </span>
+              <div>
+                <div style="font-size: 15px; color: #022746; font-weight: 500; line-height: 1.25;">Presse &amp; com</div>
+                <div style="font-size: 12px; color: #8496A8; margin-top: 3px;">236 profils</div>
+              </div>
+              </div>
+            </div>
+            <div sc-camel-on-click="{{ goMetier }}" style="background: #FFF; border: 1px solid #E8ECF1; border-radius: 10px; padding: 16px; cursor: pointer;" style-hover="border-color: #D85D3F;">
+              <div style="display: flex; align-items: center; gap: 11px;">
+              <span style="width: 38px; height: 38px; border-radius: 9px; background: #F4F6F9; color: #022746; display: flex; align-items: center; justify-content: center;">
+                <svg width="21" height="21" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="4" height="14" rx="1"></rect><rect x="10" y="5" width="4" height="14" rx="1"></rect><path d="M17 6.5l3.2.9-3 11-3.2-.9z"></path></svg>
+              </span>
+              <div>
+                <div style="font-size: 15px; color: #022746; font-weight: 500; line-height: 1.25;">Libraires</div>
+                <div style="font-size: 12px; color: #8496A8; margin-top: 3px;">690 profils</div>
+              </div>
+              </div>
+            </div>
+            <div sc-camel-on-click="{{ goMetier }}" style="background: #FFF; border: 1px solid #E8ECF1; border-radius: 10px; padding: 16px; cursor: pointer;" style-hover="border-color: #D85D3F;">
+              <div style="display: flex; align-items: center; gap: 11px;">
+              <span style="width: 38px; height: 38px; border-radius: 9px; background: #F4F6F9; color: #022746; display: flex; align-items: center; justify-content: center;">
+                <svg width="21" height="21" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3.5" width="6" height="10" rx="3"></rect><path d="M5.5 11.5a6.5 6.5 0 0013 0"></path><path d="M12 18v3"></path></svg>
+              </span>
+              <div>
+                <div style="font-size: 15px; color: #022746; font-weight: 500; line-height: 1.25;">Narrateurs audio</div>
+                <div style="font-size: 12px; color: #8496A8; margin-top: 3px;">174 profils</div>
+              </div>
+              </div>
+            </div>
+            <div sc-camel-on-click="{{ goMetier }}" style="background: #FFF; border: 1px solid #E8ECF1; border-radius: 10px; padding: 16px; cursor: pointer;" style-hover="border-color: #D85D3F;">
+              <div style="display: flex; align-items: center; gap: 11px;">
+              <span style="width: 38px; height: 38px; border-radius: 9px; background: #F4F6F9; color: #022746; display: flex; align-items: center; justify-content: center;">
+                <svg width="21" height="21" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="7.5" width="17" height="11" rx="2"></rect><path d="M9 7.5V5.5a1 1 0 011-1h4a1 1 0 011 1v2"></path><path d="M3.5 12h17"></path></svg>
+              </span>
+              <div>
+                <div style="font-size: 15px; color: #022746; font-weight: 500; line-height: 1.25;">Agents littéraires</div>
+                <div style="font-size: 12px; color: #8496A8; margin-top: 3px;">62 profils</div>
+              </div>
+              </div>
+            </div>
+            <div sc-camel-on-click="{{ goMetier }}" style="background: #FFF; border: 1px solid #E8ECF1; border-radius: 10px; padding: 16px; cursor: pointer;" style-hover="border-color: #D85D3F;">
+              <div style="display: flex; align-items: center; gap: 11px;">
+              <span style="width: 38px; height: 38px; border-radius: 9px; background: #F4F6F9; color: #022746; display: flex; align-items: center; justify-content: center;">
+                <svg width="21" height="21" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5.5" width="16" height="14" rx="2"></rect><path d="M4 10h16"></path><path d="M8.5 3.5v3"></path><path d="M15.5 3.5v3"></path><circle cx="12" cy="14.5" r="1.6" fill="currentColor" stroke="none"></circle></svg>
+              </span>
+              <div>
+                <div style="font-size: 15px; color: #022746; font-weight: 500; line-height: 1.25;">Salons &amp; événements</div>
+                <div style="font-size: 12px; color: #8496A8; margin-top: 3px;">98 profils</div>
+              </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- prestations en avant -->
+        <div style="background: #FBFCFE; border-top: 1px solid #E8ECF1; padding: 44px;">
+          <div style="display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 20px;">
+            <div>
+              <h2 style="font-family: 'Space Grotesk', sans-serif; font-size: 27px; font-weight: 700; color: #022746; margin: 0;">Prestations mises en avant</h2>
+              <p style="font-size: 15px; color: #66768A; margin: 6px 0 0;">Prix, délai et périmètre annoncés. Commande en deux clics.</p>
+            </div>
+            <span sc-camel-on-click="{{ goResultats }}" style="font-size: 14px; color: #D85D3F; cursor: pointer;">Tout voir →</span>
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px;">
+            <sc-for list="{{ homeFeatured }}" as="s" hint-placeholder-count="3">
+              <div sc-camel-on-click="{{ goFiche }}" style="background: #FFF; border: 1px solid #E8ECF1; border-radius: 12px; overflow: hidden; cursor: pointer;" style-hover="border-color: #022746; box-shadow: 0 10px 24px rgba(2,39,70,.1);">
+                <div style="height: 168px; position: relative; background: #F4F6F9;">
+                  <image-slot id="{{ s.homeSlotId }}" shape="rect" fit="cover" src="{{ s.img }}" placeholder="photo"></image-slot>
+                </div>
+                <div style="padding: 16px;">
+                  <div style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: #66768A;">
+                    <span style="{{ s.avatar }}">{{ s.initials }}</span><span style="color: #14202C;">{{ s.by }}</span>
+                  </div>
+                  <div style="font-size: 16px; color: #14202C; line-height: 1.4; margin: 10px 0;">{{ s.title }}</div>
+                  <div style="display: flex; justify-content: space-between; align-items: baseline; border-top: 1px solid #EEF1F5; padding-top: 12px;">
+                    <span style="font-family: 'Space Grotesk', monospace; font-size: 13px; color: #D85D3F;">★ {{ s.rating }} ({{ s.reviews }})</span>
+                    <span style="font-family: 'Space Grotesk', sans-serif; font-size: 17px; font-weight: 700; color: #022746;">{{ s.price }}</span>
+                  </div>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+
+        <!-- trois façons -->
+        <div style="padding: 44px;">
+          <h2 style="font-family: 'Space Grotesk', sans-serif; font-size: 27px; font-weight: 700; color: #022746; margin: 0 0 6px;">Trois façons de travailler ensemble</h2>
+          <p style="font-size: 15px; color: #66768A; margin: 0 0 22px;">Choisissez celle qui correspond à votre projet.</p>
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;">
+            <sc-for list="{{ ways }}" as="w" hint-placeholder-count="3">
+              <div style="border: 1px solid #E8ECF1; border-radius: 14px; padding: 24px;">
+                <div style="font-family: 'Space Grotesk', monospace; font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: #D85D3F;">{{ w.kicker }}</div>
+                <div style="font-family: 'Space Grotesk', sans-serif; font-size: 20px; color: #022746; font-weight: 500; margin: 12px 0 10px;">{{ w.title }}</div>
+                <p style="font-size: 15px; line-height: 1.65; color: #4A5A6B; margin: 0 0 14px;">{{ w.body }}</p>
+                <div sc-camel-on-click="{{ w.onClick }}" style="font-size: 15px; color: #D85D3F; cursor: pointer;">{{ w.cta }} →</div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+
+        <!-- appels d'offres récents -->
+        <div style="background: #022746; padding: 44px; color: #E4EDF5; display: grid; grid-template-columns: 320px 1fr; gap: 44px; align-items: start;">
+          <div style="position: sticky; top: 20px;">
+            <div style="display: flex; align-items: center; gap: 9px; margin-bottom: 14px;">
+              <span style="width: 8px; height: 8px; border-radius: 50%; background: #E8845F; display: block;"></span>
+              <span style="font-family: 'Space Grotesk', monospace; font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: #E8845F;">148 missions ouvertes</span>
+            </div>
+            <h2 style="font-family: 'Space Grotesk', sans-serif; font-size: 30px; font-weight: 700; color: #FFF; margin: 0 0 12px; line-height: 1.15;">Des projets cherchent leurs prestataires, en ce moment.</h2>
+            <p style="font-size: 15px; color: #A9C0D5; line-height: 1.65; margin: 0 0 22px;">Auteurs, éditeurs et collectifs publient leur besoin ; vous répondez avec votre prix et votre délai. Candidater est gratuit et illimité.</p>
+            <div style="display: flex; flex-direction: column; gap: 14px; border-top: 1px solid rgba(255,255,255,.14); padding-top: 20px;">
+              <sc-for list="{{ missionsBandStats }}" as="s" hint-placeholder-count="3">
+                <div style="display: flex; gap: 12px; align-items: baseline;">
+                  <span style="font-family: 'Space Grotesk', sans-serif; font-size: 22px; font-weight: 700; color: #FFF; min-width: 78px;">{{ s.v }}</span>
+                  <span style="font-size: 14px; color: #A9C0D5; line-height: 1.45;">{{ s.k }}</span>
+                </div>
+              </sc-for>
+            </div>
+            <button sc-camel-on-click="{{ goMissions }}" style="background: #D85D3F; color: #FFF; border: 0; height: 46px; padding: 0 22px; border-radius: 9px; font-size: 15px; font-weight: 500; margin-top: 24px;" style-hover="background: #c04e33;">Voir les 148 missions</button>
+          </div>
+
+          <div>
+            <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px;">
+              <sc-for list="{{ homeMissionFilters }}" as="f" hint-placeholder-count="6">
+                <button sc-camel-on-click="{{ f.onClick }}" style="{{ f.style }}">{{ f.label }}</button>
+              </sc-for>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 12px;">
+              <sc-for list="{{ homeMissions }}" as="m" hint-placeholder-count="5">
+                <div sc-camel-on-click="{{ goMission }}" style="background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.13); border-radius: 12px; padding: 20px 22px; cursor: pointer; display: grid; grid-template-columns: 1fr 150px 132px; gap: 22px; align-items: center;" style-hover="background: rgba(255,255,255,.1); border-color: rgba(255,255,255,.28);">
+                  <div>
+                    <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                      <span style="font-family: 'Space Grotesk', monospace; font-size: 11px; letter-spacing: .07em; text-transform: uppercase; color: #E8845F; border: 1px solid rgba(232,132,95,.45); padding: 3px 8px; border-radius: 4px;">{{ m.cat }}</span>
+                      <span style="{{ m.urgenceStyle }}">{{ m.urgence }}</span>
+                    </div>
+                    <div style="font-size: 17px; color: #FFF; line-height: 1.35; margin: 10px 0 8px;">{{ m.title }}</div>
+                    <div style="font-size: 13px; color: #8FA8C0;">{{ m.by }} · {{ m.volume }} · publié {{ m.when }}</div>
+                  </div>
+                  <div>
+                    <div style="font-family: 'Space Grotesk', sans-serif; font-size: 18px; font-weight: 700; color: #FFF;">{{ m.budget }}</div>
+                    <div style="font-size: 13px; color: #8FA8C0; margin-top: 4px;">livraison {{ m.deadline }}</div>
+                  </div>
+                  <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 10px;">
+                    <div style="display: flex; align-items: center;">
+                      <sc-for list="{{ m.avatars }}" as="a" hint-placeholder-count="3">
+                        <span style="{{ a.style }}">{{ a.initials }}</span>
+                      </sc-for>
+                      <span style="font-size: 13px; color: #8FA8C0; margin-left: 8px;">{{ m.applicants }}</span>
+                    </div>
+                    <span style="font-size: 14px; color: #E8845F;">Postuler →</span>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+            <div style="display: flex; align-items: center; gap: 14px; background: rgba(255,255,255,.05); border: 1px dashed rgba(255,255,255,.22); border-radius: 12px; padding: 18px 22px; margin-top: 12px;">
+              <span style="flex: 1; font-size: 15px; color: #E4EDF5;">Créez une alerte : un e-mail dès qu'une mission correspond à vos métiers et à votre budget minimum.</span>
+              <button sc-camel-on-click="{{ goMissions }}" style="background: transparent; color: #FFF; border: 1px solid rgba(255,255,255,.4); height: 42px; padding: 0 18px; border-radius: 9px; font-size: 14px;">Créer une alerte</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- garanties -->
+        <div style="padding: 44px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px;">
+          <sc-for list="{{ garanties }}" as="g" hint-placeholder-count="3">
+            <div>
+              <div style="font-family: 'Space Grotesk', monospace; font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: #D85D3F;">{{ g.kicker }}</div>
+              <div style="font-family: 'Space Grotesk', sans-serif; font-size: 20px; color: #022746; font-weight: 500; margin: 10px 0 8px;">{{ g.title }}</div>
+              <p style="font-size: 15px; color: #4A5A6B; line-height: 1.65; margin: 0;">{{ g.body }}</p>
+            </div>
+          </sc-for>
+        </div>
+
+        <!-- IA interdite -->
+        <div style="border-top: 1px solid #E8ECF1; padding: 40px 44px; display: grid; grid-template-columns: 56px 1fr 300px; gap: 26px; align-items: start; background: #FBFCFE;">
+          <span style="width: 56px; height: 56px; border-radius: 14px; background: #FDF3F0; color: #D85D3F; display: flex; align-items: center; justify-content: center;">
+            <svg width="28" height="28" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"></circle><path d="M6 18L18 6"></path></svg>
+          </span>
+          <div>
+            <div style="font-family: 'Space Grotesk', monospace; font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: #D85D3F; margin-bottom: 10px;">Engagement de la plateforme</div>
+            <h2 style="font-family: 'Space Grotesk', sans-serif; font-size: 27px; font-weight: 700; color: #022746; margin: 0 0 12px; line-height: 1.2;">Ici, l'intelligence artificielle générative est interdite.</h2>
+            <p style="font-size: 16px; color: #4A5A6B; line-height: 1.7; margin: 0 0 12px; max-width: 60em;">Aucun texte, aucune illustration, aucune voix livrée sur cette plateforme ne peut être produit par une IA générative. Les prestataires s'y engagent à l'inscription ; les manuscrits confiés ne sont jamais utilisés pour entraîner un modèle.</p>
+            <p style="font-size: 15px; color: #66768A; line-height: 1.7; margin: 0;">Nous ne parlons pas de correcteurs orthographiques ou de mémoires de traduction, qui restent des outils de métier. Nous parlons de remplacer le travail par une génération automatique. Un manquement constaté entraîne le remboursement de la mission et le retrait du profil.</p>
+          </div>
+          <div style="border: 1px solid #E8ECF1; border-radius: 14px; padding: 20px; background: #FFF;">
+            <div style="display: flex; flex-direction: column; gap: 14px;">
+              <sc-for list="{{ iaPoints }}" as="p" hint-placeholder-count="4">
+                <div style="display: flex; gap: 10px; font-size: 14px; color: #4A5A6B; line-height: 1.55;"><span style="color: #D85D3F;">✕</span>{{ p }}</div>
+              </sc-for>
+            </div>
+            <span sc-camel-on-click="{{ goConfiance }}" style="display: inline-block; font-size: 14px; color: #D85D3F; cursor: pointer; margin-top: 16px;">Lire la charte qualité →</span>
+          </div>
+        </div>
+
+        <!-- familles de métiers -->
+        <div style="background: #FBFCFE; border-top: 1px solid #E8ECF1; border-bottom: 1px solid #E8ECF1; padding: 44px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 26px;">
+          <sc-for list="{{ mega }}" as="m" hint-placeholder-count="4">
+            <div>
+              <div style="font-family: 'Space Grotesk', sans-serif; font-size: 13px; letter-spacing: .1em; text-transform: uppercase; color: #D85D3F; margin-bottom: 12px;">{{ m.group }}</div>
+              <div style="display: flex; flex-direction: column; gap: 9px;">
+                <sc-for list="{{ m.items }}" as="i" hint-placeholder-count="5">
+                  <span sc-camel-on-click="{{ goMetier }}" style="font-size: 14px; color: #4A5A6B; cursor: pointer;" style-hover="color: #022746;">{{ i }}</span>
+                </sc-for>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+
+        <!-- témoignages -->
+        <div style="padding: 44px;">
+          <h2 style="font-family: 'Space Grotesk', sans-serif; font-size: 27px; font-weight: 700; color: #022746; margin: 0 0 22px;">Ils ont fabriqué leur livre ici</h2>
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;">
+            <sc-for list="{{ homeTemoins }}" as="t" hint-placeholder-count="3">
+              <div style="border: 1px solid #E8ECF1; border-radius: 14px; padding: 24px;">
+                <div style="font-family: 'Space Grotesk', monospace; font-size: 13px; color: #D85D3F;">★★★★★</div>
+                <p style="font-size: 16px; color: #14202C; line-height: 1.6; margin: 12px 0 16px;">{{ t.txt }}</p>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                  <span style="{{ t.avatar }}">{{ t.initials }}</span>
+                  <div>
+                    <div style="font-size: 14px; color: #14202C;">{{ t.who }}</div>
+                    <div style="font-size: 13px; color: #8496A8;">{{ t.role }}</div>
+                  </div>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+
+        <!-- journal -->
+        <div style="padding: 0 44px 44px;">
+          <div style="display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 20px;">
+            <h2 style="font-family: 'Space Grotesk', sans-serif; font-size: 27px; font-weight: 700; color: #022746; margin: 0;">Le journal</h2>
+            <span sc-camel-on-click="{{ goJournal }}" style="font-size: 14px; color: #D85D3F; cursor: pointer;">Tous les articles →</span>
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px;">
+            <sc-for list="{{ journal }}" as="a" hint-placeholder-count="3">
+              <div sc-camel-on-click="{{ goArticle }}" style="cursor: pointer;">
+                <div style="height: 160px; position: relative; background: #F4F6F9; border-radius: 12px; overflow: hidden;">
+                  <image-slot id="{{ a.slotId }}" shape="rect" fit="cover" src="{{ a.img }}" placeholder="photo"></image-slot>
+                </div>
+                <div style="font-family: 'Space Grotesk', monospace; font-size: 12px; color: #D85D3F; margin-top: 12px;">{{ a.cat }} · {{ a.read }}</div>
+                <div style="font-size: 17px; color: #022746; line-height: 1.35; margin-top: 8px;">{{ a.title }}</div>
+                <div style="font-size: 14px; color: #66768A; margin-top: 6px; line-height: 1.55;">{{ a.chapo }}</div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+
+        <!-- CTA prestataire -->
+        <div style="background: #FDF3F0; border-top: 1px solid #F4DFD8; padding: 44px; display: flex; justify-content: space-between; align-items: center; gap: 40px;">
+          <div>
+            <h2 style="font-family: 'Space Grotesk', sans-serif; font-size: 27px; font-weight: 700; color: #022746; margin: 0 0 10px;">Vous exercez un métier du livre ?</h2>
+            <p style="font-size: 16px; color: #4A5A6B; margin: 0; max-width: 60em; line-height: 1.6;">Créez votre vitrine, fixez vos tarifs, recevez des demandes qualifiées. Aucun abonnement : 8 % de commission sur les missions réalisées, 6 % au niveau Expert.</p>
+          </div>
+          <div style="display: flex; gap: 12px;">
+            <button sc-camel-on-click="{{ goInscription }}" style="background: #D85D3F; color: #FFF; border: 0; height: 50px; padding: 0 26px; border-radius: 9px; font-size: 16px; font-weight: 500;">Proposer mes services</button>
+            <button sc-camel-on-click="{{ goTarifs }}" style="background: #FFF; color: #022746; border: 1px solid #022746; height: 50px; padding: 0 22px; border-radius: 9px; font-size: 16px;">Voir les tarifs</button>
+          </div>
+        </div>
+
+        <!-- FAQ courte -->
+        <div style="padding: 44px; display: grid; grid-template-columns: 300px 1fr; gap: 40px;">
+          <div>
+            <h2 style="font-family: 'Space Grotesk', sans-serif; font-size: 27px; font-weight: 700; color: #022746; margin: 0 0 10px;">Questions fréquentes</h2>
+            <p style="font-size: 15px; color: #66768A; line-height: 1.6; margin: 0 0 14px;">Tout le détail dans le centre d'aide.</p>
+            <span sc-camel-on-click="{{ goAide }}" style="font-size: 15px; color: #D85D3F; cursor: pointer;">Centre d'aide →</span>
+          </div>
+          <div style="border: 1px solid #E8ECF1; border-radius: 14px; overflow: hidden;">
+            <sc-for list="{{ aideFaq }}" as="f" hint-placeholder-count="5">
+              <div style="border-bottom: 1px solid #F2F5F8;">
+                <div sc-camel-on-click="{{ f.onClick }}" style="padding: 16px 18px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; font-size: 15px; color: #14202C;">
+                  {{ f.q }}<span style="color: #8496A8; font-family: 'Space Grotesk', monospace;">{{ f.sign }}</span>
+                </div>
+                <sc-if value="{{ f.open }}" hint-placeholder-val="{{ false }}">
+                  <div style="padding: 0 18px 18px; font-size: 15px; color: #4A5A6B; line-height: 1.65;">{{ f.a }}</div>
+                </sc-if>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </div>

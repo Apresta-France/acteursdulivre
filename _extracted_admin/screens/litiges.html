@@ -1,0 +1,68 @@
+<div style="padding: 26px 32px 44px;">
+          <h1 style="font-family: 'Space Grotesk', sans-serif; font-size: 26px; font-weight: 700; color: #022746; margin: 0 0 4px;">Litiges et médiation</h1>
+          <p style="font-size: 14px; color: #66768A; margin: 0 0 22px;">4 dossiers ouverts · délai d'intervention garanti 72 h</p>
+
+          <div style="display: grid; grid-template-columns: 340px 1fr; gap: 24px; align-items: start;">
+            <div style="border: 1px solid #E8ECF1; border-radius: 12px; overflow: hidden;">
+              <sc-for list="{{ litiges }}" as="l" hint-placeholder-count="4">
+                <div sc-camel-on-click="{{ l.onClick }}" style="{{ l.row }}">
+                  <div style="display: flex; justify-content: space-between; align-items: baseline;">
+                    <span style="font-family: 'Space Grotesk', monospace; font-size: 12px; color: #8496A8;">{{ l.num }}</span>
+                    <span style="{{ l.urgenceStyle }}">{{ l.urgence }}</span>
+                  </div>
+                  <div style="font-size: 15px; color: #14202C; margin-top: 8px; line-height: 1.4;">{{ l.title }}</div>
+                  <div style="font-size: 13px; color: #8496A8; margin-top: 5px;">{{ l.parties }} · {{ l.montant }}</div>
+                </div>
+              </sc-for>
+            </div>
+
+            <div style="border: 1px solid #E8ECF1; border-radius: 12px; padding: 24px;">
+              <div style="display: flex; justify-content: space-between; align-items: flex-start; padding-bottom: 18px; border-bottom: 1px solid #EEF1F5;">
+                <div>
+                  <div style="font-family: 'Space Grotesk', monospace; font-size: 12px; color: #8496A8;">{{ litigeNum }}</div>
+                  <div style="font-size: 19px; color: #022746; margin-top: 6px;">{{ litigeTitle }}</div>
+                  <div style="font-size: 14px; color: #66768A; margin-top: 5px;">{{ litigeParties }} · commande {{ litigeCommande }}</div>
+                </div>
+                <div style="text-align: right;">
+                  <div style="font-size: 13px; color: #8496A8;">Montant en jeu</div>
+                  <div style="font-family: 'Space Grotesk', sans-serif; font-size: 24px; font-weight: 700; color: #022746;">{{ litigeMontant }}</div>
+                </div>
+              </div>
+
+              <div style="padding: 18px 0; border-bottom: 1px solid #EEF1F5;">
+                <div style="font-family: 'Space Grotesk', monospace; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: #8496A8; margin-bottom: 12px;">Chronologie</div>
+                <div style="display: flex; flex-direction: column; gap: 12px;">
+                  <sc-for list="{{ litigeTimeline }}" as="t" hint-placeholder-count="4">
+                    <div style="display: grid; grid-template-columns: 90px 1fr; gap: 14px; font-size: 14px;">
+                      <span style="font-family: 'Space Grotesk', monospace; color: #8496A8;">{{ t.when }}</span>
+                      <div>
+                        <div style="color: #14202C;">{{ t.label }}</div>
+                        <div style="font-size: 13px; color: #66768A; margin-top: 3px; line-height: 1.5;">{{ t.note }}</div>
+                      </div>
+                    </div>
+                  </sc-for>
+                </div>
+              </div>
+
+              <div style="padding: 18px 0;">
+                <div style="font-family: 'Space Grotesk', monospace; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: #8496A8; margin-bottom: 12px;">Décision proposée</div>
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                  <sc-for list="{{ decisions }}" as="d" hint-placeholder-count="4">
+                    <div sc-camel-on-click="{{ d.onClick }}" style="{{ d.row }}">
+                      <span style="{{ d.dot }}"></span>
+                      <div style="flex: 1;">
+                        <div style="font-size: 15px; color: #14202C;">{{ d.label }}</div>
+                        <div style="font-size: 13px; color: #8496A8; margin-top: 2px;">{{ d.note }}</div>
+                      </div>
+                    </div>
+                  </sc-for>
+                </div>
+                <textarea placeholder="Motivation de la décision — transmise aux deux parties" style="width: 100%; box-sizing: border-box; height: 90px; border: 1px solid #E1E7ED; border-radius: 9px; padding: 12px 13px; font-size: 14px; outline: none; resize: none; line-height: 1.55; margin-top: 14px;"></textarea>
+                <div style="display: flex; gap: 10px; margin-top: 14px;">
+                  <button style="background: #D85D3F; color: #FFF; border: 0; height: 46px; padding: 0 22px; border-radius: 9px; font-size: 15px; font-weight: 500;">Notifier la décision</button>
+                  <button style="background: #FFF; color: #022746; border: 1px solid #E1E7ED; height: 46px; padding: 0 18px; border-radius: 9px; font-size: 15px;">Demander une pièce</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>

@@ -1,0 +1,25 @@
+<div style="padding: 30px 44px 54px;">
+        <h1 style="font-family: 'Space Grotesk', sans-serif; font-size: 30px; font-weight: 700; color: #022746; margin: 0 0 20px;">Mes commandes</h1>
+        <div style="display: flex; gap: 8px; margin-bottom: 20px;">
+          <sc-for list="{{ commandeTabs }}" as="t" hint-placeholder-count="4">
+            <button sc-camel-on-click="{{ t.onClick }}" style="{{ t.style }}">{{ t.label }}</button>
+          </sc-for>
+        </div>
+        <div style="border: 1px solid #E8ECF1; border-radius: 12px; overflow: hidden;">
+          <div style="display: grid; grid-template-columns: 1fr 170px 130px 130px 130px; gap: 16px; padding: 14px 18px; background: #FBFCFE; border-bottom: 1px solid #EEF1F5; font-size: 13px; color: #8496A8;">
+            <span>Prestation</span><span>Prestataire</span><span>Montant</span><span>Échéance</span><span>Statut</span>
+          </div>
+          <sc-for list="{{ commandes }}" as="c" hint-placeholder-count="5">
+            <div sc-camel-on-click="{{ goSuivi }}" style="display: grid; grid-template-columns: 1fr 170px 130px 130px 130px; gap: 16px; padding: 16px 18px; border-bottom: 1px solid #F2F5F8; align-items: center; cursor: pointer;" style-hover="background: #FBFCFE;">
+              <div>
+                <div style="font-size: 15px; color: #14202C;">{{ c.title }}</div>
+                <div style="font-family: 'Space Grotesk', monospace; font-size: 12px; color: #8496A8; margin-top: 4px;">nº {{ c.num }}</div>
+              </div>
+              <div style="display: flex; align-items: center; gap: 8px; font-size: 14px; color: #4A5A6B;"><span style="{{ c.avatar }}">{{ c.initials }}</span>{{ c.by }}</div>
+              <div style="font-family: 'Space Grotesk', monospace; font-size: 14px; color: #022746;">{{ c.amount }}</div>
+              <div style="font-size: 14px; color: #66768A;">{{ c.due }}</div>
+              <div><span style="{{ c.statusStyle }}">{{ c.status }}</span></div>
+            </div>
+          </sc-for>
+        </div>
+      </div>

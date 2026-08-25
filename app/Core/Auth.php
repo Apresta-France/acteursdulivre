@@ -1,0 +1,87 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Adl\Core;
+
+use Adl\Models\User;
+
+final class Auth
+{
+    public static function user(): ?array
+    {
+        $id = $_SESSION['user_id'] ?? null;
+        if (!$id) {
+            return null;
+        }
+        if (isset($_SESSION['_user_cache']) && (int) $_SESSION['_user_cache']['id'] === (int) $id) {
+            return $_SESSION['_user_cache'];
+        }
+        $user = User::find((int) $id);
+        if (!$user) {
+            self::logout();
+            return null;
+        }
+        $_SESSION['_user_cache'] = $user;
+        return $user;
+    }
+
+    public static function check(): bool
+    {
+        return self::user() !== null;
+    }
+
+    public static function id(): ?int
+    {
+        $user = self::user();
+        return $user ? (int) $user['id'] : null;
+    }
+
+    public static function attempt(string $email, string $password): bool
+    {
+        $user = User::findByEmail($email);
+        if (!$user || !password_verify($password, $user['password'])) {
+            return false;
+        }
+        if (($user['status'] ?? 'active') !== 'active') {
+            return false;
+        }
+        self::login($user);
+        return true;
+    }
+
+    public static function login(array $user): void
+    {
+        session_regenerate_id(true);
+        $_SESSION['user_id'] = (int) $user['id'];
+        $_SESSION['_user_cache'] = $user;
+        User::touchLastLogin((int) $user['id']);
+    }
+
+    public static function logout(): void
+    {
+        unset($_SESSION['user_id'], $_SESSION['_user_cache']);
+        session_regenerate_id(true);
+    }
+
+    public static function requireUser(): array
+    {
+        $user = self::user();
+        if (!$user) {
+            $_SESSION['_intended'] = $_SERVER['REQUEST_URI'] ?? '/espace';
+            redirect('/connexion');
+        }
+        return $user;
+    }
+
+    public static function requireAdmin(): array
+    {
+        $user = self::requireUser();
+        if (($user['role'] ?? '') !== 'admin') {
+            http_response_code(403);
+            View::render('errors/403', ['title' => 'Accès refusé']);
+            exit;
+        }
+        return $user;
+    }
+}

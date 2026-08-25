@@ -1,0 +1,93 @@
+<div style="display: grid; grid-template-columns: 1fr 480px;">
+        <div style="padding: 44px;">
+          <h1 style="font-family: 'Space Grotesk', sans-serif; font-size: 32px; font-weight: 700; color: #022746; margin: 0 0 8px;">Créer un compte</h1>
+          <p style="font-size: 15px; color: #66768A; margin: 0 0 26px;">Un seul compte : vous pouvez commander et proposer vos services.</p>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 26px;">
+            <sc-for list="{{ roles }}" as="r" hint-placeholder-count="2">
+              <div sc-camel-on-click="{{ r.onClick }}" style="{{ r.style }}">
+                <div style="font-family: 'Space Grotesk', sans-serif; font-size: 17px; font-weight: 500; color: #022746;">{{ r.title }}</div>
+                <p style="font-size: 14px; color: #66768A; line-height: 1.55; margin: 8px 0 0;">{{ r.desc }}</p>
+              </div>
+            </sc-for>
+          </div>
+
+          <div style="display: flex; flex-direction: column; gap: 18px; max-width: 560px;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+              <div>
+                <label style="display: block; font-size: 14px; font-weight: 500; color: #022746; margin-bottom: 8px;">Prénom</label>
+                <input placeholder="Marion" style="width: 100%; box-sizing: border-box; border: 1px solid #E1E7ED; border-radius: 9px; padding: 13px 14px; font-size: 15px; outline: none;">
+              </div>
+              <div>
+                <label style="display: block; font-size: 14px; font-weight: 500; color: #022746; margin-bottom: 8px;">Nom</label>
+                <input placeholder="Vasseur" style="width: 100%; box-sizing: border-box; border: 1px solid #E1E7ED; border-radius: 9px; padding: 13px 14px; font-size: 15px; outline: none;">
+              </div>
+            </div>
+            <div>
+              <label style="display: block; font-size: 14px; font-weight: 500; color: #022746; margin-bottom: 8px;">E-mail professionnel</label>
+              <input placeholder="marion@exemple.fr" style="width: 100%; box-sizing: border-box; border: 1px solid #E1E7ED; border-radius: 9px; padding: 13px 14px; font-size: 15px; outline: none;">
+            </div>
+            <div>
+              <label style="display: block; font-size: 14px; font-weight: 500; color: #022746; margin-bottom: 8px;">Mot de passe</label>
+              <input placeholder="12 caractères minimum" style="width: 100%; box-sizing: border-box; border: 1px solid #E1E7ED; border-radius: 9px; padding: 13px 14px; font-size: 15px; outline: none;">
+            </div>
+            <div>
+              <label style="display: block; font-size: 14px; font-weight: 500; color: #022746; margin-bottom: 10px;">Vos métiers</label>
+              <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                <sc-for list="{{ metierChips }}" as="c" hint-placeholder-count="6">
+                  <button sc-camel-on-click="{{ c.onClick }}" style="{{ c.style }}">{{ c.label }}</button>
+                </sc-for>
+              </div>
+            </div>
+            <div style="border: 1.5px solid #D85D3F; background: #FDF3F0; border-radius: 12px; padding: 18px 20px;">
+              <div style="display: flex; gap: 12px; align-items: flex-start;">
+                <span style="width: 34px; height: 34px; min-width: 34px; border-radius: 9px; background: #FFF; color: #D85D3F; display: flex; align-items: center; justify-content: center;">
+                  <svg width="20" height="20" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"></circle><path d="M6 18L18 6"></path></svg>
+                </span>
+                <div>
+                  <div style="font-family: 'Space Grotesk', sans-serif; font-size: 16px; color: #022746; font-weight: 500;">Engagement sans IA générative</div>
+                  <p style="font-size: 14px; color: #4A5A6B; line-height: 1.6; margin: 6px 0 0;">Obligatoire pour créer un compte prestataire. Les outils de métier — correcteur orthographique, mémoire de traduction — restent autorisés.</p>
+                </div>
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 16px;">
+                <sc-for list="{{ iaEngagements }}" as="e" hint-placeholder-count="3">
+                  <label sc-camel-on-click="{{ e.onClick }}" style="display: flex; gap: 10px; align-items: flex-start; font-size: 14px; color: #14202C; line-height: 1.55; cursor: pointer;">
+                    <span style="{{ e.box }}">{{ e.check }}</span>{{ e.label }}
+                  </label>
+                </sc-for>
+              </div>
+            </div>
+            <label style="display: flex; gap: 10px; align-items: flex-start; font-size: 14px; color: #4A5A6B; line-height: 1.55;">
+              <span style="width: 15px; height: 15px; min-width: 15px; border: 1.5px solid #C3CEDA; border-radius: 3px; margin-top: 2px; display: block;"></span>
+              J'accepte la charte qualité et les conditions de la plateforme.
+            </label>
+            <div style="display: flex; gap: 14px; align-items: center;">
+              <button style="background: #D85D3F; color: #FFF; border: 0; height: 50px; padding: 0 26px; border-radius: 9px; font-size: 16px; font-weight: 500;">Créer mon compte</button>
+              <span style="font-size: 14px; color: #66768A;">Déjà inscrit ? <span style="color: #D85D3F; cursor: pointer;">Se connecter</span></span>
+            </div>
+          </div>
+        </div>
+
+        <div style="background: #022746; color: #E4EDF5; padding: 44px;">
+          <div style="font-family: 'Space Grotesk', sans-serif; font-size: 22px; color: #FFF; font-weight: 500; margin-bottom: 22px;">Ce que vous obtenez en trois étapes</div>
+          <div style="display: flex; flex-direction: column; gap: 22px;">
+            <sc-for list="{{ onboarding }}" as="o" hint-placeholder-count="3">
+              <div style="display: flex; gap: 14px;">
+                <span style="font-family: 'Space Grotesk', monospace; font-size: 13px; color: #E8845F; min-width: 26px;">{{ o.num }}</span>
+                <div>
+                  <div style="font-size: 16px; color: #FFF;">{{ o.title }}</div>
+                  <p style="font-size: 14px; color: #A9C0D5; line-height: 1.6; margin: 6px 0 0;">{{ o.body }}</p>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+          <div style="border-top: 1px solid rgba(255,255,255,.14); margin-top: 30px; padding-top: 24px; display: flex; flex-direction: column; gap: 16px;">
+            <sc-for list="{{ inscriptionProof }}" as="p" hint-placeholder-count="3">
+              <div style="display: flex; gap: 12px; align-items: baseline;">
+                <span style="font-family: 'Space Grotesk', sans-serif; font-size: 22px; font-weight: 700; color: #FFF;">{{ p.v }}</span>
+                <span style="font-size: 14px; color: #A9C0D5;">{{ p.k }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </div>

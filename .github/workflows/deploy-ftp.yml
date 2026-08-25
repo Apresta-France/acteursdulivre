@@ -1,0 +1,41 @@
+name: Déploiement FTP
+
+on:
+  push:
+    branches:
+      - main
+      - master
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Récupérer le dépôt
+        uses: actions/checkout@v4
+
+      - name: Envoyer les fichiers par FTP
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_HOST }}
+          username: ${{ secrets.FTP_USER }}
+          password: ${{ secrets.FTP_PASS }}
+          protocol: ftp
+          timeout: 60000
+          exclude: |
+            **/.git*
+            **/.git*/**
+            **/.github/**
+            **/.env
+            **/.env.*
+            **/_extracted/**
+            **/_extract_*.js
+            **/_analyze_template.js
+            **/_split_screens.js
+            **/acteursdulivre-site-complet.html
+            **/storage/logs/**
+            **/storage/cache/**
+            **/storage/mail/**
+            **/.idea/**
+            **/.vscode/**
+            **/node_modules/**
+            README.md

@@ -1,0 +1,60 @@
+<div style="padding: 30px 44px 54px;">
+        <div style="display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 22px;">
+          <div>
+            <h1 style="font-family: 'Space Grotesk', sans-serif; font-size: 30px; font-weight: 700; color: #022746; margin: 0;">Appels d'offres <span style="color: #8496A8; font-weight: 400; font-size: 19px;">· 148 missions ouvertes</span></h1>
+            <p style="font-size: 15px; color: #66768A; margin: 6px 0 0;">Les porteurs de projet publient, vous postulez avec votre devis. Aucune commission sur la candidature.</p>
+          </div>
+          <button sc-camel-on-click="{{ goPublier }}" style="background: #022746; color: #FFF; border: 0; height: 46px; padding: 0 22px; border-radius: 9px; font-size: 15px; font-weight: 500;">Publier une mission</button>
+        </div>
+
+        <div style="display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap;">
+          <sc-for list="{{ missionFilters }}" as="m" hint-placeholder-count="6">
+            <button sc-camel-on-click="{{ m.onClick }}" style="{{ m.style }}">{{ m.label }}</button>
+          </sc-for>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 340px; gap: 30px; align-items: start;">
+          <div style="border: 1px solid #E8ECF1; border-radius: 12px; overflow: hidden;">
+            <sc-for list="{{ missionsList }}" as="m" hint-placeholder-count="6">
+              <div sc-camel-on-click="{{ goMission }}" style="padding: 18px; border-bottom: 1px solid #F2F5F8; cursor: pointer; display: grid; grid-template-columns: 1fr 150px 130px; gap: 18px; align-items: center;" style-hover="background: #FBFCFE;">
+                <div>
+                  <div style="display: flex; align-items: center; gap: 10px;">
+                    <span style="font-size: 16px; color: #14202C;">{{ m.title }}</span>
+                    <span style="{{ m.tagStyle }}">{{ m.tag }}</span>
+                  </div>
+                  <div style="font-size: 13px; color: #66768A; margin-top: 5px;">{{ m.by }} · {{ m.cat }} · publié {{ m.when }}</div>
+                  <div style="display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap;">
+                    <sc-for list="{{ m.tags }}" as="t" hint-placeholder-count="3">
+                      <span style="background: #F4F6F9; color: #4A5A6B; font-size: 12px; padding: 4px 9px; border-radius: 5px;">{{ t }}</span>
+                    </sc-for>
+                  </div>
+                </div>
+                <div>
+                  <div style="font-family: 'Space Grotesk', monospace; font-size: 15px; color: #022746; font-weight: 500;">{{ m.budget }}</div>
+                  <div style="font-size: 13px; color: #8496A8; margin-top: 4px;">avant le {{ m.deadline }}</div>
+                </div>
+                <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 8px;">
+                  <span style="font-size: 13px; color: #66768A;">{{ m.applicants }} candidatures</span>
+                  <button style="background: #D85D3F; color: #FFF; border: 0; padding: 9px 16px; border-radius: 7px; font-size: 13px;">Postuler</button>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 16px;">
+            <div style="border: 1px solid #E8ECF1; border-radius: 12px; padding: 20px;">
+              <div style="font-family: 'Space Grotesk', sans-serif; font-size: 16px; font-weight: 500; color: #022746; margin-bottom: 14px;">Alerte mission</div>
+              <p style="font-size: 14px; color: #66768A; line-height: 1.55; margin: 0 0 12px;">Recevez un e-mail dès qu'une mission correspond à vos métiers et à votre budget minimum.</p>
+              <input placeholder="correction, jeunesse, 400 € min." style="width: 100%; box-sizing: border-box; border: 1px solid #E1E7ED; border-radius: 8px; padding: 11px 12px; font-size: 14px; outline: none;">
+              <button style="background: #022746; color: #FFF; border: 0; width: 100%; height: 40px; border-radius: 8px; font-size: 14px; margin-top: 10px;">Créer l'alerte</button>
+            </div>
+            <div style="background: #FDF3F0; border: 1px solid #F4DFD8; border-radius: 12px; padding: 20px;">
+              <div style="font-family: 'Space Grotesk', sans-serif; font-size: 16px; color: #022746; font-weight: 500; margin-bottom: 10px;">Bien candidater</div>
+              <div style="display: flex; flex-direction: column; gap: 10px; font-size: 14px; color: #4A5A6B; line-height: 1.5;">
+                <sc-for list="{{ candidaterTips }}" as="t" hint-placeholder-count="3">
+                  <div style="display: flex; gap: 10px;"><span style="color: #D85D3F;">→</span>{{ t }}</div>
+                </sc-for>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>

@@ -1,0 +1,23 @@
+<div style="padding: 26px 32px 44px;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 20px;">
+            <div>
+              <h1 style="font-family: 'Space Grotesk', sans-serif; font-size: 26px; font-weight: 700; color: #022746; margin: 0 0 4px;">Journal et pages du site</h1>
+              <p style="font-size: 14px; color: #66768A; margin: 0;">14 articles publiés · 3 brouillons · 6 pages statiques</p>
+            </div>
+            <button style="background: #022746; color: #FFF; border: 0; height: 40px; padding: 0 16px; border-radius: 8px; font-size: 14px;">Nouvel article</button>
+          </div>
+          <div style="border: 1px solid #E8ECF1; border-radius: 12px; overflow: hidden;">
+            <div style="display: grid; grid-template-columns: 1fr 130px 130px 110px 120px; gap: 14px; padding: 13px 18px; background: #FBFCFE; border-bottom: 1px solid #EEF1F5; font-size: 13px; color: #8496A8;">
+              <span>Titre</span><span>Rubrique</span><span>Auteur</span><span>Vues</span><span>Statut</span>
+            </div>
+            <sc-for list="{{ articles }}" as="a" hint-placeholder-count="6">
+              <div style="display: grid; grid-template-columns: 1fr 130px 130px 110px 120px; gap: 14px; padding: 14px 18px; border-bottom: 1px solid #F2F5F8; align-items: center; font-size: 14px; cursor: pointer;" style-hover="background: #FBFCFE;">
+                <div style="color: #14202C;">{{ a.title }}</div>
+                <span style="color: #4A5A6B;">{{ a.cat }}</span>
+                <span style="color: #4A5A6B;">{{ a.auteur }}</span>
+                <span style="font-family: 'Space Grotesk', monospace; color: #4A5A6B;">{{ a.vues }}</span>
+                <span><span style="{{ a.statutStyle }}">{{ a.statut }}</span></span>
+              </div>
+            </sc-for>
+          </div>
+        </div>

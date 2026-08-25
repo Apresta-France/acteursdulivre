@@ -1,0 +1,40 @@
+<div style="padding: 26px 32px 44px;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 20px;">
+            <div>
+              <h1 style="font-family: 'Space Grotesk', sans-serif; font-size: 26px; font-weight: 700; color: #022746; margin: 0 0 4px;">Utilisateurs</h1>
+              <p style="font-size: 14px; color: #66768A; margin: 0;">5 890 prestataires · 1 412 porteurs de projet · 38 comptes organisation</p>
+            </div>
+            <div style="display: flex; gap: 10px;">
+              <button style="background: #FFF; border: 1px solid #E1E7ED; color: #022746; height: 40px; padding: 0 16px; border-radius: 8px; font-size: 14px;">Exporter</button>
+              <button style="background: #022746; color: #FFF; border: 0; height: 40px; padding: 0 16px; border-radius: 8px; font-size: 14px;">Inviter un utilisateur</button>
+            </div>
+          </div>
+
+          <div style="display: flex; gap: 8px; margin-bottom: 18px; flex-wrap: wrap;">
+            <sc-for list="{{ userFilters }}" as="f" hint-placeholder-count="5">
+              <button sc-camel-on-click="{{ f.onClick }}" style="{{ f.style }}">{{ f.label }}</button>
+            </sc-for>
+          </div>
+
+          <div style="border: 1px solid #E8ECF1; border-radius: 12px; overflow: hidden;">
+            <div style="display: grid; grid-template-columns: 1fr 150px 110px 110px 110px 120px; gap: 14px; padding: 13px 18px; background: #FBFCFE; border-bottom: 1px solid #EEF1F5; font-size: 13px; color: #8496A8;">
+              <span>Utilisateur</span><span>Métier</span><span>Niveau</span><span>Missions</span><span>Note</span><span>Statut</span>
+            </div>
+            <sc-for list="{{ users }}" as="u" hint-placeholder-count="8">
+              <div style="display: grid; grid-template-columns: 1fr 150px 110px 110px 110px 120px; gap: 14px; padding: 14px 18px; border-bottom: 1px solid #F2F5F8; align-items: center; font-size: 14px; cursor: pointer;" style-hover="background: #FBFCFE;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                  <span style="{{ u.avatar }}">{{ u.initials }}</span>
+                  <div>
+                    <div style="font-size: 15px; color: #14202C;">{{ u.name }}</div>
+                    <div style="font-size: 12px; color: #8496A8; margin-top: 2px;">{{ u.email }}</div>
+                  </div>
+                </div>
+                <span style="color: #4A5A6B;">{{ u.metier }}</span>
+                <span style="color: #4A5A6B;">{{ u.niveau }}</span>
+                <span style="font-family: 'Space Grotesk', monospace; color: #4A5A6B;">{{ u.missions }}</span>
+                <span style="font-family: 'Space Grotesk', monospace; color: #D85D3F;">{{ u.note }}</span>
+                <span><span style="{{ u.statutStyle }}">{{ u.statut }}</span></span>
+              </div>
+            </sc-for>
+          </div>
+        </div>

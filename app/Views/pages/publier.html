@@ -1,0 +1,92 @@
+<div style="padding: 30px 44px 54px;">
+        <div style="display: flex; gap: 0; margin-bottom: 30px;">
+          <sc-for list="{{ steps }}" as="s" hint-placeholder-count="4">
+            <div sc-camel-on-click="{{ s.onClick }}" style="{{ s.style }}">
+              <div style="font-family: 'Space Grotesk', monospace; font-size: 12px; opacity: .7;">{{ s.num }}</div>
+              <div style="font-size: 14px; margin-top: 4px;">{{ s.label }}</div>
+            </div>
+          </sc-for>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 380px; gap: 40px; align-items: start;">
+          <div>
+            <h1 style="font-family: 'Space Grotesk', sans-serif; font-size: 30px; font-weight: 700; color: #022746; margin: 0 0 8px;">Décrivez votre mission</h1>
+            <p style="font-size: 15px; color: #66768A; margin: 0 0 28px;">Plus le brief est précis, plus les devis sont justes. Trois minutes suffisent.</p>
+
+            <div style="display: flex; flex-direction: column; gap: 22px; max-width: 720px;">
+              <div>
+                <label style="display: block; font-size: 14px; font-weight: 500; color: #022746; margin-bottom: 8px;">Métier recherché</label>
+                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                  <sc-for list="{{ metierChips }}" as="c" hint-placeholder-count="6">
+                    <button sc-camel-on-click="{{ c.onClick }}" style="{{ c.style }}">{{ c.label }}</button>
+                  </sc-for>
+                </div>
+              </div>
+              <div>
+                <label style="display: block; font-size: 14px; font-weight: 500; color: #022746; margin-bottom: 8px;">Titre de la mission</label>
+                <input value="{{ missionTitle }}" sc-camel-on-change="{{ onMissionTitle }}" placeholder="Recherche correcteur pour essai historique, 240 pages" style="width: 100%; box-sizing: border-box; border: 1px solid #E1E7ED; border-radius: 9px; padding: 13px 14px; font-size: 15px; outline: none;">
+              </div>
+              <div>
+                <label style="display: block; font-size: 14px; font-weight: 500; color: #022746; margin-bottom: 8px;">Brief</label>
+                <textarea value="{{ missionBrief }}" sc-camel-on-change="{{ onMissionBrief }}" placeholder="Genre, volume en signes, état du texte, attentes, contraintes de calendrier…" style="width: 100%; box-sizing: border-box; height: 130px; border: 1px solid #E1E7ED; border-radius: 9px; padding: 13px 14px; font-size: 15px; outline: none; resize: none; line-height: 1.6;"></textarea>
+              </div>
+              <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px;">
+                <div>
+                  <label style="display: block; font-size: 14px; font-weight: 500; color: #022746; margin-bottom: 8px;">Volume</label>
+                  <input placeholder="420 000 signes" style="width: 100%; box-sizing: border-box; border: 1px solid #E1E7ED; border-radius: 9px; padding: 13px 14px; font-size: 15px; outline: none;">
+                </div>
+                <div>
+                  <label style="display: block; font-size: 14px; font-weight: 500; color: #022746; margin-bottom: 8px;">Budget</label>
+                  <input placeholder="600 – 900 €" style="width: 100%; box-sizing: border-box; border: 1px solid #E1E7ED; border-radius: 9px; padding: 13px 14px; font-size: 15px; outline: none;">
+                </div>
+                <div>
+                  <label style="display: block; font-size: 14px; font-weight: 500; color: #022746; margin-bottom: 8px;">Échéance</label>
+                  <input placeholder="12 septembre" style="width: 100%; box-sizing: border-box; border: 1px solid #E1E7ED; border-radius: 9px; padding: 13px 14px; font-size: 15px; outline: none;">
+                </div>
+              </div>
+              <div>
+                <label style="display: block; font-size: 14px; font-weight: 500; color: #022746; margin-bottom: 8px;">Pièces jointes</label>
+                <div style="border: 1.5px dashed #C9D4E0; border-radius: 10px; padding: 26px; text-align: center; font-size: 14px; color: #66768A; background: #FBFCFE;">Glissez un extrait, un sommaire ou un cahier des charges<br><span style="font-size: 13px; color: #8496A8;">PDF, DOCX, ODT — 20 Mo max</span></div>
+              </div>
+              <div style="display: flex; gap: 12px; padding-top: 6px;">
+                <button style="background: #022746; color: #FFF; border: 0; height: 48px; padding: 0 26px; border-radius: 9px; font-size: 15px; font-weight: 500;">Continuer</button>
+                <button style="background: #FFF; color: #66768A; border: 1px solid #E1E7ED; height: 48px; padding: 0 22px; border-radius: 9px; font-size: 15px;">Enregistrer le brouillon</button>
+              </div>
+            </div>
+          </div>
+
+          <div style="display: flex; flex-direction: column; gap: 16px;">
+            <div style="border: 1px solid #E8ECF1; border-radius: 14px; padding: 22px;">
+              <div style="font-family: 'Space Grotesk', monospace; font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: #8496A8; margin-bottom: 12px;">Aperçu de l'annonce</div>
+              <div style="font-size: 16px; color: #14202C; line-height: 1.4;">{{ previewTitle }}</div>
+              <div style="font-size: 13px; color: #66768A; margin-top: 6px;">Éditions du Fleuve Noirci · {{ previewMetier }}</div>
+              <div style="display: flex; justify-content: space-between; font-family: 'Space Grotesk', monospace; font-size: 13px; margin-top: 14px; border-top: 1px solid #EEF1F5; padding-top: 12px;">
+                <span style="color: #66768A;">0 candidature</span><span style="color: #022746; font-weight: 500;">600 – 900 €</span>
+              </div>
+            </div>
+            <div style="border: 1px solid #E8ECF1; border-radius: 14px; padding: 22px;">
+              <div style="font-family: 'Space Grotesk', sans-serif; font-size: 16px; color: #022746; font-weight: 500; margin-bottom: 12px;">Prestataires qui correspondent</div>
+              <div style="display: flex; flex-direction: column; gap: 14px;">
+                <sc-for list="{{ suggestions }}" as="p" hint-placeholder-count="3">
+                  <div sc-camel-on-click="{{ goProfil }}" style="display: flex; gap: 12px; align-items: center; cursor: pointer;">
+                    <span style="{{ p.avatar }}">{{ p.initials }}</span>
+                    <div style="flex: 1;">
+                      <div style="font-size: 14px; color: #14202C;">{{ p.name }}</div>
+                      <div style="font-size: 13px; color: #8496A8;">{{ p.role }}</div>
+                    </div>
+                    <span style="font-family: 'Space Grotesk', monospace; font-size: 13px; color: #D85D3F;">★ {{ p.rating }}</span>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+            <div style="background: #FDF3F0; border: 1px solid #F4DFD8; border-radius: 14px; padding: 22px;">
+              <div style="font-family: 'Space Grotesk', sans-serif; font-size: 16px; color: #022746; font-weight: 500; margin-bottom: 10px;">Ce qui se passe ensuite</div>
+              <div style="display: flex; flex-direction: column; gap: 10px; font-size: 14px; color: #4A5A6B; line-height: 1.5;">
+                <sc-for list="{{ publierSuite }}" as="p" hint-placeholder-count="3">
+                  <div style="display: flex; gap: 10px;"><span style="color: #D85D3F;">→</span>{{ p }}</div>
+                </sc-for>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>

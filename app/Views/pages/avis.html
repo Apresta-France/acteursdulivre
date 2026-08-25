@@ -1,0 +1,36 @@
+<div style="padding: 40px 44px 54px; display: grid; grid-template-columns: 1fr 360px; gap: 44px; align-items: start;">
+        <div style="max-width: 700px;">
+          <h1 style="font-family: 'Space Grotesk', sans-serif; font-size: 30px; font-weight: 700; color: #022746; margin: 0 0 8px;">Évaluer la mission</h1>
+          <p style="font-size: 15px; color: #66768A; margin: 0 0 26px;">Votre avis est publié sur la vitrine de Marion. Il ne peut être laissé qu'après une mission payée.</p>
+          <div style="display: flex; flex-direction: column; gap: 24px;">
+            <sc-for list="{{ avisCriteres }}" as="c" hint-placeholder-count="4">
+              <div>
+                <div style="font-size: 15px; color: #022746; font-weight: 500; margin-bottom: 8px;">{{ c.label }}</div>
+                <div style="display: flex; gap: 8px; align-items: center;">
+                  <sc-for list="{{ c.stars }}" as="s" hint-placeholder-count="5">
+                    <span sc-camel-on-click="{{ s.onClick }}" style="{{ s.style }}">★</span>
+                  </sc-for>
+                  <span style="font-size: 14px; color: #8496A8; margin-left: 8px;">{{ c.note }}</span>
+                </div>
+              </div>
+            </sc-for>
+            <div>
+              <div style="font-size: 15px; color: #022746; font-weight: 500; margin-bottom: 8px;">Votre commentaire</div>
+              <textarea placeholder="Ce qui s'est bien passé, ce qui pourrait être amélioré. Soyez précis et factuel." style="width: 100%; box-sizing: border-box; height: 150px; border: 1px solid #E1E7ED; border-radius: 9px; padding: 13px 14px; font-size: 15px; outline: none; resize: none; line-height: 1.6;"></textarea>
+            </div>
+            <label style="display: flex; gap: 10px; align-items: center; font-size: 14px; color: #4A5A6B;">
+              <span style="width: 15px; height: 15px; min-width: 15px; border: 1.5px solid #C3CEDA; border-radius: 3px; display: block;"></span>
+              Autoriser la prestataire à citer ce projet dans son portfolio
+            </label>
+            <button style="background: #D85D3F; color: #FFF; border: 0; height: 50px; padding: 0 26px; border-radius: 9px; font-size: 16px; font-weight: 500; align-self: flex-start;">Publier mon avis</button>
+          </div>
+        </div>
+        <div style="border: 1px solid #E8ECF1; border-radius: 14px; padding: 22px;">
+          <div style="font-family: 'Space Grotesk', monospace; font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: #8496A8; margin-bottom: 14px;">La mission évaluée</div>
+          <div style="display: flex; gap: 12px; align-items: center;">
+            <div style="width: 46px; height: 46px; border-radius: 50%; background: #022746; color: #FFF; display: flex; align-items: center; justify-content: center; font-family: 'Space Grotesk', monospace; font-size: 14px;">MV</div>
+            <div><div style="font-size: 15px; color: #14202C;">Marion Vasseur</div><div style="font-size: 13px; color: #66768A;">Correction complète · 780 €</div></div>
+          </div>
+          <div style="font-size: 14px; color: #66768A; line-height: 1.6; margin-top: 16px;">Livrée le 22 septembre, validée le 24 septembre. Commande nº 2481-03.</div>
+        </div>
+      </div>

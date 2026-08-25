@@ -1,0 +1,22 @@
+<div style="padding: 26px 32px 44px;">
+          <h1 style="font-family: 'Space Grotesk', sans-serif; font-size: 26px; font-weight: 700; color: #022746; margin: 0 0 4px;">Catalogue des prestations</h1>
+          <p style="font-size: 14px; color: #66768A; margin: 0 0 20px;">2 314 prestations en ligne · 41 en attente de première publication</p>
+          <div style="border: 1px solid #E8ECF1; border-radius: 12px; overflow: hidden;">
+            <div style="display: grid; grid-template-columns: 1fr 160px 110px 100px 110px 130px; gap: 14px; padding: 13px 18px; background: #FBFCFE; border-bottom: 1px solid #EEF1F5; font-size: 13px; color: #8496A8;">
+              <span>Prestation</span><span>Prestataire</span><span>Prix</span><span>Vues</span><span>Commandes</span><span>Statut</span>
+            </div>
+            <sc-for list="{{ catalogue }}" as="c" hint-placeholder-count="7">
+              <div style="display: grid; grid-template-columns: 1fr 160px 110px 100px 110px 130px; gap: 14px; padding: 14px 18px; border-bottom: 1px solid #F2F5F8; align-items: center; font-size: 14px;">
+                <div>
+                  <div style="font-size: 15px; color: #14202C;">{{ c.title }}</div>
+                  <div style="font-size: 12px; color: #8496A8; margin-top: 3px;">{{ c.metier }}</div>
+                </div>
+                <span style="color: #4A5A6B;">{{ c.by }}</span>
+                <span style="font-family: 'Space Grotesk', monospace; color: #022746;">{{ c.prix }}</span>
+                <span style="font-family: 'Space Grotesk', monospace; color: #4A5A6B;">{{ c.vues }}</span>
+                <span style="font-family: 'Space Grotesk', monospace; color: #4A5A6B;">{{ c.cmd }}</span>
+                <span><span style="{{ c.statutStyle }}">{{ c.statut }}</span></span>
+              </div>
+            </sc-for>
+          </div>
+        </div>

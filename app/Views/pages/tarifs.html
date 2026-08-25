@@ -1,0 +1,40 @@
+<div style="padding: 44px;">
+        <h1 style="font-family: 'Space Grotesk', sans-serif; font-size: 36px; font-weight: 700; color: #022746; margin: 0 0 12px;">Tarifs et commission</h1>
+        <p style="font-size: 17px; color: #4A5A6B; margin: 0 0 34px; max-width: 60em; line-height: 1.6;">Publier une mission, créer une vitrine et échanger sont gratuits. La plateforme se rémunère uniquement sur les missions effectivement réalisées.</p>
+
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 40px;">
+          <sc-for list="{{ niveaux }}" as="n" hint-placeholder-count="3">
+            <div style="{{ n.card }}">
+              <div style="font-family: 'Space Grotesk', monospace; font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: {{ n.kickerColor }};">{{ n.kicker }}</div>
+              <div style="font-family: 'Space Grotesk', sans-serif; font-size: 24px; font-weight: 500; margin: 12px 0 6px;">{{ n.name }}</div>
+              <div style="font-family: 'Space Grotesk', sans-serif; font-size: 44px; font-weight: 700; line-height: 1;">{{ n.pct }}</div>
+              <div style="font-size: 14px; opacity: .8; margin-top: 6px;">de commission</div>
+              <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 20px; font-size: 14px; line-height: 1.5;">
+                <sc-for list="{{ n.items }}" as="i" hint-placeholder-count="4">
+                  <div style="display: flex; gap: 9px;"><span style="opacity: .7;">·</span>{{ i }}</div>
+                </sc-for>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px;">
+          <div style="border: 1px solid #E8ECF1; border-radius: 14px; overflow: hidden;">
+            <div style="padding: 16px 18px; background: #FBFCFE; border-bottom: 1px solid #EEF1F5; font-family: 'Space Grotesk', sans-serif; font-size: 16px; font-weight: 500; color: #022746;">Exemple de calcul</div>
+            <sc-for list="{{ exemple }}" as="e" hint-placeholder-count="4">
+              <div style="display: flex; justify-content: space-between; padding: 14px 18px; border-bottom: 1px solid #F2F5F8; font-size: 15px;">
+                <span style="color: #4A5A6B;">{{ e.k }}</span><span style="{{ e.style }}">{{ e.v }}</span>
+              </div>
+            </sc-for>
+          </div>
+          <div>
+            <h2 style="font-family: 'Space Grotesk', sans-serif; font-size: 20px; color: #022746; margin: 0 0 14px;">Ce qui reste gratuit</h2>
+            <div style="display: flex; flex-direction: column; gap: 12px;">
+              <sc-for list="{{ gratuit }}" as="g" hint-placeholder-count="5">
+                <div style="display: flex; gap: 10px; font-size: 15px; color: #4A5A6B; line-height: 1.55;"><span style="color: #D85D3F;">✓</span>{{ g }}</div>
+              </sc-for>
+            </div>
+            <div style="background: #F7F9FC; border-radius: 12px; padding: 18px; margin-top: 20px; font-size: 14px; color: #4A5A6B; line-height: 1.65;">Les prestataires facturent leur client final : la plateforme émet un relevé de commission mensuel, et une facture par mission pour les acheteurs institutionnels.</div>
+          </div>
+        </div>
+      </div>

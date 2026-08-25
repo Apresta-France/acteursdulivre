@@ -1,0 +1,46 @@
+<div>
+        <div style="padding: 48px 44px 34px; max-width: 860px;">
+          <h1 style="font-family: 'Space Grotesk', sans-serif; font-size: 40px; font-weight: 700; color: #022746; margin: 0 0 14px; line-height: 1.1;">Trois façons de faire avancer un livre</h1>
+          <p style="font-size: 18px; color: #4A5A6B; line-height: 1.65; margin: 0;">La plateforme ne choisit pas à votre place : selon votre projet, vous cherchez un profil, vous achetez une prestation cadrée, ou vous laissez les prestataires vous proposer un devis.</p>
+        </div>
+
+        <div style="padding: 0 44px 40px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px;">
+          <sc-for list="{{ ways }}" as="w" hint-placeholder-count="3">
+            <div style="border: 1px solid #E8ECF1; border-radius: 14px; padding: 26px;">
+              <div style="font-family: 'Space Grotesk', monospace; font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: #D85D3F;">{{ w.kicker }}</div>
+              <div style="font-family: 'Space Grotesk', sans-serif; font-size: 21px; color: #022746; font-weight: 500; margin: 12px 0 10px;">{{ w.title }}</div>
+              <p style="font-size: 15px; line-height: 1.65; color: #4A5A6B; margin: 0 0 14px;">{{ w.body }}</p>
+              <div style="display: flex; flex-direction: column; gap: 8px; font-size: 14px; color: #66768A;">
+                <sc-for list="{{ w.points }}" as="p" hint-placeholder-count="3">
+                  <div style="display: flex; gap: 8px;"><span style="color: #D85D3F;">·</span>{{ p }}</div>
+                </sc-for>
+              </div>
+              <div sc-camel-on-click="{{ w.onClick }}" style="font-size: 15px; color: #D85D3F; cursor: pointer; margin-top: 18px;">{{ w.cta }} →</div>
+            </div>
+          </sc-for>
+        </div>
+
+        <div style="background: #FBFCFE; border-top: 1px solid #E8ECF1; padding: 44px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 30px;">
+          <sc-for list="{{ steps4 }}" as="s" hint-placeholder-count="4">
+            <div>
+              <div style="font-family: 'Space Grotesk', monospace; font-size: 13px; color: #D85D3F;">{{ s.num }}</div>
+              <div style="font-family: 'Space Grotesk', sans-serif; font-size: 18px; color: #022746; margin: 8px 0 6px; font-weight: 500;">{{ s.title }}</div>
+              <p style="font-size: 14px; color: #56677A; margin: 0; line-height: 1.6;">{{ s.body }}</p>
+            </div>
+          </sc-for>
+        </div>
+
+        <div style="padding: 44px; display: grid; grid-template-columns: 1fr 1fr; gap: 44px; align-items: center;">
+          <div>
+            <h2 style="font-family: 'Space Grotesk', sans-serif; font-size: 26px; color: #022746; margin: 0 0 14px;">Côté prestataire</h2>
+            <p style="font-size: 15px; color: #4A5A6B; line-height: 1.7; margin: 0 0 18px;">Vous créez votre vitrine, vous fixez vos prix, vous acceptez ou refusez chaque commande. Aucun abonnement : la plateforme prélève 8 % sur les missions réalisées, 6 % au niveau Experte.</p>
+            <div style="display: flex; gap: 12px;">
+              <button sc-camel-on-click="{{ goCreer }}" style="background: #022746; color: #FFF; border: 0; height: 46px; padding: 0 22px; border-radius: 9px; font-size: 15px;">Créer une prestation</button>
+              <button sc-camel-on-click="{{ goTarifs }}" style="background: #FFF; color: #022746; border: 1px solid #E1E7ED; height: 46px; padding: 0 20px; border-radius: 9px; font-size: 15px;">Voir les tarifs</button>
+            </div>
+          </div>
+          <div style="height: 300px; position: relative; background: #F4F6F9; border-radius: 14px; overflow: hidden;">
+            <image-slot id="comment-visuel" shape="rect" fit="cover" src="{{ commentImg }}" placeholder="photo — atelier"></image-slot>
+          </div>
+        </div>
+      </div>

@@ -1,0 +1,24 @@
+<div style="padding: 30px 44px 54px;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 22px;">
+          <div>
+            <h1 style="font-family: 'Space Grotesk', sans-serif; font-size: 30px; font-weight: 700; color: #022746; margin: 0;">Mes prestations</h1>
+            <p style="font-size: 15px; color: #66768A; margin: 6px 0 0;">4 en ligne, 1 brouillon. Vos prestations sont vues 1 840 fois par mois.</p>
+          </div>
+          <button sc-camel-on-click="{{ goCreer }}" style="background: #D85D3F; color: #FFF; border: 0; height: 46px; padding: 0 22px; border-radius: 9px; font-size: 15px; font-weight: 500;">Créer une prestation</button>
+        </div>
+        <div style="border: 1px solid #E8ECF1; border-radius: 12px; overflow: hidden;">
+          <div style="display: grid; grid-template-columns: 1fr 110px 110px 110px 110px 120px; gap: 14px; padding: 14px 18px; background: #FBFCFE; border-bottom: 1px solid #EEF1F5; font-size: 13px; color: #8496A8;">
+            <span>Prestation</span><span>Vues</span><span>Contacts</span><span>Commandes</span><span>Prix</span><span>Statut</span>
+          </div>
+          <sc-for list="{{ mesPrestations }}" as="p" hint-placeholder-count="5">
+            <div sc-camel-on-click="{{ goFiche }}" style="display: grid; grid-template-columns: 1fr 110px 110px 110px 110px 120px; gap: 14px; padding: 16px 18px; border-bottom: 1px solid #F2F5F8; align-items: center; cursor: pointer; font-size: 14px;" style-hover="background: #FBFCFE;">
+              <div style="font-size: 15px; color: #14202C;">{{ p.title }}</div>
+              <div style="font-family: 'Space Grotesk', monospace; color: #4A5A6B;">{{ p.vues }}</div>
+              <div style="font-family: 'Space Grotesk', monospace; color: #4A5A6B;">{{ p.contacts }}</div>
+              <div style="font-family: 'Space Grotesk', monospace; color: #4A5A6B;">{{ p.commandes }}</div>
+              <div style="font-family: 'Space Grotesk', monospace; color: #022746;">{{ p.prix }}</div>
+              <div><span style="{{ p.statusStyle }}">{{ p.status }}</span></div>
+            </div>
+          </sc-for>
+        </div>
+      </div>

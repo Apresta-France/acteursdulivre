@@ -1,0 +1,19 @@
+<div style="padding: 30px 44px 54px;">
+        <h1 style="font-family: 'Space Grotesk', sans-serif; font-size: 30px; font-weight: 700; color: #022746; margin: 0 0 6px;">Mes favoris</h1>
+        <p style="font-size: 15px; color: #66768A; margin: 0 0 22px;">6 prestations et 3 prestataires enregistrés.</p>
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px;">
+          <sc-for list="{{ favoris }}" as="s" hint-placeholder-count="6">
+            <div sc-camel-on-click="{{ goFiche }}" style="border: 1px solid #E8ECF1; border-radius: 12px; overflow: hidden; cursor: pointer;" style-hover="border-color: #022746;">
+              <div style="height: 140px; position: relative; background: #F4F6F9;">
+                <image-slot id="{{ s.favSlotId }}" shape="rect" fit="cover" src="{{ s.img }}" placeholder="photo"></image-slot>
+              </div>
+              <div style="padding: 15px;">
+                <div style="font-size: 15px; color: #14202C; line-height: 1.4; min-height: 42px;">{{ s.title }}</div>
+                <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #EEF1F5; margin-top: 10px; padding-top: 10px; font-family: 'Space Grotesk', monospace; font-size: 13px;">
+                  <span style="color: #D85D3F;">★ {{ s.rating }}</span><span style="color: #022746; font-weight: 700; font-size: 15px;">{{ s.price }}</span>
+                </div>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </div>

@@ -1,0 +1,95 @@
+<div style="padding: 30px 44px 54px;">
+        <div style="font-size: 13px; color: #8496A8; margin-bottom: 16px;">Appels d'offres · Correction · Essai historique</div>
+        <div style="display: grid; grid-template-columns: 1fr 380px; gap: 40px; align-items: start;">
+          <div>
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+              <span style="background: #FDF3F0; color: #D85D3F; font-family: 'Space Grotesk', monospace; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; padding: 5px 9px; border-radius: 5px;">Mission ouverte</span>
+              <span style="font-size: 14px; color: #66768A;">publiée il y a 2 jours · 7 candidatures</span>
+            </div>
+            <h1 style="font-family: 'Space Grotesk', sans-serif; font-size: 31px; font-weight: 700; color: #022746; margin: 0 0 18px; line-height: 1.2;">Recherche correcteur pour essai historique, 240 pages</h1>
+
+            <div style="display: flex; gap: 34px; padding: 18px 0; border-top: 1px solid #EEF1F5; border-bottom: 1px solid #EEF1F5;">
+              <sc-for list="{{ missionFacts }}" as="f" hint-placeholder-count="4">
+                <div>
+                  <div style="font-size: 13px; color: #8496A8;">{{ f.k }}</div>
+                  <div style="font-family: 'Space Grotesk', sans-serif; font-size: 17px; color: #022746; font-weight: 500; margin-top: 4px;">{{ f.v }}</div>
+                </div>
+              </sc-for>
+            </div>
+
+            <h2 style="font-family: 'Space Grotesk', sans-serif; font-size: 20px; color: #022746; margin: 26px 0 10px;">Le besoin</h2>
+            <p style="font-size: 15px; line-height: 1.75; color: #4A5A6B; margin: 0 0 14px; max-width: 62em;">Essai historique sur les imprimeurs lyonnais du XVIᵉ siècle, 240 pages, environ 420 000 signes. Le manuscrit a été relu par l'auteur et par notre comité de lecture ; il reste à faire une correction orthotypographique complète, en français, avec un appareil de notes conséquent (environ 600 notes de bas de page).</p>
+            <p style="font-size: 15px; line-height: 1.75; color: #4A5A6B; margin: 0 0 18px; max-width: 62em;">Attention particulière attendue sur l'harmonisation des noms propres anciens, les citations en latin et la bibliographie (norme maison fournie). Livraison souhaitée avant le 12 septembre pour un envoi en maquette mi-septembre.</p>
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+              <sc-for list="{{ missionAttendus }}" as="a" hint-placeholder-count="4">
+                <div style="display: flex; gap: 10px; font-size: 15px; color: #4A5A6B;"><span style="color: #D85D3F;">✓</span>{{ a }}</div>
+              </sc-for>
+            </div>
+
+            <h2 style="font-family: 'Space Grotesk', sans-serif; font-size: 20px; color: #022746; margin: 28px 0 12px;">Pièces jointes</h2>
+            <div style="display: flex; gap: 12px;">
+              <sc-for list="{{ missionFiles }}" as="f" hint-placeholder-count="2">
+                <div style="border: 1px solid #E8ECF1; border-radius: 10px; padding: 14px 16px; font-size: 14px; color: #14202C; display: flex; gap: 10px; align-items: center;">
+                  <span style="font-family: 'Space Grotesk', monospace; font-size: 11px; color: #FFF; background: #022746; padding: 4px 7px; border-radius: 4px;">{{ f.ext }}</span>{{ f.name }}
+                  <span style="color: #8496A8; font-size: 13px;">{{ f.size }}</span>
+                </div>
+              </sc-for>
+            </div>
+
+            <h2 style="font-family: 'Space Grotesk', sans-serif; font-size: 20px; color: #022746; margin: 30px 0 12px;">Votre candidature</h2>
+            <div style="border: 1px solid #E8ECF1; border-radius: 14px; padding: 22px; max-width: 720px;">
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+                <div>
+                  <label style="display: block; font-size: 14px; font-weight: 500; color: #022746; margin-bottom: 8px;">Votre prix</label>
+                  <input placeholder="780 €" style="width: 100%; box-sizing: border-box; border: 1px solid #E1E7ED; border-radius: 9px; padding: 13px 14px; font-size: 15px; outline: none;">
+                </div>
+                <div>
+                  <label style="display: block; font-size: 14px; font-weight: 500; color: #022746; margin-bottom: 8px;">Délai proposé</label>
+                  <input placeholder="3 semaines" style="width: 100%; box-sizing: border-box; border: 1px solid #E1E7ED; border-radius: 9px; padding: 13px 14px; font-size: 15px; outline: none;">
+                </div>
+              </div>
+              <label style="display: block; font-size: 14px; font-weight: 500; color: #022746; margin: 18px 0 8px;">Message</label>
+              <textarea placeholder="Dites en trois lignes pourquoi ce texte est pour vous : références comparables, méthode, disponibilité." style="width: 100%; box-sizing: border-box; height: 120px; border: 1px solid #E1E7ED; border-radius: 9px; padding: 13px 14px; font-size: 15px; outline: none; resize: none; line-height: 1.6;"></textarea>
+              <div style="display: flex; gap: 12px; align-items: center; margin-top: 16px;">
+                <button style="background: #D85D3F; color: #FFF; border: 0; height: 48px; padding: 0 24px; border-radius: 9px; font-size: 15px; font-weight: 500;">Envoyer ma candidature</button>
+                <span style="font-size: 13px; color: #8496A8;">Gratuit · 4 candidatures restantes ce mois</span>
+              </div>
+            </div>
+          </div>
+
+          <div style="display: flex; flex-direction: column; gap: 16px;">
+            <div style="border: 1px solid #E8ECF1; border-radius: 14px; padding: 22px;">
+              <div style="font-family: 'Space Grotesk', monospace; font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: #8496A8; margin-bottom: 14px;">Le porteur de projet</div>
+              <div style="display: flex; align-items: center; gap: 12px;">
+                <div style="width: 46px; height: 46px; border-radius: 50%; background: #022746; color: #FFF; display: flex; align-items: center; justify-content: center; font-family: 'Space Grotesk', monospace; font-size: 14px;">FN</div>
+                <div>
+                  <div style="font-size: 15px; color: #14202C;">Éditions du Fleuve Noirci</div>
+                  <div style="font-size: 13px; color: #66768A;">Maison d'édition · Lyon</div>
+                </div>
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 16px;">
+                <sc-for list="{{ porteurMeta }}" as="m" hint-placeholder-count="4">
+                  <div style="display: flex; justify-content: space-between; font-size: 14px;"><span style="color: #8496A8;">{{ m.k }}</span><span style="color: #14202C;">{{ m.v }}</span></div>
+                </sc-for>
+              </div>
+              <button sc-camel-on-click="{{ goMessagerie }}" style="background: #FFF; border: 1px solid #E1E7ED; color: #022746; width: 100%; height: 40px; border-radius: 8px; font-size: 14px; margin-top: 16px;">Poser une question</button>
+            </div>
+            <div style="border: 1px solid #E8ECF1; border-radius: 14px; padding: 22px;">
+              <div style="font-family: 'Space Grotesk', sans-serif; font-size: 16px; font-weight: 500; color: #022746; margin-bottom: 12px;">Les candidatures reçues</div>
+              <div style="display: flex; flex-direction: column; gap: 12px;">
+                <sc-for list="{{ candidatures }}" as="c" hint-placeholder-count="3">
+                  <div style="display: flex; align-items: center; gap: 10px;">
+                    <span style="{{ c.avatar }}">{{ c.initials }}</span>
+                    <div style="flex: 1;">
+                      <div style="font-size: 14px; color: #14202C;">{{ c.name }}</div>
+                      <div style="font-size: 13px; color: #8496A8;">{{ c.delay }}</div>
+                    </div>
+                    <span style="font-family: 'Space Grotesk', monospace; font-size: 14px; color: #022746;">{{ c.price }}</span>
+                  </div>
+                </sc-for>
+              </div>
+              <div style="font-size: 13px; color: #8496A8; margin-top: 14px; line-height: 1.5;">Fourchette des devis reçus : 640 € à 980 €.</div>
+            </div>
+          </div>
+        </div>
+      </div>

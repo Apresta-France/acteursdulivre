@@ -1,0 +1,55 @@
+<div style="padding: 26px 32px 44px; display: grid; grid-template-columns: 220px 1fr; gap: 34px; align-items: start;">
+          <div style="display: flex; flex-direction: column; gap: 6px;">
+            <sc-for list="{{ reglagesNav }}" as="r" hint-placeholder-count="5">
+              <div sc-camel-on-click="{{ r.onClick }}" style="{{ r.style }}">{{ r.label }}</div>
+            </sc-for>
+          </div>
+          <div style="max-width: 760px;">
+            <h1 style="font-family: 'Space Grotesk', sans-serif; font-size: 25px; font-weight: 700; color: #022746; margin: 0 0 22px;">{{ reglagesTitle }}</h1>
+
+            <div style="display: flex; flex-direction: column; gap: 22px;">
+              <div style="border: 1px solid #E8ECF1; border-radius: 12px; padding: 20px;">
+                <div style="font-family: 'Space Grotesk', sans-serif; font-size: 16px; color: #022746; margin-bottom: 16px;">Commission par niveau</div>
+                <div style="display: flex; flex-direction: column; gap: 12px;">
+                  <sc-for list="{{ commissionRows }}" as="c" hint-placeholder-count="3">
+                    <div style="display: grid; grid-template-columns: 1fr 110px 150px; gap: 14px; align-items: center;">
+                      <span style="font-size: 15px; color: #14202C;">{{ c.niveau }}</span>
+                      <input value="{{ c.pct }}" sc-camel-on-change="{{ c.onPct }}" style="border: 1px solid #E1E7ED; border-radius: 8px; padding: 11px 12px; font-size: 14px; outline: none; font-family: 'Space Grotesk', monospace;">
+                      <span style="font-size: 13px; color: #8496A8;">{{ c.seuil }}</span>
+                    </div>
+                  </sc-for>
+                </div>
+              </div>
+
+              <div style="border: 1.5px solid #F4DFD8; background: #FDF3F0; border-radius: 12px; padding: 20px;">
+                <div style="font-family: 'Space Grotesk', sans-serif; font-size: 16px; color: #022746; margin-bottom: 6px;">Politique IA générative</div>
+                <p style="font-size: 14px; color: #4A5A6B; line-height: 1.6; margin: 0 0 16px;">Interdiction stricte des livrables générés. Ces réglages pilotent l'engagement signé à l'inscription et les sanctions automatiques.</p>
+                <div style="display: flex; flex-direction: column; gap: 11px;">
+                  <sc-for list="{{ iaReglages }}" as="i" hint-placeholder-count="4">
+                    <div sc-camel-on-click="{{ i.onClick }}" style="display: flex; justify-content: space-between; align-items: center; background: #FFF; border: 1px solid #F4DFD8; border-radius: 10px; padding: 13px 15px; cursor: pointer;">
+                      <div>
+                        <div style="font-size: 14px; color: #14202C;">{{ i.label }}</div>
+                        <div style="font-size: 13px; color: #8496A8; margin-top: 2px;">{{ i.note }}</div>
+                      </div>
+                      <span style="{{ i.track }}"><span style="{{ i.knob }}"></span></span>
+                    </div>
+                  </sc-for>
+                </div>
+              </div>
+
+              <div style="border: 1px solid #E8ECF1; border-radius: 12px; padding: 20px;">
+                <div style="font-family: 'Space Grotesk', sans-serif; font-size: 16px; color: #022746; margin-bottom: 14px;">Métiers ouverts à l'inscription</div>
+                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                  <sc-for list="{{ metiersReglage }}" as="m" hint-placeholder-count="12">
+                    <button sc-camel-on-click="{{ m.onClick }}" style="{{ m.style }}">{{ m.label }}</button>
+                  </sc-for>
+                </div>
+              </div>
+
+              <div style="display: flex; gap: 12px;">
+                <button style="background: #022746; color: #FFF; border: 0; height: 46px; padding: 0 24px; border-radius: 9px; font-size: 15px; font-weight: 500;">Enregistrer</button>
+                <button style="background: #FFF; color: #66768A; border: 1px solid #E1E7ED; height: 46px; padding: 0 20px; border-radius: 9px; font-size: 15px;">Annuler</button>
+              </div>
+            </div>
+          </div>
+        </div>

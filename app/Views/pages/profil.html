@@ -1,0 +1,106 @@
+<div>
+        <div style="background: #022746; padding: 34px 44px; color: #E4EDF5; display: flex; gap: 26px; align-items: center;">
+          <div style="width: 104px; height: 104px; min-width: 104px; border-radius: 50%; background: #FFF; color: #022746; display: flex; align-items: center; justify-content: center; font-family: 'Space Grotesk', monospace; font-size: 32px;">MV</div>
+          <div style="flex: 1;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <h1 style="font-family: 'Space Grotesk', sans-serif; font-size: 34px; font-weight: 700; color: #FFF; margin: 0;">Marion Vasseur</h1>
+              <span style="background: #D85D3F; color: #FFF; font-family: 'Space Grotesk', monospace; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; padding: 5px 9px; border-radius: 5px;">Prestataire confirmée</span>
+            </div>
+            <div style="font-size: 16px; color: #A9C0D5; margin-top: 8px;">Correctrice-relectrice · Nantes · répond en moins de 24 h · FR / EN</div>
+            <div style="display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap;">
+              <sc-for list="{{ badges }}" as="b" hint-placeholder-count="4">
+                <span style="background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.2); color: #E4EDF5; font-size: 13px; padding: 6px 11px; border-radius: 999px;">{{ b }}</span>
+              </sc-for>
+            </div>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 10px;">
+            <button style="background: #D85D3F; color: #FFF; border: 0; height: 46px; padding: 0 24px; border-radius: 9px; font-size: 15px; font-weight: 500;">Demander un devis</button>
+            <button sc-camel-on-click="{{ goMessagerie }}" style="background: transparent; color: #FFF; border: 1px solid rgba(255,255,255,.4); height: 46px; padding: 0 24px; border-radius: 9px; font-size: 15px;">Envoyer un message</button>
+          </div>
+        </div>
+
+        <div style="padding: 30px 44px 54px;">
+          <div style="display: grid; grid-template-columns: 1fr 340px; gap: 40px; align-items: start;">
+            <div>
+              <div style="display: flex; gap: 34px; padding-bottom: 24px; border-bottom: 1px solid #EEF1F5;">
+                <sc-for list="{{ profilStats }}" as="s" hint-placeholder-count="4">
+                  <div>
+                    <div style="font-family: 'Space Grotesk', sans-serif; font-size: 24px; font-weight: 700; color: #022746;">{{ s.v }}</div>
+                    <div style="font-size: 13px; color: #8496A8; margin-top: 3px;">{{ s.k }}</div>
+                  </div>
+                </sc-for>
+              </div>
+
+              <h2 style="font-family: 'Space Grotesk', sans-serif; font-size: 20px; color: #022746; margin: 26px 0 10px;">À propos</h2>
+              <p style="font-size: 15px; line-height: 1.75; color: #4A5A6B; margin: 0; max-width: 62em;">Douze ans en maison d'édition, aujourd'hui indépendante. Je corrige des romans, des récits et des essais : orthographe, grammaire, typographie, cohérence narrative. Word ou InDesign, rapport de lecture systématique. Spécialités : littérature générale, polar, jeunesse à partir de 10 ans.</p>
+
+              <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 18px;">
+                <sc-for list="{{ profilTags }}" as="t" hint-placeholder-count="6">
+                  <span style="background: #F4F6F9; color: #4A5A6B; font-size: 13px; padding: 7px 12px; border-radius: 6px;">{{ t }}</span>
+                </sc-for>
+              </div>
+
+              <h2 style="font-family: 'Space Grotesk', sans-serif; font-size: 20px; color: #022746; margin: 32px 0 14px;">Portfolio</h2>
+              <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px;">
+                <sc-for list="{{ portfolio }}" as="p" hint-placeholder-count="6">
+                  <div>
+                    <div style="height: 150px; position: relative; background: #F4F6F9; border-radius: 10px; overflow: hidden;">
+                      <image-slot id="{{ p.slotId }}" shape="rect" fit="cover" src="{{ p.img }}" placeholder="réalisation"></image-slot>
+                    </div>
+                    <div style="font-size: 13px; color: #66768A; margin-top: 7px;">{{ p.caption }}</div>
+                  </div>
+                </sc-for>
+              </div>
+
+              <h2 style="font-family: 'Space Grotesk', sans-serif; font-size: 20px; color: #022746; margin: 32px 0 14px;">Ses prestations</h2>
+              <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;">
+                <sc-for list="{{ profilOffres }}" as="o" hint-placeholder-count="3">
+                  <div sc-camel-on-click="{{ goFiche }}" style="border: 1px solid #E8ECF1; border-radius: 12px; padding: 16px; cursor: pointer;" style-hover="border-color: #022746;">
+                    <div style="font-family: 'Space Grotesk', sans-serif; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: #D85D3F;">{{ o.cat }}</div>
+                    <div style="font-size: 15px; color: #14202C; line-height: 1.4; margin: 8px 0 12px; min-height: 60px;">{{ o.title }}</div>
+                    <div style="display: flex; justify-content: space-between; font-family: 'Space Grotesk', monospace; font-size: 13px; border-top: 1px solid #EEF1F5; padding-top: 10px;">
+                      <span style="color: #66768A;">{{ o.delay }}</span><span style="color: #022746; font-weight: 700;">{{ o.price }}</span>
+                    </div>
+                  </div>
+                </sc-for>
+              </div>
+
+              <h2 style="font-family: 'Space Grotesk', sans-serif; font-size: 20px; color: #022746; margin: 32px 0 14px;">Avis · 87</h2>
+              <div style="display: flex; flex-direction: column; gap: 14px;">
+                <sc-for list="{{ avis }}" as="a" hint-placeholder-count="3">
+                  <div style="border: 1px solid #E8ECF1; border-radius: 12px; padding: 18px;">
+                    <div style="display: flex; justify-content: space-between; align-items: baseline;">
+                      <div style="display: flex; align-items: center; gap: 10px;">
+                        <span style="{{ a.avatar }}">{{ a.initials }}</span>
+                        <span style="font-size: 15px; font-weight: 500; color: #14202C;">{{ a.who }}</span>
+                      </div>
+                      <span style="font-family: 'Space Grotesk', monospace; font-size: 13px; color: #D85D3F;">★ {{ a.note }}</span>
+                    </div>
+                    <p style="font-size: 15px; color: #4A5A6B; line-height: 1.65; margin: 10px 0 0;">{{ a.txt }}</p>
+                    <div style="font-size: 13px; color: #8496A8; margin-top: 8px;">{{ a.when }} · {{ a.what }}</div>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 16px;">
+              <div style="border: 1px solid #E8ECF1; border-radius: 14px; padding: 22px;">
+                <div style="font-family: 'Space Grotesk', monospace; font-size: 13px; color: #8496A8;">À partir de</div>
+                <div style="font-family: 'Space Grotesk', sans-serif; font-size: 32px; font-weight: 700; color: #022746; margin: 4px 0 2px;">32 €<span style="font-size: 17px; font-weight: 400; color: #66768A;"> / heure</span></div>
+                <div style="font-size: 14px; color: #66768A;">ou 4,50 € / 1 000 signes</div>
+                <div style="border-top: 1px solid #EEF1F5; margin-top: 18px; padding-top: 16px; display: flex; flex-direction: column; gap: 12px;">
+                  <sc-for list="{{ profilInfos }}" as="i" hint-placeholder-count="5">
+                    <div style="display: flex; justify-content: space-between; font-size: 14px;"><span style="color: #8496A8;">{{ i.k }}</span><span style="color: #14202C;">{{ i.v }}</span></div>
+                  </sc-for>
+                </div>
+              </div>
+              <div style="border: 1px solid #E8ECF1; border-radius: 14px; padding: 22px;">
+                <div style="font-family: 'Space Grotesk', sans-serif; font-size: 16px; color: #022746; font-weight: 500; margin-bottom: 12px;">Niveau du compte</div>
+                <div style="display: flex; justify-content: space-between; font-size: 14px; color: #4A5A6B;"><span>Confirmée</span><span style="font-family: 'Space Grotesk', monospace; color: #8496A8;">87 / 120</span></div>
+                <div style="height: 6px; background: #EEF1F5; border-radius: 3px; margin-top: 10px; overflow: hidden;"><div style="height: 100%; width: 72%; background: #D85D3F;"></div></div>
+                <div style="font-size: 13px; color: #66768A; line-height: 1.55; margin-top: 10px;">33 missions avant le niveau Experte : mise en avant dans les résultats et commission réduite à 6 %.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>

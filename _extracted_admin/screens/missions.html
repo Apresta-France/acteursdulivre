@@ -1,0 +1,24 @@
+<div style="padding: 26px 32px 44px;">
+          <h1 style="font-family: 'Space Grotesk', sans-serif; font-size: 26px; font-weight: 700; color: #022746; margin: 0 0 4px;">Appels d'offres</h1>
+          <p style="font-size: 14px; color: #66768A; margin: 0 0 20px;">148 missions ouvertes · 12 à modérer avant publication · 6 signalées « budget hors marché »</p>
+          <div style="border: 1px solid #E8ECF1; border-radius: 12px; overflow: hidden;">
+            <sc-for list="{{ missions }}" as="m" hint-placeholder-count="6">
+              <div style="display: grid; grid-template-columns: 1fr 140px 120px 110px 190px; gap: 16px; align-items: center; padding: 15px 18px; border-bottom: 1px solid #F2F5F8;">
+                <div>
+                  <div style="display: flex; align-items: center; gap: 9px;">
+                    <span style="font-size: 15px; color: #14202C;">{{ m.title }}</span>
+                    <span style="{{ m.flagStyle }}">{{ m.flag }}</span>
+                  </div>
+                  <div style="font-size: 13px; color: #8496A8; margin-top: 3px;">{{ m.by }} · {{ m.metier }}</div>
+                </div>
+                <span style="font-family: 'Space Grotesk', monospace; font-size: 14px; color: #022746;">{{ m.budget }}</span>
+                <span style="font-size: 13px; color: #66768A;">{{ m.candidatures }} candidatures</span>
+                <span style="font-size: 13px; color: #66768A;">{{ m.when }}</span>
+                <div style="display: flex; gap: 8px; justify-content: flex-end;">
+                  <button style="background: #022746; color: #FFF; border: 0; height: 36px; padding: 0 14px; border-radius: 7px; font-size: 13px;">Publier</button>
+                  <button style="background: #FFF; color: #66768A; border: 1px solid #E1E7ED; height: 36px; padding: 0 12px; border-radius: 7px; font-size: 13px;">Éditer</button>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+        </div>

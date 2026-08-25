@@ -1,0 +1,45 @@
+<div>
+        <div style="padding: 48px 44px 34px; max-width: 900px;">
+          <h1 style="font-family: 'Space Grotesk', sans-serif; font-size: 40px; font-weight: 700; color: #022746; margin: 0 0 16px; line-height: 1.08;">Nous voulons que le travail du livre se voie.</h1>
+          <p style="font-size: 18px; color: #4A5A6B; line-height: 1.7; margin: 0 0 14px;">Un livre passe entre une dizaine de mains avant d'arriver en librairie. La plupart de ces mains travaillent en indépendant, se trouvent par bouche-à-oreille et négocient sans repère de prix. Nous avons construit un endroit où ce travail est visible, comparable et payé.</p>
+          <p style="font-size: 17px; color: #4A5A6B; line-height: 1.7; margin: 0;">Nous ne sommes ni éditeur, ni imprimeur, ni agence. Nous ne prenons pas de droits sur les livres. Nous mettons en relation, nous sécurisons le paiement, et nous nous effaçons.</p>
+        </div>
+
+        <div style="border-top: 1px solid #E8ECF1; border-bottom: 1px solid #E8ECF1; padding: 30px 44px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 30px;">
+          <sc-for list="{{ homeStats }}" as="s" hint-placeholder-count="4">
+            <div>
+              <div style="font-family: 'Space Grotesk', sans-serif; font-size: 30px; font-weight: 700; color: #022746;">{{ s.v }}</div>
+              <div style="font-size: 14px; color: #66768A; margin-top: 6px; line-height: 1.45;">{{ s.k }}</div>
+            </div>
+          </sc-for>
+        </div>
+
+        <div style="padding: 40px 44px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px;">
+          <sc-for list="{{ valeurs }}" as="v" hint-placeholder-count="3">
+            <div>
+              <div style="font-family: 'Space Grotesk', monospace; font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: #D85D3F;">{{ v.kicker }}</div>
+              <div style="font-family: 'Space Grotesk', sans-serif; font-size: 20px; color: #022746; font-weight: 500; margin: 10px 0 8px;">{{ v.title }}</div>
+              <p style="font-size: 15px; color: #4A5A6B; line-height: 1.65; margin: 0;">{{ v.body }}</p>
+            </div>
+          </sc-for>
+        </div>
+
+        <div style="background: #FBFCFE; border-top: 1px solid #E8ECF1; padding: 40px 44px;">
+          <h2 style="font-family: 'Space Grotesk', sans-serif; font-size: 24px; color: #022746; margin: 0 0 20px;">L'équipe</h2>
+          <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px;">
+            <sc-for list="{{ equipe }}" as="e" hint-placeholder-count="4">
+              <div style="display: flex; gap: 12px; align-items: center;">
+                <span style="{{ e.avatar }}">{{ e.initials }}</span>
+                <div>
+                  <div style="font-size: 15px; color: #14202C;">{{ e.name }}</div>
+                  <div style="font-size: 13px; color: #8496A8;">{{ e.role }}</div>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+          <div style="display: flex; gap: 12px; margin-top: 28px;">
+            <button sc-camel-on-click="{{ goContact }}" style="background: #022746; color: #FFF; border: 0; height: 46px; padding: 0 22px; border-radius: 9px; font-size: 15px;">Nous écrire</button>
+            <button sc-camel-on-click="{{ goJournal }}" style="background: #FFF; color: #022746; border: 1px solid #E1E7ED; height: 46px; padding: 0 20px; border-radius: 9px; font-size: 15px;">Lire le journal</button>
+          </div>
+        </div>
+      </div>

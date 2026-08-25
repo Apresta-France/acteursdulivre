@@ -1,0 +1,25 @@
+<div style="padding: 26px 32px 44px;">
+          <h1 style="font-family: 'Space Grotesk', sans-serif; font-size: 26px; font-weight: 700; color: #022746; margin: 0 0 4px;">Avis signalés</h1>
+          <p style="font-size: 14px; color: #66768A; margin: 0 0 20px;">Un avis n'est publiable qu'après une mission réellement facturée. 5 contestations en attente.</p>
+          <div style="display: flex; flex-direction: column; gap: 14px;">
+            <sc-for list="{{ avisSignales }}" as="a" hint-placeholder-count="4">
+              <div style="border: 1px solid #E8ECF1; border-radius: 12px; padding: 20px; display: grid; grid-template-columns: 1fr 180px; gap: 22px; align-items: start;">
+                <div>
+                  <div style="display: flex; align-items: center; gap: 10px;">
+                    <span style="{{ a.motifStyle }}">{{ a.motif }}</span>
+                    <span style="font-family: 'Space Grotesk', monospace; font-size: 13px; color: #D85D3F;">★ {{ a.note }}</span>
+                    <span style="font-size: 13px; color: #8496A8;">{{ a.when }}</span>
+                  </div>
+                  <p style="font-size: 15px; color: #14202C; line-height: 1.6; margin: 12px 0 8px;">{{ a.txt }}</p>
+                  <div style="font-size: 13px; color: #66768A;">{{ a.auteur }} → {{ a.cible }} · {{ a.mission }}</div>
+                  <p style="font-size: 14px; color: #4A5A6B; line-height: 1.6; margin: 12px 0 0; background: #FBFCFE; border-left: 3px solid #E1E7ED; padding: 12px 14px;">Contestation : {{ a.contestation }}</p>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 8px;">
+                  <button style="background: #022746; color: #FFF; border: 0; height: 40px; border-radius: 8px; font-size: 14px;">Maintenir l'avis</button>
+                  <button style="background: #FFF; color: #D85D3F; border: 1px solid #F4DFD8; height: 40px; border-radius: 8px; font-size: 14px;">Supprimer</button>
+                  <button style="background: #FFF; color: #66768A; border: 1px solid #E1E7ED; height: 40px; border-radius: 8px; font-size: 14px;">Contacter l'auteur</button>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+        </div>

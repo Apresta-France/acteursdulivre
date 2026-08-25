@@ -1,0 +1,48 @@
+<div style="padding: 30px 44px 54px; display: grid; grid-template-columns: 240px 1fr; gap: 40px; align-items: start;">
+        <div style="display: flex; flex-direction: column; gap: 6px;">
+          <sc-for list="{{ paramNav }}" as="p" hint-placeholder-count="5">
+            <div sc-camel-on-click="{{ p.onClick }}" style="{{ p.style }}">{{ p.label }}</div>
+          </sc-for>
+        </div>
+        <div style="max-width: 760px;">
+          <h1 style="font-family: 'Space Grotesk', sans-serif; font-size: 28px; font-weight: 700; color: #022746; margin: 0 0 24px;">{{ paramTitle }}</h1>
+          <div style="display: flex; flex-direction: column; gap: 22px;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+              <div>
+                <label style="display: block; font-size: 14px; font-weight: 500; color: #022746; margin-bottom: 8px;">Prénom</label>
+                <input value="{{ prenom }}" sc-camel-on-change="{{ onPrenom }}" style="width: 100%; box-sizing: border-box; border: 1px solid #E1E7ED; border-radius: 9px; padding: 13px 14px; font-size: 15px; outline: none;">
+              </div>
+              <div>
+                <label style="display: block; font-size: 14px; font-weight: 500; color: #022746; margin-bottom: 8px;">Nom</label>
+                <input value="{{ nom }}" sc-camel-on-change="{{ onNom }}" style="width: 100%; box-sizing: border-box; border: 1px solid #E1E7ED; border-radius: 9px; padding: 13px 14px; font-size: 15px; outline: none;">
+              </div>
+            </div>
+            <div>
+              <label style="display: block; font-size: 14px; font-weight: 500; color: #022746; margin-bottom: 8px;">Titre affiché sur la vitrine</label>
+              <input value="{{ titreVitrine }}" sc-camel-on-change="{{ onTitreVitrine }}" style="width: 100%; box-sizing: border-box; border: 1px solid #E1E7ED; border-radius: 9px; padding: 13px 14px; font-size: 15px; outline: none;">
+            </div>
+            <div>
+              <label style="display: block; font-size: 14px; font-weight: 500; color: #022746; margin-bottom: 8px;">Présentation</label>
+              <textarea value="{{ presentation }}" sc-camel-on-change="{{ onPresentation }}" style="width: 100%; box-sizing: border-box; height: 110px; border: 1px solid #E1E7ED; border-radius: 9px; padding: 13px 14px; font-size: 15px; outline: none; resize: none; line-height: 1.6;"></textarea>
+            </div>
+            <div style="border-top: 1px solid #EEF1F5; padding-top: 22px;">
+              <div style="font-family: 'Space Grotesk', sans-serif; font-size: 17px; color: #022746; margin-bottom: 14px;">Disponibilité et notifications</div>
+              <div style="display: flex; flex-direction: column; gap: 12px;">
+                <sc-for list="{{ toggles }}" as="t" hint-placeholder-count="4">
+                  <div sc-camel-on-click="{{ t.onClick }}" style="display: flex; justify-content: space-between; align-items: center; padding: 14px 16px; border: 1px solid #E8ECF1; border-radius: 10px; cursor: pointer;">
+                    <div>
+                      <div style="font-size: 15px; color: #14202C;">{{ t.label }}</div>
+                      <div style="font-size: 13px; color: #8496A8; margin-top: 3px;">{{ t.note }}</div>
+                    </div>
+                    <span style="{{ t.track }}"><span style="{{ t.knob }}"></span></span>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+            <div style="display: flex; gap: 12px;">
+              <button style="background: #022746; color: #FFF; border: 0; height: 48px; padding: 0 24px; border-radius: 9px; font-size: 15px; font-weight: 500;">Enregistrer</button>
+              <button style="background: #FFF; color: #66768A; border: 1px solid #E1E7ED; height: 48px; padding: 0 20px; border-radius: 9px; font-size: 15px;">Annuler</button>
+            </div>
+          </div>
+        </div>
+      </div>

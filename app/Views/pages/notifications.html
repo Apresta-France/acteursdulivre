@@ -1,0 +1,18 @@
+<div style="padding: 30px 44px 54px;">
+        <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 20px;">
+          <h1 style="font-family: 'Space Grotesk', sans-serif; font-size: 30px; font-weight: 700; color: #022746; margin: 0;">Notifications</h1>
+          <span style="font-size: 14px; color: #D85D3F; cursor: pointer;">Tout marquer comme lu</span>
+        </div>
+        <div style="border: 1px solid #E8ECF1; border-radius: 12px; overflow: hidden;">
+          <sc-for list="{{ notifications }}" as="n" hint-placeholder-count="6">
+            <div sc-camel-on-click="{{ n.onClick }}" style="{{ n.row }}">
+              <span style="{{ n.dot }}"></span>
+              <div style="flex: 1;">
+                <div style="font-size: 15px; color: #14202C;">{{ n.title }}</div>
+                <div style="font-size: 14px; color: #66768A; margin-top: 4px; line-height: 1.5;">{{ n.body }}</div>
+              </div>
+              <span style="font-family: 'Space Grotesk', monospace; font-size: 12px; color: #8496A8;">{{ n.when }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>

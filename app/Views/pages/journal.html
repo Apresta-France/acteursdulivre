@@ -1,0 +1,34 @@
+<div style="padding: 44px;">
+        <h1 style="font-family: 'Space Grotesk', sans-serif; font-size: 36px; font-weight: 700; color: #022746; margin: 0 0 10px;">Le journal</h1>
+        <p style="font-size: 17px; color: #4A5A6B; margin: 0 0 26px; max-width: 60em;">Prix, méthodes, contrats, retours d'expérience : ce qu'on apprend en regardant 5 890 professionnels travailler.</p>
+
+        <div style="display: flex; gap: 8px; margin-bottom: 26px; flex-wrap: wrap;">
+          <sc-for list="{{ journalCats }}" as="c" hint-placeholder-count="5">
+            <button sc-camel-on-click="{{ c.onClick }}" style="{{ c.style }}">{{ c.label }}</button>
+          </sc-for>
+        </div>
+
+        <div sc-camel-on-click="{{ goArticle }}" style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 30px; border: 1px solid #E8ECF1; border-radius: 14px; overflow: hidden; cursor: pointer; margin-bottom: 26px;" style-hover="border-color: #022746;">
+          <div style="height: 300px; position: relative; background: #F4F6F9;">
+            <image-slot id="journal-hero" shape="rect" fit="cover" src="{{ homeImg2 }}" placeholder="photo"></image-slot>
+          </div>
+          <div style="padding: 30px 30px 30px 0; display: flex; flex-direction: column; justify-content: center;">
+            <div style="font-family: 'Space Grotesk', monospace; font-size: 12px; color: #D85D3F;">Tarifs · 8 min de lecture</div>
+            <h2 style="font-family: 'Space Grotesk', sans-serif; font-size: 27px; color: #022746; margin: 12px 0 12px; line-height: 1.25;">Combien coûte vraiment la fabrication d'un roman en autoédition ?</h2>
+            <p style="font-size: 16px; color: #4A5A6B; line-height: 1.65; margin: 0;">Nous avons repris 1 240 missions livrées sur la plateforme pour reconstituer le budget réel d'un roman de 300 pages, de la correction à l'impression.</p>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;">
+          <sc-for list="{{ journalAll }}" as="a" hint-placeholder-count="6">
+            <div sc-camel-on-click="{{ goArticle }}" style="cursor: pointer;">
+              <div style="height: 170px; position: relative; background: #F4F6F9; border-radius: 12px; overflow: hidden;">
+                <image-slot id="{{ a.slotId }}" shape="rect" fit="cover" src="{{ a.img }}" placeholder="photo"></image-slot>
+              </div>
+              <div style="font-family: 'Space Grotesk', monospace; font-size: 12px; color: #D85D3F; margin-top: 12px;">{{ a.cat }} · {{ a.read }}</div>
+              <div style="font-size: 17px; color: #022746; line-height: 1.35; margin-top: 8px;">{{ a.title }}</div>
+              <div style="font-size: 14px; color: #66768A; margin-top: 6px; line-height: 1.55;">{{ a.chapo }}</div>
+            </div>
+          </sc-for>
+        </div>
+      </div>

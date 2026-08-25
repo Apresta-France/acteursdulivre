@@ -1,0 +1,46 @@
+<div style="padding: 44px; display: grid; grid-template-columns: 1fr 400px; gap: 44px; align-items: start;">
+        <div>
+          <h1 style="font-family: 'Space Grotesk', sans-serif; font-size: 34px; font-weight: 700; color: #022746; margin: 0 0 10px;">Nous écrire</h1>
+          <p style="font-size: 16px; color: #66768A; margin: 0 0 26px;">Une équipe en France, du lundi au vendredi, 9 h – 18 h. Réponse moyenne : 4 h.</p>
+          <div style="display: flex; flex-direction: column; gap: 20px; max-width: 620px;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+              <div>
+                <label style="display: block; font-size: 14px; font-weight: 500; color: #022746; margin-bottom: 8px;">Nom</label>
+                <input placeholder="Votre nom" style="width: 100%; box-sizing: border-box; border: 1px solid #E1E7ED; border-radius: 9px; padding: 13px 14px; font-size: 15px; outline: none;">
+              </div>
+              <div>
+                <label style="display: block; font-size: 14px; font-weight: 500; color: #022746; margin-bottom: 8px;">E-mail</label>
+                <input placeholder="vous@exemple.fr" style="width: 100%; box-sizing: border-box; border: 1px solid #E1E7ED; border-radius: 9px; padding: 13px 14px; font-size: 15px; outline: none;">
+              </div>
+            </div>
+            <div>
+              <label style="display: block; font-size: 14px; font-weight: 500; color: #022746; margin-bottom: 10px;">Motif</label>
+              <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                <sc-for list="{{ contactMotifs }}" as="m" hint-placeholder-count="4">
+                  <button sc-camel-on-click="{{ m.onClick }}" style="{{ m.style }}">{{ m.label }}</button>
+                </sc-for>
+              </div>
+            </div>
+            <div>
+              <label style="display: block; font-size: 14px; font-weight: 500; color: #022746; margin-bottom: 8px;">Message</label>
+              <textarea placeholder="Dites-nous tout." style="width: 100%; box-sizing: border-box; height: 150px; border: 1px solid #E1E7ED; border-radius: 9px; padding: 13px 14px; font-size: 15px; outline: none; resize: none; line-height: 1.6;"></textarea>
+            </div>
+            <button style="background: #D85D3F; color: #FFF; border: 0; height: 50px; padding: 0 26px; border-radius: 9px; font-size: 16px; font-weight: 500; align-self: flex-start;">Envoyer</button>
+          </div>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 16px;">
+          <div style="border: 1px solid #E8ECF1; border-radius: 14px; padding: 22px;">
+            <div style="font-family: 'Space Grotesk', sans-serif; font-size: 16px; font-weight: 500; color: #022746; margin-bottom: 12px;">Autres canaux</div>
+            <div style="display: flex; flex-direction: column; gap: 12px; font-size: 15px;">
+              <sc-for list="{{ contactCanaux }}" as="c" hint-placeholder-count="4">
+                <div style="display: flex; justify-content: space-between;"><span style="color: #8496A8;">{{ c.k }}</span><span style="color: #14202C;">{{ c.v }}</span></div>
+              </sc-for>
+            </div>
+          </div>
+          <div style="border: 1px solid #E8ECF1; border-radius: 14px; padding: 22px;">
+            <div style="font-family: 'Space Grotesk', sans-serif; font-size: 16px; font-weight: 500; color: #022746; margin-bottom: 10px;">Une question sur une commande ?</div>
+            <p style="font-size: 14px; color: #66768A; line-height: 1.6; margin: 0 0 12px;">Passez par le centre d'aide : les réponses sur les paiements et les délais y sont déjà.</p>
+            <button sc-camel-on-click="{{ goAide }}" style="background: #FFF; border: 1px solid #E1E7ED; color: #022746; width: 100%; height: 40px; border-radius: 8px; font-size: 14px;">Centre d'aide</button>
+          </div>
+        </div>
+      </div>

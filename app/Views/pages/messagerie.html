@@ -1,0 +1,97 @@
+<div style="display: grid; grid-template-columns: 306px 1fr 316px; height: 780px;">
+        <div style="border-right: 1px solid #E8ECF1;">
+          <div style="padding: 18px 20px; border-bottom: 1px solid #E8ECF1; display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-family: 'Space Grotesk', sans-serif; font-size: 16px; font-weight: 500; color: #022746;">Conversations</span>
+            <span style="font-family: 'Space Grotesk', monospace; font-size: 12px; color: #8496A8;">5</span>
+          </div>
+          <sc-for list="{{ threads }}" as="t" hint-placeholder-count="5">
+            <div sc-camel-on-click="{{ t.onClick }}" style="{{ t.style }}">
+              <div style="display: flex; gap: 12px; align-items: center;">
+                <div style="{{ t.avatar }}">{{ t.initials }}</div>
+                <div style="flex: 1; min-width: 0;">
+                  <div style="display: flex; justify-content: space-between;">
+                    <span style="font-size: 14px; font-weight: 500; color: #14202C;">{{ t.who }}</span>
+                    <span style="font-size: 12px; color: #8496A8;">{{ t.when }}</span>
+                  </div>
+                  <div style="font-size: 13px; color: #66768A; margin-top: 3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ t.last }}</div>
+                  <div style="{{ t.tagStyle }}">{{ t.tag }}</div>
+                </div>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+
+        <div style="display: flex; flex-direction: column;">
+          <div style="padding: 16px 24px; border-bottom: 1px solid #E8ECF1; display: flex; align-items: center; gap: 12px;">
+            <div style="{{ threadAvatar }}">{{ threadInitials }}</div>
+            <div style="flex: 1;">
+              <div style="font-size: 15px; font-weight: 500; color: #14202C;">{{ threadWho }}</div>
+              <div style="font-size: 13px; color: #66768A;">{{ threadSub }}</div>
+            </div>
+            <button sc-camel-on-click="{{ goProfil }}" style="background: #FFF; border: 1px solid #E1E7ED; color: #022746; height: 36px; padding: 0 14px; border-radius: 8px; font-size: 13px;">Voir le profil</button>
+          </div>
+
+          <div style="flex: 1; padding: 24px; display: flex; flex-direction: column; gap: 14px; background: #FBFCFE; overflow: hidden;">
+            <div style="align-self: center; font-size: 12px; color: #A8B6C4; font-family: 'Space Grotesk', monospace;">MARDI 8 SEPTEMBRE</div>
+            <sc-for list="{{ messages }}" as="m" hint-placeholder-count="4">
+              <div style="{{ m.row }}"><div style="{{ m.bubble }}">{{ m.txt }}</div></div>
+            </sc-for>
+
+            <div style="background: #FFF; border: 1px solid #E8ECF1; border-radius: 14px; padding: 20px; max-width: 470px; align-self: flex-start;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div style="font-family: 'Space Grotesk', monospace; font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: #D85D3F;">Devis nº 2481</div>
+                <span style="background: #FDF3F0; color: #D85D3F; font-size: 12px; padding: 4px 9px; border-radius: 999px;">valable 5 jours</span>
+              </div>
+              <div style="font-size: 16px; color: #14202C; margin: 10px 0 14px;">Correction complète + rapport de lecture</div>
+              <div style="display: flex; flex-direction: column; gap: 9px; font-size: 14px;">
+                <sc-for list="{{ devis }}" as="d" hint-placeholder-count="4">
+                  <div style="display: flex; justify-content: space-between;"><span style="color: #8496A8;">{{ d.k }}</span><span style="color: #14202C;">{{ d.v }}</span></div>
+                </sc-for>
+              </div>
+              <div style="display: flex; justify-content: space-between; border-top: 1px solid #EEF1F5; margin-top: 14px; padding-top: 12px; font-family: 'Space Grotesk', sans-serif;">
+                <span style="font-size: 15px; color: #022746;">Total</span><span style="font-size: 21px; font-weight: 700; color: #022746;">780 €</span>
+              </div>
+              <div style="display: flex; gap: 10px; margin-top: 16px;">
+                <button sc-camel-on-click="{{ goCommande }}" style="background: #D85D3F; color: #FFF; border: 0; height: 42px; padding: 0 20px; border-radius: 8px; font-size: 14px; font-weight: 500;">Accepter le devis</button>
+                <button style="background: #FFF; color: #022746; border: 1px solid #E1E7ED; height: 42px; padding: 0 16px; border-radius: 8px; font-size: 14px;">Demander une modification</button>
+              </div>
+            </div>
+          </div>
+
+          <div style="border-top: 1px solid #E8ECF1; padding: 14px 24px 18px;">
+            <div style="display: flex; gap: 8px; margin-bottom: 10px;">
+              <sc-for list="{{ quickReplies }}" as="q" hint-placeholder-count="3">
+                <span style="background: #F4F6F9; color: #4A5A6B; font-size: 13px; padding: 7px 12px; border-radius: 999px; cursor: pointer;">{{ q }}</span>
+              </sc-for>
+            </div>
+            <div style="display: flex; gap: 10px; align-items: center;">
+              <input value="{{ draft }}" sc-camel-on-change="{{ onDraft }}" placeholder="Écrire un message…" style="flex: 1; border: 1px solid #E1E7ED; border-radius: 9px; padding: 13px 14px; font-size: 15px; outline: none;">
+              <button style="background: #FFF; border: 1px solid #E1E7ED; color: #66768A; height: 46px; padding: 0 14px; border-radius: 9px; font-size: 14px;">Joindre</button>
+              <button style="background: #022746; color: #FFF; border: 0; height: 46px; padding: 0 22px; border-radius: 9px; font-size: 15px;">Envoyer</button>
+            </div>
+          </div>
+        </div>
+
+        <div style="border-left: 1px solid #E8ECF1; padding: 20px;">
+          <div style="font-family: 'Space Grotesk', monospace; font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: #8496A8; margin-bottom: 14px;">La mission</div>
+          <div style="font-size: 15px; color: #14202C; line-height: 1.45;">Recherche correcteur pour essai historique, 240 pages</div>
+          <div style="display: flex; flex-direction: column; gap: 11px; margin-top: 16px; font-size: 14px;">
+            <sc-for list="{{ missionMeta }}" as="m" hint-placeholder-count="5">
+              <div style="display: flex; justify-content: space-between;"><span style="color: #8496A8;">{{ m.k }}</span><span style="color: #14202C;">{{ m.v }}</span></div>
+            </sc-for>
+          </div>
+          <div style="font-family: 'Space Grotesk', monospace; font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: #8496A8; margin: 24px 0 12px;">Jalons</div>
+          <div style="display: flex; flex-direction: column; gap: 12px;">
+            <sc-for list="{{ jalons }}" as="j" hint-placeholder-count="3">
+              <div style="display: flex; gap: 10px; align-items: flex-start;">
+                <span style="{{ j.dot }}"></span>
+                <div>
+                  <div style="font-size: 14px; color: #14202C;">{{ j.label }}</div>
+                  <div style="font-size: 13px; color: #8496A8;">{{ j.when }}</div>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+          <div style="background: #F7F9FC; border-radius: 10px; padding: 14px; margin-top: 20px; font-size: 13px; color: #4A5A6B; line-height: 1.55;">Faites passer devis et factures par la plateforme : sans trace des échanges, aucune médiation n'est possible.</div>
+        </div>
+      </div>

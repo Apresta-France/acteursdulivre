@@ -1,0 +1,57 @@
+<div>
+        <div style="background: #022746; color: #E4EDF5; padding: 48px 44px;">
+          <h1 style="font-family: 'Space Grotesk', sans-serif; font-size: 36px; font-weight: 700; color: #FFF; margin: 0 0 14px;">Confiance, paiement, litiges</h1>
+          <p style="font-size: 17px; color: #A9C0D5; line-height: 1.65; margin: 0; max-width: 62em;">Le métier du livre marche à la parole donnée. La plateforme y ajoute trois garanties : des profils vérifiés, des contrats types, une médiation en cas de désaccord.</p>
+        </div>
+
+        <div style="padding: 40px 44px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px;">
+          <sc-for list="{{ garanties }}" as="g" hint-placeholder-count="3">
+            <div style="border: 1px solid #E8ECF1; border-radius: 14px; padding: 26px;">
+              <div style="font-family: 'Space Grotesk', monospace; font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: #D85D3F;">{{ g.kicker }}</div>
+              <div style="font-family: 'Space Grotesk', sans-serif; font-size: 20px; color: #022746; font-weight: 500; margin: 12px 0 10px;">{{ g.title }}</div>
+              <p style="font-size: 15px; color: #4A5A6B; line-height: 1.65; margin: 0;">{{ g.body }}</p>
+            </div>
+          </sc-for>
+        </div>
+
+        <div style="padding: 0 44px 40px;">
+          <h2 style="font-family: 'Space Grotesk', sans-serif; font-size: 24px; color: #022746; margin: 0 0 18px;">La charte qualité — six engagements</h2>
+          <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px;">
+            <sc-for list="{{ charte }}" as="c" hint-placeholder-count="6">
+              <div style="border: 1px solid #E8ECF1; border-radius: 12px; padding: 18px; display: flex; gap: 14px;">
+                <span style="font-family: 'Space Grotesk', monospace; font-size: 13px; color: #D85D3F;">{{ c.num }}</span>
+                <div>
+                  <div style="font-size: 16px; color: #14202C;">{{ c.title }}</div>
+                  <p style="font-size: 14px; color: #66768A; line-height: 1.6; margin: 6px 0 0;">{{ c.body }}</p>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+
+        <div style="background: #FBFCFE; border-top: 1px solid #E8ECF1; padding: 40px 44px; display: grid; grid-template-columns: 1fr 1fr; gap: 40px;">
+          <div>
+            <h2 style="font-family: 'Space Grotesk', sans-serif; font-size: 22px; color: #022746; margin: 0 0 14px;">En cas de litige</h2>
+            <div style="display: flex; flex-direction: column; gap: 16px;">
+              <sc-for list="{{ litige }}" as="l" hint-placeholder-count="4">
+                <div style="display: flex; gap: 14px;">
+                  <span style="font-family: 'Space Grotesk', monospace; font-size: 13px; color: #D85D3F; min-width: 24px;">{{ l.num }}</span>
+                  <div>
+                    <div style="font-size: 15px; color: #14202C;">{{ l.title }}</div>
+                    <p style="font-size: 14px; color: #66768A; line-height: 1.6; margin: 5px 0 0;">{{ l.body }}</p>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+          <div>
+            <h2 style="font-family: 'Space Grotesk', sans-serif; font-size: 22px; color: #022746; margin: 0 0 14px;">Contrats et droits</h2>
+            <p style="font-size: 15px; color: #4A5A6B; line-height: 1.7; margin: 0 0 16px;">Chaque commande est accompagnée d'un contrat type adapté au métier : cession de droits pour l'illustration et la traduction, prestation de service pour la correction et la maquette, mandat pour la presse.</p>
+            <div style="display: flex; flex-direction: column; gap: 10px; font-size: 15px;">
+              <sc-for list="{{ contrats }}" as="c" hint-placeholder-count="4">
+                <span style="color: #D85D3F; cursor: pointer;">{{ c }}</span>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+      </div>

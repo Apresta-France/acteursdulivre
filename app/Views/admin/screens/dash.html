@@ -1,0 +1,86 @@
+<div style="padding: 26px 32px 44px;">
+          <h1 style="font-family: 'Space Grotesk', sans-serif; font-size: 26px; font-weight: 700; color: #022746; margin: 0 0 4px;">Tableau de bord</h1>
+          <p style="font-size: 14px; color: #66768A; margin: 0 0 22px;">Semaine du 24 au 30 août 2026 · fuseau Europe/Paris</p>
+
+          <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; margin-bottom: 24px;">
+            <sc-for list="{{ kpis }}" as="k" hint-placeholder-count="5">
+              <div style="border: 1px solid #E8ECF1; border-radius: 12px; padding: 16px;">
+                <div style="font-size: 13px; color: #8496A8;">{{ k.k }}</div>
+                <div style="font-family: 'Space Grotesk', sans-serif; font-size: 25px; font-weight: 700; color: #022746; margin-top: 6px;">{{ k.v }}</div>
+                <div style="{{ k.deltaStyle }}">{{ k.d }}</div>
+              </div>
+            </sc-for>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 380px; gap: 24px; align-items: start;">
+            <div style="display: flex; flex-direction: column; gap: 22px;">
+              <div style="border: 1px solid #E8ECF1; border-radius: 12px; padding: 20px;">
+                <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 18px;">
+                  <span style="font-family: 'Space Grotesk', sans-serif; font-size: 16px; font-weight: 500; color: #022746;">Inscriptions prestataires · 8 semaines</span>
+                  <div style="display: flex; gap: 14px; font-size: 13px; color: #66768A;">
+                    <span style="display: flex; gap: 6px; align-items: center;"><span style="width: 9px; height: 9px; border-radius: 2px; background: #022746; display: block;"></span>validés</span>
+                    <span style="display: flex; gap: 6px; align-items: center;"><span style="width: 9px; height: 9px; border-radius: 2px; background: #D85D3F; display: block;"></span>en attente</span>
+                  </div>
+                </div>
+                <div style="display: flex; align-items: flex-end; gap: 14px; height: 150px;">
+                  <sc-for list="{{ chart }}" as="c" hint-placeholder-count="8">
+                    <div style="flex: 1; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; gap: 8px; height: 100%;">
+                      <div style="width: 100%; display: flex; flex-direction: column; justify-content: flex-end; height: 100%; gap: 2px;">
+                        <div style="{{ c.barPending }}"></div>
+                        <div style="{{ c.barOk }}"></div>
+                      </div>
+                      <span style="font-family: 'Space Grotesk', monospace; font-size: 11px; color: #8496A8;">{{ c.m }}</span>
+                    </div>
+                  </sc-for>
+                </div>
+              </div>
+
+              <div style="border: 1px solid #E8ECF1; border-radius: 12px; overflow: hidden;">
+                <div style="padding: 15px 18px; border-bottom: 1px solid #EEF1F5; display: flex; justify-content: space-between; align-items: center;">
+                  <span style="font-family: 'Space Grotesk', sans-serif; font-size: 16px; font-weight: 500; color: #022746;">Files d'attente</span>
+                  <span style="font-size: 13px; color: #8496A8;">SLA cible : 24 h</span>
+                </div>
+                <sc-for list="{{ files }}" as="f" hint-placeholder-count="5">
+                  <div sc-camel-on-click="{{ f.onClick }}" style="display: grid; grid-template-columns: 1fr 110px 130px 120px; gap: 14px; align-items: center; padding: 15px 18px; border-bottom: 1px solid #F2F5F8; cursor: pointer;" style-hover="background: #FBFCFE;">
+                    <div>
+                      <div style="font-size: 15px; color: #14202C;">{{ f.label }}</div>
+                      <div style="font-size: 13px; color: #8496A8; margin-top: 3px;">{{ f.note }}</div>
+                    </div>
+                    <div style="font-family: 'Space Grotesk', sans-serif; font-size: 19px; font-weight: 700; color: #022746;">{{ f.n }}</div>
+                    <div style="font-size: 13px; color: #66768A;">plus ancien : {{ f.age }}</div>
+                    <div><span style="{{ f.slaStyle }}">{{ f.sla }}</span></div>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 18px;">
+              <div style="border: 1.5px solid #F4DFD8; background: #FDF3F0; border-radius: 12px; padding: 20px;">
+                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
+                  <span style="width: 30px; height: 30px; border-radius: 8px; background: #FFF; color: #D85D3F; display: flex; align-items: center; justify-content: center;">
+                    <svg width="18" height="18" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="8.5"></circle><path d="M6 18L18 6"></path></svg>
+                  </span>
+                  <span style="font-family: 'Space Grotesk', sans-serif; font-size: 16px; font-weight: 500; color: #022746;">Signalements IA</span>
+                </div>
+                <div style="font-family: 'Space Grotesk', sans-serif; font-size: 30px; font-weight: 700; color: #022746;">7</div>
+                <p style="font-size: 14px; color: #4A5A6B; line-height: 1.6; margin: 6px 0 14px;">Contenus soupçonnés d'avoir été générés. 3 sont issus d'un signalement client, 4 d'un contrôle interne.</p>
+                <button sc-camel-on-click="{{ goModeration }}" style="background: #D85D3F; color: #FFF; border: 0; width: 100%; height: 40px; border-radius: 8px; font-size: 14px; font-weight: 500;">Traiter les signalements</button>
+              </div>
+
+              <div style="border: 1px solid #E8ECF1; border-radius: 12px; padding: 20px;">
+                <div style="font-family: 'Space Grotesk', sans-serif; font-size: 16px; font-weight: 500; color: #022746; margin-bottom: 14px;">Activité récente</div>
+                <div style="display: flex; flex-direction: column; gap: 14px;">
+                  <sc-for list="{{ activite }}" as="a" hint-placeholder-count="6">
+                    <div style="display: flex; gap: 10px; align-items: flex-start;">
+                      <span style="{{ a.dot }}"></span>
+                      <div style="flex: 1;">
+                        <div style="font-size: 14px; color: #14202C; line-height: 1.45;">{{ a.txt }}</div>
+                        <div style="font-size: 12px; color: #8496A8; margin-top: 3px;">{{ a.who }} · {{ a.when }}</div>
+                      </div>
+                    </div>
+                  </sc-for>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>

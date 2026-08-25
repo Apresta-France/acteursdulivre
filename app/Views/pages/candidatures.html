@@ -1,0 +1,18 @@
+<div style="padding: 30px 44px 54px;">
+        <h1 style="font-family: 'Space Grotesk', sans-serif; font-size: 30px; font-weight: 700; color: #022746; margin: 0 0 6px;">Mes candidatures</h1>
+        <p style="font-size: 15px; color: #66768A; margin: 0 0 22px;">4 candidatures restantes ce mois. Taux d'acceptation : 62 %.</p>
+        <div style="border: 1px solid #E8ECF1; border-radius: 12px; overflow: hidden;">
+          <div style="display: grid; grid-template-columns: 1fr 150px 120px 120px 130px; gap: 14px; padding: 14px 18px; background: #FBFCFE; border-bottom: 1px solid #EEF1F5; font-size: 13px; color: #8496A8;">
+            <span>Mission</span><span>Porteur</span><span>Mon prix</span><span>Envoyée</span><span>Statut</span>
+          </div>
+          <sc-for list="{{ mesCandidatures }}" as="c" hint-placeholder-count="5">
+            <div sc-camel-on-click="{{ goMission }}" style="display: grid; grid-template-columns: 1fr 150px 120px 120px 130px; gap: 14px; padding: 16px 18px; border-bottom: 1px solid #F2F5F8; align-items: center; cursor: pointer; font-size: 14px;" style-hover="background: #FBFCFE;">
+              <div style="font-size: 15px; color: #14202C;">{{ c.title }}</div>
+              <div style="color: #4A5A6B;">{{ c.by }}</div>
+              <div style="font-family: 'Space Grotesk', monospace; color: #022746;">{{ c.price }}</div>
+              <div style="color: #66768A;">{{ c.when }}</div>
+              <div><span style="{{ c.statusStyle }}">{{ c.status }}</span></div>
+            </div>
+          </sc-for>
+        </div>
+      </div>

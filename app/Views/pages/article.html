@@ -1,0 +1,32 @@
+<div style="padding: 44px;">
+        <div style="max-width: 760px; margin: 0 auto;">
+          <div style="font-family: 'Space Grotesk', monospace; font-size: 12px; color: #D85D3F; margin-bottom: 14px;">Tarifs · 8 min de lecture · 12 août 2026</div>
+          <h1 style="font-family: 'Space Grotesk', sans-serif; font-size: 38px; font-weight: 700; color: #022746; margin: 0 0 18px; line-height: 1.12;">Combien coûte vraiment la fabrication d'un roman en autoédition ?</h1>
+          <div style="display: flex; align-items: center; gap: 12px; padding-bottom: 24px; border-bottom: 1px solid #EEF1F5;">
+            <span style="{{ articleAvatar }}">LR</span>
+            <div><div style="font-size: 15px; color: #14202C;">Léa Rousset</div><div style="font-size: 13px; color: #8496A8;">Rédaction acteursdulivre.fr</div></div>
+          </div>
+          <div style="height: 380px; position: relative; background: #F4F6F9; border-radius: 14px; overflow: hidden; margin: 26px 0;">
+            <image-slot id="article-hero" shape="rect" fit="cover" src="{{ homeImg2 }}" placeholder="photo"></image-slot>
+          </div>
+          <p style="font-size: 18px; color: #14202C; line-height: 1.75; margin: 0 0 20px;">Un auteur qui autoédite son premier roman pose presque toujours la même question : à quel budget faut-il s'attendre ? Nous avons repris 1 240 missions livrées sur la plateforme au cours des douze derniers mois pour reconstituer un budget réel, poste par poste.</p>
+          <h2 style="font-family: 'Space Grotesk', sans-serif; font-size: 24px; color: #022746; margin: 30px 0 12px;">Le socle : corriger avant tout</h2>
+          <p style="font-size: 17px; color: #4A5A6B; line-height: 1.8; margin: 0 0 18px;">Sur un manuscrit de 300 pages, soit environ 520 000 signes, la correction orthotypographique complète se situe entre 620 et 1 100 €. L'écart s'explique moins par la réputation du correcteur que par l'état du texte : un manuscrit déjà relu par un comité de lecture coûte un tiers moins cher à corriger.</p>
+          <div style="border-left: 3px solid #D85D3F; padding: 6px 0 6px 20px; margin: 26px 0;">
+            <p style="font-size: 19px; color: #022746; line-height: 1.6; margin: 0; font-style: italic;">« Le poste qu'on sous-estime le plus n'est pas l'impression, c'est la maquette : c'est elle qui fait qu'un livre a l'air d'un livre. »</p>
+          </div>
+          <h2 style="font-family: 'Space Grotesk', sans-serif; font-size: 24px; color: #022746; margin: 30px 0 12px;">Le budget type</h2>
+          <div style="border: 1px solid #E8ECF1; border-radius: 12px; overflow: hidden; margin-bottom: 22px;">
+            <sc-for list="{{ budgetType }}" as="b" hint-placeholder-count="5">
+              <div style="display: flex; justify-content: space-between; padding: 14px 18px; border-bottom: 1px solid #F2F5F8; font-size: 15px;">
+                <span style="color: #4A5A6B;">{{ b.k }}</span><span style="font-family: 'Space Grotesk', monospace; color: #022746;">{{ b.v }}</span>
+              </div>
+            </sc-for>
+          </div>
+          <p style="font-size: 17px; color: #4A5A6B; line-height: 1.8; margin: 0 0 18px;">Total observé pour un tirage de 300 exemplaires : entre 3 400 et 5 800 €, hors diffusion. Les auteurs qui étalent ces postes sur deux trimestres obtiennent en moyenne des devis 12 % moins chers, simplement parce qu'ils laissent aux prestataires le choix du créneau.</p>
+          <div style="border-top: 1px solid #EEF1F5; margin-top: 34px; padding-top: 24px; display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-size: 15px; color: #66768A;">Envie de chiffrer votre projet ?</span>
+            <button sc-camel-on-click="{{ goPublier }}" style="background: #D85D3F; color: #FFF; border: 0; height: 46px; padding: 0 22px; border-radius: 9px; font-size: 15px; font-weight: 500;">Publier une mission</button>
+          </div>
+        </div>
+      </div>

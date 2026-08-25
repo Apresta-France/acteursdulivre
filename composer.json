@@ -1,0 +1,16 @@
+{
+  "name": "acteursdulivre/platform",
+  "description": "Place de marché des métiers du livre",
+  "type": "project",
+  "require": {
+    "php": ">=8.1"
+  },
+  "autoload": {
+    "psr-4": {
+      "Adl\\": "app/"
+    },
+    "files": [
+      "app/helpers.php"
+    ]
+  }
+}

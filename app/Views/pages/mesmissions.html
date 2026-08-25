@@ -1,0 +1,36 @@
+<div style="padding: 30px 44px 54px;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 22px;">
+          <div>
+            <h1 style="font-family: 'Space Grotesk', sans-serif; font-size: 30px; font-weight: 700; color: #022746; margin: 0;">Mes missions publiées</h1>
+            <p style="font-size: 15px; color: #66768A; margin: 6px 0 0;">2 missions ouvertes, 18 candidatures reçues.</p>
+          </div>
+          <button sc-camel-on-click="{{ goPublier }}" style="background: #022746; color: #FFF; border: 0; height: 46px; padding: 0 22px; border-radius: 9px; font-size: 15px; font-weight: 500;">Publier une mission</button>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 16px;">
+          <sc-for list="{{ mesMissions }}" as="m" hint-placeholder-count="3">
+            <div style="border: 1px solid #E8ECF1; border-radius: 12px; padding: 20px;">
+              <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                <div>
+                  <div style="display: flex; align-items: center; gap: 10px;">
+                    <span style="font-size: 17px; color: #14202C;">{{ m.title }}</span>
+                    <span style="{{ m.statusStyle }}">{{ m.status }}</span>
+                  </div>
+                  <div style="font-size: 13px; color: #66768A; margin-top: 5px;">{{ m.cat }} · publiée {{ m.when }} · échéance {{ m.deadline }}</div>
+                </div>
+                <div style="text-align: right;">
+                  <div style="font-family: 'Space Grotesk', monospace; font-size: 15px; color: #022746;">{{ m.budget }}</div>
+                  <div style="font-size: 13px; color: #8496A8; margin-top: 4px;">{{ m.n }} candidatures</div>
+                </div>
+              </div>
+              <div style="display: flex; gap: 10px; margin-top: 16px; border-top: 1px solid #EEF1F5; padding-top: 16px; align-items: center;">
+                <sc-for list="{{ m.avatars }}" as="a" hint-placeholder-count="4">
+                  <span style="{{ a.style }}">{{ a.initials }}</span>
+                </sc-for>
+                <div style="flex: 1;"></div>
+                <button sc-camel-on-click="{{ goMission }}" style="background: #FFF; border: 1px solid #E1E7ED; color: #022746; height: 40px; padding: 0 16px; border-radius: 8px; font-size: 14px;">Voir les candidatures</button>
+                <button sc-camel-on-click="{{ goMessagerie }}" style="background: #022746; color: #FFF; border: 0; height: 40px; padding: 0 16px; border-radius: 8px; font-size: 14px;">Messagerie</button>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </div>

@@ -1,0 +1,82 @@
+<div style="padding: 26px 32px 44px;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 20px;">
+            <div>
+              <h1 style="font-family: 'Space Grotesk', sans-serif; font-size: 26px; font-weight: 700; color: #022746; margin: 0 0 4px;">Vérification des prestataires</h1>
+              <p style="font-size: 14px; color: #66768A; margin: 0;">24 dossiers en attente · délai moyen de traitement 9 h</p>
+            </div>
+            <div style="display: flex; gap: 8px;">
+              <sc-for list="{{ verifFilters }}" as="f" hint-placeholder-count="4">
+                <button sc-camel-on-click="{{ f.onClick }}" style="{{ f.style }}">{{ f.label }}</button>
+              </sc-for>
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 420px; gap: 24px; align-items: start;">
+            <div style="border: 1px solid #E8ECF1; border-radius: 12px; overflow: hidden;">
+              <sc-for list="{{ dossiers }}" as="d" hint-placeholder-count="6">
+                <div sc-camel-on-click="{{ d.onClick }}" style="{{ d.row }}">
+                  <span style="{{ d.avatar }}">{{ d.initials }}</span>
+                  <div style="flex: 1;">
+                    <div style="display: flex; align-items: center; gap: 9px;">
+                      <span style="font-size: 15px; color: #14202C;">{{ d.name }}</span>
+                      <span style="{{ d.tagStyle }}">{{ d.tag }}</span>
+                    </div>
+                    <div style="font-size: 13px; color: #66768A; margin-top: 3px;">{{ d.role }} · déposé {{ d.when }}</div>
+                  </div>
+                  <div style="text-align: right;">
+                    <div style="font-family: 'Space Grotesk', monospace; font-size: 13px; color: #8496A8;">{{ d.pieces }}</div>
+                    <div style="font-size: 12px; color: #A8B6C4; margin-top: 4px;">{{ d.metier }}</div>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+
+            <div style="border: 1px solid #E8ECF1; border-radius: 12px; padding: 22px; position: sticky; top: 20px;">
+              <div style="display: flex; align-items: center; gap: 12px; padding-bottom: 18px; border-bottom: 1px solid #EEF1F5;">
+                <span style="{{ dossierAvatar }}">{{ dossierInitials }}</span>
+                <div style="flex: 1;">
+                  <div style="font-size: 17px; color: #14202C;">{{ dossierName }}</div>
+                  <div style="font-size: 13px; color: #66768A;">{{ dossierRole }}</div>
+                </div>
+              </div>
+
+              <div style="display: flex; flex-direction: column; gap: 11px; padding: 18px 0; border-bottom: 1px solid #EEF1F5;">
+                <sc-for list="{{ dossierMeta }}" as="m" hint-placeholder-count="5">
+                  <div style="display: flex; justify-content: space-between; font-size: 14px;"><span style="color: #8496A8;">{{ m.k }}</span><span style="color: #14202C;">{{ m.v }}</span></div>
+                </sc-for>
+              </div>
+
+              <div style="padding: 18px 0; border-bottom: 1px solid #EEF1F5;">
+                <div style="font-family: 'Space Grotesk', monospace; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: #8496A8; margin-bottom: 12px;">Pièces déposées</div>
+                <div style="display: flex; flex-direction: column; gap: 9px;">
+                  <sc-for list="{{ dossierPieces }}" as="p" hint-placeholder-count="4">
+                    <div style="display: flex; align-items: center; gap: 10px; border: 1px solid #E8ECF1; border-radius: 9px; padding: 11px 13px;">
+                      <span style="font-family: 'Space Grotesk', monospace; font-size: 10px; color: #FFF; background: #022746; padding: 3px 6px; border-radius: 3px;">{{ p.ext }}</span>
+                      <span style="flex: 1; font-size: 14px; color: #14202C;">{{ p.name }}</span>
+                      <span style="{{ p.okStyle }}">{{ p.ok }}</span>
+                    </div>
+                  </sc-for>
+                </div>
+              </div>
+
+              <div style="padding: 18px 0;">
+                <div style="font-family: 'Space Grotesk', monospace; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: #8496A8; margin-bottom: 12px;">Points de contrôle</div>
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                  <sc-for list="{{ controles }}" as="c" hint-placeholder-count="5">
+                    <div sc-camel-on-click="{{ c.onClick }}" style="{{ c.row }}">
+                      <span style="{{ c.box }}">{{ c.check }}</span>
+                      <span style="flex: 1; font-size: 14px; color: #14202C;">{{ c.label }}</span>
+                    </div>
+                  </sc-for>
+                </div>
+              </div>
+
+              <textarea placeholder="Note interne — visible par l'équipe de modération uniquement" style="width: 100%; box-sizing: border-box; height: 76px; border: 1px solid #E1E7ED; border-radius: 9px; padding: 11px 12px; font-size: 14px; outline: none; resize: none; line-height: 1.55;"></textarea>
+              <div style="display: flex; gap: 10px; margin-top: 14px;">
+                <button style="background: #022746; color: #FFF; border: 0; flex: 1; height: 44px; border-radius: 9px; font-size: 15px; font-weight: 500;">Valider le profil</button>
+                <button style="background: #FFF; color: #022746; border: 1px solid #E1E7ED; height: 44px; padding: 0 16px; border-radius: 9px; font-size: 14px;">Demander une pièce</button>
+                <button style="background: #FFF; color: #D85D3F; border: 1px solid #F4DFD8; height: 44px; padding: 0 16px; border-radius: 9px; font-size: 14px;">Refuser</button>
+              </div>
+            </div>
+          </div>
+        </div>

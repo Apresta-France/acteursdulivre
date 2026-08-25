@@ -1,0 +1,294 @@
+<div style="padding: 30px 44px 54px;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 22px;">
+          <div>
+            <h1 style="font-family: 'Space Grotesk', sans-serif; font-size: 30px; font-weight: 700; color: #022746; margin: 0;">Ma vitrine</h1>
+            <p style="font-size: 15px; color: #66768A; margin: 6px 0 0;">Profil complété à 82 %. Les vitrines complètes reçoivent 2,4 fois plus de demandes.</p>
+          </div>
+          <div style="display: flex; gap: 10px;">
+            <button sc-camel-on-click="{{ goProfil }}" style="background: #FFF; border: 1px solid #E1E7ED; color: #022746; height: 46px; padding: 0 18px; border-radius: 9px; font-size: 15px;">Voir en public</button>
+            <button style="background: #D85D3F; color: #FFF; border: 0; height: 46px; padding: 0 22px; border-radius: 9px; font-size: 15px; font-weight: 500;">Enregistrer</button>
+          </div>
+        </div>
+
+        <div style="height: 8px; background: #EEF1F5; border-radius: 4px; margin-bottom: 26px; overflow: hidden;"><div style="height: 100%; width: 82%; background: #D85D3F;"></div></div>
+
+        <div style="display: flex; gap: 8px; margin-bottom: 26px; flex-wrap: wrap;">
+          <sc-for list="{{ vitrineTabs }}" as="t" hint-placeholder-count="5">
+            <button sc-camel-on-click="{{ t.onClick }}" style="{{ t.style }}">{{ t.label }}</button>
+          </sc-for>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 340px; gap: 34px; align-items: start;">
+          <div>
+            <!-- COMPÉTENCES -->
+            <sc-if value="{{ vitCompetences }}" hint-placeholder-val="{{ true }}">
+              <div style="display: flex; flex-direction: column; gap: 26px;">
+                <div>
+                  <div style="font-family: 'Space Grotesk', sans-serif; font-size: 18px; color: #022746; margin-bottom: 6px;">Mes métiers</div>
+                  <p style="font-size: 14px; color: #66768A; margin: 0 0 12px;">Trois maximum : ce sont eux qui vous font apparaître dans l'annuaire.</p>
+                  <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                    <sc-for list="{{ metierChips }}" as="c" hint-placeholder-count="6">
+                      <button sc-camel-on-click="{{ c.onClick }}" style="{{ c.style }}">{{ c.label }}</button>
+                    </sc-for>
+                  </div>
+                </div>
+
+                <div>
+                  <div style="font-family: 'Space Grotesk', sans-serif; font-size: 18px; color: #022746; margin-bottom: 12px;">Compétences et niveau</div>
+                  <div style="border: 1px solid #E8ECF1; border-radius: 12px; overflow: hidden;">
+                    <sc-for list="{{ competences }}" as="c" hint-placeholder-count="6">
+                      <div style="display: grid; grid-template-columns: 1fr 200px 90px 40px; gap: 16px; align-items: center; padding: 14px 18px; border-bottom: 1px solid #F2F5F8;">
+                        <span style="font-size: 15px; color: #14202C;">{{ c.label }}</span>
+                        <div style="height: 6px; background: #EEF1F5; border-radius: 3px; overflow: hidden;"><div style="{{ c.bar }}"></div></div>
+                        <span style="font-family: 'Space Grotesk', monospace; font-size: 13px; color: #66768A;">{{ c.niveau }}</span>
+                        <span style="text-align: center; color: #A8B6C4; cursor: pointer; font-size: 18px;">✕</span>
+                      </div>
+                    </sc-for>
+                    <div style="padding: 14px 18px; display: flex; gap: 10px;">
+                      <input placeholder="Ajouter une compétence — ex. appareil de notes critique" style="flex: 1; border: 1px solid #E1E7ED; border-radius: 8px; padding: 11px 12px; font-size: 14px; outline: none;">
+                      <button style="background: #022746; color: #FFF; border: 0; height: 42px; padding: 0 18px; border-radius: 8px; font-size: 14px;">Ajouter</button>
+                    </div>
+                  </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 22px;">
+                  <div>
+                    <div style="font-family: 'Space Grotesk', sans-serif; font-size: 18px; color: #022746; margin-bottom: 12px;">Logiciels et outils</div>
+                    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                      <sc-for list="{{ outils }}" as="o" hint-placeholder-count="6">
+                        <span style="background: #F4F6F9; color: #4A5A6B; font-size: 13px; padding: 8px 12px; border-radius: 6px;">{{ o }} ✕</span>
+                      </sc-for>
+                      <span style="border: 1px dashed #C9D4E0; color: #8496A8; font-size: 13px; padding: 8px 12px; border-radius: 6px; cursor: pointer;">+ Ajouter</span>
+                    </div>
+                  </div>
+                  <div>
+                    <div style="font-family: 'Space Grotesk', sans-serif; font-size: 18px; color: #022746; margin-bottom: 12px;">Langues de travail</div>
+                    <div style="display: flex; flex-direction: column; gap: 10px;">
+                      <sc-for list="{{ langues }}" as="l" hint-placeholder-count="3">
+                        <div style="display: flex; justify-content: space-between; align-items: center; border: 1px solid #E8ECF1; border-radius: 9px; padding: 12px 14px; font-size: 14px;">
+                          <span style="color: #14202C;">{{ l.langue }}</span><span style="color: #66768A;">{{ l.niveau }}</span>
+                        </div>
+                      </sc-for>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <div style="font-family: 'Space Grotesk', sans-serif; font-size: 18px; color: #022746; margin-bottom: 12px;">Genres et domaines de prédilection</div>
+                  <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                    <sc-for list="{{ genres }}" as="g" hint-placeholder-count="8">
+                      <button sc-camel-on-click="{{ g.onClick }}" style="{{ g.style }}">{{ g.label }}</button>
+                    </sc-for>
+                  </div>
+                </div>
+              </div>
+            </sc-if>
+
+            <!-- CV / PARCOURS -->
+            <sc-if value="{{ vitCV }}" hint-placeholder-val="{{ false }}">
+              <div style="display: flex; flex-direction: column; gap: 28px;">
+                <div>
+                  <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 12px;">
+                    <div style="font-family: 'Space Grotesk', sans-serif; font-size: 18px; color: #022746;">Expériences</div>
+                    <span style="font-size: 14px; color: #D85D3F; cursor: pointer;">+ Ajouter une expérience</span>
+                  </div>
+                  <div style="display: flex; flex-direction: column; gap: 12px;">
+                    <sc-for list="{{ experiences }}" as="e" hint-placeholder-count="4">
+                      <div style="border: 1px solid #E8ECF1; border-radius: 12px; padding: 18px; display: grid; grid-template-columns: 130px 1fr 30px; gap: 18px; align-items: start;">
+                        <span style="font-family: 'Space Grotesk', monospace; font-size: 13px; color: #8496A8;">{{ e.periode }}</span>
+                        <div>
+                          <div style="font-size: 16px; color: #14202C;">{{ e.poste }}</div>
+                          <div style="font-size: 14px; color: #66768A; margin-top: 3px;">{{ e.lieu }}</div>
+                          <p style="font-size: 14px; color: #4A5A6B; line-height: 1.6; margin: 8px 0 0;">{{ e.detail }}</p>
+                        </div>
+                        <span style="text-align: center; color: #A8B6C4; cursor: pointer; font-size: 16px;">⋮</span>
+                      </div>
+                    </sc-for>
+                  </div>
+                </div>
+
+                <div>
+                  <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 12px;">
+                    <div style="font-family: 'Space Grotesk', sans-serif; font-size: 18px; color: #022746;">Formation et certifications</div>
+                    <span style="font-size: 14px; color: #D85D3F; cursor: pointer;">+ Ajouter</span>
+                  </div>
+                  <div style="border: 1px solid #E8ECF1; border-radius: 12px; overflow: hidden;">
+                    <sc-for list="{{ formations }}" as="f" hint-placeholder-count="3">
+                      <div style="display: grid; grid-template-columns: 130px 1fr 30px; gap: 18px; align-items: center; padding: 15px 18px; border-bottom: 1px solid #F2F5F8;">
+                        <span style="font-family: 'Space Grotesk', monospace; font-size: 13px; color: #8496A8;">{{ f.annee }}</span>
+                        <div>
+                          <div style="font-size: 15px; color: #14202C;">{{ f.intitule }}</div>
+                          <div style="font-size: 13px; color: #66768A; margin-top: 3px;">{{ f.ecole }}</div>
+                        </div>
+                        <span style="text-align: center; color: #A8B6C4; cursor: pointer; font-size: 16px;">⋮</span>
+                      </div>
+                    </sc-for>
+                  </div>
+                </div>
+
+                <div>
+                  <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 12px;">
+                    <div style="font-family: 'Space Grotesk', sans-serif; font-size: 18px; color: #022746;">Références professionnelles</div>
+                    <span style="font-size: 14px; color: #D85D3F; cursor: pointer;">+ Ajouter une référence</span>
+                  </div>
+                  <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px;">
+                    <sc-for list="{{ references }}" as="r" hint-placeholder-count="3">
+                      <div style="border: 1px solid #E8ECF1; border-radius: 12px; padding: 16px;">
+                        <div style="font-size: 15px; color: #14202C;">{{ r.nom }}</div>
+                        <div style="font-size: 13px; color: #66768A; margin-top: 4px;">{{ r.role }}</div>
+                        <span style="{{ r.statutStyle }}">{{ r.statut }}</span>
+                      </div>
+                    </sc-for>
+                  </div>
+                </div>
+
+                <div style="border: 1px solid #E8ECF1; border-radius: 12px; padding: 20px; display: flex; justify-content: space-between; align-items: center;">
+                  <div>
+                    <div style="font-size: 15px; color: #14202C;">CV au format PDF</div>
+                    <div style="font-size: 13px; color: #66768A; margin-top: 4px;">Généré depuis votre vitrine, ou téléversez le vôtre.</div>
+                  </div>
+                  <div style="display: flex; gap: 10px;">
+                    <button style="background: #FFF; border: 1px solid #E1E7ED; color: #022746; height: 40px; padding: 0 16px; border-radius: 8px; font-size: 14px;">Téléverser</button>
+                    <button style="background: #022746; color: #FFF; border: 0; height: 40px; padding: 0 16px; border-radius: 8px; font-size: 14px;">Générer mon CV</button>
+                  </div>
+                </div>
+              </div>
+            </sc-if>
+
+            <!-- PORTFOLIO -->
+            <sc-if value="{{ vitPortfolio }}" hint-placeholder-val="{{ false }}">
+              <div>
+                <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 14px;">
+                  <div>
+                    <div style="font-family: 'Space Grotesk', sans-serif; font-size: 18px; color: #022746;">Mes réalisations</div>
+                    <p style="font-size: 14px; color: #66768A; margin: 6px 0 0;">Six visuels maximum. Une réalisation issue d'une mission de la plateforme est marquée « vérifiée ».</p>
+                  </div>
+                  <button style="background: #022746; color: #FFF; border: 0; height: 42px; padding: 0 18px; border-radius: 8px; font-size: 14px;">Ajouter une réalisation</button>
+                </div>
+                <div style="border: 1px solid #F4DFD8; background: #FDF3F0; border-radius: 12px; padding: 14px 18px; display: flex; gap: 12px; align-items: center; margin-bottom: 16px;">
+                  <span style="width: 26px; height: 26px; min-width: 26px; border-radius: 7px; background: #FFF; color: #D85D3F; display: flex; align-items: center; justify-content: center;">
+                    <svg width="16" height="16" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"></circle><path d="M6 18L18 6"></path></svg>
+                  </span>
+                  <span style="flex: 1; font-size: 14px; color: #4A5A6B; line-height: 1.55;">Chaque visuel déposé doit être une réalisation humaine dont vous détenez les droits. Aucune image générée par IA n'est acceptée au portfolio.</span>
+                  <span sc-camel-on-click="{{ goConfiance }}" style="font-size: 14px; color: #D85D3F; cursor: pointer; white-space: nowrap;">La charte →</span>
+                </div>
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;">
+                  <sc-for list="{{ portfolioEdit }}" as="p" hint-placeholder-count="6">
+                    <div style="border: 1px solid #E8ECF1; border-radius: 12px; overflow: hidden;">
+                      <div style="height: 160px; position: relative; background: #F4F6F9;">
+                        <image-slot id="{{ p.slotId }}" shape="rect" fit="cover" src="{{ p.img }}" placeholder="réalisation"></image-slot>
+                      </div>
+                      <div style="padding: 14px;">
+                        <input value="{{ p.caption }}" sc-camel-on-change="{{ p.onCaption }}" style="width: 100%; box-sizing: border-box; border: 1px solid #E1E7ED; border-radius: 8px; padding: 10px 11px; font-size: 14px; outline: none;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px;">
+                          <span style="{{ p.badgeStyle }}">{{ p.badge }}</span>
+                          <span style="font-size: 13px; color: #A8B6C4; cursor: pointer;">Retirer</span>
+                        </div>
+                      </div>
+                    </div>
+                  </sc-for>
+                  <div style="border: 1.5px dashed #C9D4E0; border-radius: 12px; min-height: 200px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; color: #8496A8; font-size: 14px; cursor: pointer; background: #FBFCFE;">
+                    <span style="font-size: 22px;">+</span>Glisser un visuel
+                  </div>
+                </div>
+              </div>
+            </sc-if>
+
+            <!-- HISTORIQUE -->
+            <sc-if value="{{ vitHistorique }}" hint-placeholder-val="{{ false }}">
+              <div>
+                <div style="display: flex; gap: 22px; padding-bottom: 20px; border-bottom: 1px solid #EEF1F5; margin-bottom: 20px;">
+                  <sc-for list="{{ histStats }}" as="h" hint-placeholder-count="4">
+                    <div>
+                      <div style="font-family: 'Space Grotesk', sans-serif; font-size: 24px; font-weight: 700; color: #022746;">{{ h.v }}</div>
+                      <div style="font-size: 13px; color: #8496A8; margin-top: 3px;">{{ h.k }}</div>
+                    </div>
+                  </sc-for>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+                  <div style="font-family: 'Space Grotesk', sans-serif; font-size: 18px; color: #022746;">Missions livrées</div>
+                  <div style="display: flex; gap: 8px; align-items: center;">
+                    <sc-raw-select style="border: 1px solid #E1E7ED; background: #FFF; border-radius: 8px; padding: 9px 12px; font-size: 14px; color: #022746;"><option>2026</option><option>2025</option><option>Tout l'historique</option></sc-raw-select>
+                    <button style="background: #FFF; border: 1px solid #E1E7ED; color: #022746; height: 40px; padding: 0 14px; border-radius: 8px; font-size: 14px;">Exporter en CSV</button>
+                  </div>
+                </div>
+                <div style="border: 1px solid #E8ECF1; border-radius: 12px; overflow: hidden;">
+                  <div style="display: grid; grid-template-columns: 100px 1fr 160px 110px 130px; gap: 14px; padding: 12px 18px; background: #FBFCFE; border-bottom: 1px solid #EEF1F5; font-size: 13px; color: #8496A8;">
+                    <span>Date</span><span>Mission</span><span>Client</span><span>Montant</span><span>Avis reçu</span>
+                  </div>
+                  <sc-for list="{{ historique }}" as="h" hint-placeholder-count="7">
+                    <div style="display: grid; grid-template-columns: 100px 1fr 160px 110px 130px; gap: 14px; padding: 15px 18px; border-bottom: 1px solid #F2F5F8; align-items: center; font-size: 14px;">
+                      <span style="font-family: 'Space Grotesk', monospace; color: #8496A8;">{{ h.date }}</span>
+                      <div>
+                        <div style="font-size: 15px; color: #14202C;">{{ h.title }}</div>
+                        <div style="font-size: 13px; color: #8496A8; margin-top: 3px;">{{ h.detail }}</div>
+                      </div>
+                      <span style="color: #4A5A6B;">{{ h.client }}</span>
+                      <span style="font-family: 'Space Grotesk', monospace; color: #022746;">{{ h.montant }}</span>
+                      <span style="font-family: 'Space Grotesk', monospace; color: #D85D3F;">{{ h.avis }}</span>
+                    </div>
+                  </sc-for>
+                </div>
+              </div>
+            </sc-if>
+
+            <!-- AVIS REÇUS / DONNÉS -->
+            <sc-if value="{{ vitAvis }}" hint-placeholder-val="{{ false }}">
+              <div>
+                <div style="display: flex; gap: 8px; margin-bottom: 20px;">
+                  <sc-for list="{{ avisTabs }}" as="t" hint-placeholder-count="2">
+                    <button sc-camel-on-click="{{ t.onClick }}" style="{{ t.style }}">{{ t.label }}</button>
+                  </sc-for>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 14px;">
+                  <sc-for list="{{ avisListe }}" as="a" hint-placeholder-count="4">
+                    <div style="border: 1px solid #E8ECF1; border-radius: 12px; padding: 18px;">
+                      <div style="display: flex; justify-content: space-between; align-items: baseline;">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                          <span style="{{ a.avatar }}">{{ a.initials }}</span>
+                          <div>
+                            <div style="font-size: 15px; color: #14202C;">{{ a.who }}</div>
+                            <div style="font-size: 13px; color: #8496A8;">{{ a.what }}</div>
+                          </div>
+                        </div>
+                        <span style="font-family: 'Space Grotesk', monospace; font-size: 13px; color: #D85D3F;">★ {{ a.note }}</span>
+                      </div>
+                      <p style="font-size: 15px; color: #4A5A6B; line-height: 1.65; margin: 12px 0 0;">{{ a.txt }}</p>
+                      <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 12px;">
+                        <span style="font-size: 13px; color: #8496A8;">{{ a.when }}</span>
+                        <span style="font-size: 14px; color: #D85D3F; cursor: pointer;">{{ a.action }}</span>
+                      </div>
+                    </div>
+                  </sc-for>
+                </div>
+              </div>
+            </sc-if>
+          </div>
+
+          <!-- colonne conseils -->
+          <div style="display: flex; flex-direction: column; gap: 16px;">
+            <div style="border: 1px solid #E8ECF1; border-radius: 14px; padding: 22px;">
+              <div style="font-family: 'Space Grotesk', sans-serif; font-size: 16px; font-weight: 500; color: #022746; margin-bottom: 14px;">Compléter votre vitrine</div>
+              <div style="display: flex; flex-direction: column; gap: 12px;">
+                <sc-for list="{{ vitrineTodo }}" as="t" hint-placeholder-count="5">
+                  <div style="display: flex; gap: 10px; align-items: flex-start; font-size: 14px; color: #4A5A6B; line-height: 1.5;">
+                    <span style="{{ t.mark }}">{{ t.sign }}</span>{{ t.label }}
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+            <div style="background: #FDF3F0; border: 1px solid #F4DFD8; border-radius: 14px; padding: 22px;">
+              <div style="font-family: 'Space Grotesk', sans-serif; font-size: 16px; color: #022746; font-weight: 500; margin-bottom: 8px;">Ce que regardent les clients</div>
+              <p style="font-size: 14px; color: #4A5A6B; line-height: 1.6; margin: 0;">Dans l'ordre : les avis, le portfolio, le délai de réponse, puis le prix. Le CV compte surtout pour les éditeurs et les commandes institutionnelles.</p>
+            </div>
+            <div style="border: 1px solid #E8ECF1; border-radius: 14px; padding: 22px;">
+              <div style="font-family: 'Space Grotesk', sans-serif; font-size: 16px; font-weight: 500; color: #022746; margin-bottom: 12px;">Visibilité de ma vitrine</div>
+              <div style="display: flex; flex-direction: column; gap: 10px; font-size: 14px;">
+                <sc-for list="{{ vitrineStats }}" as="v" hint-placeholder-count="3">
+                  <div style="display: flex; justify-content: space-between;"><span style="color: #8496A8;">{{ v.k }}</span><span style="color: #14202C;">{{ v.v }}</span></div>
+                </sc-for>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>

@@ -1,0 +1,89 @@
+<div style="padding: 30px 44px 54px;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px;">
+          <div>
+            <div style="font-family: 'Space Grotesk', monospace; font-size: 13px; color: #8496A8;">Commande nº 2481-03</div>
+            <h1 style="font-family: 'Space Grotesk', sans-serif; font-size: 29px; font-weight: 700; color: #022746; margin: 6px 0 8px;">Correction complète — essai historique, 240 pages</h1>
+            <div style="display: flex; align-items: center; gap: 12px; font-size: 15px; color: #66768A;">
+              <span style="background: #022746; color: #FFF; font-family: 'Space Grotesk', monospace; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; padding: 5px 9px; border-radius: 5px;">Livraison à valider</span>
+              Marion Vasseur · démarré le 8 septembre
+            </div>
+          </div>
+          <div style="text-align: right;">
+            <div style="font-size: 13px; color: #8496A8;">Montant de la commande</div>
+            <div style="font-family: 'Space Grotesk', sans-serif; font-size: 30px; font-weight: 700; color: #022746;">780 €</div>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 360px; gap: 34px; align-items: start;">
+          <div>
+            <div style="border: 1px solid #E8ECF1; border-radius: 14px; padding: 24px; margin-bottom: 22px;">
+              <div style="font-family: 'Space Grotesk', sans-serif; font-size: 16px; font-weight: 500; color: #022746; margin-bottom: 20px;">Étapes de la mission</div>
+              <div style="display: flex; flex-direction: column; gap: 0;">
+                <sc-for list="{{ suiviSteps }}" as="s" hint-placeholder-count="5">
+                  <div style="display: grid; grid-template-columns: 26px 1fr 120px; gap: 14px; align-items: flex-start; padding-bottom: 22px;">
+                    <div style="display: flex; flex-direction: column; align-items: center; gap: 4px;">
+                      <span style="{{ s.dot }}">{{ s.mark }}</span>
+                      <span style="{{ s.line }}"></span>
+                    </div>
+                    <div>
+                      <div style="font-size: 15px; color: #14202C;">{{ s.label }}</div>
+                      <div style="font-size: 14px; color: #66768A; margin-top: 4px; line-height: 1.5;">{{ s.note }}</div>
+                    </div>
+                    <div style="font-family: 'Space Grotesk', monospace; font-size: 13px; color: #8496A8; text-align: right;">{{ s.when }}</div>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+
+            <div style="border: 1px solid #E8ECF1; border-radius: 14px; padding: 24px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                <span style="font-family: 'Space Grotesk', sans-serif; font-size: 16px; font-weight: 500; color: #022746;">Livraison du 22 septembre</span>
+                <span style="font-size: 13px; color: #8496A8;">2 fichiers · 4,1 Mo</span>
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 10px;">
+                <sc-for list="{{ livraison }}" as="l" hint-placeholder-count="2">
+                  <div style="display: flex; align-items: center; gap: 12px; border: 1px solid #E8ECF1; border-radius: 10px; padding: 14px 16px;">
+                    <span style="font-family: 'Space Grotesk', monospace; font-size: 11px; color: #FFF; background: #022746; padding: 4px 7px; border-radius: 4px;">{{ l.ext }}</span>
+                    <span style="flex: 1; font-size: 14px; color: #14202C;">{{ l.name }}</span>
+                    <span style="font-size: 13px; color: #8496A8;">{{ l.size }}</span>
+                    <span style="font-size: 14px; color: #D85D3F; cursor: pointer;">Télécharger</span>
+                  </div>
+                </sc-for>
+              </div>
+              <p style="font-size: 15px; color: #4A5A6B; line-height: 1.65; margin: 18px 0 0;">« Première passe complète, 1 240 corrections. Le rapport de lecture signale trois incohérences de datation, p. 88, 142 et 201. J'attends vos arbitrages pour la passe de vérification. »</p>
+              <div style="display: flex; gap: 12px; margin-top: 20px; flex-wrap: wrap;">
+                <button style="background: #D85D3F; color: #FFF; border: 0; height: 48px; padding: 0 24px; border-radius: 9px; font-size: 15px; font-weight: 500;">Valider la livraison</button>
+                <button style="background: #FFF; color: #022746; border: 1px solid #022746; height: 48px; padding: 0 20px; border-radius: 9px; font-size: 15px;">Demander une modification</button>
+                <button style="background: #FFF; color: #66768A; border: 1px solid #E1E7ED; height: 48px; padding: 0 18px; border-radius: 9px; font-size: 15px;">Signaler un litige</button>
+              </div>
+            </div>
+          </div>
+
+          <div style="display: flex; flex-direction: column; gap: 16px;">
+            <div style="border: 1px solid #E8ECF1; border-radius: 14px; padding: 22px;">
+              <div style="display: flex; align-items: center; gap: 12px;">
+                <div style="width: 46px; height: 46px; border-radius: 50%; background: #022746; color: #FFF; display: flex; align-items: center; justify-content: center; font-family: 'Space Grotesk', monospace; font-size: 15px;">MV</div>
+                <div><div style="font-size: 15px; color: #14202C;">Marion Vasseur</div><div style="font-size: 13px; color: #66768A;">répond en moins de 24 h</div></div>
+              </div>
+              <button sc-camel-on-click="{{ goMessagerie }}" style="background: #022746; color: #FFF; border: 0; width: 100%; height: 42px; border-radius: 8px; font-size: 14px; margin-top: 16px;">Ouvrir la conversation</button>
+            </div>
+            <div style="border: 1px solid #E8ECF1; border-radius: 14px; padding: 22px;">
+              <div style="font-family: 'Space Grotesk', monospace; font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: #8496A8; margin-bottom: 14px;">Détail du paiement</div>
+              <div style="display: flex; flex-direction: column; gap: 10px; font-size: 14px;">
+                <sc-for list="{{ suiviPaiement }}" as="p" hint-placeholder-count="4">
+                  <div style="display: flex; justify-content: space-between;"><span style="color: #8496A8;">{{ p.k }}</span><span style="color: #14202C;">{{ p.v }}</span></div>
+                </sc-for>
+              </div>
+              <div style="background: #F7F9FC; border-radius: 10px; padding: 14px; margin-top: 16px; font-size: 13px; color: #4A5A6B; line-height: 1.6;">Sans réponse de votre part, la livraison est considérée comme acceptée 7 jours après sa réception.</div>
+            </div>
+            <div style="border: 1px solid #E8ECF1; border-radius: 14px; padding: 22px;">
+              <div style="font-family: 'Space Grotesk', sans-serif; font-size: 16px; font-weight: 500; color: #022746; margin-bottom: 10px;">Documents</div>
+              <div style="display: flex; flex-direction: column; gap: 9px; font-size: 14px;">
+                <sc-for list="{{ suiviDocs }}" as="d" hint-placeholder-count="3">
+                  <span style="color: #D85D3F; cursor: pointer;">{{ d }}</span>
+                </sc-for>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>

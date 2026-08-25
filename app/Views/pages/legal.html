@@ -1,0 +1,17 @@
+<div style="padding: 44px; display: grid; grid-template-columns: 260px 1fr; gap: 44px; align-items: start;">
+        <div style="display: flex; flex-direction: column; gap: 8px; position: sticky; top: 20px;">
+          <sc-for list="{{ legalNav }}" as="l" hint-placeholder-count="6">
+            <div sc-camel-on-click="{{ l.onClick }}" style="{{ l.style }}">{{ l.label }}</div>
+          </sc-for>
+        </div>
+        <div style="max-width: 760px;">
+          <h1 style="font-family: 'Space Grotesk', sans-serif; font-size: 32px; font-weight: 700; color: #022746; margin: 0 0 18px;">{{ legalTitle }}</h1>
+          <sc-for list="{{ legalBlocks }}" as="b" hint-placeholder-count="4">
+            <div style="margin-bottom: 26px;">
+              <h2 style="font-family: 'Space Grotesk', sans-serif; font-size: 19px; color: #022746; margin: 0 0 10px;">{{ b.title }}</h2>
+              <p style="font-size: 15px; color: #4A5A6B; line-height: 1.8; margin: 0;">{{ b.body }}</p>
+            </div>
+          </sc-for>
+          <div style="font-size: 14px; color: #8496A8; border-top: 1px solid #EEF1F5; padding-top: 18px;">Dernière mise à jour : 12 août 2026 · Version 3.1</div>
+        </div>
+      </div>
