@@ -1,0 +1,101 @@
+<?php
+$q = (string) ($query ?? '');
+$type = (string) ($searchType ?? 'all');
+$cat = (string) ($searchCat ?? '');
+$results = $searchResults ?? [];
+$count = (int) ($searchCount ?? count($results));
+$types = $searchTypes ?? \Adl\Data\Catalog::TYPES;
+$trades = $trades ?? \Adl\Data\Catalog::trades();
+$heading = $q !== '' ? $q : ($cat !== '' ? $cat : 'Tous les métiers du livre');
+?>
+<div class="search-page" data-search-page
+     data-api="<?= e(url('/api/recherche')) ?>"
+     data-initial="<?= e(json_encode($searchState ?? ['results' => $results, 'count' => $count, 'query' => $q, 'type' => $type, 'cat' => $cat], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)) ?>">
+  <div class="search-banner">
+    <span class="search-banner-badge">Annuaire</span>
+    Les résultats se mettent à jour pendant que vous tapez — prestations, profils et missions au même endroit.
+  </div>
+
+  <div class="search-layout">
+    <aside class="search-aside">
+      <div class="search-aside-head">
+        <span>Filtres</span>
+        <a href="<?= e(url('/recherche')) ?>">Réinitialiser</a>
+      </div>
+      <form class="search-filters" data-search-filters>
+        <label class="field" for="search-q">Recherche</label>
+        <input class="input" id="search-q" type="search" name="q" value="<?= e($q) ?>" placeholder="correcteur, illustration, jeunesse…" autocomplete="off" data-search-input>
+
+        <p class="field">Type</p>
+        <div class="chip-row">
+          <?php foreach ($types as $value => $label): ?>
+            <label class="chip<?= $type === $value ? ' is-on' : '' ?>">
+              <input type="radio" name="type" value="<?= e($value) ?>"<?= $type === $value ? ' checked' : '' ?>>
+              <?= e($label) ?>
+            </label>
+          <?php endforeach; ?>
+        </div>
+
+        <p class="field">Métier</p>
+        <div class="chip-row">
+          <label class="chip<?= $cat === '' ? ' is-on' : '' ?>">
+            <input type="radio" name="cat" value=""<?= $cat === '' ? ' checked' : '' ?>>
+            Tous
+          </label>
+          <?php foreach ($trades as $trade): ?>
+            <label class="chip<?= $cat === $trade ? ' is-on' : '' ?>">
+              <input type="radio" name="cat" value="<?= e($trade) ?>"<?= $cat === $trade ? ' checked' : '' ?>>
+              <?= e($trade) ?>
+            </label>
+          <?php endforeach; ?>
+        </div>
+      </form>
+
+      <div class="search-aside-card">
+        <div class="search-aside-title">Pas le temps de comparer ?</div>
+        <p>Publiez votre mission : les prestataires vous envoient leurs devis.</p>
+        <a class="btn-ghost" href="<?= e(url('/espace/publier')) ?>">Publier une mission</a>
+      </div>
+    </aside>
+
+    <div>
+      <div class="search-crumb">Accueil · Annuaire</div>
+      <div class="search-head">
+        <h1><?= e($heading) ?> <span data-search-count>· <?= (int) $count ?> résultat<?= $count > 1 ? 's' : '' ?></span></h1>
+      </div>
+      <div class="search-grid" data-search-results>
+        <?php if ($results === []): ?>
+          <div class="search-empty">
+            <strong>Aucun résultat pour cette recherche.</strong>
+            <span>Essayez un métier (illustration, traduction…) ou publiez une mission.</span>
+          </div>
+        <?php else: ?>
+          <?php foreach ($results as $item): ?>
+            <a class="search-card" href="<?= e(url((string) $item['href'])) ?>">
+              <?php if (!empty($item['thumb'])): ?>
+                <div class="search-card-media" style="background-image:url('<?= e((string) $item['thumb']) ?>')"></div>
+              <?php else: ?>
+                <div class="search-card-media search-card-media-plain">
+                  <span class="avatar" style="<?= e(avatar_style((string) ($item['initials'] ?: mb_strtoupper(mb_substr((string) $item['title'], 0, 2))), 42)) ?>"><?= e((string) ($item['initials'] ?: mb_strtoupper(mb_substr((string) $item['title'], 0, 2)))) ?></span>
+                </div>
+              <?php endif; ?>
+              <div class="search-card-body">
+                <div class="search-card-kicker">
+                  <span><?= e((string) $item['kind_label']) ?></span>
+                  <?php if (!empty($item['cat'])): ?><span><?= e((string) $item['cat']) ?></span><?php endif; ?>
+                  <?php if (!empty($item['live'])): ?><span class="search-live">Votre réseau</span><?php endif; ?>
+                </div>
+                <div class="search-card-title"><?= e((string) $item['title']) ?></div>
+                <div class="search-card-sub"><?= e((string) $item['subtitle']) ?></div>
+                <div class="search-card-meta">
+                  <span><?= e((string) $item['meta']) ?></span>
+                  <?php if (!empty($item['price'])): ?><strong><?= e((string) $item['price']) ?></strong><?php endif; ?>
+                </div>
+              </div>
+            </a>
+          <?php endforeach; ?>
+        <?php endif; ?>
+      </div>
+    </div>
+  </div>
+</div>

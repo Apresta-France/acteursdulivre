@@ -46,4 +46,27 @@ final class Request
         $value = $this->input($key);
         return $value === true || $value === 1 || $value === '1' || $value === 'on';
     }
+
+    public function int(string $key, ?int $default = null): ?int
+    {
+        $value = $this->input($key);
+        if ($value === null || $value === '') {
+            return $default;
+        }
+        return (int) $value;
+    }
+
+    /** @return array<int|string, mixed> */
+    public function list(string $key): array
+    {
+        $value = $this->input($key, []);
+        return is_array($value) ? $value : [];
+    }
+
+    /** @return array<string, mixed> */
+    public function file(string $key): array
+    {
+        $file = $_FILES[$key] ?? [];
+        return is_array($file) ? $file : [];
+    }
 }

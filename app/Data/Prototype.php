@@ -128,7 +128,7 @@ final class Prototype
 
         return [
             'title' => 'Acteurs du Livre',
-            'query' => 'correction roman',
+            'query' => '',
             'megaOpen' => false,
             'mega' => $mega,
             'megaBtnStyle' => 'padding: 16px 0; font-size: 14px; cursor: pointer; white-space: nowrap; color: ' . $navy . '; font-weight: 500;',

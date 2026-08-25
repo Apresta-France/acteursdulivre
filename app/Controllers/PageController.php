@@ -7,7 +7,9 @@ namespace Adl\Controllers;
 use Adl\Core\Mailer;
 use Adl\Core\Request;
 use Adl\Core\View;
+use Adl\Data\Catalog;
 use Adl\Data\LegalPages;
+use Adl\Models\Profile;
 
 final class PageController
 {
@@ -18,10 +20,38 @@ final class PageController
 
     public function search(Request $request): void
     {
+        $query = $request->string('q');
+        $type = $request->string('type', 'all');
+        $cat = $request->string('cat');
+        $found = Catalog::search($query, $type, $cat);
+
         View::page('resultats', [
-            'title' => 'Recherche',
-            'query' => $request->string('q', 'correction roman'),
+            'title' => $query !== '' ? 'Recherche : ' . $query : 'Recherche',
+            'query' => $query,
+            'searchType' => $found['type'],
+            'searchCat' => $found['cat'],
+            'searchCount' => $found['count'],
+            'searchResults' => $found['results'],
+            'searchState' => $found,
+            'trades' => Catalog::trades(),
+            'searchTypes' => Catalog::TYPES,
         ]);
+    }
+
+    public function searchApi(Request $request): void
+    {
+        $found = Catalog::search(
+            $request->string('q'),
+            $request->string('type', 'all'),
+            $request->string('cat'),
+            max(1, min(48, $request->int('limit', 24) ?? 24))
+        );
+        foreach (['results', 'suggestions'] as $key) {
+            foreach ($found[$key] as $i => $item) {
+                $found[$key][$i]['href'] = url((string) ($item['href'] ?? '/recherche'));
+            }
+        }
+        json_response($found);
     }
 
     public function metier(Request $request, string $slug): void
@@ -36,17 +66,65 @@ final class PageController
 
     public function profil(Request $request, string $slug): void
     {
+        try {
+            $profile = Profile::findBySlug($slug);
+        } catch (\Throwable) {
+            $profile = null;
+        }
+
+        if ($profile && !empty($profile['offers_services'])) {
+            $public = Catalog::profileToPublic($profile);
+            View::page('profil', [
+                'title' => $public['name'],
+                'slug' => $slug,
+                'liveProfile' => $public,
+            ]);
+            return;
+        }
+
+        $provider = Catalog::provider($slug);
+        if ($provider) {
+            View::page('profil', [
+                'title' => $provider['title'],
+                'slug' => $slug,
+                'catalogProfile' => $provider,
+            ]);
+            return;
+        }
+
         View::page('profil', ['title' => 'Marion Vasseur', 'slug' => $slug]);
     }
 
     public function missions(Request $request): void
     {
-        View::page('missions', ['title' => 'Appels d\'offres']);
+        $cat = $request->string('cat');
+        $found = Catalog::search('', 'missions', $cat);
+        View::page('missions', [
+            'title' => 'Appels d\'offres',
+            'searchCat' => $cat,
+            'liveMissions' => $found['results'],
+            'trades' => Catalog::trades(),
+        ]);
     }
 
     public function mission(Request $request, string $slug): void
     {
-        View::page('mission', ['title' => 'Détail de la mission', 'slug' => $slug]);
+        $mission = Catalog::mission($slug);
+        if ($mission && !empty($mission['live'])) {
+            View::page('mission', [
+                'title' => $mission['title'],
+                'slug' => $slug,
+                'liveMission' => $mission,
+                'suggestions' => Catalog::suggestionsForTrade((string) ($mission['category_name'] ?? '')),
+            ]);
+            return;
+        }
+
+        View::page('mission', [
+            'title' => $mission['title'] ?? 'Détail de la mission',
+            'slug' => $slug,
+            'catalogMission' => $mission,
+        ]);
     }
 
     public function comment(Request $request): void

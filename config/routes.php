@@ -15,6 +15,7 @@ return static function (Router $router): void {
 
     $router->get('/', [PageController::class, 'home']);
     $router->get('/recherche', [PageController::class, 'search']);
+    $router->get('/api/recherche', [PageController::class, 'searchApi']);
     $router->get('/metiers/{slug}', [PageController::class, 'metier']);
     $router->get('/prestations/{slug}', [PageController::class, 'fiche']);
     $router->get('/prestataires/{slug}', [PageController::class, 'profil']);
@@ -43,6 +44,7 @@ return static function (Router $router): void {
 
     $router->get('/espace', [AccountController::class, 'dashboard']);
     $router->get('/espace/publier', [AccountController::class, 'publier']);
+    $router->post('/espace/publier', [AccountController::class, 'publierSave']);
     $router->get('/espace/commande', [AccountController::class, 'commande']);
     $router->get('/espace/suivi', [AccountController::class, 'suivi']);
     $router->get('/espace/commandes', [AccountController::class, 'commandes']);
@@ -55,6 +57,7 @@ return static function (Router $router): void {
     $router->get('/espace/favoris', [AccountController::class, 'favoris']);
     $router->get('/espace/avis', [AccountController::class, 'avis']);
     $router->get('/espace/vitrine', [AccountController::class, 'vitrine']);
+    $router->post('/espace/vitrine', [AccountController::class, 'vitrineSave']);
     $router->get('/espace/parametres', [AccountController::class, 'parametres']);
     $router->post('/espace/parametres', [AccountController::class, 'parametresSave']);
     $router->get('/espace/facturation', [AccountController::class, 'facturation']);

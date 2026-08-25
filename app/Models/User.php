@@ -136,7 +136,12 @@ final class User
         if ($exists) {
             return;
         }
-        Database::query('INSERT INTO profiles (user_id) VALUES (?)', [$userId]);
+        $user = self::find($userId);
+        $slug = unique_slug(
+            trim(($user['first_name'] ?? '') . ' ' . ($user['last_name'] ?? '')) ?: 'profil',
+            static fn (string $candidate): bool => Database::fetch('SELECT id FROM profiles WHERE slug = ?', [$candidate]) !== null
+        );
+        Database::query('INSERT INTO profiles (user_id, slug) VALUES (?, ?)', [$userId, $slug]);
     }
 
     private static function normalizeFlag(mixed $value, bool $fallback): int

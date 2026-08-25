@@ -336,4 +336,211 @@
     input.addEventListener('change', syncIntentCards);
   });
   syncIntentCards();
+
+  function debounce(fn, wait) {
+    var timer;
+    return function () {
+      var args = arguments;
+      clearTimeout(timer);
+      timer = setTimeout(function () { fn.apply(null, args); }, wait);
+    };
+  }
+
+  function escapeHtml(value) {
+    return String(value || '').replace(/[&<>"']/g, function (ch) {
+      return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch];
+    });
+  }
+
+  function syncChips(scope) {
+    (scope || document).querySelectorAll('.chip').forEach(function (chip) {
+      var input = chip.querySelector('input');
+      chip.classList.toggle('is-on', !!(input && input.checked));
+    });
+  }
+
+  document.querySelectorAll('.chip input').forEach(function (input) {
+    input.addEventListener('change', function () {
+      var group = input.closest('[data-max-checks]');
+      if (group && input.type === 'checkbox' && input.checked) {
+        var max = parseInt(group.getAttribute('data-max-checks'), 10) || 3;
+        var boxes = group.querySelectorAll('input[type="checkbox"]:checked');
+        if (boxes.length > max) input.checked = false;
+      }
+      syncChips(input.closest('.chip-row') || document);
+    });
+  });
+  syncChips();
+
+  function renderSuggest(items) {
+    if (!items || !items.length) {
+      return '<div class="search-suggest-empty">Aucun résultat pour l’instant. Essayez un métier ou un nom.</div>';
+    }
+    return items.map(function (item) {
+      return '<a href="' + escapeHtml(item.href) + '">' +
+        '<span class="search-suggest-kind">' + escapeHtml(item.kind_label) + '</span>' +
+        '<span><strong>' + escapeHtml(item.title) + '</strong><em>' + escapeHtml(item.subtitle) + (item.meta ? ' · ' + escapeHtml(item.meta) : '') + '</em></span>' +
+        '</a>';
+    }).join('');
+  }
+
+  function renderCards(items) {
+    if (!items || !items.length) {
+      return '<div class="search-empty"><strong>Aucun résultat pour cette recherche.</strong><span>Essayez un métier (illustration, traduction…) ou publiez une mission.</span></div>';
+    }
+    return items.map(function (item) {
+      var media = item.thumb
+        ? '<div class="search-card-media" style="background-image:url(\'' + escapeHtml(item.thumb) + '\')"></div>'
+        : '<div class="search-card-media search-card-media-plain"><span class="avatar">' + escapeHtml((item.initials || item.title || 'AD').slice(0, 2).toUpperCase()) + '</span></div>';
+      return '<a class="search-card" href="' + escapeHtml(item.href) + '">' + media +
+        '<div class="search-card-body">' +
+          '<div class="search-card-kicker"><span>' + escapeHtml(item.kind_label) + '</span>' +
+            (item.cat ? '<span>' + escapeHtml(item.cat) + '</span>' : '') +
+            (item.live ? '<span class="search-live">Votre réseau</span>' : '') +
+          '</div>' +
+          '<div class="search-card-title">' + escapeHtml(item.title) + '</div>' +
+          '<div class="search-card-sub">' + escapeHtml(item.subtitle) + '</div>' +
+          '<div class="search-card-meta"><span>' + escapeHtml(item.meta || '') + '</span>' +
+            (item.price ? '<strong>' + escapeHtml(item.price) + '</strong>' : '') +
+          '</div>' +
+        '</div></a>';
+    }).join('');
+  }
+
+  function fetchSearch(api, params, cb) {
+    var url = api + (api.indexOf('?') >= 0 ? '&' : '?') + params.toString();
+    fetch(url, { headers: { Accept: 'application/json' } })
+      .then(function (res) { return res.json(); })
+      .then(cb)
+      .catch(function () {});
+  }
+
+  document.querySelectorAll('[data-live-search]').forEach(function (form) {
+    var input = form.querySelector('[data-live-input]');
+    var panel = form.querySelector('[data-live-panel]');
+    var api = form.getAttribute('data-api');
+    if (!input || !panel || !api) return;
+
+    var run = debounce(function () {
+      var q = input.value.trim();
+      if (q.length < 2) {
+        panel.hidden = true;
+        panel.innerHTML = '';
+        return;
+      }
+      var params = new URLSearchParams({ q: q, limit: '8' });
+      fetchSearch(api, params, function (data) {
+        panel.innerHTML = renderSuggest(data.suggestions || data.results || []);
+        panel.hidden = false;
+      });
+    }, 180);
+
+    input.addEventListener('input', run);
+    input.addEventListener('focus', function () {
+      if (panel.innerHTML) panel.hidden = false;
+    });
+    document.addEventListener('click', function (event) {
+      if (!form.contains(event.target)) panel.hidden = true;
+    });
+    input.addEventListener('keydown', function (event) {
+      if (event.key === 'Escape') panel.hidden = true;
+    });
+  });
+
+  var searchPage = document.querySelector('[data-search-page]');
+  if (searchPage) {
+    var api = searchPage.getAttribute('data-api');
+    var filters = searchPage.querySelector('[data-search-filters]');
+    var results = searchPage.querySelector('[data-search-results]');
+    var countEl = searchPage.querySelector('[data-search-count]');
+    var titleEl = searchPage.querySelector('.search-head h1');
+    var headerInput = document.querySelector('[data-live-input]');
+
+    function currentParams() {
+      var data = new FormData(filters);
+      var params = new URLSearchParams();
+      ['q', 'type', 'cat'].forEach(function (key) {
+        var value = (data.get(key) || '').toString().trim();
+        if (value) params.set(key, value);
+      });
+      return params;
+    }
+
+    var update = debounce(function () {
+      var params = currentParams();
+      fetchSearch(api, params, function (data) {
+        results.innerHTML = renderCards(data.results || []);
+        var n = data.count || 0;
+        if (countEl) countEl.textContent = '· ' + n + ' résultat' + (n > 1 ? 's' : '');
+        if (titleEl) {
+          var label = data.query || data.cat || 'Tous les métiers du livre';
+          titleEl.childNodes[0].textContent = label + ' ';
+        }
+        var next = params.toString();
+        history.replaceState(null, '', window.location.pathname + (next ? '?' + next : ''));
+        if (headerInput) headerInput.value = data.query || '';
+        syncChips(filters);
+      });
+    }, 160);
+
+    filters.addEventListener('input', update);
+    filters.addEventListener('change', update);
+  }
+
+  document.querySelectorAll('[data-tabs]').forEach(function (nav) {
+    var form = nav.parentElement;
+    nav.querySelectorAll('[data-tab]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        nav.querySelectorAll('[data-tab]').forEach(function (other) { other.classList.toggle('is-on', other === btn); });
+        (form || document).querySelectorAll('[data-tab-panel]').forEach(function (panel) {
+          panel.hidden = panel.getAttribute('data-tab-panel') !== btn.getAttribute('data-tab');
+        });
+      });
+    });
+  });
+
+  document.querySelectorAll('[data-repeat-add]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var name = btn.getAttribute('data-repeat-add');
+      var list = document.querySelector('[data-repeat="' + name + '"]');
+      var tpl = document.getElementById('tpl-' + name);
+      if (!list || !tpl) return;
+      var index = list.querySelectorAll('[data-repeat-row]').length;
+      var html = tpl.innerHTML.replace(/__i__/g, String(index));
+      list.insertAdjacentHTML('beforeend', html);
+    });
+  });
+
+  document.addEventListener('click', function (event) {
+    var remove = event.target.closest('[data-repeat-remove]');
+    if (!remove) return;
+    var row = remove.closest('[data-repeat-row]');
+    var list = remove.closest('[data-repeat]');
+    if (row && list && list.querySelectorAll('[data-repeat-row]').length > 1) {
+      row.remove();
+    }
+  });
+
+  var publish = document.querySelector('[data-publish-form]');
+  if (publish) {
+    function preview() {
+      var title = (publish.querySelector('[data-preview-title]') || {}).value || 'Votre titre apparaîtra ici';
+      var brief = (publish.querySelector('[data-preview-brief]') || {}).value || 'Le brief s’affiche au fil de la saisie.';
+      var min = (publish.querySelector('[data-preview-min]') || {}).value;
+      var max = (publish.querySelector('[data-preview-max]') || {}).value;
+      var cat = (publish.querySelector('input[name="category_name"]:checked') || {}).value || '';
+      var budget = (min && max) ? min + ' – ' + max + ' €' : (max || min ? (max || min) + ' €' : 'Budget à convenir');
+      var outTitle = document.querySelector('[data-preview-out-title]');
+      var outBrief = document.querySelector('[data-preview-out-brief]');
+      var outCat = document.querySelector('[data-preview-out-cat]');
+      var outBudget = document.querySelector('[data-preview-out-budget]');
+      if (outTitle) outTitle.textContent = title;
+      if (outBrief) outBrief.textContent = brief;
+      if (outCat) outCat.textContent = cat;
+      if (outBudget) outBudget.textContent = budget;
+    }
+    publish.addEventListener('input', preview);
+    publish.addEventListener('change', preview);
+    preview();
+  }
 })();

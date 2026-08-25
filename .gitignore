@@ -11,6 +11,8 @@
 !/storage/cache/.gitkeep
 /storage/uploads/*
 !/storage/uploads/.gitkeep
+/public/uploads/*
+!/public/uploads/.gitkeep
 /storage/mail/*
 !/storage/mail/.gitkeep
 

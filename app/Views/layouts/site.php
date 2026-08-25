@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="<?= e(asset('css/app.css')) ?>?v=m20">
+  <link rel="stylesheet" href="<?= e(asset('css/app.css')) ?>?v=m21">
   <link rel="icon" href="<?= e(asset('img/favicon.ico')) ?>?v=3" sizes="any">
   <link rel="icon" type="image/png" href="<?= e(asset('img/favicon-32x32.png')) ?>?v=3" sizes="32x32">
   <link rel="apple-touch-icon" href="<?= e(asset('img/apple-touch-icon.png')) ?>?v=3">
@@ -47,9 +47,10 @@
             <img src="<?= e(asset('img/logo.png')) ?>?v=4" alt="acteursdulivre.fr">
           </picture>
         </a>
-        <form class="search" action="<?= e(url('/recherche')) ?>" method="get">
-          <input type="search" name="q" value="<?= e($query ?? '') ?>" placeholder="correcteur roman, illustration jeunesse…">
+        <form class="search" action="<?= e(url('/recherche')) ?>" method="get" data-live-search data-api="<?= e(url('/api/recherche')) ?>" autocomplete="off">
+          <input type="search" name="q" value="<?= e($query ?? '') ?>" placeholder="correcteur roman, illustration jeunesse…" autocomplete="off" data-live-input>
           <button type="submit">Chercher</button>
+          <div class="search-suggest" data-live-panel hidden></div>
         </form>
         <button type="button" class="nav-toggle" data-nav-toggle aria-expanded="false" aria-controls="header-panel" aria-label="Ouvrir le menu">
           <span></span><span></span><span></span>
@@ -179,6 +180,6 @@
       </footer>
     </div>
   </div>
-  <script src="<?= e(asset('js/app.js')) ?>?v=m20"></script>
+  <script src="<?= e(asset('js/app.js')) ?>?v=m21"></script>
 </body>
 </html>
