@@ -301,13 +301,13 @@ img { max-width: 100%; }
   box-shadow: 0 24px 60px rgba(2, 39, 70, .18);
   overflow: hidden;
   display: grid;
-  grid-template-columns: 248px 1fr;
+  grid-template-columns: 272px 1fr;
   min-height: calc(100vh - 92px);
 }
 .admin-aside { background: var(--navy); padding: 22px 0 30px; display: flex; flex-direction: column; gap: 6px; }
-.admin-brand { padding: 0 20px 20px; display: flex; align-items: center; gap: 10px; }
-.admin-logo { background: #fff; border-radius: 9px; padding: 8px 12px; display: flex; }
-.admin-logo img { height: 26px; width: auto; display: block; }
+.admin-brand { padding: 8px 16px 20px; display: flex; flex-direction: column; align-items: flex-start; gap: 10px; }
+.admin-logo { display: block; width: 100%; }
+.admin-logo img { width: 100%; height: auto; display: block; mix-blend-mode: screen; }
 .admin-badge {
   font-family: var(--display);
   font-size: 10px;

@@ -16,7 +16,7 @@
       <aside class="admin-aside">
         <div class="admin-brand">
           <a href="<?= e(url('/')) ?>" class="admin-logo">
-            <img src="<?= e(asset('img/logo.png')) ?>" alt="acteursdulivre.fr">
+            <img src="<?= e(asset('img/logo-inv.png')) ?>?v=2" alt="acteursdulivre.fr">
           </a>
           <span class="admin-badge">Admin</span>
         </div>
