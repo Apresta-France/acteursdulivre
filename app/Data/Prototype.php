@@ -1292,28 +1292,29 @@ final class Prototype
 
     private static function espaceNav(string $screen, bool $seeks, bool $offers): array
     {
-        $item = static function (string $label, string $href, string $key) use ($screen): array {
+        $item = static function (string $label, string $href, string $key, string $icon = 'dot') use ($screen): array {
             return [
                 'label' => $label,
                 'href' => $href,
                 'active' => $screen === $key,
+                'icon' => $icon,
             ];
         };
 
         $groups = [[
             'title' => 'Espace',
-            'items' => [$item('Tableau de bord', '/espace', 'dashboard')],
+            'items' => [$item('Tableau de bord', '/espace', 'dashboard', 'home')],
         ]];
 
         if ($seeks) {
             $groups[] = [
                 'title' => 'Chercher',
                 'items' => [
-                    $item('Annuaire', '/recherche', ''),
-                    $item('Publier une mission', '/espace/publier', 'publier'),
-                    $item('Mes missions', '/espace/missions', 'mesmissions'),
-                    $item('Mes commandes', '/espace/commandes', 'commandes'),
-                    $item('Favoris', '/espace/favoris', 'favoris'),
+                    $item('Annuaire', '/recherche', '', 'search'),
+                    $item('Publier une mission', '/espace/publier', 'publier', 'file-plus'),
+                    $item('Mes missions', '/espace/missions', 'mesmissions', 'clipboard'),
+                    $item('Mes commandes', '/espace/commandes', 'commandes', 'bag'),
+                    $item('Favoris', '/espace/favoris', 'favoris', 'heart'),
                 ],
             ];
         }
@@ -1322,12 +1323,12 @@ final class Prototype
             $groups[] = [
                 'title' => 'Proposer',
                 'items' => [
-                    $item('Ma vitrine', '/espace/vitrine', 'vitrine'),
-                    $item('Créer une prestation', '/espace/prestations/creer', 'creer'),
-                    $item('Mes prestations', '/espace/prestations', 'mesprestations'),
-                    $item('Appels d\'offres', '/missions', ''),
-                    $item('Mes candidatures', '/espace/candidatures', 'candidatures'),
-                    $item('Facturation', '/espace/facturation', 'facturation'),
+                    $item('Ma vitrine', '/espace/vitrine', 'vitrine', 'id'),
+                    $item('Créer une prestation', '/espace/prestations/creer', 'creer', 'plus-box'),
+                    $item('Mes prestations', '/espace/prestations', 'mesprestations', 'grid'),
+                    $item('Appels d\'offres', '/missions', '', 'megaphone'),
+                    $item('Mes candidatures', '/espace/candidatures', 'candidatures', 'send'),
+                    $item('Facturation', '/espace/facturation', 'facturation', 'invoice'),
                 ],
             ];
         }
@@ -1335,9 +1336,9 @@ final class Prototype
         $groups[] = [
             'title' => 'Compte',
             'items' => [
-                $item('Messages', '/espace/messages', 'messagerie'),
-                $item('Alertes', '/espace/notifications', 'notifications'),
-                $item('Paramètres', '/espace/parametres', 'parametres'),
+                $item('Messages', '/espace/messages', 'messagerie', 'mail'),
+                $item('Alertes', '/espace/notifications', 'notifications', 'bell'),
+                $item('Paramètres', '/espace/parametres', 'parametres', 'gear'),
             ],
         ];
 

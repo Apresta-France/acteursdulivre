@@ -5,7 +5,10 @@
         <div class="espace-nav-title"><?= e($group['title']) ?></div>
       <?php endif; ?>
       <?php foreach ($group['items'] ?? [] as $item): ?>
-        <a href="<?= e(url($item['href'])) ?>"<?= !empty($item['active']) ? ' class="is-active"' : '' ?>><?= e($item['label']) ?></a>
+        <a href="<?= e(url($item['href'])) ?>"<?= !empty($item['active']) ? ' class="is-active"' : '' ?>>
+          <?= icon((string) ($item['icon'] ?? 'dot'), 18) ?>
+          <span><?= e($item['label']) ?></span>
+        </a>
       <?php endforeach; ?>
     </div>
   <?php endforeach; ?>

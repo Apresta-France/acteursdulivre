@@ -17,10 +17,42 @@ final class AccountController
 {
     public function dashboard(Request $request): void
     {
-        Auth::requireUser();
+        $user = Auth::requireUser();
+        $missionCount = 0;
+        $openMissionCount = 0;
+        $profileCompletion = 0;
+        $profileHref = '';
+
+        try {
+            if (User::seeksServices($user)) {
+                $missions = Mission::forUser((int) $user['id']);
+                $missionCount = count($missions);
+                $openMissionCount = count(array_filter(
+                    $missions,
+                    static fn (array $m): bool => ($m['status'] ?? '') === 'open'
+                ));
+            }
+        } catch (\Throwable) {
+        }
+
+        try {
+            if (User::offersServices($user)) {
+                $profile = Profile::findByUser((int) $user['id']);
+                if ($profile) {
+                    $profileCompletion = (int) ($profile['completion'] ?? 0);
+                    $profileHref = Profile::publicHref($profile);
+                }
+            }
+        } catch (\Throwable) {
+        }
+
         View::page('dashboard', [
             'title' => 'Tableau de bord',
             'error' => flash('error'),
+            'missionCount' => $missionCount,
+            'openMissionCount' => $openMissionCount,
+            'profileCompletion' => $profileCompletion,
+            'profileHref' => $profileHref,
         ]);
     }
 
