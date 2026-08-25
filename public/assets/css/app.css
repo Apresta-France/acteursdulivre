@@ -1,9 +1,9 @@
 :root {
   --navy: #022746;
   --navy-rgb: 2, 39, 70;
-  --orange: #D85D3F;
-  --orange-soft: #E8845F;
-  --beige: #ece0d4;
+  --orange: #eb963b;
+  --orange-soft: #f0b372;
+  --beige: #efdfce;
   --ink: #14202C;
   --muted: #4A5A6B;
   --muted-2: #66768A;
@@ -355,7 +355,7 @@ body.is-admin-open .admin-nav-toggle span:nth-child(3) { transform: translateY(-
 .admin-aside { background: var(--navy); padding: 22px 0 30px; display: flex; flex-direction: column; gap: 6px; }
 .admin-brand { padding: 8px 16px 20px; display: flex; flex-direction: column; align-items: flex-start; gap: 10px; }
 .admin-logo { display: block; width: 100%; }
-.admin-logo img { width: 100%; height: auto; display: block; mix-blend-mode: screen; }
+.admin-logo img { width: 100%; height: auto; display: block; }
 .admin-badge {
   font-family: var(--display);
   font-size: 10px;

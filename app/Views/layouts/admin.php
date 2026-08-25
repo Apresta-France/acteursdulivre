@@ -7,10 +7,10 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="<?= e(asset('css/app.css')) ?>?v=m11">
-  <link rel="icon" href="<?= e(asset('img/favicon.ico')) ?>?v=1" sizes="any">
-  <link rel="icon" type="image/png" href="<?= e(asset('img/favicon-32x32.png')) ?>?v=1" sizes="32x32">
-  <link rel="apple-touch-icon" href="<?= e(asset('img/apple-touch-icon.png')) ?>?v=1">
+  <link rel="stylesheet" href="<?= e(asset('css/app.css')) ?>?v=m12">
+  <link rel="icon" href="<?= e(asset('img/favicon.ico')) ?>?v=2" sizes="any">
+  <link rel="icon" type="image/png" href="<?= e(asset('img/favicon-32x32.png')) ?>?v=2" sizes="32x32">
+  <link rel="apple-touch-icon" href="<?= e(asset('img/apple-touch-icon.png')) ?>?v=2">
 </head>
 <body>
   <div class="admin-backdrop" data-admin-close hidden></div>
@@ -19,7 +19,7 @@
       <aside class="admin-aside">
         <div class="admin-brand">
           <a href="<?= e(url('/')) ?>" class="admin-logo">
-            <img src="<?= e(asset('img/logo-inv.png')) ?>?v=2" alt="acteursdulivre.fr">
+            <img src="<?= e(asset('img/logo-inv.png')) ?>?v=4" alt="acteursdulivre.fr">
           </a>
           <span class="admin-badge">Admin</span>
         </div>
@@ -67,6 +67,6 @@
       </main>
     </div>
   </div>
-  <script src="<?= e(asset('js/app.js')) ?>?v=m10"></script>
+  <script src="<?= e(asset('js/app.js')) ?>?v=m12"></script>
 </body>
 </html>

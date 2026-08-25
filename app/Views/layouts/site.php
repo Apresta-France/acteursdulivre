@@ -7,10 +7,10 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="<?= e(asset('css/app.css')) ?>?v=m11">
-  <link rel="icon" href="<?= e(asset('img/favicon.ico')) ?>?v=1" sizes="any">
-  <link rel="icon" type="image/png" href="<?= e(asset('img/favicon-32x32.png')) ?>?v=1" sizes="32x32">
-  <link rel="apple-touch-icon" href="<?= e(asset('img/apple-touch-icon.png')) ?>?v=1">
+  <link rel="stylesheet" href="<?= e(asset('css/app.css')) ?>?v=m12">
+  <link rel="icon" href="<?= e(asset('img/favicon.ico')) ?>?v=2" sizes="any">
+  <link rel="icon" type="image/png" href="<?= e(asset('img/favicon-32x32.png')) ?>?v=2" sizes="32x32">
+  <link rel="apple-touch-icon" href="<?= e(asset('img/apple-touch-icon.png')) ?>?v=2">
 </head>
 <body>
   <div class="nav-backdrop" data-nav-close hidden></div>
@@ -42,7 +42,7 @@
 
       <header class="site-header">
         <a href="<?= e(url('/')) ?>" class="brand">
-          <img src="<?= e(asset('img/logo.png')) ?>" alt="acteursdulivre.fr">
+          <img src="<?= e(asset('img/logo.png')) ?>?v=3" alt="acteursdulivre.fr">
         </a>
         <form class="search" action="<?= e(url('/recherche')) ?>" method="get">
           <input type="search" name="q" value="<?= e($query ?? '') ?>" placeholder="correcteur roman, illustration jeunesse…">
@@ -119,7 +119,7 @@
         </div>
         <div class="footer-cols">
           <div>
-            <div class="footer-logo"><img src="<?= e(asset('img/logo.png')) ?>" alt="acteursdulivre.fr"></div>
+            <div class="footer-logo"><img src="<?= e(asset('img/logo.png')) ?>?v=3" alt="acteursdulivre.fr"></div>
             <p>La place de marché des métiers du livre. Auteurs, correcteurs, illustrateurs, traducteurs, maquettistes, éditeurs, imprimeurs, presse, libraires, narrateurs, agents, salons.</p>
             <div class="socials">
               <?php foreach ($socials ?? [] as $s): ?>
@@ -159,6 +159,6 @@
       </footer>
     </div>
   </div>
-  <script src="<?= e(asset('js/app.js')) ?>?v=m10"></script>
+  <script src="<?= e(asset('js/app.js')) ?>?v=m12"></script>
 </body>
 </html>

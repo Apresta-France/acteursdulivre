@@ -149,8 +149,8 @@
   });
 
   (function themeWidget() {
-    var KEY = 'adl-charte';
-    var DEFAULTS = { navy: '#022746', orange: '#D85D3F', beige: '#ece0d4' };
+    var KEY = 'adl-charte-v2';
+    var DEFAULTS = { navy: '#022746', orange: '#eb963b', beige: '#efdfce' };
 
     function hexToRgb(hex) {
       hex = hex.replace('#', '');
@@ -192,14 +192,18 @@
       var next = css
         .replace(/#022746/gi, colors.navy)
         .replace(/#d85d3f/gi, colors.orange)
+        .replace(/#eb963b/gi, colors.orange)
         .replace(/#e8845f/gi, colors.orangeSoft)
         .replace(/#e8e3da/gi, colors.beige)
-        .replace(/#ece0d4/gi, colors.beige);
+        .replace(/#ece0d4/gi, colors.beige)
+        .replace(/#efdfce/gi, colors.beige);
       next = replaceRgb(next, 2, 39, 70, colors.navy);
       next = replaceRgb(next, 216, 93, 63, colors.orange);
+      next = replaceRgb(next, 235, 150, 59, colors.orange);
       next = replaceRgb(next, 232, 132, 95, colors.orangeSoft);
       next = replaceRgb(next, 232, 227, 218, colors.beige);
       next = replaceRgb(next, 236, 224, 212, colors.beige);
+      next = replaceRgb(next, 239, 223, 206, colors.beige);
       return next;
     }
     function apply(colors) {
