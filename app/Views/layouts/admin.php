@@ -7,10 +7,13 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="<?= e(asset('css/app.css')) ?>">
-  <link rel="icon" href="<?= e(asset('img/logo.png')) ?>">
+  <link rel="stylesheet" href="<?= e(asset('css/app.css')) ?>?v=m7">
+  <link rel="icon" href="<?= e(asset('img/favicon.ico')) ?>?v=1" sizes="any">
+  <link rel="icon" type="image/png" href="<?= e(asset('img/favicon-32x32.png')) ?>?v=1" sizes="32x32">
+  <link rel="apple-touch-icon" href="<?= e(asset('img/apple-touch-icon.png')) ?>?v=1">
 </head>
 <body>
+  <div class="admin-backdrop" data-admin-close hidden></div>
   <div class="admin-outer">
     <div class="admin-canvas">
       <aside class="admin-aside">
@@ -46,6 +49,9 @@
 
       <main class="admin-content">
         <header class="admin-top">
+          <button type="button" class="admin-nav-toggle" data-admin-toggle aria-expanded="false" aria-label="Ouvrir le menu admin">
+            <span></span><span></span><span></span>
+          </button>
           <form class="admin-search" action="<?= e(url('/admin/utilisateurs')) ?>" method="get">
             <input type="search" name="q" value="<?= e($query ?? '') ?>" placeholder="Rechercher un profil, une commande, une mission…">
           </form>
@@ -61,6 +67,6 @@
       </main>
     </div>
   </div>
-  <script src="<?= e(asset('js/app.js')) ?>"></script>
+  <script src="<?= e(asset('js/app.js')) ?>?v=m7"></script>
 </body>
 </html>

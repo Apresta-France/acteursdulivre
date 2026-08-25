@@ -7,19 +7,23 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="<?= e(asset('css/app.css')) ?>">
-  <link rel="icon" href="<?= e(asset('img/logo.png')) ?>">
+  <link rel="stylesheet" href="<?= e(asset('css/app.css')) ?>?v=m7">
+  <link rel="icon" href="<?= e(asset('img/favicon.ico')) ?>?v=1" sizes="any">
+  <link rel="icon" type="image/png" href="<?= e(asset('img/favicon-32x32.png')) ?>?v=1" sizes="32x32">
+  <link rel="apple-touch-icon" href="<?= e(asset('img/apple-touch-icon.png')) ?>?v=1">
 </head>
 <body>
+  <div class="nav-backdrop" data-nav-close hidden></div>
   <div class="site-shell">
     <div class="site-canvas">
       <div class="preopen">
         <span class="preopen-badge">Pré-ouverture</span>
-        <span>La plateforme accueille dès maintenant les <strong>auteurs et les professionnels du livre</strong> — ouverture aux clients en octobre 2026. Sans IA générative, jamais.</span>
+        <span class="preopen-text">La plateforme accueille dès maintenant les <strong>auteurs et les professionnels du livre</strong> — ouverture aux clients en octobre 2026. Sans IA générative, jamais.</span>
+        <span class="preopen-short">Inscriptions ouvertes — clients en octobre 2026. Sans IA générative.</span>
         <a href="<?= e(url('/inscription')) ?>">Réserver ma place</a>
       </div>
       <div class="topbar">
-        <span>Commission 8 % · devis gratuits · 5 890 professionnels du livre</span>
+        <span class="topbar-stats">Commission 8 % · devis gratuits · 5 890 professionnels du livre</span>
         <div class="topbar-links">
           <a href="<?= e(url('/aide')) ?>">Aide</a>
           <span>Français · EUR</span>
@@ -41,28 +45,40 @@
           <img src="<?= e(asset('img/logo.png')) ?>" alt="acteursdulivre.fr">
         </a>
         <form class="search" action="<?= e(url('/recherche')) ?>" method="get">
-          <input type="search" name="q" value="<?= e($query ?? '') ?>" placeholder="correcteur roman, illustration jeunesse, impression 300 ex…">
+          <input type="search" name="q" value="<?= e($query ?? '') ?>" placeholder="correcteur roman, illustration jeunesse…">
           <button type="submit">Chercher</button>
         </form>
-        <?php if (!empty($logged)): ?>
-          <nav class="header-nav">
-            <a href="<?= e(url('/espace/publier')) ?>">Publier une mission</a>
-            <a href="<?= e(url('/espace/messages')) ?>">Messages <span class="badge-orange"><?= (int) ($unreadMessages ?? 0) ?></span></a>
-            <a href="<?= e(url('/espace/notifications')) ?>">Alertes <span class="badge-soft"><?= (int) ($unreadAlerts ?? 0) ?></span></a>
-            <a href="<?= e(url('/espace')) ?>">Mon espace</a>
-          </nav>
-          <a class="user-chip" href="<?= e(url('/espace/parametres')) ?>">
-            <span class="avatar" style="<?= e(avatar_style($userInitials ?? 'AD', 38)) ?>"><?= e($userInitials ?? 'AD') ?></span>
-            <span><?= e($userFirst ?? '') ?> ▾</span>
-          </a>
-        <?php else: ?>
-          <nav class="header-nav">
-            <a href="<?= e(url('/comment-ca-marche')) ?>">Comment ça marche</a>
-            <a href="<?= e(url('/missions')) ?>">Appels d'offres</a>
-            <a href="<?= e(url('/connexion')) ?>">Se connecter</a>
-          </nav>
-          <a class="btn-navy" href="<?= e(url('/inscription')) ?>">Proposer mes services</a>
-        <?php endif; ?>
+        <button type="button" class="nav-toggle" data-nav-toggle aria-expanded="false" aria-controls="header-panel" aria-label="Ouvrir le menu">
+          <span></span><span></span><span></span>
+        </button>
+        <div class="header-panel" id="header-panel">
+          <?php if (!empty($logged)): ?>
+            <nav class="header-nav">
+              <a href="<?= e(url('/espace/publier')) ?>">Publier une mission</a>
+              <a href="<?= e(url('/espace/messages')) ?>">Messages <span class="badge-orange"><?= (int) ($unreadMessages ?? 0) ?></span></a>
+              <a href="<?= e(url('/espace/notifications')) ?>">Alertes <span class="badge-soft"><?= (int) ($unreadAlerts ?? 0) ?></span></a>
+              <a href="<?= e(url('/espace')) ?>">Mon espace</a>
+            </nav>
+            <a class="user-chip" href="<?= e(url('/espace/parametres')) ?>">
+              <span class="avatar" style="<?= e(avatar_style($userInitials ?? 'AD', 38)) ?>"><?= e($userInitials ?? 'AD') ?></span>
+              <span><?= e($userFirst ?? '') ?> ▾</span>
+            </a>
+            <?php if (!empty($isAdmin)): ?>
+              <a class="header-admin" href="<?= e(url('/admin')) ?>">Administration</a>
+            <?php endif; ?>
+            <form method="post" action="<?= e(url('/deconnexion')) ?>" class="header-logout">
+              <?= csrf_field() ?>
+              <button type="submit">Déconnexion</button>
+            </form>
+          <?php else: ?>
+            <nav class="header-nav">
+              <a href="<?= e(url('/comment-ca-marche')) ?>">Comment ça marche</a>
+              <a href="<?= e(url('/missions')) ?>">Appels d'offres</a>
+              <a href="<?= e(url('/connexion')) ?>">Se connecter</a>
+            </nav>
+            <a class="btn-navy" href="<?= e(url('/inscription')) ?>">Proposer mes services</a>
+          <?php endif; ?>
+        </div>
       </header>
 
       <div class="rail">
@@ -143,6 +159,6 @@
       </footer>
     </div>
   </div>
-  <script src="<?= e(asset('js/app.js')) ?>"></script>
+  <script src="<?= e(asset('js/app.js')) ?>?v=m7"></script>
 </body>
 </html>
