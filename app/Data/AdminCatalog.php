@@ -9,7 +9,7 @@ use Adl\Models\User;
 
 final class AdminCatalog
 {
-    public const NAVY = '#022746';
+    public const NAVY = '#15212f';
     public const ORANGE = '#D85D3F';
 
     public static function forScreen(string $screen, array $extra = []): array

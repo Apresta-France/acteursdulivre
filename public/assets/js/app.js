@@ -150,7 +150,7 @@
 
   (function themeWidget() {
     var KEY = 'adl-charte-v2';
-    var DEFAULTS = { navy: '#022746', orange: '#eb963b', beige: '#efdfce' };
+    var DEFAULTS = { navy: '#15212f', orange: '#eb963b', beige: '#efdfce' };
 
     function hexToRgb(hex) {
       hex = hex.replace('#', '');
@@ -191,6 +191,7 @@
     function rewrite(css, colors) {
       var next = css
         .replace(/#022746/gi, colors.navy)
+        .replace(/#15212f/gi, colors.navy)
         .replace(/#d85d3f/gi, colors.orange)
         .replace(/#eb963b/gi, colors.orange)
         .replace(/#e8845f/gi, colors.orangeSoft)
@@ -198,6 +199,7 @@
         .replace(/#ece0d4/gi, colors.beige)
         .replace(/#efdfce/gi, colors.beige);
       next = replaceRgb(next, 2, 39, 70, colors.navy);
+      next = replaceRgb(next, 21, 33, 47, colors.navy);
       next = replaceRgb(next, 216, 93, 63, colors.orange);
       next = replaceRgb(next, 235, 150, 59, colors.orange);
       next = replaceRgb(next, 232, 132, 95, colors.orangeSoft);
@@ -232,7 +234,12 @@
     function load() {
       try {
         var saved = JSON.parse(localStorage.getItem(KEY) || 'null');
-        if (saved && saved.navy && saved.orange && saved.beige) return saved;
+        if (saved && saved.navy && saved.orange && saved.beige) {
+          if (normalizeHex(saved.navy) === '#022746') {
+            saved.navy = DEFAULTS.navy;
+          }
+          return saved;
+        }
       } catch (err) {}
       return { navy: DEFAULTS.navy, orange: DEFAULTS.orange, beige: DEFAULTS.beige };
     }

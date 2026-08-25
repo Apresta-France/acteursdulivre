@@ -55,7 +55,7 @@ function auth_user(): ?array
 
 function avatar_style(string $initials, int $size = 34): string
 {
-    $bg = (ord($initials[0] ?? 'A') * 7) % 2 === 0 ? '#022746' : '#D85D3F';
+    $bg = (ord($initials[0] ?? 'A') * 7) % 2 === 0 ? '#15212f' : '#D85D3F';
     $font = $size >= 38 ? 13 : ($size >= 28 ? 11 : 10);
     return "width:{$size}px;height:{$size}px;min-width:{$size}px;border-radius:50%;background:{$bg};color:#FFF;display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk',monospace;font-size:{$font}px;";
 }
