@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Adl\Controllers;
 
+use Adl\Core\Auth;
 use Adl\Core\Mailer;
 use Adl\Core\Request;
 use Adl\Core\View;
@@ -13,6 +14,7 @@ use Adl\Data\Share;
 use Adl\Models\Article;
 use Adl\Models\Profile;
 use Adl\Models\Service;
+use Adl\Models\User;
 
 final class PageController
 {
@@ -109,7 +111,11 @@ final class PageController
         } catch (\Throwable) {
             $service = null;
         }
-        if (!$service || ($service['status'] ?? '') !== 'published') {
+        if (
+            !$service
+            || ($service['status'] ?? '') !== 'published'
+            || !User::isPublicOfferer((int) ($service['user_id'] ?? 0))
+        ) {
             not_found('Cette prestation n\'est plus disponible.');
         }
 
@@ -135,7 +141,7 @@ final class PageController
             $profile = null;
         }
 
-        if (!$profile || empty($profile['offers_services'])) {
+        if (!$profile || !User::isPublicOfferer($profile)) {
             not_found('Ce profil n\'est pas publié.');
         }
 
@@ -173,6 +179,14 @@ final class PageController
         $mission = Catalog::mission($slug);
         if (!$mission) {
             not_found('Cette mission n\'est plus disponible.');
+        }
+        if (($mission['status'] ?? '') === 'draft') {
+            $viewer = Auth::user();
+            $owner = $viewer && (int) ($viewer['id'] ?? 0) === (int) ($mission['user_id'] ?? 0);
+            $admin = $viewer && ($viewer['role'] ?? '') === 'admin';
+            if (!$owner && !$admin) {
+                not_found('Cette mission n\'est plus disponible.');
+            }
         }
 
         View::page('mission', [
@@ -268,8 +282,8 @@ final class PageController
         $name = $request->string('name');
         $message = $request->string('message');
 
-        if ($email === '' || $message === '') {
-            flash('error', 'Merci d\'indiquer votre e-mail et votre message.');
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL) || $message === '') {
+            flash('error', 'Merci d\'indiquer un e-mail valide et votre message.');
             redirect('/contact');
         }
 
@@ -283,11 +297,16 @@ final class PageController
                 'nom' => $name !== '' ? $name : 'bonjour',
             ]);
         } catch (\Throwable $e) {
-            Mailer::send(
-                \Adl\Core\Env::get('MAIL_FROM_ADDRESS', 'bonjour@acteursdulivre.fr'),
-                'Message de contact',
-                '<p><strong>' . e($name) . '</strong> (' . e($email) . ')</p><p>' . nl2br(e($message)) . '</p>'
-            );
+            try {
+                Mailer::send(
+                    \Adl\Core\Env::get('MAIL_FROM_ADDRESS', 'bonjour@acteursdulivre.fr'),
+                    'Message de contact',
+                    '<p><strong>' . e($name) . '</strong> (' . e($email) . ')</p><p>' . nl2br(e($message)) . '</p>'
+                );
+            } catch (\Throwable) {
+                flash('error', 'Le message n\'a pas pu être envoyé. Réessayez dans un instant.');
+                redirect('/contact');
+            }
         }
 
         flash('contact_sent', true);

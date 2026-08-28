@@ -146,7 +146,7 @@
     var hero = main.querySelector('[style*="1fr 440px"]');
     if (hero && hero.children[1]) hero.children[1].classList.add('r-hero-media');
 
-    main.querySelectorAll('aside').forEach(function (aside) {
+    main.querySelectorAll('aside.search-aside').forEach(function (aside) {
       if (aside.dataset.rFilter) return;
       aside.dataset.rFilter = '1';
       aside.classList.add('r-filters');

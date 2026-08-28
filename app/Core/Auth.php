@@ -15,7 +15,7 @@ final class Auth
             return null;
         }
         $user = User::find((int) $id);
-        if (!$user) {
+        if (!$user || ($user['status'] ?? 'active') !== 'active') {
             self::logout();
             return null;
         }

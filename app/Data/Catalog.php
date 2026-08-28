@@ -33,6 +33,7 @@ final class Catalog
     ];
 
     public const BRIEF_HINTS = [
+        'Écriture' => 'Genre, volume, accompagnement souhaité (prête-plume, réécriture, coaching), calendrier…',
         'Correction' => 'Genre, état du texte, attentes, contraintes de calendrier…',
         'Bêta-lecture' => 'Genre, public visé, ce que vous attendez de la lecture, calendrier…',
         'Illustration' => 'Couverture ou intérieur, style souhaité, format, références…',
@@ -43,9 +44,12 @@ final class Catalog
         'Presse & com' => 'Ouvrage, cibles, actions souhaitées, calendrier…',
         'Librairie' => 'Ouvrage, diffusion souhaitée, zone, calendrier…',
         'Audio' => 'Durée estimée, ton, public, contraintes techniques…',
+        'Agent littéraire' => 'Projet, genre, ce que vous attendez d’un accompagnement, calendrier…',
+        'Salons' => 'Type d’événement, dates, lieu, public, prestations souhaitées…',
     ];
 
     public const TRADE_LABELS = [
+        'Écriture' => 'Auteurs',
         'Correction' => 'Correcteurs',
         'Bêta-lecture' => 'Bêta-lecteurs',
         'Illustration' => 'Illustrateurs',
@@ -56,9 +60,12 @@ final class Catalog
         'Presse & com' => 'Presse & com',
         'Librairie' => 'Libraires',
         'Audio' => 'Narrateurs audio',
+        'Agent littéraire' => 'Agents littéraires',
+        'Salons' => 'Salons & événements',
     ];
 
     public const TRADE_TITLES = [
+        'Écriture' => 'Écriture & prête-plume',
         'Correction' => 'Correction & relecture',
         'Bêta-lecture' => 'Bêta-lecture',
         'Illustration' => 'Illustration',
@@ -69,6 +76,8 @@ final class Catalog
         'Presse & com' => 'Presse & communication',
         'Librairie' => 'Librairie',
         'Audio' => 'Narration audio',
+        'Agent littéraire' => 'Agent littéraire',
+        'Salons' => 'Salons & événements',
     ];
 
     public static function tradeTitle(string $trade): string
@@ -80,6 +89,16 @@ final class Catalog
     public static function trades(): array
     {
         return Taxonomy::names(Taxonomy::KIND_TRADE);
+    }
+
+    /** @return list<string> */
+    public static function footerLabels(): array
+    {
+        $out = [];
+        foreach (self::trades() as $trade) {
+            $out[] = self::TRADE_LABELS[$trade] ?? $trade;
+        }
+        return $out;
     }
 
     /** @return list<string> */
@@ -105,9 +124,13 @@ final class Catalog
             self::trades(),
             Taxonomy::names(Taxonomy::KIND_TRADE, false)
         )));
+        $want = str_replace('-', '', $slug);
         foreach ($trades as $trade) {
-            if (slugify($trade) === $slug || slugify(self::TRADE_LABELS[$trade] ?? $trade) === $slug) {
-                return $trade;
+            $candidates = array_unique([slugify($trade), slugify(self::TRADE_LABELS[$trade] ?? $trade)]);
+            foreach ($candidates as $candidate) {
+                if ($candidate === $slug || str_replace('-', '', $candidate) === $want) {
+                    return $trade;
+                }
             }
         }
         return null;

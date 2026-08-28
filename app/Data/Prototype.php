@@ -87,7 +87,7 @@ final class Prototype
         $initials = $user ? User::initials($user) : 'MV';
         $first = $user['first_name'] ?? 'Marion';
 
-        $railNames = ['Correction', 'Bêta-lecture', 'Illustration', 'Traduction', 'Maquette', 'Édition', 'Impression', 'Presse & com', 'Librairie', 'Audio'];
+        $railNames = Catalog::trades();
         $rail = [];
         foreach ($railNames as $i => $name) {
             $active = $i === 0 && in_array($screen, ['resultats', 'fiche', 'metier'], true);
@@ -152,7 +152,7 @@ final class Prototype
             ],
             'footerCols' => $footerCols,
             'topbarStats' => self::topbarStats(),
-            'footerMetiers' => ['Auteurs', 'Illustrateurs', 'Correcteurs', 'Bêta-lecteurs', 'Traducteurs', 'Maquettistes', 'Éditeurs', 'Imprimeurs', 'Presse & com', 'Libraires', 'Narrateurs audio', 'Agents littéraires', 'Salons & événements'],
+            'footerMetiers' => Catalog::footerLabels(),
             'userInitials' => $initials,
             'userAvatarUrl' => user_avatar_src($user),
             'userFirst' => $first,
@@ -769,7 +769,7 @@ final class Prototype
     private static function homeMetiers(): array
     {
         $rows = [
-            ['01', 'Auteurs', '1 240'], ['02', 'Illustrateurs', '860'], ['03', 'Correcteurs', '1 105'], ['04', 'Bêta-lecteurs', '210'],
+            ['01', 'Auteurs', '1 240'], ['02', 'Correcteurs', '1 105'], ['03', 'Bêta-lecteurs', '210'], ['04', 'Illustrateurs', '860'],
             ['05', 'Traducteurs', '520'], ['06', 'Maquettistes', '470'], ['07', 'Éditeurs', '310'], ['08', 'Imprimeurs', '148'],
             ['09', 'Presse & com', '236'], ['10', 'Libraires', '690'], ['11', 'Narrateurs audio', '174'], ['12', 'Agents littéraires', '62'],
             ['13', 'Salons & événements', '98'],

@@ -48,6 +48,8 @@ final class Service
              JOIN users u ON u.id = s.user_id
              LEFT JOIN profiles p ON p.user_id = u.id
              WHERE s.status = "published"
+               AND u.status = "active"
+               AND u.offers_services = 1
                AND NOT EXISTS (
                     SELECT 1 FROM invoices i
                     WHERE i.seller_id = s.user_id
@@ -107,6 +109,12 @@ final class Service
         $row = Database::fetch(
             'SELECT COUNT(*) AS n FROM services s
              WHERE s.status = "published"
+               AND EXISTS (
+                    SELECT 1 FROM users u
+                    WHERE u.id = s.user_id
+                      AND u.status = "active"
+                      AND u.offers_services = 1
+               )
                AND NOT EXISTS (
                     SELECT 1 FROM invoices i
                     WHERE i.seller_id = s.user_id

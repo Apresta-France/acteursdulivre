@@ -92,11 +92,22 @@ final class User
 
     public static function update(int $id, array $data): void
     {
+        $allowed = [
+            'email', 'password', 'first_name', 'last_name', 'role', 'status',
+            'seeks_services', 'offers_services', 'google_id', 'facebook_id',
+            'avatar_url', 'onboarding_done_at', 'founder',
+        ];
         $fields = [];
         $params = [];
         foreach ($data as $key => $value) {
+            if (!in_array($key, $allowed, true)) {
+                continue;
+            }
             $fields[] = $key . ' = ?';
             $params[] = $value;
+        }
+        if ($fields === []) {
+            return;
         }
         $params[] = $id;
         Database::query('UPDATE users SET ' . implode(', ', $fields) . ' WHERE id = ?', $params);
@@ -272,6 +283,23 @@ final class User
             return (int) $user['seeks_services'] === 1;
         }
         return in_array($user['role'] ?? '', ['client', 'admin'], true);
+    }
+
+    public static function isPublicOfferer(int|array|null $user): bool
+    {
+        if (is_int($user)) {
+            $user = self::find($user);
+        } elseif (is_array($user) && !isset($user['status']) && isset($user['user_id'])) {
+            $user = self::find((int) $user['user_id']);
+        }
+        if (!$user || ($user['status'] ?? '') !== 'active' || !self::offersServices($user)) {
+            return false;
+        }
+        try {
+            return !Invoice::sellerIsBlocked((int) $user['id']);
+        } catch (\Throwable) {
+            return true;
+        }
     }
 
     public static function offersServices(?array $user): bool

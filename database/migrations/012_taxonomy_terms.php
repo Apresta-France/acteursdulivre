@@ -34,8 +34,9 @@ return static function (PDO $pdo): void {
     );
 
     $trades = [
-        'Correction', 'Bêta-lecture', 'Illustration', 'Traduction', 'Maquette',
+        'Écriture', 'Correction', 'Bêta-lecture', 'Illustration', 'Traduction', 'Maquette',
         'Édition', 'Impression', 'Presse & com', 'Librairie', 'Audio',
+        'Agent littéraire', 'Salons',
     ];
     foreach ($trades as $i => $name) {
         $stmt->execute(['trade', $name, $slugify($name), $i, 0]);

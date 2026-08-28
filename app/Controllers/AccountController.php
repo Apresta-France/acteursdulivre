@@ -826,7 +826,9 @@ final class AccountController
         }
         $total = 0;
         foreach ($orders as $order) {
-            $total += (int) ($order['amount'] ?? 0);
+            if (in_array((string) ($order['status'] ?? ''), ['confirmed', 'paid'], true)) {
+                $total += (int) ($order['amount'] ?? 0);
+            }
         }
         $due = 0;
         foreach ($invoices as $invoice) {
@@ -862,6 +864,14 @@ final class AccountController
 
     private static function money(string $value): ?int
     {
+        $value = trim(str_replace(["\u{00A0}", ' '], '', $value));
+        if ($value === '') {
+            return null;
+        }
+        $normalized = str_replace(',', '.', $value);
+        if (is_numeric($normalized)) {
+            return (int) round((float) $normalized);
+        }
         $clean = preg_replace('/[^\d]/', '', $value) ?? '';
         return $clean !== '' ? (int) $clean : null;
     }

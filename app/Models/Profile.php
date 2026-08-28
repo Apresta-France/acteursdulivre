@@ -12,8 +12,9 @@ final class Profile
     public const TRADE_BETA_READER = 'Bêta-lecture';
 
     public const TRADES = [
-        'Correction', 'Bêta-lecture', 'Illustration', 'Traduction', 'Maquette',
+        'Écriture', 'Correction', 'Bêta-lecture', 'Illustration', 'Traduction', 'Maquette',
         'Édition', 'Impression', 'Presse & com', 'Librairie', 'Audio',
+        'Agent littéraire', 'Salons',
     ];
 
     public const GENRES = [

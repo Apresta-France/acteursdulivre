@@ -80,20 +80,35 @@ final class Invoice
         $dueDays = Commission::dueDays();
         $status = $free ? 'waived' : 'issued';
 
-        Database::query(
-            'INSERT INTO invoices (number, order_id, seller_id, amount, commission_percent, status, issued_at, due_at, paid_at)
-             VALUES (?, ?, ?, ?, ?, ?, NOW(), DATE_ADD(NOW(), INTERVAL ? DAY), ?)',
-            [
-                self::nextNumber(),
-                (int) $order['id'],
-                (int) $order['seller_id'],
-                $amount,
-                $percent,
-                $status,
-                $dueDays,
-                $free ? date('Y-m-d H:i:s') : null,
-            ]
-        );
+        $params = [
+            (int) $order['id'],
+            (int) $order['seller_id'],
+            $amount,
+            $percent,
+            $status,
+            $dueDays,
+            $free ? date('Y-m-d H:i:s') : null,
+        ];
+        $lastError = null;
+        for ($attempt = 0; $attempt < 3; $attempt++) {
+            try {
+                Database::query(
+                    'INSERT INTO invoices (number, order_id, seller_id, amount, commission_percent, status, issued_at, due_at, paid_at)
+                     VALUES (?, ?, ?, ?, ?, ?, NOW(), DATE_ADD(NOW(), INTERVAL ? DAY), ?)',
+                    [self::nextNumber(), ...$params]
+                );
+                $lastError = null;
+                break;
+            } catch (\PDOException $e) {
+                $lastError = $e;
+                if (!str_contains($e->getMessage(), 'Duplicate')) {
+                    throw $e;
+                }
+            }
+        }
+        if ($lastError !== null) {
+            throw $lastError;
+        }
 
         return self::find((int) Database::lastId()) ?? [];
     }
@@ -163,6 +178,15 @@ final class Invoice
             'SELECT * FROM invoices
              WHERE status = "overdue"
              ORDER BY due_at ASC'
+        );
+    }
+
+    public static function cancelOpenForOrder(int $orderId): void
+    {
+        Database::query(
+            'UPDATE invoices SET status = "cancelled"
+             WHERE order_id = ? AND status IN ("issued", "overdue")',
+            [$orderId]
         );
     }
 

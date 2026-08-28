@@ -306,10 +306,13 @@ final class AdminController
 
     public function finances(Request $request): void
     {
+        $orderTotal = Order::countAll();
         $orders = Order::recent(80);
         $invoices = Invoice::all();
         $this->page('finances', 'admin/finances', [
             'orders' => $orders,
+            'orderTotal' => $orderTotal,
+            'ordersTruncated' => $orderTotal > count($orders),
             'invoices' => $invoices,
             'kpis' => [
                 ['k' => 'Volume d’affaires', 'v' => format_euros(Order::sumAmount())],
@@ -340,7 +343,7 @@ final class AdminController
     public function preOuverture(Request $request): void
     {
         $tradeCounts = Catalog::tradeCounts();
-        $maxTrade = max(1, ...array_values($tradeCounts));
+        $maxTrade = max(1, ...(array_values($tradeCounts) ?: [0]));
         $couverture = [];
         foreach ($tradeCounts as $metier => $n) {
             $couverture[] = [

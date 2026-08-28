@@ -125,7 +125,7 @@ final class AuthController
         ]);
 
         unset($_SESSION['_old']);
-        $user = User::find($id);
+        $user = User::find($id) ?? ['id' => $id, 'onboarding_done_at' => null];
         Auth::login($user);
         self::persistSignupAcceptances($id, $offers);
 
@@ -156,7 +156,8 @@ final class AuthController
         if ($request->string('next') === 'parametres' && Auth::check()) {
             $_SESSION['_oauth_return'] = '/espace/parametres';
         }
-        redirect(OAuth::authorizationUrl($provider));
+        header('Location: ' . OAuth::authorizationUrl($provider), true, 302);
+        exit;
     }
 
     public function oauthCallback(Request $request, string $provider): void
@@ -206,9 +207,10 @@ final class AuthController
 
         $byEmail = User::findByEmail($profile['email']);
         if ($byEmail) {
-            User::linkProvider((int) $byEmail['id'], $provider, $profile['provider_id'], $profile['avatar_url']);
-            $this->loginExisting(User::find((int) $byEmail['id']) ?? $byEmail);
-            return;
+            flash('error', 'Un compte existe déjà avec cet e-mail. Connectez-vous, puis liez ' . OAuth::label($provider) . ' depuis vos paramètres.');
+            $_SESSION['_old'] = ['email' => $profile['email']];
+            unset($_SESSION['_oauth_return']);
+            redirect('/connexion');
         }
 
         $_SESSION['_oauth_pending'] = $profile + ['expires' => time() + 900];
@@ -274,8 +276,9 @@ final class AuthController
         ]);
 
         unset($_SESSION['_oauth_pending'], $_SESSION['_old']);
-        $user = User::find($id);
-        Auth::login($user ?? ['id' => $id]);
+        $user = User::find($id) ?? ['id' => $id, 'onboarding_done_at' => null];
+        Auth::login($user);
+        self::persistSignupAcceptances($id, $offers);
 
         try {
             Mailer::sendTemplate('bienvenue', $pending['email'], [
@@ -285,7 +288,7 @@ final class AuthController
         } catch (Throwable) {
         }
 
-        redirect(Onboarding::homePath($user ?? ['onboarding_done_at' => null]));
+        redirect(Onboarding::homePath($user));
     }
 
     /** @param array<string, mixed> $user */

@@ -19,6 +19,9 @@ $invoices = $invoices ?? [];
   </div>
 
   <h2 class="admin-h2">Commandes</h2>
+  <?php if (!empty($ordersTruncated)): ?>
+    <p class="admin-muted">Les <?= count($orders) ?> dernières sur <?= format_int((int) ($orderTotal ?? 0)) ?> commandes. Le volume d’affaires compte uniquement les missions validées ou réglées.</p>
+  <?php endif; ?>
   <div class="r-scroll">
     <table class="table">
       <thead><tr><th>N°</th><th>Objet</th><th>Parties</th><th>Montant</th><th>Commission</th><th>Statut</th><th></th></tr></thead>

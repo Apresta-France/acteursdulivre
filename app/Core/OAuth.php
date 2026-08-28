@@ -171,6 +171,9 @@ final class OAuth
         } else {
             $id = (string) ($raw['sub'] ?? '');
             $email = strtolower(trim((string) ($raw['email'] ?? '')));
+            if (array_key_exists('email_verified', $raw) && !$raw['email_verified']) {
+                $email = '';
+            }
             $first = trim((string) ($raw['given_name'] ?? ''));
             $last = trim((string) ($raw['family_name'] ?? ''));
             $name = trim((string) ($raw['name'] ?? ''));

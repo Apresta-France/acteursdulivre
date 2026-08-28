@@ -20,15 +20,23 @@ final class CronController
 
     public function index(Request $request): void
     {
+        if (!$this->authorized($request)) {
+            $this->json(403, ['ok' => false, 'error' => 'Jeton cron manquant ou invalide.']);
+            return;
+        }
         $this->json(200, [
             'ok' => true,
-            'hint' => 'Appelez une tâche précise : /cron/{tache}',
+            'hint' => 'Appelez une tâche précise : /cron/{tache}?token=…',
             'jobs' => self::catalog(),
         ]);
     }
 
     public function run(Request $request, string $task): void
     {
+        if (!$this->authorized($request)) {
+            $this->json(403, ['ok' => false, 'error' => 'Jeton cron manquant ou invalide.']);
+            return;
+        }
         if (!isset(self::JOBS[$task])) {
             $this->json(404, [
                 'ok' => false,
@@ -43,6 +51,13 @@ final class CronController
         $result['job'] = $task;
 
         $this->json(!empty($result['ok']) ? 200 : 500, $result);
+    }
+
+    private function authorized(Request $request): bool
+    {
+        $expected = trim((string) (Env::get('CRON_TOKEN', '') ?: Env::get('APP_KEY', '')));
+        $given = $request->string('token');
+        return $expected !== '' && $given !== '' && hash_equals($expected, $given);
     }
 
     /** @return list<array{id: string, label: string, url: string}> */

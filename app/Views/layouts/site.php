@@ -3,6 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="google-site-verification" content="4X7SyO1uk8XOvTr1QK5qLEe4qtWYmzp6qgG_nbeUSiI">
   <title><?= e(($title ?? 'Acteurs du Livre') . ' — acteursdulivre.fr') ?></title>
   <?php
     $meta = $meta ?? [];
@@ -28,7 +29,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="<?= e(asset('css/app.css')) ?>?v=m34">
+  <link rel="stylesheet" href="<?= e(asset('css/app.css')) ?>?v=m36">
   <link rel="icon" href="<?= e(asset('img/favicon.ico')) ?>?v=3" sizes="any">
   <link rel="icon" type="image/png" href="<?= e(asset('img/favicon-32x32.png')) ?>?v=3" sizes="32x32">
   <link rel="apple-touch-icon" href="<?= e(asset('img/apple-touch-icon.png')) ?>?v=3">
@@ -170,7 +171,7 @@
 
       <main>
         <?php if (!empty($inEspace)): ?>
-          <div class="espace-shell r-done r-cols-keep">
+          <div class="espace-shell r-done">
             <?php require ADL_ROOT . '/app/Views/partials/espace-nav.php'; ?>
             <div class="espace-main">
               <?= $content ?? '' ?>
@@ -203,9 +204,12 @@
             <div class="socials" data-share data-url="<?= e(\Adl\Data\Share::absolute('/')) ?>" data-title="acteursdulivre.fr" data-text="La place de marché des métiers du livre.">
               <?php foreach ($socials ?? [] as $s): ?>
                 <?php if (is_array($s)): ?>
+                  <?php $sid = (string) ($s['id'] ?? ''); ?>
                   <a href="<?= e((string) ($s['href'] ?? '#')) ?>"
-                     <?= !empty($s['copy']) ? 'data-share-copy data-share-network="' . e((string) ($s['id'] ?? '')) . '"' : 'target="_blank" rel="noopener noreferrer"' ?>
-                     title="<?= e((string) ($s['label'] ?? $s['short'] ?? '')) ?>"><?= e((string) ($s['short'] ?? $s['label'] ?? '')) ?></a>
+                     data-share-network="<?= e($sid) ?>"
+                     <?= !empty($s['copy']) ? 'data-share-copy' : 'target="_blank" rel="noopener noreferrer"' ?>
+                     title="<?= e((string) ($s['label'] ?? $s['short'] ?? '')) ?>"
+                     aria-label="<?= e((string) ($s['label'] ?? $s['short'] ?? '')) ?>"><?= icon('share-' . $sid, 16) ?></a>
                 <?php else: ?>
                   <span><?= e((string) $s) ?></span>
                 <?php endif; ?>
@@ -245,6 +249,6 @@
       </footer>
     </div>
   </div>
-  <script src="<?= e(asset('js/app.js')) ?>?v=m27"></script>
+  <script src="<?= e(asset('js/app.js')) ?>?v=m28"></script>
 </body>
 </html>

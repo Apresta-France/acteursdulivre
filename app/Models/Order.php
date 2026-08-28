@@ -91,27 +91,59 @@ final class Order
             throw new \RuntimeException('La mission doit être livrée avant d\'être validée.');
         }
 
-        $quote = Commission::quoteForSeller((int) $order['seller_id']);
-        $amount = (int) ($order['amount'] ?? 0);
-        $commissionAmount = Commission::amount($amount, $quote['percent']);
+        $quality = Review::score($ratings['quality'] ?? 0);
+        $efficiency = Review::score($ratings['efficiency'] ?? 0);
+        $satisfaction = Review::score($ratings['satisfaction'] ?? 0);
+        $ratings = [
+            'quality' => $quality,
+            'efficiency' => $efficiency,
+            'satisfaction' => $satisfaction,
+            'body' => $ratings['body'] ?? '',
+        ];
 
-        Database::query(
-            'UPDATE orders
-             SET status = "confirmed",
-                 confirmed_at = NOW(),
-                 commission_percent = ?,
-                 commission_amount = ?,
-                 first_mission_free = ?,
-                 buyer_cgv_at = NOW()
-             WHERE id = ?',
-            [$quote['percent'], $commissionAmount, $quote['first_free'] ? 1 : 0, $orderId]
-        );
+        $result = Database::transaction(static function () use ($orderId, $buyerId, $ratings, $ip, $order): array {
+            Database::query('SELECT id FROM users WHERE id = ? FOR UPDATE', [(int) $order['seller_id']]);
+            $locked = self::find($orderId);
+            if (!$locked || (int) $locked['buyer_id'] !== $buyerId) {
+                throw new \RuntimeException('Cette commande est introuvable.');
+            }
+            if (!empty($locked['confirmed_at']) || in_array((string) $locked['status'], ['confirmed', 'paid', 'cancelled'], true)) {
+                throw new \RuntimeException('Cette mission a déjà été validée.');
+            }
+            if (!in_array((string) $locked['status'], self::COMPLETABLE, true)) {
+                throw new \RuntimeException('La mission doit être livrée avant d\'être validée.');
+            }
 
-        LegalAcceptance::record($buyerId, 'cgv', 'order_confirm', $ip);
+            $quote = Commission::quoteForSeller((int) $locked['seller_id']);
+            $amount = (int) ($locked['amount'] ?? 0);
+            $commissionAmount = Commission::amount($amount, $quote['percent']);
 
-        $review = Review::createForOrder($orderId, $buyerId, (int) $order['seller_id'], $ratings);
-        $fresh = self::find($orderId) ?? $order;
-        $invoice = Invoice::issueForOrder($fresh);
+            $updated = Database::query(
+                'UPDATE orders
+                 SET status = "confirmed",
+                     confirmed_at = NOW(),
+                     commission_percent = ?,
+                     commission_amount = ?,
+                     first_mission_free = ?,
+                     buyer_cgv_at = NOW()
+                 WHERE id = ? AND confirmed_at IS NULL AND status IN ("delivered", "in_progress")',
+                [$quote['percent'], $commissionAmount, $quote['first_free'] ? 1 : 0, $orderId]
+            );
+            if ($updated->rowCount() < 1) {
+                throw new \RuntimeException('Cette mission a déjà été validée.');
+            }
+
+            LegalAcceptance::record($buyerId, 'cgv', 'order_confirm', $ip);
+
+            $review = Review::createForOrder($orderId, $buyerId, (int) $locked['seller_id'], $ratings);
+            $fresh = self::find($orderId) ?? $locked;
+            $invoice = Invoice::issueForOrder($fresh);
+
+            return ['order' => $fresh, 'review' => $review, 'invoice' => $invoice];
+        });
+
+        $invoice = $result['invoice'];
+        $order = $result['order'];
 
         if ((int) $invoice['amount'] > 0 && ($invoice['status'] ?? '') !== 'waived') {
             Notification::create(
@@ -135,7 +167,7 @@ final class Order
             );
         }
 
-        return ['order' => $fresh, 'review' => $review, 'invoice' => $invoice];
+        return $result;
     }
 
     public static function setStatus(int $id, string $status): void
@@ -143,9 +175,34 @@ final class Order
         if (!isset(self::STATUSES[$status])) {
             throw new \InvalidArgumentException('Statut de commande invalide.');
         }
-        if (!self::find($id)) {
+        $order = self::find($id);
+        if (!$order) {
             throw new \RuntimeException('Commande introuvable.');
         }
+        $current = (string) ($order['status'] ?? 'pending');
+
+        if ($status === 'dispute') {
+            if (!in_array($current, ['pending', 'in_progress', 'delivered'], true)) {
+                throw new \RuntimeException('Un litige ne peut être ouvert que sur une commande en cours ou livrée.');
+            }
+            Database::query('UPDATE orders SET status = ? WHERE id = ?', [$status, $id]);
+            return;
+        }
+
+        if ($status === 'cancelled') {
+            Database::transaction(static function () use ($id): void {
+                Database::query('UPDATE orders SET status = ? WHERE id = ?', ['cancelled', $id]);
+                Invoice::cancelOpenForOrder($id);
+            });
+            return;
+        }
+
+        if ($status === 'in_progress' && $current === 'dispute') {
+            $restore = !empty($order['confirmed_at']) ? 'confirmed' : 'in_progress';
+            Database::query('UPDATE orders SET status = ? WHERE id = ?', [$restore, $id]);
+            return;
+        }
+
         Database::query('UPDATE orders SET status = ? WHERE id = ?', [$status, $id]);
     }
 
@@ -187,7 +244,9 @@ final class Order
 
     public static function sumAmount(): int
     {
-        $row = Database::fetch('SELECT COALESCE(SUM(amount), 0) AS n FROM orders');
+        $row = Database::fetch(
+            'SELECT COALESCE(SUM(amount), 0) AS n FROM orders WHERE status IN ("confirmed", "paid")'
+        );
         return (int) ($row['n'] ?? 0);
     }
 
@@ -273,8 +332,8 @@ final class Order
         $row['can_confirm'] = empty($row['confirmed_at']) && in_array($status, self::COMPLETABLE, true);
         $row['confirm_href'] = '/espace/avis';
         $row['href'] = '/espace/suivi';
-        $row['commission_label'] = isset($row['commission_amount'])
-            ? format_euros((int) $row['commission_amount'])
+        $row['commission_label'] = !empty($row['confirmed_at']) || ($row['commission_percent'] ?? null) !== null
+            ? format_euros((int) ($row['commission_amount'] ?? 0))
             : '';
         return $row;
     }

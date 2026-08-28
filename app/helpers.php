@@ -149,22 +149,43 @@ function search_card_media(array $item): string
 
 function redirect(string $path, int $code = 302): never
 {
-    header('Location: ' . (str_starts_with($path, 'http') ? $path : url($path)), true, $code);
+    $path = str_replace(["\r", "\n"], '', $path);
+    if ($path === '' || $path[0] !== '/' || str_starts_with($path, '//')) {
+        $path = '/espace';
+    }
+    header('Location: ' . url($path), true, $code);
     exit;
+}
+
+function ascii_fold(string $text): string
+{
+    static $map = [
+        'À' => 'A', 'Á' => 'A', 'Â' => 'A', 'Ã' => 'A', 'Ä' => 'A', 'Å' => 'A', 'Æ' => 'AE',
+        'Ç' => 'C', 'È' => 'E', 'É' => 'E', 'Ê' => 'E', 'Ë' => 'E',
+        'Ì' => 'I', 'Í' => 'I', 'Î' => 'I', 'Ï' => 'I',
+        'Ñ' => 'N', 'Ò' => 'O', 'Ó' => 'O', 'Ô' => 'O', 'Õ' => 'O', 'Ö' => 'O', 'Œ' => 'OE',
+        'Ù' => 'U', 'Ú' => 'U', 'Û' => 'U', 'Ü' => 'U', 'Ý' => 'Y', 'Ÿ' => 'Y',
+        'à' => 'a', 'á' => 'a', 'â' => 'a', 'ã' => 'a', 'ä' => 'a', 'å' => 'a', 'æ' => 'ae',
+        'ç' => 'c', 'è' => 'e', 'é' => 'e', 'ê' => 'e', 'ë' => 'e',
+        'ì' => 'i', 'í' => 'i', 'î' => 'i', 'ï' => 'i',
+        'ñ' => 'n', 'ò' => 'o', 'ó' => 'o', 'ô' => 'o', 'õ' => 'o', 'ö' => 'o', 'œ' => 'oe',
+        'ù' => 'u', 'ú' => 'u', 'û' => 'u', 'ü' => 'u', 'ý' => 'y', 'ÿ' => 'y',
+    ];
+    $text = strtr($text, $map);
+    $ascii = @iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $text);
+    return $ascii !== false ? $ascii : $text;
 }
 
 function slugify(string $text): string
 {
-    $text = iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $text) ?: $text;
-    $text = strtolower((string) preg_replace('/[^a-zA-Z0-9]+/', '-', $text));
+    $text = strtolower(ascii_fold($text));
+    $text = (string) preg_replace('/[^a-z0-9]+/', '-', $text);
     return trim($text, '-');
 }
 
 function search_norm(string $text): string
 {
-    $text = mb_strtolower($text);
-    $ascii = iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $text);
-    return strtolower($ascii !== false ? $ascii : $text);
+    return strtolower(ascii_fold(mb_strtolower($text)));
 }
 
 function unique_slug(string $base, callable $taken): string

@@ -78,6 +78,27 @@ final class Database
         return self::pdo()->lastInsertId();
     }
 
+    public static function transaction(callable $fn): mixed
+    {
+        $pdo = self::pdo();
+        $started = !$pdo->inTransaction();
+        if ($started) {
+            $pdo->beginTransaction();
+        }
+        try {
+            $result = $fn();
+            if ($started) {
+                $pdo->commit();
+            }
+            return $result;
+        } catch (\Throwable $e) {
+            if ($started && $pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            throw $e;
+        }
+    }
+
     public static function reset(): void
     {
         self::$pdo = null;
