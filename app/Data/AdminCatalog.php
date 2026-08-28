@@ -537,8 +537,8 @@ final class AdminCatalog
 
     private static function metiersReglage(): array
     {
-        $labels = ['Auteurs', 'Illustrateurs', 'Correcteurs', 'Traducteurs', 'Maquettistes', 'Éditeurs', 'Imprimeurs', 'Presse & com', 'Libraires', 'Narrateurs audio', 'Agents littéraires', 'Salons & événements'];
-        $on = [true, true, true, true, true, true, true, true, true, true, false, false];
+        $labels = ['Auteurs', 'Illustrateurs', 'Correcteurs', 'Bêta-lecteurs', 'Traducteurs', 'Maquettistes', 'Éditeurs', 'Imprimeurs', 'Presse & com', 'Libraires', 'Narrateurs audio', 'Agents littéraires', 'Salons & événements'];
+        $on = [true, true, true, true, true, true, true, true, true, true, true, false, false];
         $out = [];
         foreach ($labels as $i => $label) {
             $active = $on[$i];

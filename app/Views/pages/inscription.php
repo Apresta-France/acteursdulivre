@@ -21,7 +21,7 @@ $offersOn = old('offers_services', '1') !== '';
         <label class="intent-card<?= $offersOn ? ' is-on' : '' ?>" data-intent-card>
           <input type="checkbox" name="offers_services" value="1"<?= $offersOn ? ' checked' : '' ?>>
           <div class="intent-card-title">Je propose mes services</div>
-          <p>Correcteur, illustrateur, imprimeur, libraire : créez votre vitrine et vos formules.</p>
+          <p>Correcteur, bêta-lecteur, illustrateur, imprimeur, libraire : créez votre vitrine et vos formules.</p>
         </label>
       </div>
       <div class="auth-name-grid">

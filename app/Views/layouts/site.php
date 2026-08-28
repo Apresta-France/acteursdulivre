@@ -4,10 +4,31 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title><?= e(($title ?? 'Acteurs du Livre') . ' — acteursdulivre.fr') ?></title>
+  <?php
+    $meta = $meta ?? [];
+    $metaTitle = (string) ($meta['title'] ?? (($title ?? 'Acteurs du Livre') . ' — acteursdulivre.fr'));
+    $metaDesc = (string) ($meta['description'] ?? 'La place de marché des métiers du livre. Auteurs et professionnels, sans IA générative.');
+    $metaUrl = (string) ($meta['url'] ?? \Adl\Data\Share::current());
+    $metaImage = (string) ($meta['image'] ?? asset('img/logo.png'));
+    $metaType = (string) ($meta['type'] ?? 'website');
+  ?>
+  <meta name="description" content="<?= e($metaDesc) ?>">
+  <link rel="canonical" href="<?= e($metaUrl) ?>">
+  <meta property="og:type" content="<?= e($metaType) ?>">
+  <meta property="og:site_name" content="acteursdulivre.fr">
+  <meta property="og:title" content="<?= e($metaTitle) ?>">
+  <meta property="og:description" content="<?= e($metaDesc) ?>">
+  <meta property="og:url" content="<?= e($metaUrl) ?>">
+  <meta property="og:image" content="<?= e($metaImage) ?>">
+  <meta property="og:locale" content="fr_FR">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="<?= e($metaTitle) ?>">
+  <meta name="twitter:description" content="<?= e($metaDesc) ?>">
+  <meta name="twitter:image" content="<?= e($metaImage) ?>">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="<?= e(asset('css/app.css')) ?>?v=m25">
+  <link rel="stylesheet" href="<?= e(asset('css/app.css')) ?>?v=m28">
   <link rel="icon" href="<?= e(asset('img/favicon.ico')) ?>?v=3" sizes="any">
   <link rel="icon" type="image/png" href="<?= e(asset('img/favicon-32x32.png')) ?>?v=3" sizes="32x32">
   <link rel="apple-touch-icon" href="<?= e(asset('img/apple-touch-icon.png')) ?>?v=3">
@@ -140,10 +161,16 @@
                 <img src="<?= e(asset('img/logo.png')) ?>?v=4" alt="acteursdulivre.fr">
               </picture>
             </div>
-            <p>La place de marché des métiers du livre. Auteurs, correcteurs, illustrateurs, traducteurs, maquettistes, éditeurs, imprimeurs, presse, libraires, narrateurs, agents, salons.</p>
-            <div class="socials">
+            <p>La place de marché des métiers du livre. Auteurs, correcteurs, bêta-lecteurs, illustrateurs, traducteurs, maquettistes, éditeurs, imprimeurs, presse, libraires, narrateurs, agents, salons.</p>
+            <div class="socials" data-share data-url="<?= e(\Adl\Data\Share::absolute('/')) ?>" data-title="acteursdulivre.fr" data-text="La place de marché des métiers du livre.">
               <?php foreach ($socials ?? [] as $s): ?>
-                <span><?= e($s) ?></span>
+                <?php if (is_array($s)): ?>
+                  <a href="<?= e((string) ($s['href'] ?? '#')) ?>"
+                     <?= !empty($s['copy']) ? 'data-share-copy data-share-network="' . e((string) ($s['id'] ?? '')) . '"' : 'target="_blank" rel="noopener noreferrer"' ?>
+                     title="<?= e((string) ($s['label'] ?? $s['short'] ?? '')) ?>"><?= e((string) ($s['short'] ?? $s['label'] ?? '')) ?></a>
+                <?php else: ?>
+                  <span><?= e((string) $s) ?></span>
+                <?php endif; ?>
               <?php endforeach; ?>
             </div>
           </div>
@@ -180,6 +207,6 @@
       </footer>
     </div>
   </div>
-  <script src="<?= e(asset('js/app.js')) ?>?v=m22"></script>
+  <script src="<?= e(asset('js/app.js')) ?>?v=m24"></script>
 </body>
 </html>

@@ -18,6 +18,7 @@ require ADL_ROOT . '/app/helpers.php';
 
 $uri = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
 $isInstall = str_starts_with($uri, '/install');
+$isCron = $uri === '/cron' || str_starts_with($uri, '/cron/');
 $envFile = ADL_ROOT . '/.env';
 
 if (!is_file($envFile) && !$isInstall) {
@@ -31,7 +32,7 @@ if (is_file($envFile)) {
 
 date_default_timezone_set(Env::get('APP_TIMEZONE', 'Europe/Paris'));
 
-if (session_status() !== PHP_SESSION_ACTIVE && PHP_SAPI !== 'cli') {
+if (session_status() !== PHP_SESSION_ACTIVE && PHP_SAPI !== 'cli' && !$isCron) {
     session_name(Env::get('SESSION_NAME', 'adl_session'));
     session_start();
 }

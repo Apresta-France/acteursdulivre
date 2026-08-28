@@ -9,7 +9,10 @@ use Adl\Core\Request;
 use Adl\Core\View;
 use Adl\Data\Catalog;
 use Adl\Data\LegalPages;
+use Adl\Data\Share;
+use Adl\Models\Article;
 use Adl\Models\Profile;
+use Adl\Models\Service;
 
 final class PageController
 {
@@ -23,18 +26,34 @@ final class PageController
         $query = $request->string('q');
         $type = $request->string('type', 'all');
         $cat = $request->string('cat');
-        $found = Catalog::search($query, $type, $cat);
+        $availableOnly = $request->bool('dispo');
+        $found = Catalog::search($query, $type, $cat, 48, $availableOnly);
+        $heading = $query !== '' ? $query : ($cat !== '' ? $cat : 'Tous les métiers du livre');
+        $qs = http_build_query(array_filter([
+            'q' => $query !== '' ? $query : null,
+            'type' => $type !== '' && $type !== 'all' ? $type : null,
+            'cat' => $cat !== '' ? $cat : null,
+            'dispo' => $availableOnly ? '1' : null,
+        ]));
 
         View::page('resultats', [
-            'title' => $query !== '' ? 'Recherche : ' . $query : 'Recherche',
+            'title' => $query !== '' ? 'Recherche : ' . $query : 'Recherche de prestataires',
             'query' => $query,
             'searchType' => $found['type'],
             'searchCat' => $found['cat'],
             'searchCount' => $found['count'],
             'searchResults' => $found['results'],
             'searchState' => $found,
+            'availableOnly' => $availableOnly,
             'trades' => Catalog::trades(),
             'searchTypes' => Catalog::TYPES,
+            'meta' => Share::meta(
+                'Recherche : ' . $heading,
+                $cat !== ''
+                    ? 'Prestataires « ' . $cat . ' » sur acteursdulivre.fr — profils, prestations et missions.'
+                    : 'Recherche de prestataires des métiers du livre sur acteursdulivre.fr.',
+                Share::absolute('/recherche' . ($qs !== '' ? '?' . $qs : ''))
+            ),
         ]);
     }
 
@@ -44,7 +63,8 @@ final class PageController
             $request->string('q'),
             $request->string('type', 'all'),
             $request->string('cat'),
-            max(1, min(48, $request->int('limit', 24) ?? 24))
+            max(1, min(48, $request->int('limit', 24) ?? 24)),
+            $request->bool('dispo')
         );
         foreach (['results', 'suggestions'] as $key) {
             foreach ($found[$key] as $i => $item) {
@@ -56,12 +76,53 @@ final class PageController
 
     public function metier(Request $request, string $slug): void
     {
-        View::page('metier', ['title' => 'Correction — métier du livre', 'slug' => $slug]);
+        $trade = Catalog::tradeFromSlug($slug);
+        if ($trade === null) {
+            not_found('Ce métier n\'est pas répertorié.');
+        }
+
+        $providers = Catalog::search('', 'prestataires', $trade);
+        $services = Catalog::search('', 'prestations', $trade);
+        $missions = Catalog::search('', 'missions', $trade);
+        $label = Catalog::TRADE_LABELS[$trade] ?? $trade;
+
+        View::page('metier', [
+            'title' => $trade . ' — métier du livre',
+            'slug' => $slug,
+            'trade' => $trade,
+            'tradeLabel' => $label,
+            'providers' => $providers['results'],
+            'services' => $services['results'],
+            'missions' => $missions['results'],
+            'meta' => Share::meta(
+                $trade . ' — acteursdulivre.fr',
+                'Prestataires, prestations et missions pour le métier « ' . $trade . ' ».',
+                Share::absolute('/metiers/' . $slug)
+            ),
+        ]);
     }
 
     public function fiche(Request $request, string $slug): void
     {
-        View::page('fiche', ['title' => 'Correction complète d\'un roman', 'slug' => $slug]);
+        try {
+            $service = Service::findBySlug($slug);
+        } catch (\Throwable) {
+            $service = null;
+        }
+        if (!$service || ($service['status'] ?? '') !== 'published') {
+            not_found('Cette prestation n\'est plus disponible.');
+        }
+
+        View::page('fiche', [
+            'title' => $service['title'],
+            'slug' => $slug,
+            'service' => $service,
+            'meta' => Share::meta(
+                $service['title'],
+                trim((string) ($service['excerpt'] ?: $service['by'] . ' · ' . $service['price'])),
+                Share::absolute($service['href'])
+            ),
+        ]);
     }
 
     public function profil(Request $request, string $slug): void
@@ -72,27 +133,25 @@ final class PageController
             $profile = null;
         }
 
-        if ($profile && !empty($profile['offers_services'])) {
-            $public = Catalog::profileToPublic($profile);
-            View::page('profil', [
-                'title' => $public['name'],
-                'slug' => $slug,
-                'liveProfile' => $public,
-            ]);
-            return;
+        if (!$profile || empty($profile['offers_services'])) {
+            not_found('Ce profil n\'est pas publié.');
         }
 
-        $provider = Catalog::provider($slug);
-        if ($provider) {
-            View::page('profil', [
-                'title' => $provider['title'],
-                'slug' => $slug,
-                'catalogProfile' => $provider,
-            ]);
-            return;
-        }
-
-        View::page('profil', ['title' => 'Marion Vasseur', 'slug' => $slug]);
+        $public = Catalog::profileToPublic($profile);
+        $excerpt = trim((string) ($public['presentation'] ?? ''));
+        View::page('profil', [
+            'title' => $public['name'],
+            'slug' => $slug,
+            'liveProfile' => $public,
+            'meta' => Share::meta(
+                $public['name'] . ' — ' . ($public['title'] ?: 'Prestataire'),
+                $excerpt !== ''
+                    ? mb_substr($excerpt, 0, 180)
+                    : trim($public['title'] . ($public['city'] ? ' · ' . $public['city'] : '') . ' · prestataire sur acteursdulivre.fr'),
+                Share::absolute($public['href']),
+                'profile'
+            ),
+        ]);
     }
 
     public function missions(Request $request): void
@@ -110,20 +169,15 @@ final class PageController
     public function mission(Request $request, string $slug): void
     {
         $mission = Catalog::mission($slug);
-        if ($mission && !empty($mission['live'])) {
-            View::page('mission', [
-                'title' => $mission['title'],
-                'slug' => $slug,
-                'liveMission' => $mission,
-                'suggestions' => Catalog::suggestionsForTrade((string) ($mission['category_name'] ?? '')),
-            ]);
-            return;
+        if (!$mission) {
+            not_found('Cette mission n\'est plus disponible.');
         }
 
         View::page('mission', [
-            'title' => $mission['title'] ?? 'Détail de la mission',
+            'title' => $mission['title'],
             'slug' => $slug,
-            'catalogMission' => $mission,
+            'liveMission' => $mission,
+            'suggestions' => Catalog::suggestionsForTrade((string) ($mission['category_name'] ?? '')),
         ]);
     }
 
@@ -149,12 +203,39 @@ final class PageController
 
     public function journal(Request $request): void
     {
-        View::page('journal', ['title' => 'Le journal']);
+        try {
+            $articles = Article::published();
+        } catch (\Throwable) {
+            $articles = [];
+        }
+        View::page('journal', [
+            'title' => 'Le journal',
+            'articles' => $articles,
+        ]);
     }
 
     public function article(Request $request, string $slug): void
     {
-        View::page('article', ['title' => 'Combien coûte vraiment la fabrication d\'un roman', 'slug' => $slug]);
+        try {
+            $article = Article::findBySlug($slug);
+        } catch (\Throwable) {
+            $article = null;
+        }
+        if (!$article || empty($article['published'])) {
+            not_found('Cet article n\'est plus en ligne.');
+        }
+
+        View::page('article', [
+            'title' => $article['title'],
+            'slug' => $slug,
+            'article' => $article,
+            'meta' => Share::meta(
+                $article['title'],
+                (string) ($article['excerpt'] ?: $article['chapo']),
+                Share::absolute($article['href']),
+                'article'
+            ),
+        ]);
     }
 
     public function aide(Request $request): void

@@ -1,11 +1,7 @@
 <?php
 $live = $liveMission ?? null;
 if (!$live) {
-    echo \Adl\Core\DcEngine::render(
-        (string) file_get_contents(ADL_ROOT . '/app/Views/pages/mission.html'),
-        get_defined_vars()
-    );
-    return;
+    not_found('Cette mission n\'est plus disponible.');
 }
 ?>
 <div class="mission-page">

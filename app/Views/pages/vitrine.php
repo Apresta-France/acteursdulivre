@@ -13,6 +13,13 @@ $selectedGenres = $p['genres'] ?? [];
 $tools = implode(', ', $p['tools'] ?? []);
 $completion = (int) ($completion ?? ($p['completion'] ?? 0));
 $publicHref = !empty($p['slug']) ? url('/prestataires/' . $p['slug']) : '';
+$rateKind = \Adl\Models\Profile::isPercentRate($p) || (\Adl\Models\Profile::isBookstore($p) && trim((string) ($p['hourly_rate'] ?? '')) === '')
+    ? 'percent'
+    : 'price';
+$rateValue = (string) ($p['hourly_rate'] ?? '');
+if ($rateKind === 'percent') {
+    $rateValue = trim(str_replace('%', '', $rateValue));
+}
 ?>
 <div class="espace-page vitrine-page">
   <div class="espace-page-head">
@@ -66,32 +73,70 @@ $publicHref = !empty($p['slug']) ? url('/prestataires/' . $p['slug']) : '';
         <label class="field" for="presentation">Présentation</label>
         <textarea class="textarea" id="presentation" name="presentation" rows="6" placeholder="Votre parcours, vos spécialités, votre façon de travailler. Évitez le jargon vide : un client doit comprendre ce que vous faites mieux que d'autres."><?= e((string) ($p['presentation'] ?? '')) ?></textarea>
       </div>
+      <div>
+        <span class="field" id="availability-status-label">Disponibilité</span>
+        <div class="mode-switch" data-mode-switch role="group" aria-labelledby="availability-status-label">
+          <?php $busy = !empty($p['is_busy']); ?>
+          <label class="mode-option<?= !$busy ? ' is-on is-available' : '' ?>">
+            <input type="radio" name="availability_status" value="available"<?= !$busy ? ' checked' : '' ?>>
+            Disponible
+          </label>
+          <label class="mode-option<?= $busy ? ' is-on is-busy' : '' ?>">
+            <input type="radio" name="availability_status" value="busy"<?= $busy ? ' checked' : '' ?>>
+            Occupé
+          </label>
+        </div>
+        <p class="field-help">Si votre planning est déjà plein, passez en Occupé : les porteurs de projet voient le statut sur votre vitrine et dans l'annuaire. Vous restez visible et joignable.</p>
+      </div>
       <div class="form-grid-3">
         <div>
           <label class="field" for="city">Ville</label>
           <input class="input" id="city" name="city" value="<?= e((string) ($p['city'] ?? '')) ?>" placeholder="Nantes">
         </div>
         <div>
-          <label class="field" for="availability">Disponibilité</label>
-          <input class="input" id="availability" name="availability" value="<?= e((string) ($p['availability'] ?? '')) ?>" placeholder="dès le 15 septembre">
+          <label class="field" for="availability">Précision (optionnel)</label>
+          <input class="input" id="availability" name="availability" value="<?= e((string) ($p['availability'] ?? '')) ?>" placeholder="<?= $busy ? 'reprend le 15 octobre' : 'dès maintenant, sous 48 h' ?>">
         </div>
         <div>
           <label class="field" for="languages">Langues (résumé)</label>
           <input class="input" id="languages" name="languages" value="<?= e((string) ($p['languages'] ?? '')) ?>" placeholder="FR, EN">
         </div>
       </div>
-      <div class="form-grid-3">
-        <div>
-          <label class="field" for="hourly_rate">Tarif</label>
-          <input class="input" id="hourly_rate" name="hourly_rate" value="<?= e((string) ($p['hourly_rate'] ?? '')) ?>" placeholder="32 € / heure">
+      <div data-rate-fields data-bookstore-trade="<?= e(\Adl\Models\Profile::TRADE_BOOKSTORE) ?>">
+        <span class="field">Mode de tarification</span>
+        <p class="field-help">Les libraires indiquent une commission sur les ventes, pas un prix de prestation.</p>
+        <div class="chip-row" style="margin: 10px 0 16px;">
+          <label class="chip<?= $rateKind === 'price' ? ' is-on' : '' ?>">
+            <input type="radio" name="rate_kind" value="price"<?= $rateKind === 'price' ? ' checked' : '' ?> data-rate-kind>
+            Tarif (€)
+          </label>
+          <label class="chip<?= $rateKind === 'percent' ? ' is-on' : '' ?>">
+            <input type="radio" name="rate_kind" value="percent"<?= $rateKind === 'percent' ? ' checked' : '' ?> data-rate-kind>
+            Commission (%)
+          </label>
         </div>
-        <div>
-          <label class="field" for="rate_note">Précision tarifaire</label>
-          <input class="input" id="rate_note" name="rate_note" value="<?= e((string) ($p['rate_note'] ?? '')) ?>" placeholder="ou 4,50 € / 1 000 signes">
-        </div>
-        <div>
-          <label class="field" for="website">Site ou portfolio externe</label>
-          <input class="input" id="website" name="website" value="<?= e((string) ($p['website'] ?? '')) ?>" placeholder="https://">
+        <div class="form-grid-3">
+          <div>
+            <label class="field" for="hourly_rate" data-rate-label><?= $rateKind === 'percent' ? 'Commission' : 'Tarif' ?></label>
+            <input class="input" id="hourly_rate" name="hourly_rate" value="<?= e($rateValue) ?>"
+                   placeholder="<?= $rateKind === 'percent' ? '35' : '32 € / heure' ?>"
+                   inputmode="<?= $rateKind === 'percent' ? 'decimal' : 'text' ?>"
+                   data-rate-input
+                   data-placeholder-price="32 € / heure"
+                   data-placeholder-percent="35">
+          </div>
+          <div>
+            <label class="field" for="rate_note" data-rate-note-label><?= $rateKind === 'percent' ? 'Précision' : 'Précision tarifaire' ?></label>
+            <input class="input" id="rate_note" name="rate_note" value="<?= e((string) ($p['rate_note'] ?? '')) ?>"
+                   placeholder="<?= $rateKind === 'percent' ? 'sur le prix public TTC' : 'ou 4,50 € / 1 000 signes' ?>"
+                   data-rate-note
+                   data-placeholder-price="ou 4,50 € / 1 000 signes"
+                   data-placeholder-percent="sur le prix public TTC">
+          </div>
+          <div>
+            <label class="field" for="website">Site ou portfolio externe</label>
+            <input class="input" id="website" name="website" value="<?= e((string) ($p['website'] ?? '')) ?>" placeholder="https://">
+          </div>
         </div>
       </div>
     </div>
@@ -100,7 +145,7 @@ $publicHref = !empty($p['slug']) ? url('/prestataires/' . $p['slug']) : '';
       <div>
         <span class="field">Mes métiers</span>
         <p class="field-help">Trois maximum : ce sont eux qui vous font apparaître dans l'annuaire.</p>
-        <div class="chip-row" data-max-checks="3">
+        <div class="chip-row" data-max-checks="3" data-trades>
           <?php foreach ($trades as $trade): ?>
             <label class="chip<?= in_array($trade, $selectedTrades, true) ? ' is-on' : '' ?>">
               <input type="checkbox" name="trades[]" value="<?= e($trade) ?>"<?= in_array($trade, $selectedTrades, true) ? ' checked' : '' ?>>

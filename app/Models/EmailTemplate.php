@@ -30,4 +30,15 @@ final class EmailTemplate
             [$subject, $body, $id]
         );
     }
+
+    public static function ensure(string $slug, string $name, string $subject, string $body, string $variables): void
+    {
+        if (self::findBySlug($slug)) {
+            return;
+        }
+        Database::query(
+            'INSERT INTO email_templates (slug, name, subject, body_html, variables) VALUES (?, ?, ?, ?, ?)',
+            [$slug, $name, $subject, $body, $variables]
+        );
+    }
 }

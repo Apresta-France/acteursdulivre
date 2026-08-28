@@ -67,7 +67,7 @@
                       <span style="{{ s.levelStyle }}">{{ s.level }}</span>
                     </div>
                     <div style="font-size: 15px; color: #14202C; line-height: 1.4; margin: 10px 0 10px; min-height: 42px;">{{ s.title }}</div>
-                    <div style="display: flex; align-items: center; gap: 10px; font-family: 'Space Grotesk', monospace; font-size: 13px; color: #D85D3F;">★ {{ s.rating }} <span style="color: #A8B6C4;">({{ s.reviews }})</span><span style="color: #66768A; font-family: 'Helvetica Neue', Helvetica, sans-serif;">· {{ s.delay }}</span></div>
+                    <div style="display: flex; align-items: center; gap: 10px; font-family: 'Space Grotesk', monospace; font-size: 13px; color: #D85D3F;">★ {{ s.rating }} <sc-if value="{{ s.reviews }}"><span style="color: #A8B6C4;">({{ s.reviews }})</span></sc-if><span style="color: #66768A; font-family: 'Helvetica Neue', Helvetica, sans-serif;">· {{ s.delay }}</span></div>
                     <div style="display: flex; justify-content: space-between; align-items: baseline; border-top: 1px solid #EEF1F5; margin-top: 12px; padding-top: 11px;">
                       <span style="font-size: 12px; color: #8496A8;">à partir de</span>
                       <span style="font-family: 'Space Grotesk', sans-serif; color: #022746; font-weight: 700; font-size: 17px;">{{ s.price }}</span>

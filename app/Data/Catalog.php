@@ -4,9 +4,13 @@ declare(strict_types=1);
 
 namespace Adl\Data;
 
+use Adl\Models\Article;
 use Adl\Models\Mission;
 use Adl\Models\PortfolioItem;
 use Adl\Models\Profile;
+use Adl\Models\Service;
+use Adl\Models\Setting;
+use Adl\Models\User;
 
 final class Catalog
 {
@@ -17,10 +21,33 @@ final class Catalog
         'missions' => 'Missions',
     ];
 
+    public const TRADE_LABELS = [
+        'Correction' => 'Correcteurs',
+        'Bêta-lecture' => 'Bêta-lecteurs',
+        'Illustration' => 'Illustrateurs',
+        'Traduction' => 'Traducteurs',
+        'Maquette' => 'Maquettistes',
+        'Édition' => 'Éditeurs',
+        'Impression' => 'Imprimeurs',
+        'Presse & com' => 'Presse & com',
+        'Librairie' => 'Libraires',
+        'Audio' => 'Narrateurs audio',
+    ];
+
     /** @return list<string> */
     public static function trades(): array
     {
         return Profile::TRADES;
+    }
+
+    public static function tradeFromSlug(string $slug): ?string
+    {
+        foreach (self::trades() as $trade) {
+            if (slugify($trade) === $slug || slugify(self::TRADE_LABELS[$trade] ?? $trade) === $slug) {
+                return $trade;
+            }
+        }
+        return null;
     }
 
     /**
@@ -31,10 +58,11 @@ final class Catalog
      *   count: int,
      *   results: list<array<string, mixed>>,
      *   groups: array<string, list<array<string, mixed>>>,
-     *   suggestions: list<array<string, mixed>>
+     *   suggestions: list<array<string, mixed>>,
+     *   available_only: bool
      * }
      */
-    public static function search(string $q, string $type = 'all', string $cat = '', int $limit = 48): array
+    public static function search(string $q, string $type = 'all', string $cat = '', int $limit = 48, bool $availableOnly = false): array
     {
         $type = array_key_exists($type, self::TYPES) ? $type : 'all';
         $items = [];
@@ -52,6 +80,9 @@ final class Catalog
         $scored = [];
         foreach ($items as $item) {
             if ($cat !== '' && search_norm((string) ($item['cat'] ?? '')) !== search_norm($cat)) {
+                continue;
+            }
+            if ($availableOnly && ($item['kind'] ?? '') === 'prestataires' && !empty($item['is_busy'])) {
                 continue;
             }
             $score = self::score($q, $item);
@@ -72,8 +103,6 @@ final class Catalog
             $groups[$item['kind']][] = $item;
         }
 
-        $suggestions = array_slice($results, 0, 8);
-
         return [
             'query' => $q,
             'type' => $type,
@@ -81,95 +110,25 @@ final class Catalog
             'count' => count($scored),
             'results' => $results,
             'groups' => $groups,
-            'suggestions' => $suggestions,
+            'suggestions' => array_slice($results, 0, 8),
+            'available_only' => $availableOnly,
         ];
     }
 
     /** @return list<array<string, mixed>> */
     public static function services(): array
     {
-        $rows = [
-            ['Correction', 'Correction complète d\'un roman jusqu\'à 90 000 signes', 'Marion Vasseur', 'MV', '420 €', '4,9', 87, '8 jours', 'Confirmée', 'Choix de la rédaction'],
-            ['Correction', 'Relecture typographique sur épreuves PDF', 'Atelier Virgule', 'AV', '260 €', '4,8', 52, '4 jours', 'Experte', ''],
-            ['Correction', 'Correction d\'un essai ou document, jusqu\'à 300 pages', 'Paul Ferrand', 'PF', '640 €', '4,9', 38, '12 jours', 'Confirmé', ''],
-            ['Correction', 'Réécriture et lissage stylistique, forfait 50 pages', 'Nadia Chaumet', 'NC', '580 €', '5,0', 24, '10 jours', 'Nouvelle', 'Nouveau'],
-            ['Correction', 'Préparation de copie avant maquette', 'Studio Grain', 'SG', '340 €', '4,7', 61, '5 jours', 'Confirmé', ''],
-            ['Correction', 'Relecture jeunesse, album et premières lectures', 'Claire Ozanne', 'CO', '190 €', '4,9', 45, '3 jours', 'Experte', 'Répond en 1 h'],
-            ['Illustration', 'Couverture illustrée, roman ou essai, 1 piste + retouches', 'Atelier Kess', 'AK', '480 €', '4,9', 41, '10 jours', 'Confirmée', ''],
-            ['Illustration', 'Album jeunesse 24 pages, aquarelle originale', 'Atelier Kess', 'AK', '2 200 €', '5,0', 18, '6 semaines', 'Experte', 'Choix de la rédaction'],
-            ['Illustration', 'Ornements et lettrines pour recueil de poésie', 'Studio Grain', 'SG', '360 €', '4,6', 22, '12 jours', 'Confirmé', ''],
-            ['Traduction', 'Traduction littéraire EN→FR au signe', 'Sofia Renard', 'SR', '18 € / page', '4,9', 33, '3 semaines', 'Experte', ''],
-            ['Traduction', 'Traduction ES→FR, nouvelles et roman', 'Sofia Renard', 'SR', '16 € / page', '4,8', 19, '4 semaines', 'Confirmée', ''],
-            ['Maquette', 'Maquette intérieure, collection Grands Formats', 'Studio Grain', 'SG', '650 €', '4,8', 47, '3 semaines', 'Confirmé', ''],
-            ['Maquette', 'Couverture + quatrième, collection poche', 'Studio Grain', 'SG', '290 €', '4,7', 28, '8 jours', 'Confirmé', ''],
-            ['Impression', '300 ex. broché, papier bouffant, dos carré collé', 'Imprimerie Baudry', 'IB', '1 190 €', '4,8', 54, '12 jours', 'Experte', ''],
-            ['Presse & com', 'Attachée de presse, premier roman, 6 semaines', 'Hélène Aubry', 'HA', '2 400 €', '4,9', 16, '6 semaines', 'Confirmée', ''],
-            ['Audio', 'Narration livre audio, studio fourni', 'Studio Bel Écho', 'BE', '220 € / h', '4,8', 21, 'sur devis', 'Confirmé', ''],
-            ['Édition', 'Direction éditoriale d\'un premier roman', 'Éditions La Ligne', 'EL', '1 800 €', '4,7', 11, '2 mois', 'Experte', ''],
-            ['Librairie', 'Dépôt et animation en librairie indépendante', 'Librairie Haut-Le-Cœur', 'LH', 'sur devis', '4,6', 9, 'à convenir', 'Confirmée', ''],
-        ];
-
-        $out = [];
-        foreach ($rows as $i => [$cat, $title, $by, $initials, $price, $rating, $reviews, $delay, $level, $tag]) {
-            $out[] = [
-                'kind' => 'prestations',
-                'kind_label' => 'Prestation',
-                'title' => $title,
-                'subtitle' => $by,
-                'href' => '/prestations/' . slugify($title),
-                'cat' => $cat,
-                'meta' => $delay . ' · ★ ' . $rating . ' (' . $reviews . ')',
-                'price' => $price,
-                'thumb' => photo($i % 6),
-                'initials' => $initials,
-                'level' => $level,
-                'tag' => $tag,
-                'delay' => $delay,
-                'rating' => $rating,
-                'reviews' => $reviews,
-                'search' => $cat . ' ' . $title . ' ' . $by . ' ' . $tag,
-            ];
+        try {
+            return Service::published();
+        } catch (\Throwable) {
+            return [];
         }
-        return $out;
     }
 
     /** @return list<array<string, mixed>> */
     public static function providers(): array
     {
-        $demo = [
-            ['marion-vasseur', 'Marion Vasseur', 'MV', 'Correctrice-relectrice', 'Correction', 'Nantes', 'Romans, essais, polar. Douze ans en maison d\'édition.', ['Roman', 'Polar', 'Essai']],
-            ['atelier-virgule', 'Atelier Virgule', 'AV', 'Relecture sur épreuves', 'Correction', 'Paris', 'Dernière passe typographique sur PDF maquetté.', ['Essai', 'Pratique']],
-            ['paul-ferrand', 'Paul Ferrand', 'PF', 'Correcteur d\'essais', 'Correction', 'Lille', 'Appareil de notes, normes bibliographiques, documents longs.', ['Essai', 'Sciences humaines']],
-            ['nadia-chaumet', 'Nadia Chaumet', 'NC', 'Réécriture et lissage', 'Correction', 'Lyon', 'Style, rythme, resserrement, voix de l\'auteur préservée.', ['Roman', 'Jeunesse']],
-            ['atelier-kess', 'Atelier Kess', 'AK', 'Illustration et couverture', 'Illustration', 'Marseille', 'Aquarelle, gouache, visuels originaux sans IA.', ['Jeunesse', 'Poésie']],
-            ['sofia-renard', 'Sofia Renard', 'SR', 'Traductrice littéraire', 'Traduction', 'Toulouse', 'EN/ES vers FR, nouvelles et romans contemporains.', ['Roman', 'Essai']],
-            ['studio-grain', 'Studio Grain', 'SG', 'Maquette et direction artistique', 'Maquette', 'Bordeaux', 'Intérieurs, collections, ornements, InDesign.', ['Essai', 'Poésie']],
-            ['helene-aubry', 'Hélène Aubry', 'HA', 'Attachée de presse', 'Presse & com', 'Paris', 'Lancements, libraires, podcasts, salons.', ['Roman', 'Essai']],
-            ['imprimerie-baudry', 'Imprimerie Baudry', 'IB', 'Impression offset et numérique', 'Impression', 'Lyon', 'Broché, papier recyclé, petits et moyens tirages.', ['Pratique']],
-            ['studio-bel-echo', 'Studio Bel Écho', 'BE', 'Narration livre audio', 'Audio', 'Nantes', 'Voix, direction, studio, livrable mastering.', ['Livre audio']],
-        ];
-
         $out = [];
-        foreach ($demo as [$slug, $name, $initials, $title, $cat, $city, $excerpt, $genres]) {
-            $out[] = [
-                'kind' => 'prestataires',
-                'kind_label' => 'Prestataire',
-                'title' => $name,
-                'subtitle' => $title . ' · ' . $city,
-                'href' => '/prestataires/' . $slug,
-                'cat' => $cat,
-                'meta' => implode(' · ', $genres),
-                'price' => '',
-                'thumb' => '',
-                'initials' => $initials,
-                'excerpt' => $excerpt,
-                'city' => $city,
-                'genres' => $genres,
-                'demo' => true,
-                'search' => $name . ' ' . $title . ' ' . $cat . ' ' . $city . ' ' . $excerpt . ' ' . implode(' ', $genres),
-            ];
-        }
-
         try {
             foreach (Profile::searchPublished() as $profile) {
                 $name = Profile::displayName($profile);
@@ -183,18 +142,20 @@ final class Catalog
                     'href' => Profile::publicHref($profile),
                     'cat' => $cat,
                     'meta' => implode(' · ', array_slice($profile['genres'] ?: $trades, 0, 4)),
-                    'price' => $profile['hourly_rate'] ? 'à partir de ' . $profile['hourly_rate'] : '',
+                    'price' => Profile::formatRateSearch($profile),
                     'thumb' => '',
                     'initials' => Profile::initials($profile),
                     'excerpt' => (string) ($profile['presentation'] ?? ''),
                     'city' => (string) ($profile['city'] ?? ''),
                     'genres' => $profile['genres'] ?? [],
                     'live' => true,
+                    'availability_status' => $profile['availability_status'] ?? Profile::STATUS_AVAILABLE,
+                    'availability_label' => $profile['availability_label'] ?? Profile::statusLabel($profile),
+                    'is_busy' => !empty($profile['is_busy']),
                     'search' => $name . ' ' . ($profile['title'] ?? '') . ' ' . implode(' ', $trades) . ' ' . ($profile['city'] ?? '') . ' ' . ($profile['presentation'] ?? '') . ' ' . implode(' ', $profile['genres'] ?? []) . ' ' . implode(' ', $profile['tools'] ?? []),
                 ];
             }
         } catch (\Throwable) {
-            // Catalogue encore consultable sans base.
         }
 
         return $out;
@@ -203,37 +164,7 @@ final class Catalog
     /** @return list<array<string, mixed>> */
     public static function missions(): array
     {
-        $demo = [
-            ['Recherche correcteur pour essai historique, 240 pages', 'Éditions du Fleuve Noirci', 'Correction', '600 – 900 €', '12 sept.', 'Essai historique, 420 000 signes, notes de bas de page.', ['Essai', 'Notes', 'Norme maison']],
-            ['Illustrateur album jeunesse 3-6 ans, 24 pages', 'Camille D., autrice', 'Illustration', '1 800 – 2 500 €', '18 sept.', 'Album couleur, cession 5 ans, 24 planches.', ['Album', 'Couleur', 'Jeunesse']],
-            ['Traduction ES→FR d\'un recueil de nouvelles', 'Éditions Pampa', 'Traduction', '3 200 €', '30 sept.', '180 000 signes, littérature contemporaine.', ['Littérature', '180 000 signes']],
-            ['Impression 500 ex. broché, papier recyclé', 'Collectif Encre Vive', 'Impression', '1 400 – 2 000 €', '5 oct.', 'Offset, dos carré collé, éco-labels.', ['Offset', 'Éco-labels']],
-            ['Attaché de presse, premier roman, sortie janvier', 'Éditions La Ligne', 'Presse & com', '2 000 – 3 000 €', '22 sept.', 'Presse écrite, podcasts, salons.', ['Presse', 'Podcasts']],
-            ['Narrateur pour livre audio, 7 h de texte', 'Studio Bel Écho', 'Audio', '2 400 €', '12 oct.', 'Voix féminine, studio fourni.', ['Voix', 'Audio']],
-        ];
-
         $out = [];
-        foreach ($demo as [$title, $by, $cat, $budget, $deadline, $excerpt, $tags]) {
-            $out[] = [
-                'kind' => 'missions',
-                'kind_label' => 'Mission',
-                'title' => $title,
-                'subtitle' => $by . ' · ' . $cat,
-                'href' => '/missions/' . slugify($title),
-                'cat' => $cat,
-                'meta' => $budget . ' · avant le ' . $deadline,
-                'price' => $budget,
-                'thumb' => '',
-                'initials' => '',
-                'excerpt' => $excerpt,
-                'tags' => $tags,
-                'deadline' => $deadline,
-                'by' => $by,
-                'demo' => true,
-                'search' => $title . ' ' . $by . ' ' . $cat . ' ' . $excerpt . ' ' . implode(' ', $tags),
-            ];
-        }
-
         try {
             foreach (Mission::open() as $mission) {
                 $out[] = [
@@ -248,15 +179,17 @@ final class Catalog
                     'thumb' => '',
                     'initials' => $mission['initials'],
                     'excerpt' => (string) ($mission['brief'] ?? ''),
-                    'tags' => array_filter([$mission['volume'] ?? null, $mission['category_name'] ?? null]),
+                    'tags' => array_values(array_filter([$mission['volume'] ?? null, $mission['category_name'] ?? null])),
                     'deadline' => $mission['deadline_label'],
+                    'when' => $mission['when'],
+                    'applicants' => (int) ($mission['applicants'] ?? 0),
+                    'volume' => (string) ($mission['volume'] ?? ''),
                     'by' => $mission['by'],
                     'live' => true,
                     'search' => $mission['title'] . ' ' . $mission['by'] . ' ' . ($mission['category_name'] ?? '') . ' ' . ($mission['brief'] ?? '') . ' ' . ($mission['volume'] ?? ''),
                 ];
             }
         } catch (\Throwable) {
-            // Catalogue encore consultable sans base.
         }
 
         return $out;
@@ -264,10 +197,12 @@ final class Catalog
 
     public static function provider(string $slug): ?array
     {
-        foreach (self::providers() as $provider) {
-            if (str_ends_with((string) $provider['href'], '/' . $slug)) {
-                return $provider;
+        try {
+            $profile = Profile::findBySlug($slug);
+            if ($profile && !empty($profile['offers_services'])) {
+                return self::profileToPublic($profile);
             }
+        } catch (\Throwable) {
         }
         return null;
     }
@@ -275,19 +210,10 @@ final class Catalog
     public static function mission(string $slug): ?array
     {
         try {
-            $live = Mission::findBySlug($slug);
-            if ($live) {
-                return $live;
-            }
+            return Mission::findBySlug($slug);
         } catch (\Throwable) {
+            return null;
         }
-
-        foreach (self::missions() as $mission) {
-            if (str_ends_with((string) $mission['href'], '/' . $slug)) {
-                return $mission;
-            }
-        }
-        return null;
     }
 
     /** @return list<array<string, mixed>> */
@@ -304,6 +230,103 @@ final class Catalog
             }
         }
         return $out;
+    }
+
+    /** @return list<array<string, mixed>> */
+    public static function featuredServices(int $limit = 3, int $offset = 0): array
+    {
+        $out = [];
+        foreach (array_slice(self::services(), $offset, $limit) as $i => $service) {
+            $service['homeSlotId'] = 'home-feat-' . ($offset + $i);
+            $service['go'] = true;
+            $out[] = $service;
+        }
+        return $out;
+    }
+
+    /** @return list<array<string, mixed>> */
+    public static function homeMissions(int $limit = 5): array
+    {
+        $out = [];
+        foreach (array_slice(self::missions(), 0, $limit) as $mission) {
+            $mission['urgence'] = '';
+            $mission['urgenceStyle'] = 'display: none;';
+            $mission['avatars'] = [];
+            $mission['go'] = true;
+            $out[] = $mission;
+        }
+        return $out;
+    }
+
+    /** @return list<array<string, mixed>> */
+    public static function tradeCards(): array
+    {
+        $counts = self::tradeCounts();
+        $out = [];
+        foreach (self::trades() as $i => $trade) {
+            $n = $counts[$trade] ?? 0;
+            $out[] = [
+                'num' => str_pad((string) ($i + 1), 2, '0', STR_PAD_LEFT),
+                'name' => self::TRADE_LABELS[$trade] ?? $trade,
+                'trade' => $trade,
+                'count' => format_int($n),
+                'countLabel' => $n === 0 ? 'Aucun profil' : ($n . ' profil' . ($n > 1 ? 's' : '')),
+                'href' => '/metiers/' . slugify($trade),
+            ];
+        }
+        return $out;
+    }
+
+    /** @return array<string, int> */
+    public static function tradeCounts(): array
+    {
+        $counts = array_fill_keys(self::trades(), 0);
+        try {
+            foreach (Profile::searchPublished() as $profile) {
+                foreach ($profile['trades'] ?? [] as $trade) {
+                    if (isset($counts[$trade])) {
+                        $counts[$trade]++;
+                    }
+                }
+            }
+        } catch (\Throwable) {
+        }
+        return $counts;
+    }
+
+    /** @return list<array{v: string, k: string}> */
+    public static function homeStats(): array
+    {
+        try {
+            $pros = User::countOfferers();
+            $services = Service::countPublished();
+            $missions = Mission::countOpen();
+            $commission = Setting::get('commission_percent', '8') ?: '8';
+        } catch (\Throwable) {
+            $pros = $services = $missions = 0;
+            $commission = '8';
+        }
+
+        return [
+            ['v' => format_int($pros), 'k' => 'professionnels du livre inscrits'],
+            ['v' => format_int($services), 'k' => 'prestations à prix affiché'],
+            ['v' => format_int($missions), 'k' => 'missions ouvertes'],
+            ['v' => $commission . ' %', 'k' => 'de commission, sans abonnement'],
+        ];
+    }
+
+    /** @return list<array<string, mixed>> */
+    public static function journalPreview(int $limit = 3): array
+    {
+        try {
+            $items = Article::preview($limit);
+            foreach ($items as &$item) {
+                $item['go'] = true;
+            }
+            return $items;
+        } catch (\Throwable) {
+            return [];
+        }
     }
 
     /** @param array<string, mixed> $profile */
@@ -338,8 +361,14 @@ final class Catalog
             'level' => (string) ($profile['level'] ?? 'Nouveau'),
             'presentation' => (string) ($profile['presentation'] ?? ''),
             'availability' => (string) ($profile['availability'] ?? ''),
+            'availability_status' => $profile['availability_status'] ?? Profile::STATUS_AVAILABLE,
+            'availability_label' => $profile['availability_label'] ?? Profile::statusLabel($profile),
+            'availability_summary' => $profile['availability_summary'] ?? Profile::availabilitySummary($profile),
+            'is_busy' => !empty($profile['is_busy']),
             'hourly_rate' => (string) ($profile['hourly_rate'] ?? ''),
             'rate_note' => (string) ($profile['rate_note'] ?? ''),
+            'rate_kicker' => Profile::rateKicker($profile),
+            'rate_is_percent' => Profile::isPercentRate($profile),
             'languages' => (string) ($profile['languages'] ?? ''),
             'languages_list' => $profile['languages_list'] ?? [],
             'trades' => $trades,

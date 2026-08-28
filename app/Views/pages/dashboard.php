@@ -7,6 +7,8 @@ $openMissionCount = (int) ($openMissionCount ?? 0);
 $profileCompletion = (int) ($profileCompletion ?? 0);
 $unreadMessages = (int) ($unreadMessages ?? 0);
 $unreadAlerts = (int) ($unreadAlerts ?? 0);
+$availabilityBusy = ($availabilityStatus ?? 'available') === 'busy';
+$availabilityNote = trim((string) ($availabilityNote ?? ''));
 
 if ($seeks && $offers) {
     $subtitle = 'Vous pouvez chercher des prestataires et proposer vos services.';
@@ -55,8 +57,30 @@ if ($offers && $profileCompletion < 80) {
     </div>
   </div>
 
+  <?php if (!empty($saved)): ?>
+    <div class="flash flash-ok"><?= e(is_string($saved) ? $saved : 'Enregistré.') ?></div>
+  <?php endif; ?>
   <?php if (!empty($error)): ?>
     <div class="flash flash-error"><?= e((string) $error) ?></div>
+  <?php endif; ?>
+
+  <?php if ($offers): ?>
+    <section class="avail-banner<?= $availabilityBusy ? ' is-busy' : ' is-available' ?>">
+      <span class="dash-ico<?= $availabilityBusy ? '' : ' dash-ico-accent' ?>"><?= icon('clock', 18) ?></span>
+      <div>
+        <strong>Vous êtes <?= $availabilityBusy ? 'Occupé' : 'Disponible' ?></strong>
+        <em><?php if ($availabilityBusy): ?>
+          Votre vitrine indique que vous n'acceptez pas de nouvelles missions<?= $availabilityNote !== '' ? ' · ' . e($availabilityNote) : '' ?>. Les porteurs de projet peuvent toujours vous écrire.
+        <?php else: ?>
+          Les porteurs de projet voient que vous acceptez de nouvelles missions<?= $availabilityNote !== '' ? ' · ' . e($availabilityNote) : '' ?>. Passez en Occupé dès que votre planning est saturé.
+        <?php endif; ?></em>
+      </div>
+      <form method="post" action="<?= e(url('/espace/disponibilite')) ?>" class="mode-switch">
+        <?= csrf_field() ?>
+        <button type="submit" name="availability_status" value="available" class="mode-option<?= !$availabilityBusy ? ' is-on is-available' : '' ?>">Disponible</button>
+        <button type="submit" name="availability_status" value="busy" class="mode-option<?= $availabilityBusy ? ' is-on is-busy' : '' ?>">Occupé</button>
+      </form>
+    </section>
   <?php endif; ?>
 
   <div class="dash-stats">

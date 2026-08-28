@@ -8,9 +8,14 @@ use Adl\Core\Auth;
 use Adl\Core\Request;
 use Adl\Core\View;
 use Adl\Data\Catalog;
+use Adl\Models\Application;
+use Adl\Models\Favorite;
 use Adl\Models\Mission;
+use Adl\Models\Notification;
+use Adl\Models\Order;
 use Adl\Models\PortfolioItem;
 use Adl\Models\Profile;
+use Adl\Models\Service;
 use Adl\Models\User;
 
 final class AccountController
@@ -35,12 +40,17 @@ final class AccountController
         } catch (\Throwable) {
         }
 
+        $availabilityStatus = Profile::STATUS_AVAILABLE;
+        $availabilityNote = '';
+
         try {
             if (User::offersServices($user)) {
                 $profile = Profile::findByUser((int) $user['id']);
                 if ($profile) {
                     $profileCompletion = (int) ($profile['completion'] ?? 0);
                     $profileHref = Profile::publicHref($profile);
+                    $availabilityStatus = Profile::normalizeStatus($profile['availability_status'] ?? null);
+                    $availabilityNote = trim((string) ($profile['availability'] ?? ''));
                 }
             }
         } catch (\Throwable) {
@@ -49,10 +59,13 @@ final class AccountController
         View::page('dashboard', [
             'title' => 'Tableau de bord',
             'error' => flash('error'),
+            'saved' => flash('saved'),
             'missionCount' => $missionCount,
             'openMissionCount' => $openMissionCount,
             'profileCompletion' => $profileCompletion,
             'profileHref' => $profileHref,
+            'availabilityStatus' => $availabilityStatus,
+            'availabilityNote' => $availabilityNote,
         ]);
     }
 
@@ -143,8 +156,16 @@ final class AccountController
 
     public function commandes(Request $request): void
     {
-        Auth::requireSeeker();
-        View::page('commandes', ['title' => 'Mes commandes']);
+        $user = Auth::requireSeeker();
+        try {
+            $orders = Order::forBuyer((int) $user['id']);
+        } catch (\Throwable) {
+            $orders = [];
+        }
+        View::page('commandes', [
+            'title' => 'Mes commandes',
+            'orders' => $orders,
+        ]);
     }
 
     public function missions(Request $request): void
@@ -164,38 +185,157 @@ final class AccountController
 
     public function candidatures(Request $request): void
     {
-        Auth::requireOfferer();
-        View::page('candidatures', ['title' => 'Mes candidatures']);
+        $user = Auth::requireOfferer();
+        try {
+            $applications = Application::forUser((int) $user['id']);
+        } catch (\Throwable) {
+            $applications = [];
+        }
+        View::page('candidatures', [
+            'title' => 'Mes candidatures',
+            'applications' => $applications,
+        ]);
     }
 
     public function prestations(Request $request): void
     {
-        Auth::requireOfferer();
-        View::page('mesprestations', ['title' => 'Mes prestations']);
+        $user = Auth::requireOfferer();
+        try {
+            $services = Service::forUser((int) $user['id']);
+        } catch (\Throwable) {
+            $services = [];
+        }
+        View::page('mesprestations', [
+            'title' => 'Mes prestations',
+            'myServices' => $services,
+            'saved' => flash('saved'),
+        ]);
     }
 
     public function creer(Request $request): void
     {
         Auth::requireOfferer();
-        View::page('creer', ['title' => 'Créer une prestation']);
+        View::page('creer', [
+            'title' => 'Créer une prestation',
+            'trades' => Catalog::trades(),
+            'error' => flash('error'),
+            'old' => flash('old') ?: [],
+        ]);
+    }
+
+    public function creerSave(Request $request): void
+    {
+        $user = Auth::requireOfferer();
+        $title = $request->string('title');
+        $excerpt = $request->string('excerpt');
+        $category = $request->string('category_name');
+        $draft = $request->string('intent') === 'draft';
+
+        $old = [
+            'title' => $title,
+            'excerpt' => $excerpt,
+            'category_name' => $category,
+            'delay' => $request->string('delay'),
+            'price_from' => $request->string('price_from'),
+        ];
+
+        if ($title === '' || $category === '') {
+            flash('error', 'Indiquez au moins le métier et le titre de la prestation.');
+            flash('old', $old);
+            redirect('/espace/prestations/creer');
+        }
+
+        $packages = [];
+        foreach ($request->list('packages') as $row) {
+            if (!is_array($row)) {
+                continue;
+            }
+            $name = trim((string) ($row['name'] ?? ''));
+            if ($name === '') {
+                continue;
+            }
+            $packages[] = [
+                'name' => $name,
+                'description' => trim((string) ($row['description'] ?? '')),
+                'price' => self::money((string) ($row['price'] ?? '')) ?? 0,
+                'delay' => trim((string) ($row['delay'] ?? '')),
+            ];
+        }
+
+        $service = Service::create((int) $user['id'], [
+            'title' => $title,
+            'excerpt' => $excerpt !== '' ? $excerpt : null,
+            'category_name' => $category,
+            'delay' => $request->string('delay') ?: null,
+            'price_from' => self::money($request->string('price_from')),
+            'status' => $draft ? 'draft' : 'published',
+        ], $packages);
+
+        flash('saved', $draft ? 'Brouillon enregistré.' : 'Prestation publiée : elle apparaît dans l\'annuaire.');
+        redirect(!empty($service['slug']) ? '/prestations/' . $service['slug'] : '/espace/prestations');
     }
 
     public function messages(Request $request): void
     {
         Auth::requireUser();
-        View::page('messagerie', ['title' => 'Messagerie']);
+        View::page('messagerie', [
+            'title' => 'Messagerie',
+            'threads' => [],
+        ]);
     }
 
     public function notifications(Request $request): void
     {
-        Auth::requireUser();
-        View::page('notifications', ['title' => 'Notifications']);
+        $user = Auth::requireUser();
+        try {
+            $items = Notification::forUser((int) $user['id']);
+            $unread = Notification::unreadCount((int) $user['id']);
+        } catch (\Throwable) {
+            $items = [];
+            $unread = 0;
+        }
+        View::page('notifications', [
+            'title' => 'Notifications',
+            'items' => $items,
+            'unreadCount' => $unread,
+            'saved' => flash('saved'),
+        ]);
+    }
+
+    public function notificationsRead(Request $request): void
+    {
+        $user = Auth::requireUser();
+        try {
+            Notification::markAllRead((int) $user['id']);
+        } catch (\Throwable) {
+        }
+        flash('saved', 'Toutes les alertes sont marquées comme lues.');
+        redirect('/espace/notifications');
+    }
+
+    public function notificationOpen(Request $request, string $id): void
+    {
+        $user = Auth::requireUser();
+        try {
+            $item = Notification::markRead((int) $id, (int) $user['id']);
+        } catch (\Throwable) {
+            $item = null;
+        }
+        redirect((string) ($item['href'] ?? '/espace/notifications'));
     }
 
     public function favoris(Request $request): void
     {
-        Auth::requireSeeker();
-        View::page('favoris', ['title' => 'Favoris']);
+        $user = Auth::requireSeeker();
+        try {
+            $favorites = Favorite::forUser((int) $user['id']);
+        } catch (\Throwable) {
+            $favorites = [];
+        }
+        View::page('favoris', [
+            'title' => 'Favoris',
+            'favorites' => $favorites,
+        ]);
     }
 
     public function avis(Request $request): void
@@ -248,8 +388,10 @@ final class AccountController
                 'presentation' => $request->string('presentation'),
                 'city' => $request->string('city'),
                 'availability' => $request->string('availability'),
+                'availability_status' => $request->string('availability_status'),
                 'languages' => $request->string('languages'),
                 'hourly_rate' => $request->string('hourly_rate'),
+                'rate_kind' => $request->string('rate_kind'),
                 'rate_note' => $request->string('rate_note'),
                 'website' => $request->string('website'),
                 'trades' => $trades,
@@ -303,6 +445,27 @@ final class AccountController
         redirect('/espace/vitrine');
     }
 
+    public function disponibiliteSave(Request $request): void
+    {
+        $user = Auth::requireOfferer();
+        $status = Profile::normalizeStatus($request->string('availability_status'));
+
+        try {
+            Profile::setAvailabilityStatus((int) $user['id'], $status);
+        } catch (\Throwable $e) {
+            flash('error', $e->getMessage());
+            redirect('/espace');
+        }
+
+        flash(
+            'saved',
+            $status === Profile::STATUS_BUSY
+                ? 'Votre vitrine affiche Occupé : les porteurs de projet savent que votre planning est chargé.'
+                : 'Votre vitrine affiche Disponible pour de nouvelles missions.'
+        );
+        redirect('/espace');
+    }
+
     public function parametres(Request $request): void
     {
         $user = Auth::requireUser();
@@ -347,8 +510,21 @@ final class AccountController
 
     public function facturation(Request $request): void
     {
-        Auth::requireOfferer();
-        View::page('facturation', ['title' => 'Facturation']);
+        $user = Auth::requireOfferer();
+        try {
+            $orders = Order::forSeller((int) $user['id']);
+        } catch (\Throwable) {
+            $orders = [];
+        }
+        $total = 0;
+        foreach ($orders as $order) {
+            $total += (int) ($order['amount'] ?? 0);
+        }
+        View::page('facturation', [
+            'title' => 'Facturation',
+            'orders' => $orders,
+            'totalAmount' => $total,
+        ]);
     }
 
     private static function money(string $value): ?int

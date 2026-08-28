@@ -392,11 +392,14 @@
       var media = item.thumb
         ? '<div class="search-card-media" style="background-image:url(\'' + escapeHtml(item.thumb) + '\')"></div>'
         : '<div class="search-card-media search-card-media-plain"><span class="avatar">' + escapeHtml((item.initials || item.title || 'AD').slice(0, 2).toUpperCase()) + '</span></div>';
-      return '<a class="search-card" href="' + escapeHtml(item.href) + '">' + media +
+      return '<a class="search-card' + (item.is_busy ? ' is-busy' : '') + '" href="' + escapeHtml(item.href) + '">' + media +
         '<div class="search-card-body">' +
           '<div class="search-card-kicker"><span>' + escapeHtml(item.kind_label) + '</span>' +
             (item.cat ? '<span>' + escapeHtml(item.cat) + '</span>' : '') +
             (item.live ? '<span class="search-live">Votre réseau</span>' : '') +
+            (item.kind === 'prestataires' && item.availability_label
+              ? '<span class="status-pill' + (item.is_busy ? ' is-busy' : ' is-available') + '">' + escapeHtml(item.availability_label) + '</span>'
+              : '') +
           '</div>' +
           '<div class="search-card-title">' + escapeHtml(item.title) + '</div>' +
           '<div class="search-card-sub">' + escapeHtml(item.subtitle) + '</div>' +
@@ -459,7 +462,7 @@
     function currentParams() {
       var data = new FormData(filters);
       var params = new URLSearchParams();
-      ['q', 'type', 'cat'].forEach(function (key) {
+      ['q', 'type', 'cat', 'dispo'].forEach(function (key) {
         var value = (data.get(key) || '').toString().trim();
         if (value) params.set(key, value);
       });
@@ -480,12 +483,36 @@
         history.replaceState(null, '', window.location.pathname + (next ? '?' + next : ''));
         if (headerInput) headerInput.value = data.query || '';
         syncChips(filters);
+        refreshShareBars(searchPage, {
+          url: window.location.href,
+          title: 'Recherche : ' + (data.query || data.cat || 'Tous les métiers du livre'),
+          text: 'Prestataires des métiers du livre sur acteursdulivre.fr'
+        });
       });
     }, 160);
 
     filters.addEventListener('input', update);
     filters.addEventListener('change', update);
   }
+
+  document.querySelectorAll('[data-mode-switch]').forEach(function (group) {
+    function sync() {
+      group.querySelectorAll('.mode-option').forEach(function (option) {
+        var input = option.querySelector('input');
+        var on = !!(input && input.checked);
+        option.classList.toggle('is-on', on);
+        option.classList.toggle('is-available', on && input && input.value === 'available');
+        option.classList.toggle('is-busy', on && input && input.value === 'busy');
+      });
+      var note = document.getElementById('availability');
+      if (note) {
+        var busy = !!(group.querySelector('input[value="busy"]:checked'));
+        note.placeholder = busy ? 'reprend le 15 octobre' : 'dès maintenant, sous 48 h';
+      }
+    }
+    group.addEventListener('change', sync);
+    sync();
+  });
 
   document.querySelectorAll('[data-tabs]').forEach(function (nav) {
     var form = nav.parentElement;
@@ -542,5 +569,130 @@
     publish.addEventListener('input', preview);
     publish.addEventListener('change', preview);
     preview();
+  }
+
+  function showToast(message) {
+    var existing = document.querySelector('.share-toast');
+    if (existing) existing.remove();
+    var toast = document.createElement('div');
+    toast.className = 'share-toast';
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    setTimeout(function () { toast.remove(); }, 3200);
+  }
+
+  function copyText(value) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      return navigator.clipboard.writeText(value);
+    }
+    return new Promise(function (resolve, reject) {
+      var input = document.createElement('textarea');
+      input.value = value;
+      input.setAttribute('readonly', '');
+      input.style.position = 'absolute';
+      input.style.left = '-9999px';
+      document.body.appendChild(input);
+      input.select();
+      try {
+        document.execCommand('copy');
+        resolve();
+      } catch (err) {
+        reject(err);
+      }
+      input.remove();
+    });
+  }
+
+  function sharePayload(root) {
+    return {
+      url: (root && root.getAttribute('data-url')) || window.location.href,
+      title: (root && root.getAttribute('data-title')) || document.title,
+      text: (root && root.getAttribute('data-text')) || ''
+    };
+  }
+
+  function refreshShareBars(scope, payload) {
+    (scope || document).querySelectorAll('[data-share]').forEach(function (bar) {
+      if (payload.url) bar.setAttribute('data-url', payload.url);
+      if (payload.title) bar.setAttribute('data-title', payload.title);
+      if (payload.text) bar.setAttribute('data-text', payload.text);
+      var url = encodeURIComponent(bar.getAttribute('data-url') || window.location.href);
+      var title = encodeURIComponent(bar.getAttribute('data-title') || document.title);
+      var text = bar.getAttribute('data-text') || '';
+      var message = encodeURIComponent((bar.getAttribute('data-title') || document.title) + (text ? '\n' + text : '') + '\n' + decodeURIComponent(url));
+      bar.querySelectorAll('[data-share-network]').forEach(function (link) {
+        var id = link.getAttribute('data-share-network');
+        if (id === 'facebook') link.href = 'https://www.facebook.com/sharer/sharer.php?u=' + url;
+        if (id === 'linkedin') link.href = 'https://www.linkedin.com/sharing/share-offsite/?url=' + url;
+        if (id === 'x') link.href = 'https://twitter.com/intent/tweet?url=' + url + '&text=' + title;
+        if (id === 'whatsapp') link.href = 'https://api.whatsapp.com/send?text=' + message;
+      });
+    });
+  }
+
+  document.querySelectorAll('[data-share-native]').forEach(function (btn) {
+    if (navigator.share) btn.hidden = false;
+  });
+
+  document.addEventListener('click', function (event) {
+    var copyBtn = event.target.closest('[data-share-copy]');
+    var nativeBtn = event.target.closest('[data-share-native]');
+    if (!copyBtn && !nativeBtn) return;
+    event.preventDefault();
+    var root = (copyBtn || nativeBtn).closest('[data-share]');
+    var data = sharePayload(root);
+    if (nativeBtn && navigator.share) {
+      navigator.share({ title: data.title, text: data.text, url: data.url }).catch(function () {});
+      return;
+    }
+    var network = copyBtn ? copyBtn.getAttribute('data-share-network') : '';
+    copyText(data.url).then(function () {
+      showToast(network === 'instagram'
+        ? 'Lien copié. Collez-le dans Instagram (story, message ou bio).'
+        : 'Lien copié.');
+    }).catch(function () {
+      showToast('Impossible de copier le lien.');
+    });
+  });
+
+  var rateBox = document.querySelector('[data-rate-fields]');
+  if (rateBox) {
+    var bookstore = rateBox.getAttribute('data-bookstore-trade') || 'Librairie';
+    function currentKind() {
+      var on = rateBox.querySelector('[data-rate-kind]:checked');
+      return on ? on.value : 'price';
+    }
+    function applyRateKind(kind, fromTrade) {
+      var input = rateBox.querySelector('[data-rate-input]');
+      var note = rateBox.querySelector('[data-rate-note]');
+      var label = rateBox.querySelector('[data-rate-label]');
+      var noteLabel = rateBox.querySelector('[data-rate-note-label]');
+      var radios = rateBox.querySelectorAll('[data-rate-kind]');
+      radios.forEach(function (radio) {
+        radio.checked = radio.value === kind;
+      });
+      syncChips(rateBox);
+      if (label) label.textContent = kind === 'percent' ? 'Commission' : 'Tarif';
+      if (noteLabel) noteLabel.textContent = kind === 'percent' ? 'Précision' : 'Précision tarifaire';
+      if (input) {
+        input.placeholder = input.getAttribute(kind === 'percent' ? 'data-placeholder-percent' : 'data-placeholder-price') || '';
+        input.setAttribute('inputmode', kind === 'percent' ? 'decimal' : 'text');
+        if (fromTrade && kind === 'percent' && /€|eur|\/\s*heure/i.test(input.value)) input.value = '';
+      }
+      if (note) {
+        note.placeholder = note.getAttribute(kind === 'percent' ? 'data-placeholder-percent' : 'data-placeholder-price') || '';
+      }
+    }
+    rateBox.querySelectorAll('[data-rate-kind]').forEach(function (radio) {
+      radio.addEventListener('change', function () { applyRateKind(currentKind(), false); });
+    });
+    document.querySelectorAll('[data-trades] input[type="checkbox"]').forEach(function (box) {
+      box.addEventListener('change', function () {
+        var checked = Array.prototype.slice.call(document.querySelectorAll('[data-trades] input[type="checkbox"]:checked'))
+          .map(function (el) { return el.value; });
+        if (checked.indexOf(bookstore) !== -1) applyRateKind('percent', true);
+      });
+    });
+    applyRateKind(currentKind(), false);
   }
 })();

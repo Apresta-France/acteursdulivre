@@ -118,6 +118,29 @@ function json_response(array $payload, int $code = 200): never
     exit;
 }
 
+function not_found(string $message = ''): never
+{
+    http_response_code(404);
+    \Adl\Core\View::render('errors/404', [
+        'title' => 'Page introuvable',
+        'message' => $message !== '' ? $message : 'Le lien est peut-être ancien, ou la page a été retirée.',
+    ]);
+    exit;
+}
+
+function format_int(int $n): string
+{
+    return number_format($n, 0, ',', ' ');
+}
+
+function format_euros(?int $amount): string
+{
+    if ($amount === null) {
+        return 'sur devis';
+    }
+    return format_int($amount) . ' €';
+}
+
 function store_upload(array $file, string $subdir, array $allowedExt, int $maxBytes): ?string
 {
     if (($file['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
@@ -210,6 +233,14 @@ function icon(string $name, int $size = 20): string
         'sliders' => '<path d="M4 5h10v2H4V5zm12 0h4v2h-4V5zM4 11h4v2H4v-2zm6 0h10v2H10v-2zM4 17h8v2H4v-2zm10 0h6v2h-6v-2zM13 3h2v6h-2V3zm-6 6h2v6H7V9zm8 6h2v6h-2v-6z"/>',
         'store' => '<path d="M4 3h16l1.4 6.2c.1.6-.3 1.2-1 1.3H19v9H5v-9H3.6c-.7-.1-1.1-.7-1-1.3L4 3zm3 8v7h4v-4h2v4h4v-7H7z"/>',
         'book' => '<path d="M5 3h9.2A3.8 3.8 0 0 1 18 6.8V21H7.2A2.2 2.2 0 0 0 5 18.8V3zm2 2v13.8c0 .1.1.2.2.2H16V6.8A1.8 1.8 0 0 0 14.2 5H7zm10 0h2v16h-2V5z"/>',
+        'clock' => '<path fill-rule="evenodd" d="M12 2a10 10 0 1 1 0 20 10 10 0 0 1 0-20zm0 2a8 8 0 1 0 0 16 8 8 0 0 0 0-16zm.8 3.2V12l3.6 2.2-.8 1.3L11 12.5V7.2h1.8z"/>',
+        'share' => '<path d="M14.4 8.4 20 3.2v5.4h-1.6V6.2l-5.2 4.7-1.1-1.2 5.1-4.6h-2.2V3.4h5.6v5zM4 6h7.2v1.8H5.8v10.4h10.4V13H18v6.8H4V6z"/>',
+        'share-facebook' => '<path d="M14.2 8.4h2.4V5.2h-2.4c-2.7 0-4.4 1.7-4.4 4.3v1.7H7.6v3.2h2.2V22h3.4v-7.6h2.6l.6-3.2h-3.2V9.8c0-.8.4-1.4 1-1.4z"/>',
+        'share-instagram' => '<path fill-rule="evenodd" d="M8.2 3h7.6A5.2 5.2 0 0 1 21 8.2v7.6A5.2 5.2 0 0 1 15.8 21H8.2A5.2 5.2 0 0 1 3 15.8V8.2A5.2 5.2 0 0 1 8.2 3zm0 1.8A3.4 3.4 0 0 0 4.8 8.2v7.6a3.4 3.4 0 0 0 3.4 3.4h7.6a3.4 3.4 0 0 0 3.4-3.4V8.2a3.4 3.4 0 0 0-3.4-3.4H8.2zM12 8.1A3.9 3.9 0 1 1 8.1 12 3.9 3.9 0 0 1 12 8.1zm0 1.7A2.2 2.2 0 1 0 14.2 12 2.2 2.2 0 0 0 12 9.8zm4.7-2.9a1 1 0 1 1-1 1 1 1 0 0 1 1-1z"/>',
+        'share-linkedin' => '<path d="M6.4 9.2H3.6V20h2.8V9.2zM5 4.2A1.6 1.6 0 1 0 5 7.4 1.6 1.6 0 0 0 5 4.2zM20.4 13.2c0-3.1-1.6-4.6-3.8-4.6-1.8 0-2.6 1-3.1 1.7V9.2H10.8c0 1.1 0 10.8 0 10.8h2.7v-6c0-.3 0-.7.1-1 .3-.7.9-1.5 2-1.5 1.4 0 2 1.1 2 2.6V20h2.8v-6.8z"/>',
+        'share-x' => '<path d="M4 4.8h3.4l4.1 5.6L16.2 4.8H20l-6.2 7.2L20.4 19.2h-3.4l-4.5-6.2-4.8 6.2H4l6.7-7.6L4 4.8z"/>',
+        'share-whatsapp' => '<path d="M12 3.2A8.7 8.7 0 0 0 5.4 17.2L4.2 21l3.9-1.2A8.7 8.7 0 1 0 12 3.2zm0 1.7a7 7 0 0 1 5.9 10.7l-.3.4.2.5.7 2.1-2.2-.7-.5-.1-.4.2A7 7 0 0 1 12 4.9zm-3.4 3.3c.2 0 .4 0 .6.4.2.4.7 1.6.7 1.7s.1.3 0 .5c-.1.2-.2.3-.4.5l-.3.3c-.2.1-.3.3-.1.6.2.3.8 1.3 1.8 2.1 1.2 1 2.2 1.3 2.5 1.4.3.1.5.1.7-.1.2-.2.7-.8.9-1.1.2-.3.3-.2.6-.1.3.1 1.7.8 2 .9.3.1.5.2.6.3.1.1.1.7-.2 1.3-.3.7-1.5 1.3-2.1 1.4-.5.1-1.2.1-2 0A8.6 8.6 0 0 1 8.6 14c-.6-.9-1.1-2-1.2-2.3-.2-.4-.8-1.4-.8-2.4 0-1 .5-1.5.7-1.7.2-.2.4-.3.6-.3z"/>',
+        'share-copy' => '<path d="M8 4h9.2A1.8 1.8 0 0 1 19 5.8V16h-1.8V6.6H8V4zm-3 3.4h9.2A1.8 1.8 0 0 1 16 9.2v9A1.8 1.8 0 0 1 14.2 20H5.8A1.8 1.8 0 0 1 4 18.2v-9A1.8 1.8 0 0 1 5.8 7.4zM6 9.2v9h8.2v-9H6z"/>',
         'dot' => '<circle cx="12" cy="12" r="3.4"/>',
     ];
 

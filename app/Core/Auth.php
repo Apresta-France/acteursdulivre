@@ -14,9 +14,6 @@ final class Auth
         if (!$id) {
             return null;
         }
-        if (isset($_SESSION['_user_cache']) && (int) $_SESSION['_user_cache']['id'] === (int) $id) {
-            return $_SESSION['_user_cache'];
-        }
         $user = User::find((int) $id);
         if (!$user) {
             self::logout();

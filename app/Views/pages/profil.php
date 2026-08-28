@@ -1,38 +1,8 @@
 <?php
-$live = $liveProfile ?? null;
-$catalog = $catalogProfile ?? null;
-$useMock = $live === null && ($catalog === null || ($slug ?? '') === 'marion-vasseur');
-
-if ($useMock) {
-    echo \Adl\Core\DcEngine::render(
-        (string) file_get_contents(ADL_ROOT . '/app/Views/pages/profil.html'),
-        get_defined_vars()
-    );
-    return;
+$p = $liveProfile ?? null;
+if (!$p) {
+    not_found('Ce profil n\'est pas publié.');
 }
-
-$p = $live ?? [
-    'name' => $catalog['title'] ?? 'Prestataire',
-    'initials' => $catalog['initials'] ?? 'AD',
-    'title' => $catalog['subtitle'] ?? '',
-    'city' => $catalog['city'] ?? '',
-    'level' => 'Annuaire',
-    'presentation' => $catalog['excerpt'] ?? '',
-    'availability' => '',
-    'hourly_rate' => '',
-    'rate_note' => '',
-    'languages' => '',
-    'languages_list' => [],
-    'trades' => array_filter([$catalog['cat'] ?? '']),
-    'skills' => [],
-    'tools' => [],
-    'genres' => $catalog['genres'] ?? [],
-    'experiences' => [],
-    'education' => [],
-    'portfolio' => [],
-    'tags' => $catalog['genres'] ?? [],
-    'website' => '',
-];
 ?>
 <div class="profile-page">
   <div class="profile-hero">
@@ -41,6 +11,7 @@ $p = $live ?? [
       <div class="profile-hero-line">
         <h1><?= e((string) $p['name']) ?></h1>
         <span class="profile-badge"><?= e((string) ($p['level'] ?: 'Prestataire')) ?></span>
+        <span class="profile-badge profile-badge-avail<?= !empty($p['is_busy']) ? ' is-busy' : ' is-available' ?>"><?= e((string) ($p['availability_label'] ?? (!empty($p['is_busy']) ? 'Occupé' : 'Disponible'))) ?></span>
       </div>
       <div class="profile-hero-sub">
         <?= e(trim(($p['title'] ?? '') . ($p['city'] ? ' · ' . $p['city'] : '') . ($p['languages'] ? ' · ' . $p['languages'] : ''))) ?>
@@ -54,8 +25,20 @@ $p = $live ?? [
       <?php endif; ?>
     </div>
     <div class="profile-hero-actions">
-      <a class="btn-orange" href="<?= e(url('/espace/messages')) ?>">Demander un devis</a>
-      <a class="btn-ghost-light" href="<?= e(url('/espace/messages')) ?>">Envoyer un message</a>
+      <?php if (!empty($p['is_busy'])): ?>
+        <p class="profile-avail-note">Planning actuellement chargé. Vous pouvez laisser un message pour une date ultérieure.</p>
+        <a class="btn-orange" href="<?= e(url('/espace/messages')) ?>">Envoyer un message</a>
+      <?php else: ?>
+        <a class="btn-orange" href="<?= e(url('/espace/messages')) ?>">Demander un devis</a>
+        <a class="btn-ghost-light" href="<?= e(url('/espace/messages')) ?>">Envoyer un message</a>
+      <?php endif; ?>
+      <?php
+        $shareUrl = $meta['url'] ?? \Adl\Data\Share::current();
+        $shareTitle = $meta['title'] ?? ((string) ($p['name'] ?? 'Prestataire') . ' — acteursdulivre.fr');
+        $shareText = $meta['description'] ?? trim((string) ($p['title'] ?? '') . ($p['city'] ? ' · ' . $p['city'] : ''));
+        $shareCompact = true;
+        require ADL_ROOT . '/app/Views/partials/share.php';
+      ?>
     </div>
   </div>
 
@@ -133,13 +116,13 @@ $p = $live ?? [
     <aside class="profile-side">
       <div class="side-card">
         <?php if ($p['hourly_rate'] !== ''): ?>
-          <div class="side-kicker">À partir de</div>
+          <div class="side-kicker"><?= e((string) ($p['rate_kicker'] ?? \Adl\Models\Profile::rateKicker($p))) ?></div>
           <div class="profile-rate"><?= e((string) $p['hourly_rate']) ?></div>
           <?php if ($p['rate_note'] !== ''): ?><div class="side-sub"><?= e((string) $p['rate_note']) ?></div><?php endif; ?>
         <?php endif; ?>
         <div class="info-list">
           <?php if ($p['city'] !== ''): ?><div><span>Localisation</span><strong><?= e((string) $p['city']) ?></strong></div><?php endif; ?>
-          <?php if ($p['availability'] !== ''): ?><div><span>Disponibilité</span><strong><?= e((string) $p['availability']) ?></strong></div><?php endif; ?>
+          <div><span>Disponibilité</span><strong><?= e((string) ($p['availability_summary'] ?? ($p['availability'] !== '' ? $p['availability'] : 'Disponible'))) ?></strong></div>
           <?php if ($p['languages'] !== ''): ?><div><span>Langues</span><strong><?= e((string) $p['languages']) ?></strong></div><?php endif; ?>
           <?php if (!empty($p['trades'])): ?><div><span>Métiers</span><strong><?= e(implode(', ', $p['trades'])) ?></strong></div><?php endif; ?>
           <?php if ($p['website'] !== ''): ?><div><span>Site</span><a href="<?= e((string) $p['website']) ?>"><?= e((string) $p['website']) ?></a></div><?php endif; ?>

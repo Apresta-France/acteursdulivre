@@ -6,6 +6,9 @@ namespace Adl\Data;
 
 use Adl\Core\Auth;
 use Adl\Core\DcEngine;
+use Adl\Models\Mission;
+use Adl\Models\Notification;
+use Adl\Models\Service;
 use Adl\Models\User;
 
 final class Prototype
@@ -66,6 +69,13 @@ final class Prototype
         $data['vitHistorique'] = ($extra['vitTab'] ?? 0) === 3;
         $data['vitAvis'] = ($extra['vitTab'] ?? 0) === 4;
 
+        if (empty($data['meta']) || !is_array($data['meta'])) {
+            $data['meta'] = Share::meta(
+                (string) ($data['title'] ?? 'Acteurs du Livre'),
+                'La place de marché des métiers du livre. Auteurs et professionnels, sans IA générative.'
+            );
+        }
+
         return $data;
     }
 
@@ -76,7 +86,7 @@ final class Prototype
         $initials = $user ? User::initials($user) : 'MV';
         $first = $user['first_name'] ?? 'Marion';
 
-        $railNames = ['Correction', 'Illustration', 'Traduction', 'Maquette', 'Édition', 'Impression', 'Presse & com', 'Librairie', 'Audio'];
+        $railNames = ['Correction', 'Bêta-lecture', 'Illustration', 'Traduction', 'Maquette', 'Édition', 'Impression', 'Presse & com', 'Librairie', 'Audio'];
         $rail = [];
         foreach ($railNames as $i => $name) {
             $active = $i === 0 && in_array($screen, ['resultats', 'fiche', 'metier'], true);
@@ -88,7 +98,7 @@ final class Prototype
         }
 
         $mega = [
-            ['group' => 'Écrire & corriger', 'items' => ['Auteurs & prête-plume', 'Correction orthotypo', 'Préparation de copie', 'Réécriture', 'Traduction littéraire']],
+            ['group' => 'Écrire & corriger', 'items' => ['Auteurs & prête-plume', 'Correction orthotypo', 'Bêta-lecture', 'Préparation de copie', 'Réécriture', 'Traduction littéraire']],
             ['group' => 'Fabriquer', 'items' => ['Illustration & couverture', 'Maquette intérieure', 'Direction artistique', 'Impression offset', 'Impression numérique', 'Reliure & finitions']],
             ['group' => 'Éditer & diffuser', 'items' => ['Édition & direction de collection', 'Agents littéraires', 'Dépôt légal & ISBN', 'Diffusion en librairie', 'Vente en ligne']],
             ['group' => 'Faire vivre le livre', 'items' => ['Attachés de presse', 'Réseaux sociaux & communauté', 'Livre audio & narration', 'Salons & rencontres', 'Ateliers & médiation']],
@@ -133,9 +143,14 @@ final class Prototype
             'mega' => $mega,
             'megaBtnStyle' => 'padding: 16px 0; font-size: 14px; cursor: pointer; white-space: nowrap; color: ' . $navy . '; font-weight: 500;',
             'rail' => $rail,
-            'socials' => ['IG', 'LI', 'MA', 'RSS'],
+            'socials' => [
+                ['id' => 'facebook', 'short' => 'FB', 'label' => 'Partager sur Facebook', 'href' => 'https://www.facebook.com/sharer/sharer.php?u=' . rawurlencode(Share::absolute('/'))],
+                ['id' => 'instagram', 'short' => 'IG', 'label' => 'Partager sur Instagram', 'href' => '#', 'copy' => true],
+                ['id' => 'linkedin', 'short' => 'LI', 'label' => 'Partager sur LinkedIn', 'href' => 'https://www.linkedin.com/sharing/share-offsite/?url=' . rawurlencode(Share::absolute('/'))],
+                ['id' => 'x', 'short' => 'X', 'label' => 'Partager sur X', 'href' => 'https://twitter.com/intent/tweet?url=' . rawurlencode(Share::absolute('/')) . '&text=' . rawurlencode('acteursdulivre.fr')],
+            ],
             'footerCols' => $footerCols,
-            'footerMetiers' => ['Auteurs', 'Illustrateurs', 'Correcteurs', 'Traducteurs', 'Maquettistes', 'Éditeurs', 'Imprimeurs', 'Presse & com', 'Libraires', 'Narrateurs audio', 'Agents littéraires', 'Salons & événements'],
+            'footerMetiers' => ['Auteurs', 'Illustrateurs', 'Correcteurs', 'Bêta-lecteurs', 'Traducteurs', 'Maquettistes', 'Éditeurs', 'Imprimeurs', 'Presse & com', 'Libraires', 'Narrateurs audio', 'Agents littéraires', 'Salons & événements'],
             'userInitials' => $initials,
             'userFirst' => $first,
             'userName' => $user ? User::displayName($user) : 'Marion Vasseur',
@@ -146,8 +161,8 @@ final class Prototype
             'espaceNav' => $logged ? self::espaceNav($screen, User::seeksServices($user), User::offersServices($user)) : [],
             'headerCta' => self::headerCta(User::seeksServices($user), User::offersServices($user)),
             'routes' => DcEngine::routes(),
-            'unreadMessages' => 3,
-            'unreadAlerts' => 6,
+            'unreadMessages' => 0,
+            'unreadAlerts' => self::liveUnreadAlerts($user),
         ];
     }
 
@@ -158,7 +173,7 @@ final class Prototype
         $services = self::services();
 
         $base = [
-            'homeQuick' => ['Correction de roman', 'Couverture illustrée', 'Impression 300 ex.', 'Traduction EN→FR', 'Livre audio'],
+            'homeQuick' => ['Correction de roman', 'Bêta-lecture', 'Couverture illustrée', 'Impression 300 ex.', 'Traduction EN→FR'],
             'homeImg1' => photo(0),
             'homeImg2' => photo(5),
             'homeImg3' => photo(4),
@@ -176,6 +191,7 @@ final class Prototype
                 $x['href'] = '/prestations/' . slugify($x['title']);
                 return $x;
             }, array_slice($services, 0, 3), array_keys(array_slice($services, 0, 3))),
+            'homeEntry' => self::homeEntry(),
             'missionsBandStats' => [
                 ['v' => '48 h', 'k' => 'pour que le porteur de projet reçoive trois devis'],
                 ['v' => '0 €', 'k' => 'pour candidater : aucune commission sur la candidature'],
@@ -240,7 +256,82 @@ final class Prototype
             ],
         ];
 
-        return array_merge($base, self::extra());
+        return array_merge($base, self::extra(), self::liveOverlay());
+    }
+
+    /** @return array<string, mixed> */
+    private static function liveOverlay(): array
+    {
+        try {
+            $stats = Catalog::homeStats();
+            $featured = Catalog::featuredServices(3);
+            $entry = Catalog::featuredServices(3, 3);
+            $pros = User::countOfferers();
+            $services = Service::countPublished();
+            $openMissions = Mission::countOpen();
+            $commission = \Adl\Models\Setting::get('commission_percent', '8') ?: '8';
+            $journal = Catalog::journalPreview(3);
+            $journalAll = \Adl\Models\Article::published();
+            foreach ($journalAll as &$article) {
+                $article['go'] = true;
+            }
+            unset($article);
+
+            return [
+                'homeStats' => $stats,
+                'homeMetiers' => Catalog::tradeCards(),
+                'homeFeatured' => $featured,
+                'homeEntry' => $entry !== [] ? $entry : $featured,
+                'homeMissions' => Catalog::homeMissions(5),
+                'journal' => $journal,
+                'journalAll' => $journalAll,
+                'services' => Catalog::services(),
+                'missionsList' => Catalog::missions(),
+                'notifications' => [],
+                'mesPrestations' => [],
+                'mesMissions' => [],
+                'mesCandidatures' => [],
+                'favoris' => [],
+                'commandes' => [],
+                'threads' => [],
+                'messages' => [],
+                'demandes' => [],
+                'enCours' => [],
+                'kpis' => [],
+                'operations' => [],
+                'suggestions' => Catalog::suggestionsForTrade('Correction'),
+                'inscriptionProof' => [
+                    ['v' => format_int($pros), 'k' => 'professionnels du livre inscrits'],
+                    ['v' => format_int($openMissions), 'k' => 'missions ouvertes'],
+                    ['v' => $commission . ' %', 'k' => 'de commission, sans abonnement'],
+                ],
+                'ways' => [
+                    ['kicker' => 'Annuaire', 'title' => 'Chercher un profil', 'body' => 'Filtrez par métier, spécialité, ville et tarif, puis engagez la discussion.', 'points' => [format_int($pros) . ' profils', 'Avis vérifiés', 'Réponse en 24 h en moyenne'], 'cta' => 'Parcourir l\'annuaire', 'href' => '/recherche'],
+                    ['kicker' => 'Prestations', 'title' => 'Acheter une prestation', 'body' => 'Des offres packagées à prix, délai et périmètre affichés. Vous commandez en deux clics.', 'points' => [format_int($services) . ' prestations', 'Options à la carte', 'Contrat et facture inclus'], 'cta' => 'Voir les prestations', 'href' => '/recherche?type=prestations'],
+                    ['kicker' => 'Appels d\'offres', 'title' => 'Publier une mission', 'body' => 'Décrivez le besoin et le budget : les prestataires qualifiés vous envoient leur devis.', 'points' => [format_int($openMissions) . ' missions ouvertes', 'Gratuit pour tous', 'Commission uniquement à l\'attribution'], 'cta' => 'Publier une mission', 'href' => '/espace/publier'],
+                ],
+            ];
+        } catch (\Throwable) {
+            return [
+                'homeFeatured' => [],
+                'homeEntry' => [],
+                'homeMissions' => [],
+                'journal' => [],
+                'journalAll' => [],
+                'services' => [],
+                'missionsList' => [],
+                'notifications' => [],
+                'mesPrestations' => [],
+                'mesMissions' => [],
+                'mesCandidatures' => [],
+                'favoris' => [],
+                'commandes' => [],
+                'threads' => [],
+                'messages' => [],
+                'demandes' => [],
+                'enCours' => [],
+            ];
+        }
     }
 
     private static function extra(): array
@@ -381,7 +472,7 @@ final class Prototype
                 'Aucun manuscrit utilisé pour entraîner un modèle',
                 'Manquement : mission remboursée, profil retiré',
             ],
-            'missionFilters' => self::chips(['Tous les métiers', 'Correction', 'Illustration', 'Traduction', 'Impression', 'Presse & com'], 0),
+            'missionFilters' => self::chips(['Tous les métiers', 'Correction', 'Bêta-lecture', 'Illustration', 'Traduction', 'Impression', 'Presse & com'], 0),
             'missionsList' => self::missionsList(),
             'candidaterTips' => [
                 'Citez deux références comparables : genre, volume, éditeur.',
@@ -459,7 +550,7 @@ final class Prototype
             ]),
             'roles' => [
                 ['title' => 'Je cherche des prestataires', 'desc' => 'Auteur, éditeur, collectif : commandez des prestations ou publiez vos missions.', 'style' => 'border: 1.5px solid #E8ECF1; background: #FFF; border-radius: 12px; padding: 20px; cursor: pointer;'],
-                ['title' => 'Je propose mes services', 'desc' => 'Correcteur, illustrateur, imprimeur, libraire : créez votre vitrine et vos formules.', 'style' => 'border: 1.5px solid #022746; background: #FBFCFE; border-radius: 12px; padding: 20px; cursor: pointer;'],
+                ['title' => 'Je propose mes services', 'desc' => 'Correcteur, bêta-lecteur, illustrateur, imprimeur, libraire : créez votre vitrine et vos formules.', 'style' => 'border: 1.5px solid #022746; background: #FBFCFE; border-radius: 12px; padding: 20px; cursor: pointer;'],
             ],
             'onboarding' => [
                 ['num' => '01', 'title' => 'Un compte, deux usages', 'body' => 'Cherchez des prestataires, proposez vos services, ou les deux. Rien n\'est exclusif.'],
@@ -549,7 +640,7 @@ final class Prototype
                 ['k' => 'Disponibilité', 'v' => 'dès le 1er sept.'],
             ],
             'steps' => self::steps(['Le besoin', 'Le budget', 'Les pièces', 'Publication'], 0),
-            'metierChips' => self::chips(['Correction', 'Illustration', 'Traduction', 'Maquette', 'Impression', 'Presse & com'], 0, false, true),
+            'metierChips' => self::chips(['Correction', 'Bêta-lecture', 'Illustration', 'Traduction', 'Maquette', 'Impression', 'Presse & com'], 0, false, true),
             'missionTitle' => '',
             'missionBrief' => '',
             'previewTitle' => 'Recherche correcteur pour essai historique, 240 pages',
@@ -623,12 +714,60 @@ final class Prototype
         ];
     }
 
+    private static function homeEntry(): array
+    {
+        $rows = [
+            [
+                'kind' => 'Diagnostic',
+                'title' => 'Diagnostic de manuscrit',
+                'volume' => 'jusqu\'à 20 000 signes',
+                'by' => 'Marion Vasseur',
+                'initials' => 'MV',
+                'price' => '120 €',
+                'rating' => '4,9',
+                'reviews' => 87,
+                'delay' => '5 jours',
+            ],
+            [
+                'kind' => 'Relecture',
+                'title' => 'Relecture jeunesse, album',
+                'volume' => 'jusqu\'à 32 pages',
+                'by' => 'Claire Ozanne',
+                'initials' => 'CO',
+                'price' => '190 €',
+                'rating' => '4,9',
+                'reviews' => 45,
+                'delay' => '3 jours',
+            ],
+            [
+                'kind' => 'Avis de lecture',
+                'title' => 'Avis de lecture argumenté',
+                'volume' => 'rapport de 8 pages',
+                'by' => 'Paul Ferrand',
+                'initials' => 'PF',
+                'price' => '160 €',
+                'rating' => '4,9',
+                'reviews' => 38,
+                'delay' => '6 jours',
+            ],
+        ];
+
+        return array_map(static function (array $x, int $i): array {
+            $x['img'] = photo(($i + 3) % 6);
+            $x['homeSlotId'] = 'home-entry-' . $i;
+            $x['avatar'] = avatar_style($x['initials'], 26);
+            $x['href'] = '/prestations/' . slugify($x['title']);
+            return $x;
+        }, $rows, array_keys($rows));
+    }
+
     private static function homeMetiers(): array
     {
         $rows = [
-            ['01', 'Auteurs', '1 240'], ['02', 'Illustrateurs', '860'], ['03', 'Correcteurs', '1 105'], ['04', 'Traducteurs', '520'],
-            ['05', 'Maquettistes', '470'], ['06', 'Éditeurs', '310'], ['07', 'Imprimeurs', '148'], ['08', 'Presse & com', '236'],
-            ['09', 'Libraires', '690'], ['10', 'Narrateurs audio', '174'], ['11', 'Agents littéraires', '62'], ['12', 'Salons & événements', '98'],
+            ['01', 'Auteurs', '1 240'], ['02', 'Illustrateurs', '860'], ['03', 'Correcteurs', '1 105'], ['04', 'Bêta-lecteurs', '210'],
+            ['05', 'Traducteurs', '520'], ['06', 'Maquettistes', '470'], ['07', 'Éditeurs', '310'], ['08', 'Imprimeurs', '148'],
+            ['09', 'Presse & com', '236'], ['10', 'Libraires', '690'], ['11', 'Narrateurs audio', '174'], ['12', 'Agents littéraires', '62'],
+            ['13', 'Salons & événements', '98'],
         ];
         return array_map(static fn (array $m): array => ['num' => $m[0], 'name' => $m[1], 'count' => $m[2], 'href' => '/metiers/' . slugify($m[1])], $rows);
     }
@@ -1268,6 +1407,18 @@ final class Prototype
             $out[] = ['m' => $m, 'bar' => 'width: 100%; height: ' . $h . '%; background: ' . ($h > 90 ? self::ORANGE : '#C9D8E6') . '; border-radius: 4px 4px 0 0;'];
         }
         return $out;
+    }
+
+    private static function liveUnreadAlerts(?array $user): int
+    {
+        if (!$user) {
+            return 0;
+        }
+        try {
+            return Notification::unreadCount((int) $user['id']);
+        } catch (\Throwable) {
+            return 0;
+        }
     }
 
     private static function isEspaceScreen(string $screen): bool

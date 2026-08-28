@@ -75,6 +75,24 @@ final class User
         return Database::fetchAll('SELECT id, email, first_name, last_name, role, seeks_services, offers_services, status, created_at FROM users ORDER BY id DESC');
     }
 
+    public static function countAll(): int
+    {
+        $row = Database::fetch('SELECT COUNT(*) AS n FROM users');
+        return (int) ($row['n'] ?? 0);
+    }
+
+    public static function countOfferers(): int
+    {
+        $row = Database::fetch('SELECT COUNT(*) AS n FROM users WHERE offers_services = 1 AND status = "active"');
+        return (int) ($row['n'] ?? 0);
+    }
+
+    public static function countSeekers(): int
+    {
+        $row = Database::fetch('SELECT COUNT(*) AS n FROM users WHERE seeks_services = 1 AND status = "active"');
+        return (int) ($row['n'] ?? 0);
+    }
+
     public static function initials(array $user): string
     {
         $a = mb_strtoupper(mb_substr((string) ($user['first_name'] ?? ''), 0, 1));
@@ -132,11 +150,17 @@ final class User
 
     public static function ensureProfile(int $userId): void
     {
+        if ($userId < 1) {
+            throw new \RuntimeException('Impossible de créer une vitrine : identifiant utilisateur manquant.');
+        }
         $exists = Database::fetch('SELECT id FROM profiles WHERE user_id = ?', [$userId]);
         if ($exists) {
             return;
         }
         $user = self::find($userId);
+        if (!$user) {
+            throw new \RuntimeException('Impossible de créer une vitrine : ce compte n\'existe plus. Reconnectez-vous.');
+        }
         $slug = unique_slug(
             trim(($user['first_name'] ?? '') . ' ' . ($user['last_name'] ?? '')) ?: 'profil',
             static fn (string $candidate): bool => Database::fetch('SELECT id FROM profiles WHERE slug = ?', [$candidate]) !== null

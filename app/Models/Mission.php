@@ -40,6 +40,24 @@ final class Mission
         return array_map([self::class, 'present'], $rows);
     }
 
+    public static function countOpen(): int
+    {
+        $row = Database::fetch('SELECT COUNT(*) AS n FROM missions WHERE status = "open"');
+        return (int) ($row['n'] ?? 0);
+    }
+
+    /** @return list<array<string, mixed>> */
+    public static function all(): array
+    {
+        $rows = Database::fetchAll(
+            'SELECT m.*, u.first_name, u.last_name
+             FROM missions m
+             JOIN users u ON u.id = m.user_id
+             ORDER BY m.created_at DESC'
+        );
+        return array_map([self::class, 'present'], $rows);
+    }
+
     /** @return list<array<string, mixed>> */
     public static function forUser(int $userId): array
     {
@@ -113,7 +131,7 @@ final class Mission
         $row['when'] = time_ago($row['created_at'] ?? null);
         $row['status_label'] = self::STATUSES[$row['status'] ?? 'open'] ?? 'Ouverte';
         $row['href'] = '/missions/' . $row['slug'];
-        $row['applicants'] = 0;
+        $row['applicants'] = Application::countForMission((int) $row['id']);
         $row['live'] = true;
         if (!empty($row['attachment_path'])) {
             $row['attachment_href'] = uploaded((string) $row['attachment_path']);
