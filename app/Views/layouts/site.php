@@ -15,6 +15,7 @@
   ?>
   <meta name="description" content="<?= e($metaDesc) ?>">
   <link rel="canonical" href="<?= e($metaUrl) ?>">
+  <link rel="sitemap" type="application/xml" title="Sitemap" href="<?= e(url('/sitemap.xml')) ?>">
   <meta property="og:type" content="<?= e($metaType) ?>">
   <meta property="og:site_name" content="acteursdulivre.fr">
   <meta property="og:title" content="<?= e($metaTitle) ?>">

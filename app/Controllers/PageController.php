@@ -11,6 +11,7 @@ use Adl\Core\View;
 use Adl\Data\Catalog;
 use Adl\Data\LegalPages;
 use Adl\Data\Share;
+use Adl\Data\Sitemap;
 use Adl\Models\Article;
 use Adl\Models\Profile;
 use Adl\Models\Service;
@@ -18,6 +19,23 @@ use Adl\Models\User;
 
 final class PageController
 {
+    public function sitemap(Request $request): void
+    {
+        http_response_code(200);
+        header('Content-Type: application/xml; charset=utf-8');
+        header('Cache-Control: public, max-age=3600');
+        header('X-Robots-Tag: noindex');
+        echo Sitemap::xml();
+    }
+
+    public function robots(Request $request): void
+    {
+        http_response_code(200);
+        header('Content-Type: text/plain; charset=utf-8');
+        header('Cache-Control: public, max-age=3600');
+        echo Sitemap::robots();
+    }
+
     public function home(Request $request): void
     {
         View::page('accueil', ['title' => 'La place de marché des métiers du livre']);

@@ -14,6 +14,9 @@ return static function (Router $router): void {
     $router->get('/install', [InstallController::class, 'index']);
     $router->post('/install', [InstallController::class, 'store']);
 
+    $router->get('/sitemap.xml', [PageController::class, 'sitemap']);
+    $router->get('/robots.txt', [PageController::class, 'robots']);
+
     $router->get('/', [PageController::class, 'home']);
     $router->get('/recherche', [PageController::class, 'search']);
     $router->get('/api/recherche', [PageController::class, 'searchApi']);
