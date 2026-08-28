@@ -44,17 +44,12 @@ final class Share
     }
 
     /**
-     * @return array{title: string, description: string, url: string, type: string, image: string}
+     * @param array<string, mixed> $extra
+     * @return array<string, mixed>
      */
-    public static function meta(string $title, string $description, ?string $url = null, string $type = 'website', ?string $image = null): array
+    public static function meta(string $title, string $description, ?string $url = null, string $type = 'website', ?string $image = null, array $extra = []): array
     {
-        return [
-            'title' => $title,
-            'description' => $description,
-            'url' => $url ?? self::current(),
-            'type' => $type,
-            'image' => $image ?? asset('img/logo.png'),
-        ];
+        return Seo::build($title, $description, $url, $type, $image, $extra);
     }
 
     /**

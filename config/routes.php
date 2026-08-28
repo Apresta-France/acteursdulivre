@@ -16,6 +16,7 @@ return static function (Router $router): void {
 
     $router->get('/sitemap.xml', [PageController::class, 'sitemap']);
     $router->get('/robots.txt', [PageController::class, 'robots']);
+    $router->get('/llms.txt', [PageController::class, 'llms']);
 
     $router->get('/', [PageController::class, 'home']);
     $router->get('/recherche', [PageController::class, 'search']);
@@ -23,7 +24,9 @@ return static function (Router $router): void {
     $router->get('/cron', [CronController::class, 'index']);
     $router->get('/cron/{task}', [CronController::class, 'run']);
     $router->get('/metiers/{slug}', [PageController::class, 'metier']);
+    $router->get('/prestations', [PageController::class, 'prestationsIndex']);
     $router->get('/prestations/{slug}', [PageController::class, 'fiche']);
+    $router->get('/prestataires', [PageController::class, 'prestatairesIndex']);
     $router->get('/prestataires/{slug}', [PageController::class, 'profil']);
     $router->get('/missions', [PageController::class, 'missions']);
     $router->get('/missions/{slug}', [PageController::class, 'mission']);

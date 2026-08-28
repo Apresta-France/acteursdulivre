@@ -107,17 +107,7 @@ final class Sitemap
 
     public static function robots(): string
     {
-        return implode("\n", [
-            'User-agent: *',
-            'Disallow: /espace',
-            'Disallow: /admin',
-            'Disallow: /install',
-            'Disallow: /cron',
-            'Disallow: /api/',
-            '',
-            'Sitemap: ' . Share::absolute('/sitemap.xml'),
-            '',
-        ]);
+        return Seo::robotsTxt();
     }
 
     /**
@@ -128,7 +118,9 @@ final class Sitemap
         $legalMod = '2026-08-28';
         $pages = [
             ['path' => '/', 'priority' => '1.0'],
-            ['path' => '/recherche', 'priority' => '0.9'],
+            ['path' => '/recherche', 'priority' => '0.8'],
+            ['path' => '/prestations', 'priority' => '0.8'],
+            ['path' => '/prestataires', 'priority' => '0.8'],
             ['path' => '/missions', 'priority' => '0.8'],
             ['path' => '/journal', 'priority' => '0.8'],
             ['path' => '/comment-ca-marche', 'priority' => '0.7'],

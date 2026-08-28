@@ -6,10 +6,12 @@ $results = $searchResults ?? [];
 $count = (int) ($searchCount ?? count($results));
 $types = $searchTypes ?? \Adl\Data\Catalog::TYPES;
 $trades = $trades ?? \Adl\Data\Catalog::trades();
-$heading = $q !== '' ? $q : ($cat !== '' ? $cat : 'Tous les métiers du livre');
+$heading = (string) ($catalogHeading ?? ($q !== '' ? $q : ($cat !== '' ? $cat : 'Tous les métiers du livre')));
+$typeHub = \Adl\Data\Catalog::typePath($type);
 ?>
 <div class="search-page" data-search-page
      data-api="<?= e(url('/api/recherche')) ?>"
+     data-type="<?= e($type) ?>"
      data-initial="<?= e(json_encode($searchState ?? ['results' => $results, 'count' => $count, 'query' => $q, 'type' => $type, 'cat' => $cat, 'available_only' => !empty($availableOnly)], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)) ?>">
   <div class="search-banner">
     <span class="search-banner-badge">Annuaire</span>
@@ -20,7 +22,7 @@ $heading = $q !== '' ? $q : ($cat !== '' ? $cat : 'Tous les métiers du livre');
     <aside class="search-aside">
       <div class="search-aside-head">
         <span>Filtres</span>
-        <a href="<?= e(url('/recherche')) ?>">Réinitialiser</a>
+        <a href="<?= e(url($typeHub)) ?>">Réinitialiser</a>
       </div>
       <form class="search-filters" data-search-filters>
         <label class="field" for="search-q">Recherche</label>
@@ -29,24 +31,15 @@ $heading = $q !== '' ? $q : ($cat !== '' ? $cat : 'Tous les métiers du livre');
         <p class="field">Type</p>
         <div class="chip-row">
           <?php foreach ($types as $value => $label): ?>
-            <label class="chip<?= $type === $value ? ' is-on' : '' ?>">
-              <input type="radio" name="type" value="<?= e($value) ?>"<?= $type === $value ? ' checked' : '' ?>>
-              <?= e($label) ?>
-            </label>
+            <a class="chip<?= $type === $value ? ' is-on' : '' ?>" href="<?= e(url(\Adl\Data\Catalog::typePath($value))) ?>"><?= e($label) ?></a>
           <?php endforeach; ?>
         </div>
 
         <p class="field">Métier</p>
         <div class="chip-row">
-          <label class="chip<?= $cat === '' ? ' is-on' : '' ?>">
-            <input type="radio" name="cat" value=""<?= $cat === '' ? ' checked' : '' ?>>
-            Tous
-          </label>
+          <a class="chip<?= $cat === '' ? ' is-on' : '' ?>" href="<?= e(url($typeHub)) ?>">Tous</a>
           <?php foreach ($trades as $trade): ?>
-            <label class="chip<?= $cat === $trade ? ' is-on' : '' ?>">
-              <input type="radio" name="cat" value="<?= e($trade) ?>"<?= $cat === $trade ? ' checked' : '' ?>>
-              <?= e($trade) ?>
-            </label>
+            <a class="chip<?= $cat === $trade ? ' is-on' : '' ?>" href="<?= e(url(\Adl\Data\Catalog::tradePath($trade))) ?>"><?= e($trade) ?></a>
           <?php endforeach; ?>
         </div>
 

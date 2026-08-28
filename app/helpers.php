@@ -87,7 +87,17 @@ function avatar_html(?array $person, int $size = 34, string $class = 'avatar'): 
 
 function photo(int $index = 0): string
 {
-    $photos = [
+    $photos = ['books', 'flowers', 'leather', 'console', 'desk', 'library'];
+    $stem = $photos[$index] ?? $photos[0];
+    $webp = ADL_ROOT . '/public/assets/img/photos/' . $stem . '.webp';
+    if (is_file($webp)) {
+        return asset('img/photos/' . $stem . '.webp');
+    }
+    $local = ADL_ROOT . '/public/assets/img/photos/' . $stem . '.jpg';
+    if (is_file($local)) {
+        return asset('img/photos/' . $stem . '.jpg');
+    }
+    $remote = [
         'Old books (Unsplash).jpg',
         'Watercolor Flowers (Unsplash).jpg',
         'Leather bound books (Unsplash).jpg',
@@ -95,8 +105,8 @@ function photo(int $index = 0): string
         'Books, pencils, laptop, and iphone on a desk (Unsplash).jpg',
         'Library Books Bookshelves (Unsplash).jpg',
     ];
-    $name = $photos[$index] ?? $photos[0];
-    return 'https://commons.wikimedia.org/wiki/Special:FilePath/' . rawurlencode($name) . '?width=1200';
+    $file = $remote[$index] ?? $remote[0];
+    return 'https://commons.wikimedia.org/wiki/Special:FilePath/' . rawurlencode($file) . '?width=800';
 }
 
 function service_cover_label(string $category): string
@@ -218,6 +228,11 @@ function not_found(string $message = ''): never
     \Adl\Core\View::render('errors/404', [
         'title' => 'Page introuvable',
         'message' => $message !== '' ? $message : 'Le lien est peut-être ancien, ou la page a été retirée.',
+        'meta' => [
+            'title' => 'Page introuvable — acteursdulivre.fr',
+            'description' => 'Cette page n\'existe pas ou a été retirée.',
+            'robots' => \Adl\Data\Seo::ROBOTS_NONE,
+        ],
     ]);
     exit;
 }

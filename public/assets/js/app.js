@@ -322,10 +322,12 @@
     function currentParams() {
       var data = new FormData(filters);
       var params = new URLSearchParams();
-      ['q', 'type', 'cat', 'dispo'].forEach(function (key) {
+      var forcedType = searchPage.getAttribute('data-type') || '';
+      ['q', 'dispo'].forEach(function (key) {
         var value = (data.get(key) || '').toString().trim();
         if (value) params.set(key, value);
       });
+      if (forcedType && forcedType !== 'all') params.set('type', forcedType);
       return params;
     }
 
@@ -339,7 +341,10 @@
           var label = data.query || data.cat || 'Tous les métiers du livre';
           titleEl.childNodes[0].textContent = label + ' ';
         }
-        var next = params.toString();
+        var display = new URLSearchParams(params);
+        display.delete('type');
+        display.delete('cat');
+        var next = display.toString();
         history.replaceState(null, '', window.location.pathname + (next ? '?' + next : ''));
         if (headerInput) headerInput.value = data.query || '';
         syncChips(filters);

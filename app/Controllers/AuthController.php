@@ -24,6 +24,7 @@ final class AuthController
         View::page('connexion', [
             'title' => 'Connexion',
             'error' => flash('error'),
+            'meta' => \Adl\Data\Seo::forScreen('connexion'),
         ]);
     }
 
@@ -60,8 +61,9 @@ final class AuthController
             redirect(Onboarding::homePath(Auth::user() ?? []));
         }
         View::page('inscription', [
-            'title' => 'Inscription',
+            'title' => 'Créer un compte professionnel',
             'error' => flash('error'),
+            'meta' => \Adl\Data\Seo::forScreen('inscription'),
         ]);
     }
 

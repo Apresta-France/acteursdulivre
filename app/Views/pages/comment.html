@@ -43,4 +43,18 @@
             <image-slot id="comment-visuel" shape="rect" fit="cover" src="{{ commentImg }}" placeholder="photo — atelier"></image-slot>
           </div>
         </div>
+
+        <div style="padding: 0 44px 44px;">
+          <h2 style="font-family: 'Space Grotesk', sans-serif; font-size: 24px; color: #022746; margin: 0 0 16px;">Questions fréquentes</h2>
+          <div style="border: 1px solid #E8ECF1; border-radius: 14px; overflow: hidden; max-width: 860px;">
+            <sc-for list="{{ commentFaq }}" as="f" hint-placeholder-count="3">
+              <div style="border-bottom: 1px solid #F2F5F8;">
+                <button type="button" data-accordion aria-expanded="{{ f.expanded }}" class="faq-q" style="padding: 16px 18px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; font-size: 15px; color: #14202C;">
+                  {{ f.q }}<span data-accordion-sign style="color: #8496A8; font-family: 'Space Grotesk', monospace;">{{ f.sign }}</span>
+                </button>
+                <div {{ f.panelAttr }} style="padding: 0 18px 18px; font-size: 15px; color: #4A5A6B; line-height: 1.65; max-width: 62em;">{{ f.a }}</div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
       </div>

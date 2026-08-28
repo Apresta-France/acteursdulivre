@@ -116,7 +116,7 @@ final class LegalPages
             [
                 'title' => 'Crédits',
                 'blocks' => [
-                    ['p' => 'Typographie d\'interface : Space Grotesk, servie par Google Fonts. Photographies de démonstration : visuels de prototype, destinés à l\'illustration de l\'interface avant ouverture complète.'],
+                    ['p' => 'Typographie d\'interface : Space Grotesk (police auto-hébergée). Photographies de démonstration : visuels de prototype, destinés à l\'illustration de l\'interface avant ouverture complète.'],
                 ],
             ],
             [

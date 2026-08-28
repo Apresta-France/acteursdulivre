@@ -71,10 +71,9 @@ final class Prototype
         $data['vitAvis'] = ($extra['vitTab'] ?? 0) === 4;
 
         if (empty($data['meta']) || !is_array($data['meta'])) {
-            $data['meta'] = Share::meta(
-                (string) ($data['title'] ?? 'Acteurs du Livre'),
-                'La place de marché des métiers du livre. Auteurs et professionnels, sans IA générative.'
-            );
+            $data['meta'] = Seo::forScreen($screen, $data);
+        } elseif (empty($data['meta']['robots']) && (!empty($data['inEspace']) || in_array($screen, ['connexion', 'bienvenue', 'inscription-sso'], true))) {
+            $data['meta']['robots'] = Seo::ROBOTS_NONE;
         }
 
         return $data;
@@ -83,31 +82,25 @@ final class Prototype
     private static function shared(?array $user, bool $logged, string $screen): array
     {
         $navy = self::NAVY;
-        $orange = self::ORANGE;
         $initials = $user ? User::initials($user) : 'MV';
         $first = $user['first_name'] ?? 'Marion';
 
         $railNames = Catalog::trades();
         $rail = [];
-        foreach ($railNames as $i => $name) {
-            $active = $i === 0 && in_array($screen, ['resultats', 'fiche', 'metier'], true);
+        foreach ($railNames as $name) {
             $rail[] = [
                 'name' => $name,
-                'href' => '/recherche?q=' . rawurlencode(strtolower($name)),
-                'style' => 'padding: 16px 0; font-size: 14px; cursor: pointer; white-space: nowrap; color: ' . ($active ? $navy : '#56677A') . '; font-weight: ' . ($active ? '500' : '400') . '; box-shadow: ' . ($active ? 'inset 0 -2px 0 ' . $orange : 'none') . ';',
+                'href' => Catalog::tradePath($name),
+                'style' => 'padding: 16px 0; font-size: 14px; cursor: pointer; white-space: nowrap; color: #56677A; font-weight: 400;',
             ];
         }
 
-        $mega = [
-            ['group' => 'Écrire & corriger', 'items' => ['Auteurs & prête-plume', 'Correction orthotypo', 'Bêta-lecture', 'Préparation de copie', 'Réécriture', 'Traduction littéraire']],
-            ['group' => 'Fabriquer', 'items' => ['Illustration & couverture', 'Maquette intérieure', 'Direction artistique', 'Impression offset', 'Impression numérique', 'Reliure & finitions']],
-            ['group' => 'Éditer & diffuser', 'items' => ['Édition & direction de collection', 'Agents littéraires', 'Dépôt légal & ISBN', 'Diffusion en librairie', 'Vente en ligne']],
-            ['group' => 'Faire vivre le livre', 'items' => ['Attachés de presse', 'Réseaux sociaux & communauté', 'Livre audio & narration', 'Salons & rencontres', 'Ateliers & médiation']],
-        ];
+        $mega = Catalog::megaGroups();
 
         $footerCols = [
             ['title' => 'Porteurs de projet', 'links' => [
-                ['label' => 'Chercher un prestataire', 'href' => '/recherche'],
+                ['label' => 'Chercher un prestataire', 'href' => '/prestataires'],
+                ['label' => 'Parcourir les prestations', 'href' => '/prestations'],
                 ['label' => 'Publier une recherche', 'href' => '/espace/publier'],
                 ['label' => 'Mes commandes', 'href' => '/espace/commandes'],
                 ['label' => 'Devis & factures', 'href' => '/confiance'],
@@ -152,7 +145,7 @@ final class Prototype
             ],
             'footerCols' => $footerCols,
             'topbarStats' => self::topbarStats(),
-            'footerMetiers' => Catalog::footerLabels(),
+            'footerMetiers' => Catalog::footerMetiers(),
             'userInitials' => $initials,
             'userAvatarUrl' => user_avatar_src($user),
             'userFirst' => $first,
@@ -312,7 +305,7 @@ final class Prototype
                 ],
                 'ways' => [
                     ['kicker' => 'Annuaire', 'title' => 'Chercher un profil', 'body' => 'Filtrez par métier, spécialité, ville et tarif, puis engagez la discussion.', 'points' => [format_int($pros) . ' profils', 'Avis vérifiés', 'Réponse en 24 h en moyenne'], 'cta' => 'Parcourir l\'annuaire', 'href' => '/recherche'],
-                    ['kicker' => 'Prestations', 'title' => 'Acheter une prestation', 'body' => 'Des offres packagées à prix, délai et périmètre affichés. Vous commandez en deux clics.', 'points' => [format_int($services) . ' prestations', 'Options à la carte', 'Contrat et facture inclus'], 'cta' => 'Voir les prestations', 'href' => '/recherche?type=prestations'],
+                    ['kicker' => 'Prestations', 'title' => 'Acheter une prestation', 'body' => 'Des offres packagées à prix, délai et périmètre affichés. Vous commandez en deux clics.', 'points' => [format_int($services) . ' prestations', 'Options à la carte', 'Contrat et facture inclus'], 'cta' => 'Voir les prestations', 'href' => '/prestations'],
                     ['kicker' => 'Recherche', 'title' => 'Publier une recherche', 'body' => 'Décrivez le besoin et le budget : les prestataires qualifiés vous envoient leur devis.', 'points' => [format_int($openMissions) . ' recherches ouvertes', 'Gratuit pour tous', '1ʳᵉ mission offerte, puis 8 %'], 'cta' => 'Publier une recherche', 'href' => '/espace/publier'],
                 ],
             ];
@@ -621,6 +614,14 @@ final class Prototype
                 ['title' => 'Droits & contrats', 'desc' => 'Cessions, confidentialité, mentions obligatoires.', 'n' => 11],
             ],
             'aideFaq' => self::aideFaq(),
+            'commentFaq' => self::faqItems(array_map(
+                static fn (array $row): array => [$row['q'], $row['a']],
+                Seo::commentFaqs()
+            )),
+            'tarifsFaq' => self::faqItems(array_map(
+                static fn (array $row): array => [$row['q'], $row['a']],
+                Seo::tarifsFaqs()
+            )),
             'checkoutSteps' => self::steps(['Le brief', 'Le paiement', 'Le suivi'], 1, false),
             'paiements' => self::paiements(),
             'badges' => ['Profil vérifié', 'Répond en 24 h', '98 % dans les délais', '87 missions livrées', 'Membre depuis 2022'],

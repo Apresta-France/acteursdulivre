@@ -5,7 +5,7 @@
       <h1>Mes commandes</h1>
       <p><?= count($orders) ?> commande<?= count($orders) > 1 ? 's' : '' ?>.</p>
     </div>
-    <a class="btn-navy" href="<?= e(url('/recherche?type=prestations')) ?>">Trouver une prestation</a>
+    <a class="btn-navy" href="<?= e(url('/prestations')) ?>">Trouver une prestation</a>
   </div>
 
   <?php if ($orders === []): ?>

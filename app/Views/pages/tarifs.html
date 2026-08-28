@@ -37,4 +37,18 @@
             <div style="background: #F7F9FC; border-radius: 12px; padding: 18px; margin-top: 20px; font-size: 14px; color: #4A5A6B; line-height: 1.65;">Le client confirme la mission et note la prestation. C'est alors que la plateforme facture sa commission au prestataire, payable sous 15 jours. Une facture impayée à l'échéance suspend les offres.</div>
           </div>
         </div>
+
+        <div style="margin-top: 40px;">
+          <h2 style="font-family: 'Space Grotesk', sans-serif; font-size: 24px; color: #022746; margin: 0 0 16px;">Questions fréquentes</h2>
+          <div style="border: 1px solid #E8ECF1; border-radius: 14px; overflow: hidden;">
+            <sc-for list="{{ tarifsFaq }}" as="f" hint-placeholder-count="3">
+              <div style="border-bottom: 1px solid #F2F5F8;">
+                <button type="button" data-accordion aria-expanded="{{ f.expanded }}" class="faq-q" style="padding: 16px 18px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; font-size: 15px; color: #14202C;">
+                  {{ f.q }}<span data-accordion-sign style="color: #8496A8; font-family: 'Space Grotesk', monospace;">{{ f.sign }}</span>
+                </button>
+                <div {{ f.panelAttr }} style="padding: 0 18px 18px; font-size: 15px; color: #4A5A6B; line-height: 1.65; max-width: 62em;">{{ f.a }}</div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
       </div>

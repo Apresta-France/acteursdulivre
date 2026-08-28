@@ -101,6 +101,19 @@ final class Catalog
         return $out;
     }
 
+    /** @return list<array{label: string, href: string}> */
+    public static function footerMetiers(): array
+    {
+        $out = [];
+        foreach (self::trades() as $trade) {
+            $out[] = [
+                'label' => self::TRADE_LABELS[$trade] ?? $trade,
+                'href' => self::tradePath($trade),
+            ];
+        }
+        return $out;
+    }
+
     /** @return list<string> */
     public static function specialties(): array
     {
@@ -118,22 +131,183 @@ final class Catalog
         return self::BRIEF_HINTS[$trade] ?? 'Attentes, contraintes, calendrier…';
     }
 
+    public static function tradePath(string $trade): string
+    {
+        return '/metiers/' . slugify($trade);
+    }
+
+    public static function typePath(string $type): string
+    {
+        return match ($type) {
+            'prestations' => '/prestations',
+            'prestataires' => '/prestataires',
+            'missions' => '/missions',
+            default => '/recherche',
+        };
+    }
+
+    /** @return array<string, string> alias lisible => métier canonique */
+    public static function tradeAliases(): array
+    {
+        return [
+            'Auteur' => 'Écriture',
+            'Auteurs' => 'Écriture',
+            'Auteurs & prête-plume' => 'Écriture',
+            'Prête-plume' => 'Écriture',
+            'Réécriture' => 'Écriture',
+            'Correcteur' => 'Correction',
+            'Correcteurs' => 'Correction',
+            'Correction orthotypo' => 'Correction',
+            'Préparation de copie' => 'Correction',
+            'Bêta-lecteur' => 'Bêta-lecture',
+            'Bêta-lecteurs' => 'Bêta-lecture',
+            'Illustrateur' => 'Illustration',
+            'Illustrateurs' => 'Illustration',
+            'Illustration & couverture' => 'Illustration',
+            'Traducteur' => 'Traduction',
+            'Traducteurs' => 'Traduction',
+            'Traduction littéraire' => 'Traduction',
+            'Maquettiste' => 'Maquette',
+            'Maquettistes' => 'Maquette',
+            'Maquette intérieure' => 'Maquette',
+            'Direction artistique' => 'Maquette',
+            'Éditeur' => 'Édition',
+            'Éditeurs' => 'Édition',
+            'Édition & direction de collection' => 'Édition',
+            'Dépôt légal & ISBN' => 'Édition',
+            'Imprimeur' => 'Impression',
+            'Imprimeurs' => 'Impression',
+            'Impression offset' => 'Impression',
+            'Impression numérique' => 'Impression',
+            'Reliure & finitions' => 'Impression',
+            'Presse' => 'Presse & com',
+            'Attaché de presse' => 'Presse & com',
+            'Attachés de presse' => 'Presse & com',
+            'Réseaux sociaux & communauté' => 'Presse & com',
+            'Libraire' => 'Librairie',
+            'Libraires' => 'Librairie',
+            'Diffusion en librairie' => 'Librairie',
+            'Vente en ligne' => 'Librairie',
+            'Narrateur' => 'Audio',
+            'Narrateurs' => 'Audio',
+            'Narrateurs audio' => 'Audio',
+            'Livre audio' => 'Audio',
+            'Livre audio & narration' => 'Audio',
+            'Agent littéraire' => 'Agent littéraire',
+            'Agents littéraires' => 'Agent littéraire',
+            'Salon' => 'Salons',
+            'Salons & événements' => 'Salons',
+            'Salons & rencontres' => 'Salons',
+            'Ateliers & médiation' => 'Salons',
+        ];
+    }
+
+    /** @return list<array{group: string, items: list<array{label: string, href: string}>}> */
+    public static function megaGroups(): array
+    {
+        $groups = [
+            'Écrire & corriger' => [
+                'Auteurs & prête-plume' => 'Écriture',
+                'Correction orthotypo' => 'Correction',
+                'Bêta-lecture' => 'Bêta-lecture',
+                'Préparation de copie' => 'Correction',
+                'Réécriture' => 'Écriture',
+                'Traduction littéraire' => 'Traduction',
+            ],
+            'Fabriquer' => [
+                'Illustration & couverture' => 'Illustration',
+                'Maquette intérieure' => 'Maquette',
+                'Direction artistique' => 'Maquette',
+                'Impression offset' => 'Impression',
+                'Impression numérique' => 'Impression',
+                'Reliure & finitions' => 'Impression',
+            ],
+            'Éditer & diffuser' => [
+                'Édition & direction de collection' => 'Édition',
+                'Agents littéraires' => 'Agent littéraire',
+                'Dépôt légal & ISBN' => 'Édition',
+                'Diffusion en librairie' => 'Librairie',
+                'Vente en ligne' => 'Librairie',
+            ],
+            'Faire vivre le livre' => [
+                'Attachés de presse' => 'Presse & com',
+                'Réseaux sociaux & communauté' => 'Presse & com',
+                'Livre audio & narration' => 'Audio',
+                'Salons & rencontres' => 'Salons',
+                'Ateliers & médiation' => 'Salons',
+            ],
+        ];
+        $out = [];
+        foreach ($groups as $group => $items) {
+            $links = [];
+            foreach ($items as $label => $trade) {
+                $links[] = ['label' => $label, 'href' => self::tradePath($trade)];
+            }
+            $out[] = ['group' => $group, 'items' => $links];
+        }
+        return $out;
+    }
+
     public static function tradeFromSlug(string $slug): ?string
     {
-        $trades = array_values(array_unique(array_merge(
-            self::trades(),
-            Taxonomy::names(Taxonomy::KIND_TRADE, false)
-        )));
+        $slug = slugify($slug);
+        if ($slug === '') {
+            return null;
+        }
+        try {
+            $trades = array_values(array_unique(array_merge(
+                self::trades(),
+                Taxonomy::names(Taxonomy::KIND_TRADE, false)
+            )));
+        } catch (\Throwable) {
+            $trades = Profile::TRADES;
+        }
         $want = str_replace('-', '', $slug);
         foreach ($trades as $trade) {
-            $candidates = array_unique([slugify($trade), slugify(self::TRADE_LABELS[$trade] ?? $trade)]);
+            $candidates = array_unique([
+                slugify($trade),
+                slugify(self::TRADE_LABELS[$trade] ?? $trade),
+                slugify(self::TRADE_TITLES[$trade] ?? $trade),
+            ]);
             foreach ($candidates as $candidate) {
                 if ($candidate === $slug || str_replace('-', '', $candidate) === $want) {
                     return $trade;
                 }
             }
         }
+        foreach (self::tradeAliases() as $alias => $trade) {
+            $candidate = slugify($alias);
+            if ($candidate === $slug || str_replace('-', '', $candidate) === $want) {
+                return $trade;
+            }
+        }
         return null;
+    }
+
+    public static function resolveTrade(string $text): ?string
+    {
+        return self::tradeFromSlug(slugify(trim($text)));
+    }
+
+    /**
+     * URL publique propre, ou null si la requête (texte libre, dispo…) doit rester une recherche.
+     */
+    public static function redirectPath(string $currentPath, string $q, string $type, string $cat, bool $availableOnly): ?string
+    {
+        if ($availableOnly) {
+            return null;
+        }
+        $type = array_key_exists($type, self::TYPES) ? $type : 'all';
+        $trade = self::resolveTrade($q !== '' ? $q : $cat);
+        if ($trade !== null && ($q === '' || self::resolveTrade($q) === $trade)) {
+            $target = self::tradePath($trade);
+            return $target !== $currentPath ? $target : null;
+        }
+        if ($q !== '' || $cat !== '') {
+            return null;
+        }
+        $hub = self::typePath($type);
+        return $hub !== $currentPath ? $hub : null;
     }
 
     /**
@@ -357,7 +531,7 @@ final class Catalog
                 'trade' => $trade,
                 'count' => format_int($n),
                 'countLabel' => $n === 0 ? 'Aucun profil' : ($n . ' profil' . ($n > 1 ? 's' : '')),
-                'href' => '/metiers/' . slugify($trade),
+                'href' => self::tradePath($trade),
             ];
         }
         return $out;

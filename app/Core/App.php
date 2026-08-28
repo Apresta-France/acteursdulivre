@@ -21,7 +21,13 @@ final class App
         if ($request->isPost() && $request->path() !== '/install' && !str_starts_with($request->path(), '/install')) {
             if (!Csrf::check($request->string('_token'))) {
                 http_response_code(419);
-                View::render('errors/419', ['title' => 'Session expirée']);
+                View::render('errors/419', [
+                    'title' => 'Session expirée',
+                    'meta' => [
+                        'title' => 'Session expirée — acteursdulivre.fr',
+                        'robots' => \Adl\Data\Seo::ROBOTS_NONE,
+                    ],
+                ]);
                 return;
             }
         }

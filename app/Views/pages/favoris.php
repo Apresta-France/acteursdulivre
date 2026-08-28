@@ -5,7 +5,7 @@
       <h1>Favoris</h1>
       <p><?= count($favorites) ?> prestation<?= count($favorites) > 1 ? 's' : '' ?> enregistrée<?= count($favorites) > 1 ? 's' : '' ?>.</p>
     </div>
-    <a class="btn-navy" href="<?= e(url('/recherche?type=prestations')) ?>">Parcourir les prestations</a>
+    <a class="btn-navy" href="<?= e(url('/prestations')) ?>">Parcourir les prestations</a>
   </div>
 
   <?php if ($favorites === []): ?>

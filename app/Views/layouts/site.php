@@ -3,37 +3,65 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#15212f">
   <meta name="google-site-verification" content="4X7SyO1uk8XOvTr1QK5qLEe4qtWYmzp6qgG_nbeUSiI">
-  <title><?= e(($title ?? 'Acteurs du Livre') . ' — acteursdulivre.fr') ?></title>
   <?php
-    $meta = $meta ?? [];
-    $metaTitle = (string) ($meta['title'] ?? (($title ?? 'Acteurs du Livre') . ' — acteursdulivre.fr'));
-    $metaDesc = (string) ($meta['description'] ?? 'La place de marché des métiers du livre. Auteurs et professionnels, sans IA générative.');
+    $meta = is_array($meta ?? null) ? $meta : [];
+    $metaTitle = (string) ($meta['title'] ?? \Adl\Data\Seo::documentTitle((string) ($title ?? 'Acteurs du Livre')));
+    $metaDesc = (string) ($meta['description'] ?? \Adl\Data\Seo::DEFAULT_DESC);
     $metaUrl = (string) ($meta['url'] ?? \Adl\Data\Share::current());
-    $metaImage = (string) ($meta['image'] ?? asset('img/logo.png'));
+    $metaImage = (string) ($meta['image'] ?? \Adl\Data\Seo::defaultImage());
     $metaType = (string) ($meta['type'] ?? 'website');
+    $metaRobots = (string) ($meta['robots'] ?? ((http_response_code() >= 400) ? \Adl\Data\Seo::ROBOTS_NONE : \Adl\Data\Seo::ROBOTS_INDEX));
+    $metaImageW = (int) ($meta['image_width'] ?? \Adl\Data\Seo::OG_W);
+    $metaImageH = (int) ($meta['image_height'] ?? \Adl\Data\Seo::OG_H);
+    $metaImageAlt = (string) ($meta['image_alt'] ?? $metaTitle);
+    $jsonLd = $meta['json_ld'] ?? [];
   ?>
+  <title><?= e($metaTitle) ?></title>
   <meta name="description" content="<?= e($metaDesc) ?>">
+  <meta name="robots" content="<?= e($metaRobots) ?>">
+  <meta name="author" content="EDITIONS TESSERACT">
   <link rel="canonical" href="<?= e($metaUrl) ?>">
-  <link rel="sitemap" type="application/xml" title="Sitemap" href="<?= e(url('/sitemap.xml')) ?>">
+  <link rel="sitemap" type="application/xml" title="Sitemap" href="<?= e(\Adl\Data\Share::absolute('/sitemap.xml')) ?>">
+  <link rel="alternate" type="text/plain" href="<?= e(\Adl\Data\Share::absolute('/llms.txt')) ?>" title="llms.txt">
   <meta property="og:type" content="<?= e($metaType) ?>">
   <meta property="og:site_name" content="acteursdulivre.fr">
   <meta property="og:title" content="<?= e($metaTitle) ?>">
   <meta property="og:description" content="<?= e($metaDesc) ?>">
   <meta property="og:url" content="<?= e($metaUrl) ?>">
   <meta property="og:image" content="<?= e($metaImage) ?>">
+  <meta property="og:image:secure_url" content="<?= e($metaImage) ?>">
+  <meta property="og:image:type" content="image/jpeg">
+  <meta property="og:image:width" content="<?= $metaImageW ?>">
+  <meta property="og:image:height" content="<?= $metaImageH ?>">
+  <meta property="og:image:alt" content="<?= e($metaImageAlt) ?>">
   <meta property="og:locale" content="fr_FR">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="<?= e($metaTitle) ?>">
   <meta name="twitter:description" content="<?= e($metaDesc) ?>">
   <meta name="twitter:image" content="<?= e($metaImage) ?>">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="<?= e(asset('css/app.css')) ?>?v=m37">
+  <meta name="twitter:image:alt" content="<?= e($metaImageAlt) ?>">
+  <?php if (!empty($meta['published_time'])): ?>
+  <meta property="article:published_time" content="<?= e((string) $meta['published_time']) ?>">
+  <?php endif; ?>
+  <?php if (!empty($meta['modified_time'])): ?>
+  <meta property="article:modified_time" content="<?= e((string) $meta['modified_time']) ?>">
+  <?php endif; ?>
+  <link rel="preload" href="<?= e(asset('fonts/space-grotesk-700.woff2')) ?>" as="font" type="font/woff2" crossorigin>
+  <?php if (!empty($isAccueil)): ?>
+  <link rel="preload" as="image" href="<?= e(photo(0)) ?>">
+  <?php endif; ?>
+  <link rel="stylesheet" href="<?= e(asset('css/app.css')) ?>?v=m38">
   <link rel="icon" href="<?= e(asset('img/favicon.ico')) ?>?v=3" sizes="any">
   <link rel="icon" type="image/png" href="<?= e(asset('img/favicon-32x32.png')) ?>?v=3" sizes="32x32">
   <link rel="apple-touch-icon" href="<?= e(asset('img/apple-touch-icon.png')) ?>?v=3">
+  <?php if (is_array($jsonLd) && $jsonLd !== []): ?>
+  <script type="application/ld+json"><?= json_encode(
+      ['@context' => 'https://schema.org', '@graph' => array_values($jsonLd)],
+      JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP
+  ) ?></script>
+  <?php endif; ?>
 </head>
 <body>
   <div class="nav-backdrop" data-nav-close hidden></div>
@@ -67,11 +95,11 @@
         <a href="<?= e(url('/')) ?>" class="brand">
           <picture>
             <source media="(max-width: 768px)" srcset="<?= e(asset('img/logo-mark.png')) ?>?v=1">
-            <img src="<?= e(asset('img/logo.png')) ?>?v=4" alt="acteursdulivre.fr">
+            <img src="<?= e(asset('img/logo.png')) ?>?v=4" alt="acteursdulivre.fr — place de marché des métiers du livre" width="212" height="58" decoding="async">
           </picture>
         </a>
-        <form class="search" action="<?= e(url('/recherche')) ?>" method="get" data-live-search data-api="<?= e(url('/api/recherche')) ?>" autocomplete="off">
-          <input type="search" name="q" value="<?= e($query ?? '') ?>" placeholder="correcteur roman, illustration jeunesse…" autocomplete="off" data-live-input>
+        <form class="search" role="search" action="<?= e(url('/recherche')) ?>" method="get" data-live-search data-api="<?= e(url('/api/recherche')) ?>" autocomplete="off">
+          <input type="search" name="q" value="<?= e($query ?? '') ?>" placeholder="correcteur roman, illustration jeunesse…" autocomplete="off" data-live-input aria-label="Rechercher un prestataire ou une prestation">
           <button type="submit">Chercher</button>
           <div class="search-suggest" data-live-panel hidden></div>
         </form>
@@ -151,7 +179,13 @@
 
       <div class="rail">
         <?php foreach ($rail ?? [] as $r): ?>
-          <a href="<?= e(url($r['href'] ?? '/recherche')) ?>" style="<?= e($r['style'] ?? '') ?>"><?= e($r['name'] ?? '') ?></a>
+          <?php
+            $railOn = ($trade ?? '') !== '' && ($r['name'] ?? '') === $trade;
+            $railStyle = $railOn
+                ? 'padding: 16px 0; font-size: 14px; cursor: pointer; white-space: nowrap; color: #15212f; font-weight: 500; box-shadow: inset 0 -2px 0 #D85D3F;'
+                : (string) ($r['style'] ?? '');
+          ?>
+          <a href="<?= e(url($r['href'] ?? '/recherche')) ?>" style="<?= e($railStyle) ?>"><?= e($r['name'] ?? '') ?></a>
         <?php endforeach; ?>
         <div class="rail-spacer"></div>
         <button type="button" class="mega-btn" data-mega-toggle style="<?= e($megaBtnStyle ?? '') ?>">Tous les métiers ▾</button>
@@ -163,7 +197,11 @@
             <div class="mega-group"><?= e($m['group']) ?></div>
             <div class="mega-items">
               <?php foreach ($m['items'] as $item): ?>
-                <a href="<?= e(url('/recherche?q=' . rawurlencode($item))) ?>"><?= e($item) ?></a>
+                <?php if (is_array($item)): ?>
+                  <a href="<?= e(url((string) ($item['href'] ?? '/recherche'))) ?>"><?= e((string) ($item['label'] ?? '')) ?></a>
+                <?php else: ?>
+                  <a href="<?= e(url(\Adl\Data\Catalog::tradePath(\Adl\Data\Catalog::resolveTrade((string) $item) ?? (string) $item))) ?>"><?= e((string) $item) ?></a>
+                <?php endif; ?>
               <?php endforeach; ?>
             </div>
           </div>
@@ -198,7 +236,7 @@
           <div>
             <div class="footer-logo">
               <a href="<?= e(url('/')) ?>">
-                <img src="<?= e(asset('img/logo-inv.png')) ?>?v=5" alt="acteursdulivre.fr">
+                <img src="<?= e(asset('img/logo-inv.png')) ?>?v=5" alt="acteursdulivre.fr" width="154" height="42" loading="lazy" decoding="async">
               </a>
             </div>
             <p>La place de marché des métiers du livre. Auteurs, correcteurs, bêta-lecteurs, illustrateurs, traducteurs, maquettistes, éditeurs, imprimeurs, presse, libraires, narrateurs, agents, salons.</p>
@@ -232,7 +270,11 @@
           <div class="footer-col-title muted">Métiers</div>
           <div class="metier-links">
             <?php foreach ($footerMetiers ?? [] as $m): ?>
-              <a href="<?= e(url('/metiers/' . slugify($m))) ?>"><?= e($m) ?></a>
+              <?php if (is_array($m)): ?>
+                <a href="<?= e(url((string) ($m['href'] ?? '/recherche'))) ?>"><?= e((string) ($m['label'] ?? '')) ?></a>
+              <?php else: ?>
+                <a href="<?= e(url('/metiers/' . slugify((string) $m))) ?>"><?= e((string) $m) ?></a>
+              <?php endif; ?>
             <?php endforeach; ?>
           </div>
         </div>
@@ -250,6 +292,6 @@
       </footer>
     </div>
   </div>
-  <script src="<?= e(asset('js/app.js')) ?>?v=m28"></script>
+  <script src="<?= e(asset('js/app.js')) ?>?v=m29"></script>
 </body>
 </html>

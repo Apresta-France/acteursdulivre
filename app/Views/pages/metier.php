@@ -1,20 +1,21 @@
 <?php
 $trade = (string) ($trade ?? '');
 $label = (string) ($tradeLabel ?? $trade);
+$geo = $tradeGeo ?? \Adl\Data\Seo::tradeCopy($trade);
 $providers = $providers ?? [];
 $services = $services ?? [];
 $missions = $missions ?? [];
 ?>
 <div class="metier-page">
-  <div class="search-crumb">Métiers · <?= e($trade) ?></div>
-  <h1><?= e($label) ?></h1>
-  <p class="journal-lead">Prestataires, prestations à prix affiché et missions ouvertes pour le métier « <?= e($trade) ?> ».</p>
+  <nav class="search-crumb" aria-label="Fil d'Ariane">Métiers · <?= e($trade) ?></nav>
+  <h1><?= e((string) ($geo['h1'] ?? $label)) ?></h1>
+  <p class="journal-lead"><?= e((string) ($geo['lead'] ?? ('Prestataires, prestations à prix affiché et missions ouvertes pour le métier « ' . $trade . ' ».'))) ?></p>
 
   <div class="metier-sections">
     <section>
       <div class="espace-page-head">
         <h2>Prestataires</h2>
-        <a href="<?= e(url('/recherche?type=prestataires&cat=' . rawurlencode($trade))) ?>">Tout voir</a>
+        <a href="<?= e(url('/prestataires')) ?>">Tout voir</a>
       </div>
       <?php if ($providers === []): ?>
         <div class="search-empty">
@@ -36,7 +37,7 @@ $missions = $missions ?? [];
     <section>
       <div class="espace-page-head">
         <h2>Prestations</h2>
-        <a href="<?= e(url('/recherche?type=prestations&cat=' . rawurlencode($trade))) ?>">Tout voir</a>
+        <a href="<?= e(url('/prestations')) ?>">Tout voir</a>
       </div>
       <?php if ($services === []): ?>
         <div class="search-empty">
@@ -58,7 +59,7 @@ $missions = $missions ?? [];
     <section>
       <div class="espace-page-head">
         <h2>Recherches ouvertes</h2>
-        <a href="<?= e(url('/missions?cat=' . rawurlencode($trade))) ?>">Tout voir</a>
+        <a href="<?= e(url('/missions')) ?>">Tout voir</a>
       </div>
       <?php if ($missions === []): ?>
         <div class="search-empty">

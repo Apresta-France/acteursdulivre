@@ -8,6 +8,6 @@
   <div class="search-empty">
     <strong>Aucune commande à régler.</strong>
     <span>Choisissez une prestation dans l'annuaire, ou attribuez une recherche : le paiement s'ouvrira ici.</span>
-    <a class="btn-orange" href="<?= e(url('/recherche?type=prestations')) ?>">Parcourir les prestations</a>
+    <a class="btn-orange" href="<?= e(url('/prestations')) ?>">Parcourir les prestations</a>
   </div>
 </div>

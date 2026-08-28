@@ -29,7 +29,13 @@ final class DcEngine
                 if (preg_match('/placeholder="([^"]*)"/i', $attrs, $am)) {
                     $alt = $am[1];
                 }
-                return '<img src="' . $src . '" alt="' . htmlspecialchars($alt, ENT_QUOTES) . '" style="width:100%;height:100%;object-fit:cover;display:block;">';
+                $id = '';
+                if (preg_match('/id="([^"]*)"/i', $attrs, $im)) {
+                    $id = $im[1];
+                }
+                $lcp = $id === 'home-1';
+                $eager = $lcp ? ' fetchpriority="high" decoding="async"' : ' loading="lazy" decoding="async"';
+                return '<img src="' . $src . '" alt="' . htmlspecialchars($alt, ENT_QUOTES) . '" width="800" height="500"' . $eager . ' style="width:100%;height:100%;object-fit:cover;display:block;">';
             },
             $html
         ) ?? $html;
