@@ -16,7 +16,6 @@ use Adl\Data\Sitemap;
 use Adl\Models\Application;
 use Adl\Models\Article;
 use Adl\Models\Favorite;
-use Adl\Models\Mission;
 use Adl\Models\Newsletter;
 use Adl\Models\Profile;
 use Adl\Models\Report;
