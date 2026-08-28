@@ -27,7 +27,7 @@ if ($rateKind === 'percent') {
   <div class="espace-page-head">
     <div>
       <h1>Ma vitrine</h1>
-      <p>Profil complété à <?= $completion ?> %. Les vitrines précises reçoivent nettement plus de demandes.<?php if (!empty($p['is_founder'])): ?> <span class="profile-badge profile-badge-founder" style="vertical-align: middle;">Membre fondateur</span><?php endif; ?></p>
+      <p>Profil complété à <?= $completion ?> %. Les vitrines précises reçoivent nettement plus de demandes.<?php if (!empty($p['is_founder'])): ?> <span class="profile-badge profile-badge-founder">Membre fondateur</span><?php endif; ?></p>
     </div>
     <div class="vitrine-head-actions">
       <?php if ($publicHref): ?>

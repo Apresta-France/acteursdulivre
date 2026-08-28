@@ -246,6 +246,15 @@ function store_upload(array $file, string $subdir, array $allowedExt, int $maxBy
     return trim($subdir, '/') . '/' . $filename;
 }
 
+function admin_date(?string $datetime, string $empty = '—'): string
+{
+    if ($datetime === null || $datetime === '') {
+        return $empty;
+    }
+    $ts = strtotime($datetime);
+    return $ts === false ? $datetime : date('d/m/Y', $ts);
+}
+
 function format_deadline(?string $date): string
 {
     if ($date === null || $date === '') {

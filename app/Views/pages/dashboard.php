@@ -44,7 +44,7 @@ if ($offers && $profileCompletion < 80) {
   <div class="espace-page-head">
     <div>
       <h1>Bonjour <?= e($first) ?></h1>
-      <p><?= e($subtitle) ?><?php if (!empty($isFounder)): ?> <span class="profile-badge profile-badge-founder" style="vertical-align: middle;">Membre fondateur</span><?php endif; ?></p>
+      <p><?= e($subtitle) ?><?php if (!empty($isFounder)): ?> <span class="profile-badge profile-badge-founder">Membre fondateur</span><?php endif; ?></p>
     </div>
     <div class="dash-hero-actions">
       <?php if ($seeks): ?>

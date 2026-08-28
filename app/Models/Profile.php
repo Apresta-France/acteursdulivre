@@ -34,6 +34,66 @@ final class Profile
     public const STATUS_AVAILABLE = 'available';
     public const STATUS_BUSY = 'busy';
 
+    public const VERIFY_PENDING = 'pending';
+    public const VERIFY_VERIFIED = 'verified';
+    public const VERIFY_REFUSED = 'refused';
+
+    /** @return list<array<string, mixed>> */
+    public static function forAdmin(string $filter = 'pending'): array
+    {
+        $sql = 'SELECT p.id, p.user_id, p.slug, p.title, p.city, p.verification_status, p.updated_at,
+                       p.trades_json, u.first_name, u.last_name, u.email, u.avatar_url, u.created_at, u.status AS user_status
+                FROM profiles p
+                JOIN users u ON u.id = p.user_id
+                WHERE u.offers_services = 1';
+        if ($filter === 'pending') {
+            $sql .= ' AND (p.verification_status IS NULL OR p.verification_status = "" OR p.verification_status = "pending")';
+        } elseif ($filter === 'verified' || $filter === 'refused') {
+            $sql .= ' AND p.verification_status = ?';
+        }
+        $sql .= ' ORDER BY p.updated_at DESC, p.id DESC';
+        $params = in_array($filter, ['verified', 'refused'], true) ? [$filter] : [];
+        $rows = Database::fetchAll($sql, $params);
+        return array_map(static function (array $row): array {
+            $row['trades'] = self::decode($row['trades_json'] ?? null);
+            $row['name'] = User::displayName($row);
+            $row['status'] = (string) ($row['verification_status'] ?? '') ?: self::VERIFY_PENDING;
+            $row['status_label'] = match ($row['status']) {
+                self::VERIFY_VERIFIED => 'Vérifié',
+                self::VERIFY_REFUSED => 'Refusé',
+                default => 'En attente',
+            };
+            return $row;
+        }, $rows);
+    }
+
+    public static function countPendingVerification(): int
+    {
+        $row = Database::fetch(
+            'SELECT COUNT(*) AS n
+             FROM profiles p
+             JOIN users u ON u.id = p.user_id
+             WHERE u.offers_services = 1
+               AND (p.verification_status IS NULL OR p.verification_status = "" OR p.verification_status = "pending")'
+        );
+        return (int) ($row['n'] ?? 0);
+    }
+
+    public static function setVerification(int $userId, string $status): void
+    {
+        if (!in_array($status, [self::VERIFY_PENDING, self::VERIFY_VERIFIED, self::VERIFY_REFUSED], true)) {
+            throw new \InvalidArgumentException('Statut de vérification invalide.');
+        }
+        $profile = self::findByUser($userId);
+        if (!$profile) {
+            throw new \RuntimeException('Profil introuvable.');
+        }
+        Database::query(
+            'UPDATE profiles SET verification_status = ?, updated_at = NOW() WHERE user_id = ?',
+            [$status, $userId]
+        );
+    }
+
     public static function findByUser(int $userId): ?array
     {
         $row = Database::fetch(

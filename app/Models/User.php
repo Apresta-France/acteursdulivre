@@ -206,6 +206,33 @@ final class User
         }
     }
 
+    /** @return list<array{start: string, label: string, ok: int, pending: int}> */
+    public static function weeklySignups(int $weeks = 8): array
+    {
+        $tz = new \DateTimeZone('Europe/Paris');
+        $monday = new \DateTimeImmutable('monday this week', $tz);
+        $out = [];
+        for ($i = $weeks - 1; $i >= 0; $i--) {
+            $start = $monday->modify('-' . $i . ' weeks');
+            $end = $start->modify('+7 days');
+            $row = Database::fetch(
+                'SELECT
+                    SUM(CASE WHEN status = "active" THEN 1 ELSE 0 END) AS ok,
+                    SUM(CASE WHEN status != "active" THEN 1 ELSE 0 END) AS pending
+                 FROM users
+                 WHERE created_at >= ? AND created_at < ?',
+                [$start->format('Y-m-d 00:00:00'), $end->format('Y-m-d 00:00:00')]
+            );
+            $out[] = [
+                'start' => $start->format('Y-m-d'),
+                'label' => $start->format('j/n'),
+                'ok' => (int) ($row['ok'] ?? 0),
+                'pending' => (int) ($row['pending'] ?? 0),
+            ];
+        }
+        return $out;
+    }
+
     public static function countAll(): int
     {
         $row = Database::fetch('SELECT COUNT(*) AS n FROM users');

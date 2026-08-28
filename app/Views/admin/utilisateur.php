@@ -77,6 +77,12 @@ $fmt = static function (string $dt, string $empty = '—'): string {
             <dd><a href="<?= e(url('/prestataires/' . $profile['slug'])) ?>"><?= e((string) ($profile['title'] ?: $profile['slug'])) ?></a></dd>
           </div>
         <?php endif; ?>
+        <?php if ($profile): ?>
+          <div>
+            <dt>Vérification</dt>
+            <dd><a href="<?= e(url('/admin/verifications')) ?>">Dossiers prestataires</a></dd>
+          </div>
+        <?php endif; ?>
       </dl>
     </div>
   </div>

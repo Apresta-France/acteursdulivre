@@ -9,8 +9,16 @@ use Adl\Core\Mailer;
 use Adl\Core\Request;
 use Adl\Core\View;
 use Adl\Data\AdminCatalog;
+use Adl\Data\Catalog;
+use Adl\Models\Article;
+use Adl\Models\Commission;
 use Adl\Models\EmailTemplate;
+use Adl\Models\Invoice;
+use Adl\Models\Mission;
+use Adl\Models\Order;
 use Adl\Models\Profile;
+use Adl\Models\Review;
+use Adl\Models\Service;
 use Adl\Models\Setting;
 use Adl\Models\Taxonomy;
 use Adl\Models\User;
@@ -20,79 +28,204 @@ final class AdminController
 {
     public function dashboard(Request $request): void
     {
-        $this->screen('dash');
+        $pendingVerif = 0;
+        $hiddenReviews = 0;
+        try {
+            $pendingVerif = Profile::countPendingVerification();
+        } catch (Throwable) {
+        }
+        try {
+            $hiddenReviews = count(array_filter(Review::all(), static fn (array $r): bool => !empty($r['hidden'])));
+        } catch (Throwable) {
+        }
+        $openMissions = Mission::countOpen();
+        $overdue = Invoice::countOverdue();
+        $disputes = Order::countByStatus('dispute');
+
+        $weeks = User::weeklySignups(8);
+        $max = max(1, ...array_map(static fn (array $w): int => $w['ok'] + $w['pending'], $weeks));
+        $chart = [];
+        foreach ($weeks as $week) {
+            $total = $week['ok'] + $week['pending'];
+            $chart[] = [
+                'label' => $week['label'],
+                'ok' => $week['ok'],
+                'pending' => $week['pending'],
+                'okH' => (int) round(110 * $week['ok'] / $max),
+                'pendingH' => (int) round(110 * $week['pending'] / $max),
+                'empty' => $total === 0,
+            ];
+        }
+
+        $activity = [];
+        foreach (array_slice(User::all(), 0, 5) as $user) {
+            $activity[] = [
+                'when' => (string) ($user['created_at'] ?? ''),
+                'txt' => User::displayName($user) . ' s’est inscrit',
+                'meta' => User::roleLabel((string) ($user['role'] ?? 'client')),
+            ];
+        }
+        foreach (array_slice(Order::recent(5), 0, 4) as $order) {
+            $activity[] = [
+                'when' => (string) ($order['created_at'] ?? ''),
+                'txt' => 'Commande ' . ($order['num'] ?: '') . ' — ' . $order['title'],
+                'meta' => $order['status_label'],
+            ];
+        }
+        usort($activity, static fn (array $a, array $b): int => strcmp($b['when'], $a['when']));
+        $activity = array_slice($activity, 0, 8);
+
+        $this->page('dash', 'admin/dashboard', [
+            'kpis' => [
+                ['k' => 'Prestataires actifs', 'v' => format_int(User::countOfferers())],
+                ['k' => 'Porteurs de projet', 'v' => format_int(User::countSeekers())],
+                ['k' => 'Missions ouvertes', 'v' => format_int($openMissions)],
+                ['k' => 'Commandes', 'v' => format_int(Order::countAll())],
+                ['k' => 'Commission', 'v' => Commission::percent() . ' %'],
+            ],
+            'chart' => $chart,
+            'files' => [
+                ['label' => 'Profils à vérifier', 'n' => $pendingVerif, 'href' => '/admin/verifications', 'note' => 'dossiers prestataires'],
+                ['label' => 'Missions ouvertes', 'n' => $openMissions, 'href' => '/admin/missions', 'note' => 'appels d’offres'],
+                ['label' => 'Factures en retard', 'n' => $overdue, 'href' => '/admin/finances', 'note' => 'commissions échues'],
+                ['label' => 'Litiges', 'n' => $disputes, 'href' => '/admin/litiges', 'note' => 'commandes en médiation'],
+                ['label' => 'Avis masqués', 'n' => $hiddenReviews, 'href' => '/admin/avis', 'note' => 'retirés du public'],
+            ],
+            'activity' => $activity,
+        ]);
     }
 
     public function verifications(Request $request): void
     {
-        $this->screen('verif');
+        $filtre = $this->filtre($request, ['pending', 'verified', 'refused', 'tous'], 'pending');
+        try {
+            $dossiers = Profile::forAdmin($filtre === 'tous' ? 'tous' : $filtre);
+        } catch (Throwable) {
+            $dossiers = [];
+        }
+        $this->page('verif', 'admin/verifications', [
+            'dossiers' => $dossiers,
+            'filters' => $this->filterLinks('/admin/verifications', [
+                'pending' => 'En attente',
+                'verified' => 'Vérifiés',
+                'refused' => 'Refusés',
+                'tous' => 'Tous',
+            ], $filtre),
+        ]);
+    }
+
+    public function verificationSave(Request $request, string $id): void
+    {
+        Auth::requireAdmin();
+        try {
+            Profile::setVerification((int) $id, $request->string('status'));
+            flash('saved', 'Vérification enregistrée.');
+        } catch (Throwable $e) {
+            flash('error', $e->getMessage());
+        }
+        redirect('/admin/verifications');
     }
 
     public function moderation(Request $request): void
     {
-        $this->screen('moderation');
+        $this->page('moderation', 'admin/moderation', [
+            'services' => Service::all(),
+            'missions' => Mission::all(),
+        ]);
+    }
+
+    public function moderationSave(Request $request, string $type, string $id): void
+    {
+        Auth::requireAdmin();
+        try {
+            if ($type === 'prestation') {
+                Service::setStatus((int) $id, $request->string('status'));
+                flash('saved', 'Prestation mise à jour.');
+            } elseif ($type === 'mission') {
+                Mission::setStatus((int) $id, $request->string('status'));
+                flash('saved', 'Mission mise à jour.');
+            } else {
+                flash('error', 'Type inconnu.');
+            }
+        } catch (Throwable $e) {
+            flash('error', $e->getMessage());
+        }
+        redirect($request->string('back') !== '' ? $request->string('back') : '/admin/moderation');
     }
 
     public function litiges(Request $request): void
     {
-        $this->screen('litiges');
+        $this->page('litiges', 'admin/litiges', [
+            'litiges' => Order::byStatus('dispute'),
+        ]);
+    }
+
+    public function litigeSave(Request $request, string $id): void
+    {
+        Auth::requireAdmin();
+        try {
+            Order::setStatus((int) $id, $request->string('status'));
+            flash('saved', 'Commande mise à jour.');
+        } catch (Throwable $e) {
+            flash('error', $e->getMessage());
+        }
+        $back = $request->string('back');
+        redirect($back !== '' ? $back : '/admin/litiges');
     }
 
     public function avis(Request $request): void
     {
-        $this->screen('avis');
+        $this->page('avis', 'admin/avis', [
+            'reviews' => Review::all(),
+        ]);
+    }
+
+    public function avisSave(Request $request, string $id): void
+    {
+        Auth::requireAdmin();
+        $action = $request->string('action');
+        try {
+            if ($action === 'hide') {
+                Review::hide((int) $id, true);
+                flash('saved', 'Avis masqué.');
+            } elseif ($action === 'show') {
+                Review::hide((int) $id, false);
+                flash('saved', 'Avis rétabli.');
+            } elseif ($action === 'delete') {
+                Review::delete((int) $id);
+                flash('saved', 'Avis supprimé.');
+            } else {
+                flash('error', 'Action inconnue.');
+            }
+        } catch (Throwable $e) {
+            flash('error', $e->getMessage());
+        }
+        redirect('/admin/avis');
     }
 
     public function utilisateurs(Request $request): void
     {
-        Auth::requireAdmin();
         $query = $request->string('q', '');
-        $filtre = $request->string('filtre', 'tous');
-        $allowed = ['tous', 'prestataires', 'porteurs', 'admins', 'suspendus'];
-        if (!in_array($filtre, $allowed, true)) {
-            $filtre = 'tous';
-        }
-
+        $filtre = $this->filtre($request, ['tous', 'prestataires', 'porteurs', 'admins', 'suspendus'], 'tous');
         $accounts = User::search($query, $filtre);
-        $filters = [];
-        foreach ([
-            'tous' => 'Tous',
-            'prestataires' => 'Prestataires',
-            'porteurs' => 'Porteurs de projet',
-            'admins' => 'Administrateurs',
-            'suspendus' => 'Suspendus',
-        ] as $id => $label) {
-            $params = [];
-            if ($query !== '') {
-                $params['q'] = $query;
-            }
-            if ($id !== 'tous') {
-                $params['filtre'] = $id;
-            }
-            $href = '/admin/utilisateurs' . ($params === [] ? '' : '?' . http_build_query($params));
-            $filters[] = [
-                'id' => $id,
-                'label' => $label,
-                'href' => $href,
-                'on' => $id === $filtre,
-            ];
-        }
-
         $n = count($accounts);
         $subtitle = format_int($n) . ' ' . ($n > 1 ? 'comptes' : 'compte');
         if ($query !== '') {
             $subtitle .= ' pour « ' . $query . ' »';
         }
-
-        View::render('admin/utilisateurs', AdminCatalog::forScreen('users', [
+        $this->page('users', 'admin/utilisateurs', [
             'query' => $query,
             'filtre' => $filtre,
             'accounts' => $accounts,
-            'userFilters' => $filters,
+            'userFilters' => $this->filterLinks('/admin/utilisateurs', [
+                'tous' => 'Tous',
+                'prestataires' => 'Prestataires',
+                'porteurs' => 'Porteurs de projet',
+                'admins' => 'Administrateurs',
+                'suspendus' => 'Suspendus',
+            ], $filtre, $query !== '' ? ['q' => $query] : []),
             'usersSubtitle' => $subtitle,
-            'saved' => flash('saved'),
-            'error' => flash('error'),
-        ]), 'layouts/admin');
+        ]);
     }
 
     public function utilisateur(Request $request, string $id): void
@@ -113,16 +246,14 @@ final class AdminController
             $profile = null;
         }
 
-        View::render('admin/utilisateur', AdminCatalog::forScreen('users', [
+        $this->page('users', 'admin/utilisateur', [
             'title' => User::displayName($account),
             'account' => $account,
             'profile' => $profile,
             'isSelf' => $isSelf,
             'lockRole' => $isSelf || $onlyAdmin,
             'lockStatus' => $isSelf,
-            'saved' => flash('saved'),
-            'error' => flash('error'),
-        ]), 'layouts/admin');
+        ]);
     }
 
     public function utilisateurSave(Request $request, string $id): void
@@ -139,32 +270,178 @@ final class AdminController
 
     public function prestations(Request $request): void
     {
-        $this->screen('catalogue');
+        $filtre = $this->filtre($request, ['tous', 'published', 'draft'], 'tous');
+        $items = Service::all();
+        if ($filtre !== 'tous') {
+            $items = array_values(array_filter($items, static fn (array $s): bool => ($s['status'] ?? '') === $filtre));
+        }
+        $this->page('catalogue', 'admin/prestations', [
+            'items' => $items,
+            'filters' => $this->filterLinks('/admin/prestations', [
+                'tous' => 'Toutes',
+                'published' => 'En ligne',
+                'draft' => 'Brouillons',
+            ], $filtre),
+        ]);
     }
 
     public function missions(Request $request): void
     {
-        $this->screen('missions');
+        $filtre = $this->filtre($request, ['tous', 'open', 'assigned', 'closed', 'draft'], 'tous');
+        $items = Mission::all();
+        if ($filtre !== 'tous') {
+            $items = array_values(array_filter($items, static fn (array $m): bool => ($m['status'] ?? '') === $filtre));
+        }
+        $this->page('missions', 'admin/missions', [
+            'items' => $items,
+            'filters' => $this->filterLinks('/admin/missions', [
+                'tous' => 'Toutes',
+                'open' => 'Ouvertes',
+                'assigned' => 'Attribuées',
+                'closed' => 'Clôturées',
+                'draft' => 'Brouillons',
+            ], $filtre),
+        ]);
     }
 
     public function finances(Request $request): void
     {
-        $this->screen('finances');
+        $orders = Order::recent(80);
+        $invoices = Invoice::all();
+        $this->page('finances', 'admin/finances', [
+            'orders' => $orders,
+            'invoices' => $invoices,
+            'kpis' => [
+                ['k' => 'Volume d’affaires', 'v' => format_euros(Order::sumAmount())],
+                ['k' => 'Commandes', 'v' => format_int(Order::countAll())],
+                ['k' => 'Commission', 'v' => Commission::percent() . ' %'],
+                ['k' => 'Factures en retard', 'v' => format_int(Invoice::countOverdue())],
+            ],
+        ]);
+    }
+
+    public function invoiceSave(Request $request, string $id): void
+    {
+        Auth::requireAdmin();
+        try {
+            $action = $request->string('action');
+            if ($action === 'paid') {
+                Invoice::markPaid((int) $id);
+                flash('saved', 'Facture marquée comme réglée.');
+            } else {
+                flash('error', 'Action inconnue.');
+            }
+        } catch (Throwable $e) {
+            flash('error', $e->getMessage());
+        }
+        redirect('/admin/finances');
     }
 
     public function preOuverture(Request $request): void
     {
-        $this->screen('preouverture');
+        $tradeCounts = Catalog::tradeCounts();
+        $maxTrade = max(1, ...array_values($tradeCounts));
+        $couverture = [];
+        foreach ($tradeCounts as $metier => $n) {
+            $couverture[] = [
+                'metier' => $metier,
+                'n' => $n,
+                'pct' => (int) round(100 * $n / $maxTrade),
+            ];
+        }
+        $this->page('preouverture', 'admin/preouverture', [
+            'kpis' => [
+                ['k' => 'Prestataires inscrits', 'v' => format_int(User::countOfferers())],
+                ['k' => 'Porteurs de projet', 'v' => format_int(User::countSeekers())],
+                ['k' => 'Prestations en ligne', 'v' => format_int(Service::countPublished())],
+                ['k' => 'Métiers couverts', 'v' => count(array_filter($tradeCounts)) . ' / ' . count($tradeCounts)],
+            ],
+            'couverture' => $couverture,
+        ]);
     }
 
     public function journal(Request $request): void
     {
-        $this->screen('cms');
+        $this->page('cms', 'admin/journal', [
+            'articles' => Article::all(),
+        ]);
+    }
+
+    public function articleEdit(Request $request, string $id = 'nouveau'): void
+    {
+        Auth::requireAdmin();
+        $article = $id === 'nouveau' ? [
+            'id' => 0,
+            'title' => '',
+            'slug' => '',
+            'category' => 'Journal',
+            'excerpt' => '',
+            'body' => '',
+            'published' => false,
+        ] : Article::find((int) $id);
+        if (!$article) {
+            flash('error', 'Article introuvable.');
+            redirect('/admin/journal');
+        }
+        $this->page('cms', 'admin/article', [
+            'title' => $article['id'] ? (string) $article['title'] : 'Nouvel article',
+            'article' => $article,
+        ]);
+    }
+
+    public function articleSave(Request $request, string $id = 'nouveau'): void
+    {
+        Auth::requireAdmin();
+        try {
+            $savedId = Article::save($id === 'nouveau' ? null : (int) $id, [
+                'title' => $request->string('title'),
+                'slug' => $request->string('slug'),
+                'category' => $request->string('category'),
+                'excerpt' => $request->string('excerpt'),
+                'body' => $request->input('body', ''),
+                'published' => $request->bool('published'),
+            ]);
+            flash('saved', 'Article enregistré.');
+            redirect('/admin/journal/' . $savedId);
+        } catch (Throwable $e) {
+            flash('error', $e->getMessage());
+            redirect($id === 'nouveau' ? '/admin/journal/nouveau' : '/admin/journal/' . (int) $id);
+        }
+    }
+
+    public function articleDelete(Request $request, string $id): void
+    {
+        Auth::requireAdmin();
+        Article::delete((int) $id);
+        flash('saved', 'Article supprimé.');
+        redirect('/admin/journal');
     }
 
     public function reglages(Request $request): void
     {
-        $this->screen('reglages');
+        $this->page('reglages', 'admin/reglages', [
+            'settings' => [
+                'commission_percent' => (string) Commission::percent(),
+                'founder_commission_percent' => (string) Commission::founderPercent(),
+                'founder_limit' => (string) Commission::founderLimit(),
+                'invoice_due_days' => (string) Commission::dueDays(),
+            ],
+        ]);
+    }
+
+    public function reglagesSave(Request $request): void
+    {
+        Auth::requireAdmin();
+        $commission = max(0, min(100, (int) $request->string('commission_percent', '8')));
+        $founder = max(0, min(100, (int) $request->string('founder_commission_percent', '6')));
+        $limit = max(0, (int) $request->string('founder_limit', '100'));
+        $due = max(1, (int) $request->string('invoice_due_days', '15'));
+        Setting::set('commission_percent', (string) $commission);
+        Setting::set('founder_commission_percent', (string) $founder);
+        Setting::set('founder_limit', (string) $limit);
+        Setting::set('invoice_due_days', (string) $due);
+        flash('saved', 'Réglages enregistrés.');
+        redirect('/admin/reglages');
     }
 
     public function listes(Request $request): void
@@ -186,12 +463,10 @@ final class AdminController
         }
         unset($term);
 
-        View::render('admin/listes', AdminCatalog::forScreen('listes', [
+        $this->page('listes', 'admin/listes', [
             'trades' => $trades,
             'specialties' => $specialties,
-            'saved' => flash('saved'),
-            'error' => flash('error'),
-        ]), 'layouts/admin');
+        ]);
     }
 
     public function listesSave(Request $request): void
@@ -234,13 +509,10 @@ final class AdminController
 
     public function smtp(Request $request): void
     {
-        Auth::requireAdmin();
-        View::render('admin/smtp', AdminCatalog::forScreen('smtp', [
+        $this->page('smtp', 'admin/smtp', [
             'settings' => Setting::all(),
-            'saved' => flash('saved') ? true : false,
-            'error' => flash('error'),
             'tested' => flash('tested'),
-        ]), 'layouts/admin');
+        ]);
     }
 
     public function smtpSave(Request $request): void
@@ -268,12 +540,9 @@ final class AdminController
 
     public function sso(Request $request): void
     {
-        Auth::requireAdmin();
-        View::render('admin/sso', AdminCatalog::forScreen('sso', [
+        $this->page('sso', 'admin/sso', [
             'settings' => Setting::all(),
-            'saved' => flash('saved') ? true : false,
-            'error' => flash('error'),
-        ]), 'layouts/admin');
+        ]);
     }
 
     public function ssoSave(Request $request): void
@@ -288,11 +557,9 @@ final class AdminController
 
     public function emails(Request $request): void
     {
-        Auth::requireAdmin();
-        View::render('admin/emails', AdminCatalog::forScreen('emails', [
+        $this->page('emails', 'admin/emails', [
             'templates' => EmailTemplate::all(),
-            'saved' => flash('saved') ? true : false,
-        ]), 'layouts/admin');
+        ]);
     }
 
     public function emailEdit(Request $request, string $id): void
@@ -302,10 +569,10 @@ final class AdminController
         if (!$template) {
             redirect('/admin/emails');
         }
-        View::render('admin/email-edit', AdminCatalog::forScreen('emails', [
+        $this->page('emails', 'admin/email-edit', [
             'title' => $template['name'],
             'template' => $template,
-        ]), 'layouts/admin');
+        ]);
     }
 
     public function emailSave(Request $request, string $id): void
@@ -316,9 +583,42 @@ final class AdminController
         redirect('/admin/emails');
     }
 
-    private function screen(string $id, array $extra = []): void
+    private function page(string $screen, string $view, array $extra = []): void
     {
         Auth::requireAdmin();
-        View::admin($id, $extra);
+        View::render($view, AdminCatalog::forScreen($screen, array_merge([
+            'saved' => flash('saved'),
+            'error' => flash('error'),
+        ], $extra)), 'layouts/admin');
+    }
+
+    /** @param list<string> $allowed */
+    private function filtre(Request $request, array $allowed, string $default): string
+    {
+        $filtre = $request->string('filtre', $default);
+        return in_array($filtre, $allowed, true) ? $filtre : $default;
+    }
+
+    /**
+     * @param array<string, string> $labels
+     * @param array<string, string> $keep
+     * @return list<array{id: string, label: string, href: string, on: bool}>
+     */
+    private function filterLinks(string $base, array $labels, string $current, array $keep = []): array
+    {
+        $out = [];
+        foreach ($labels as $id => $label) {
+            $params = $keep;
+            if ($id !== array_key_first($labels)) {
+                $params['filtre'] = $id;
+            }
+            $out[] = [
+                'id' => $id,
+                'label' => $label,
+                'href' => $base . ($params === [] ? '' : '?' . http_build_query($params)),
+                'on' => $id === $current,
+            ];
+        }
+        return $out;
     }
 }

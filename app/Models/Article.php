@@ -8,10 +8,61 @@ use Adl\Core\Database;
 
 final class Article
 {
+    public static function find(int $id): ?array
+    {
+        $row = Database::fetch('SELECT * FROM articles WHERE id = ?', [$id]);
+        return $row ? self::present($row) : null;
+    }
+
     public static function findBySlug(string $slug): ?array
     {
         $row = Database::fetch('SELECT * FROM articles WHERE slug = ?', [$slug]);
         return $row ? self::present($row) : null;
+    }
+
+    /** @param array<string, mixed> $data */
+    public static function save(?int $id, array $data): int
+    {
+        $title = trim((string) ($data['title'] ?? ''));
+        if ($title === '') {
+            throw new \InvalidArgumentException('Le titre est obligatoire.');
+        }
+        $category = trim((string) ($data['category'] ?? '')) ?: 'Journal';
+        $excerpt = trim((string) ($data['excerpt'] ?? '')) ?: null;
+        $body = (string) ($data['body'] ?? '');
+        $published = !empty($data['published']);
+        $current = $id ? self::find($id) : null;
+        $slugSource = trim((string) ($data['slug'] ?? '')) ?: $title;
+        $slug = unique_slug(
+            $slugSource,
+            static fn (string $candidate): bool => Database::fetch(
+                'SELECT id FROM articles WHERE slug = ? AND id != ?',
+                [$candidate, $id ?? 0]
+            ) !== null
+        );
+        $publishedAt = $published
+            ? (($current['published_at'] ?? null) ?: date('Y-m-d H:i:s'))
+            : null;
+
+        if ($id && $current) {
+            Database::query(
+                'UPDATE articles SET title = ?, slug = ?, category = ?, excerpt = ?, body = ?, published_at = ? WHERE id = ?',
+                [$title, $slug, $category, $excerpt, $body, $publishedAt, $id]
+            );
+            return $id;
+        }
+
+        Database::query(
+            'INSERT INTO articles (title, slug, category, excerpt, body, published_at, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, NOW())',
+            [$title, $slug, $category, $excerpt, $body, $publishedAt]
+        );
+        return (int) Database::lastId();
+    }
+
+    public static function delete(int $id): void
+    {
+        Database::query('DELETE FROM articles WHERE id = ?', [$id]);
     }
 
     /** @return list<array<string, mixed>> */

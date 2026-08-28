@@ -138,6 +138,47 @@ final class Order
         return ['order' => $fresh, 'review' => $review, 'invoice' => $invoice];
     }
 
+    public static function setStatus(int $id, string $status): void
+    {
+        if (!isset(self::STATUSES[$status])) {
+            throw new \InvalidArgumentException('Statut de commande invalide.');
+        }
+        if (!self::find($id)) {
+            throw new \RuntimeException('Commande introuvable.');
+        }
+        Database::query('UPDATE orders SET status = ? WHERE id = ?', [$status, $id]);
+    }
+
+    /** @return list<array<string, mixed>> */
+    public static function byStatus(string $status): array
+    {
+        if (!isset(self::STATUSES[$status])) {
+            return [];
+        }
+        $rows = Database::fetchAll(
+            'SELECT o.*,
+                    s.title AS service_title,
+                    m.title AS mission_title,
+                    b.first_name AS buyer_first, b.last_name AS buyer_last,
+                    sl.first_name AS seller_first, sl.last_name AS seller_last
+             FROM orders o
+             LEFT JOIN services s ON s.id = o.service_id
+             LEFT JOIN missions m ON m.id = o.mission_id
+             JOIN users b ON b.id = o.buyer_id
+             JOIN users sl ON sl.id = o.seller_id
+             WHERE o.status = ?
+             ORDER BY o.created_at DESC',
+            [$status]
+        );
+        return array_map([self::class, 'present'], $rows);
+    }
+
+    public static function countByStatus(string $status): int
+    {
+        $row = Database::fetch('SELECT COUNT(*) AS n FROM orders WHERE status = ?', [$status]);
+        return (int) ($row['n'] ?? 0);
+    }
+
     public static function countAll(): int
     {
         $row = Database::fetch('SELECT COUNT(*) AS n FROM orders');

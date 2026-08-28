@@ -15,6 +15,29 @@ final class Mission
         'closed' => 'Clôturée',
     ];
 
+    public static function find(int $id): ?array
+    {
+        $row = Database::fetch(
+            'SELECT m.*, u.first_name, u.last_name
+             FROM missions m
+             JOIN users u ON u.id = m.user_id
+             WHERE m.id = ?',
+            [$id]
+        );
+        return $row ? self::present($row) : null;
+    }
+
+    public static function setStatus(int $id, string $status): void
+    {
+        if (!isset(self::STATUSES[$status])) {
+            throw new \InvalidArgumentException('Statut de mission invalide.');
+        }
+        if (!self::find($id)) {
+            throw new \RuntimeException('Mission introuvable.');
+        }
+        Database::query('UPDATE missions SET status = ? WHERE id = ?', [$status, $id]);
+    }
+
     public static function findBySlug(string $slug): ?array
     {
         $row = Database::fetch(

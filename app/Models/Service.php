@@ -87,6 +87,21 @@ final class Service
         return array_map([self::class, 'present'], $rows);
     }
 
+    public static function setStatus(int $id, string $status): void
+    {
+        if (!isset(self::STATUSES[$status])) {
+            throw new \InvalidArgumentException('Statut de prestation invalide.');
+        }
+        $service = self::find($id);
+        if (!$service) {
+            throw new \RuntimeException('Prestation introuvable.');
+        }
+        if ($status === 'published') {
+            Invoice::assertCanOffer((int) $service['user_id']);
+        }
+        Database::query('UPDATE services SET status = ? WHERE id = ?', [$status, $id]);
+    }
+
     public static function countPublished(): int
     {
         $row = Database::fetch(

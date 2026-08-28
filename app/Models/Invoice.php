@@ -23,6 +23,29 @@ final class Invoice
         return $row ? self::present($row) : null;
     }
 
+    /** @return list<array<string, mixed>> */
+    public static function all(): array
+    {
+        $rows = Database::fetchAll(
+            'SELECT i.*, o.number AS order_number, o.amount AS order_amount,
+                    u.first_name, u.last_name, u.email
+             FROM invoices i
+             JOIN orders o ON o.id = i.order_id
+             JOIN users u ON u.id = i.seller_id
+             ORDER BY i.issued_at DESC, i.id DESC'
+        );
+        return array_map([self::class, 'present'], $rows);
+    }
+
+    public static function countOverdue(): int
+    {
+        $row = Database::fetch(
+            'SELECT COUNT(*) AS n FROM invoices
+             WHERE status IN ("issued", "overdue") AND due_at < NOW()'
+        );
+        return (int) ($row['n'] ?? 0);
+    }
+
     public static function forOrder(int $orderId): ?array
     {
         $row = Database::fetch('SELECT * FROM invoices WHERE order_id = ? ORDER BY id DESC LIMIT 1', [$orderId]);
@@ -184,6 +207,7 @@ final class Invoice
         $row['is_overdue'] = $overdue;
         $row['is_open'] = in_array($status, ['issued', 'overdue'], true);
         $row['href'] = '/espace/facturation';
+        $row['seller'] = trim(($row['first_name'] ?? '') . ' ' . ($row['last_name'] ?? ''));
         return $row;
     }
 }
