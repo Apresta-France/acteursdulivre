@@ -2,7 +2,7 @@
           <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 20px;">
             <div>
               <h1 style="font-family: 'Space Grotesk', sans-serif; font-size: 26px; font-weight: 700; color: #022746; margin: 0 0 4px;">Utilisateurs</h1>
-              <p style="font-size: 14px; color: #66768A; margin: 0;">5 890 prestataires · 1 412 porteurs de projet · 38 comptes organisation</p>
+              <p style="font-size: 14px; color: #66768A; margin: 0;">{{ usersSubtitle }}</p>
             </div>
             <div style="display: flex; gap: 10px;">
               <button style="background: #FFF; border: 1px solid #E1E7ED; color: #022746; height: 40px; padding: 0 16px; border-radius: 8px; font-size: 14px;">Exporter</button>
@@ -36,5 +36,8 @@
                 <span><span style="{{ u.statutStyle }}">{{ u.statut }}</span></span>
               </div>
             </sc-for>
+            <sc-if value="{{ emptyUsers }}">
+              <p style="font-size: 14px; color: #66768A; margin: 0; padding: 28px 18px;">{{ emptyUsers }}</p>
+            </sc-if>
           </div>
         </div>

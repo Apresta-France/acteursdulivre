@@ -4,7 +4,7 @@
           <div>
             <div style="font-family: 'Space Grotesk', monospace; font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: #D85D3F; margin-bottom: 18px;">La place de marché des métiers du livre</div>
             <h1 style="font-family: 'Space Grotesk', sans-serif; font-size: 52px; line-height: 1.04; font-weight: 700; color: #022746; margin: 0 0 18px; letter-spacing: -.02em;">Un livre, ça se fait à plusieurs.</h1>
-            <p style="font-size: 18px; line-height: 1.65; color: #4A5A6B; margin: 0 0 26px; max-width: 34em;">Correcteurs, bêta-lecteurs, illustrateurs, traducteurs, maquettistes, imprimeurs, attachés de presse, libraires, narrateurs : trouvez les bonnes personnes, comparez des prestations à prix affichés, ou publiez votre mission.</p>
+            <p style="font-size: 18px; line-height: 1.65; color: #4A5A6B; margin: 0 0 26px; max-width: 34em;">Correcteurs, bêta-lecteurs, illustrateurs, traducteurs, maquettistes, imprimeurs, attachés de presse, libraires, narrateurs : trouvez les bonnes personnes, comparez des prestations à prix affichés, ou publiez votre recherche.</p>
             <div style="display: flex; align-items: center; background: #FFF; border: 1px solid #E1E7ED; border-radius: 12px; padding: 0 6px 0 18px; height: 58px; box-shadow: 0 10px 30px rgba(2,39,70,.07); max-width: 620px;">
               <input value="{{ query }}" sc-camel-on-change="{{ onQuery }}" placeholder="De quoi votre livre a-t-il besoin ?" style="flex: 1; border: 0; outline: none; font-size: 16px; color: #14202C;">
               <button sc-camel-on-click="{{ goResultats }}" style="background: #D85D3F; border: 0; color: #FFF; height: 44px; padding: 0 24px; border-radius: 8px; font-size: 15px; font-weight: 500;">Chercher</button>
@@ -194,7 +194,7 @@
               </sc-for>
             </div>
             <div style="display: flex; align-items: center; gap: 14px; background: rgba(255,255,255,.05); border: 1px dashed rgba(255,255,255,.22); border-radius: 12px; padding: 18px 22px; margin-top: 12px;">
-              <span style="flex: 1; font-size: 15px; color: #E4EDF5;">Créez une alerte : un e-mail dès qu'une mission correspond à vos métiers et à votre budget minimum.</span>
+              <span style="flex: 1; font-size: 15px; color: #E4EDF5;">Créez une alerte : un e-mail dès qu'une recherche correspond à vos métiers et à votre budget minimum.</span>
               <button sc-camel-on-click="{{ goMissions }}" style="background: transparent; color: #FFF; border: 1px solid rgba(255,255,255,.4); height: 42px; padding: 0 18px; border-radius: 9px; font-size: 14px;">Créer une alerte</button>
             </div>
           </div>
@@ -290,11 +290,11 @@
         <div style="background: #FDF3F0; border-top: 1px solid #F4DFD8; padding: 44px; display: flex; justify-content: space-between; align-items: center; gap: 40px;">
           <div>
             <h2 style="font-family: 'Space Grotesk', sans-serif; font-size: 27px; font-weight: 700; color: #022746; margin: 0 0 10px;">Vous exercez un métier du livre ?</h2>
-            <p style="font-size: 16px; color: #4A5A6B; margin: 0; max-width: 60em; line-height: 1.6;">Créez votre vitrine, fixez vos tarifs, recevez des demandes qualifiées. Aucun abonnement : 8 % de commission sur les missions réalisées, 6 % au niveau Expert.</p>
+            <p style="font-size: 16px; color: #4A5A6B; margin: 0; max-width: 60em; line-height: 1.6;">Créez votre vitrine, fixez vos tarifs, recevez des demandes qualifiées. Aucun abonnement : la première mission est offerte, puis 8 % de commission facturés au prestataire lorsque le client confirme et note.</p>
           </div>
-          <div style="display: flex; gap: 12px;">
-            <button sc-camel-on-click="{{ goInscription }}" style="background: #D85D3F; color: #FFF; border: 0; height: 50px; padding: 0 26px; border-radius: 9px; font-size: 16px; font-weight: 500;">Proposer mes services</button>
-            <button sc-camel-on-click="{{ goTarifs }}" style="background: #FFF; color: #022746; border: 1px solid #022746; height: 50px; padding: 0 22px; border-radius: 9px; font-size: 16px;">Voir les tarifs</button>
+          <div style="display: flex; gap: 12px; flex-shrink: 0;">
+            <a href="{{ routes.goInscription }}" style="background: #D85D3F; color: #FFF; border: 0; height: 50px; padding: 0 26px; border-radius: 9px; font-size: 16px; font-weight: 500; display: inline-flex; align-items: center; text-decoration: none; white-space: nowrap;">Proposer mes services</a>
+            <a href="{{ routes.goTarifs }}" style="background: #FFF; color: #022746; border: 1px solid #022746; height: 50px; padding: 0 22px; border-radius: 9px; font-size: 16px; display: inline-flex; align-items: center; text-decoration: none; white-space: nowrap;">Voir les tarifs</a>
           </div>
         </div>
 
@@ -308,12 +308,10 @@
           <div style="border: 1px solid #E8ECF1; border-radius: 14px; overflow: hidden;">
             <sc-for list="{{ aideFaq }}" as="f" hint-placeholder-count="5">
               <div style="border-bottom: 1px solid #F2F5F8;">
-                <div sc-camel-on-click="{{ f.onClick }}" style="padding: 16px 18px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; font-size: 15px; color: #14202C;">
-                  {{ f.q }}<span style="color: #8496A8; font-family: 'Space Grotesk', monospace;">{{ f.sign }}</span>
-                </div>
-                <sc-if value="{{ f.open }}" hint-placeholder-val="{{ false }}">
-                  <div style="padding: 0 18px 18px; font-size: 15px; color: #4A5A6B; line-height: 1.65;">{{ f.a }}</div>
-                </sc-if>
+                <button type="button" data-accordion aria-expanded="{{ f.expanded }}" class="faq-q" style="padding: 16px 18px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; font-size: 15px; color: #14202C;">
+                  {{ f.q }}<span data-accordion-sign style="color: #8496A8; font-family: 'Space Grotesk', monospace;">{{ f.sign }}</span>
+                </button>
+                <div {{ f.panelAttr }} style="padding: 0 18px 18px; font-size: 15px; color: #4A5A6B; line-height: 1.65;">{{ f.a }}</div>
               </div>
             </sc-for>
           </div>

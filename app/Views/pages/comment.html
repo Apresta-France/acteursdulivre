@@ -33,10 +33,10 @@
         <div style="padding: 44px; display: grid; grid-template-columns: 1fr 1fr; gap: 44px; align-items: center;">
           <div>
             <h2 style="font-family: 'Space Grotesk', sans-serif; font-size: 26px; color: #022746; margin: 0 0 14px;">Côté prestataire</h2>
-            <p style="font-size: 15px; color: #4A5A6B; line-height: 1.7; margin: 0 0 18px;">Vous créez votre vitrine, vous fixez vos prix, vous acceptez ou refusez chaque commande. Aucun abonnement : la plateforme prélève 8 % sur les missions réalisées, 6 % au niveau Experte.</p>
+            <p style="font-size: 15px; color: #4A5A6B; line-height: 1.7; margin: 0 0 18px;">Vous créez votre vitrine, vous fixez vos prix, vous acceptez ou refusez chaque commande. Aucun abonnement : la première mission est offerte, puis la plateforme facture 8 % au prestataire lorsque le client confirme et note la mission.</p>
             <div style="display: flex; gap: 12px;">
-              <button sc-camel-on-click="{{ goCreer }}" style="background: #022746; color: #FFF; border: 0; height: 46px; padding: 0 22px; border-radius: 9px; font-size: 15px;">Créer une prestation</button>
-              <button sc-camel-on-click="{{ goTarifs }}" style="background: #FFF; color: #022746; border: 1px solid #E1E7ED; height: 46px; padding: 0 20px; border-radius: 9px; font-size: 15px;">Voir les tarifs</button>
+              <a href="{{ routes.goCreer }}" style="background: #022746; color: #FFF; border: 0; height: 46px; padding: 0 22px; border-radius: 9px; font-size: 15px; display: inline-flex; align-items: center; text-decoration: none; white-space: nowrap;">Proposer une prestation</a>
+              <a href="{{ routes.goTarifs }}" style="background: #FFF; color: #022746; border: 1px solid #E1E7ED; height: 46px; padding: 0 20px; border-radius: 9px; font-size: 15px; display: inline-flex; align-items: center; text-decoration: none; white-space: nowrap;">Voir les tarifs</a>
             </div>
           </div>
           <div style="height: 300px; position: relative; background: #F4F6F9; border-radius: 14px; overflow: hidden;">

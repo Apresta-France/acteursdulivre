@@ -36,14 +36,20 @@ final class Profile
 
     public static function findByUser(int $userId): ?array
     {
-        $row = Database::fetch('SELECT * FROM profiles WHERE user_id = ?', [$userId]);
+        $row = Database::fetch(
+            'SELECT p.*, u.first_name, u.last_name, u.avatar_url, u.offers_services, u.founder
+             FROM profiles p
+             JOIN users u ON u.id = p.user_id
+             WHERE p.user_id = ?',
+            [$userId]
+        );
         return $row ? self::hydrate($row) : null;
     }
 
     public static function findBySlug(string $slug): ?array
     {
         $row = Database::fetch(
-            'SELECT p.*, u.first_name, u.last_name, u.offers_services
+            'SELECT p.*, u.first_name, u.last_name, u.avatar_url, u.offers_services, u.founder
              FROM profiles p
              JOIN users u ON u.id = p.user_id
              WHERE p.slug = ?',
@@ -110,6 +116,41 @@ final class Profile
         return self::findByUser($userId) ?? $profile;
     }
 
+    /**
+     * Met à jour seulement les champs fournis, sans écraser le reste de la vitrine.
+     *
+     * @param array<string, mixed> $data
+     */
+    public static function patch(int $userId, array $data): array
+    {
+        $current = self::ensure($userId);
+        $merged = [
+            'first_name' => $data['first_name'] ?? ($current['first_name'] ?? ''),
+            'last_name' => $data['last_name'] ?? ($current['last_name'] ?? ''),
+            'title' => array_key_exists('title', $data) ? $data['title'] : ($current['title'] ?? ''),
+            'presentation' => array_key_exists('presentation', $data) ? $data['presentation'] : ($current['presentation'] ?? ''),
+            'city' => array_key_exists('city', $data) ? $data['city'] : ($current['city'] ?? ''),
+            'availability' => array_key_exists('availability', $data) ? $data['availability'] : ($current['availability'] ?? ''),
+            'availability_status' => array_key_exists('availability_status', $data)
+                ? $data['availability_status']
+                : ($current['availability_status'] ?? self::STATUS_AVAILABLE),
+            'languages' => array_key_exists('languages', $data) ? $data['languages'] : ($current['languages'] ?? ''),
+            'hourly_rate' => array_key_exists('hourly_rate', $data) ? $data['hourly_rate'] : ($current['hourly_rate'] ?? ''),
+            'rate_kind' => array_key_exists('rate_kind', $data) ? $data['rate_kind'] : ($current['rate_kind'] ?? ''),
+            'rate_note' => array_key_exists('rate_note', $data) ? $data['rate_note'] : ($current['rate_note'] ?? ''),
+            'website' => array_key_exists('website', $data) ? $data['website'] : ($current['website'] ?? ''),
+            'trades' => array_key_exists('trades', $data) ? $data['trades'] : ($current['trades'] ?? []),
+            'skills' => array_key_exists('skills', $data) ? $data['skills'] : ($current['skills'] ?? []),
+            'tools' => array_key_exists('tools', $data) ? $data['tools'] : ($current['tools'] ?? []),
+            'genres' => array_key_exists('genres', $data) ? $data['genres'] : ($current['genres'] ?? []),
+            'languages_list' => array_key_exists('languages_list', $data) ? $data['languages_list'] : ($current['languages_list'] ?? []),
+            'experiences' => array_key_exists('experiences', $data) ? $data['experiences'] : ($current['experiences'] ?? []),
+            'education' => array_key_exists('education', $data) ? $data['education'] : ($current['education'] ?? []),
+        ];
+
+        return self::save($userId, $merged);
+    }
+
     public static function setAvailabilityStatus(int $userId, string $status): array
     {
         $profile = self::ensure($userId);
@@ -151,11 +192,17 @@ final class Profile
     public static function searchPublished(): array
     {
         $rows = Database::fetchAll(
-            'SELECT p.*, u.first_name, u.last_name
+            'SELECT p.*, u.first_name, u.last_name, u.avatar_url
              FROM profiles p
              JOIN users u ON u.id = p.user_id
              WHERE u.offers_services = 1
                AND u.status = "active"
+               AND NOT EXISTS (
+                    SELECT 1 FROM invoices i
+                    WHERE i.seller_id = u.id
+                      AND i.status IN ("issued", "overdue")
+                      AND i.due_at < NOW()
+               )
                AND (
                     (p.title IS NOT NULL AND p.title != "")
                  OR (p.presentation IS NOT NULL AND p.presentation != "")
@@ -194,7 +241,7 @@ final class Profile
             'une ville' => trim((string) ($profile['city'] ?? '')) !== '',
             'au moins un métier' => !empty($profile['trades']),
             'des compétences' => !empty($profile['skills']),
-            'des genres' => !empty($profile['genres']),
+            'une spécialité' => !empty($profile['genres']),
             'des langues' => !empty($profile['languages_list']) || trim((string) ($profile['languages'] ?? '')) !== '',
             'un parcours' => !empty($profile['experiences']) || !empty($profile['education']),
             'une pièce de portfolio' => !empty($profile['portfolio']),
@@ -306,6 +353,8 @@ final class Profile
         $row['availability_label'] = self::statusLabel($row);
         $row['availability_summary'] = self::availabilitySummary($row);
         $row['completion'] = self::completeness($row);
+        $row['avatar_src'] = user_avatar_src($row);
+        $row['is_founder'] = (int) ($row['founder'] ?? 0) === 1;
         return $row;
     }
 

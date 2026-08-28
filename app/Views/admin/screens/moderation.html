@@ -1,6 +1,6 @@
 <div style="padding: 26px 32px 44px;">
           <h1 style="font-family: 'Space Grotesk', sans-serif; font-size: 26px; font-weight: 700; color: #022746; margin: 0 0 4px;">Modération des contenus</h1>
-          <p style="font-size: 14px; color: #66768A; margin: 0 0 20px;">18 éléments en file, dont 7 signalements « IA générative » et 4 tentatives de sortie de plateforme.</p>
+          <p style="font-size: 14px; color: #66768A; margin: 0 0 20px;">{{ moderationSubtitle }}</p>
 
           <div style="display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap;">
             <sc-for list="{{ modFilters }}" as="f" hint-placeholder-count="5">
@@ -30,5 +30,8 @@
                 </div>
               </div>
             </sc-for>
+            <sc-if value="{{ emptySignalements }}">
+              <p style="font-size: 14px; color: #66768A; margin: 0; padding: 28px 18px; border: 1px solid #E8ECF1; border-radius: 12px;">{{ emptySignalements }}</p>
+            </sc-if>
           </div>
         </div>

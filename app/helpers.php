@@ -60,6 +60,31 @@ function avatar_style(string $initials, int $size = 34): string
     return "width:{$size}px;height:{$size}px;min-width:{$size}px;border-radius:50%;background:{$bg};color:#FFF;display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk',monospace;font-size:{$font}px;";
 }
 
+function user_avatar_src(?array $user): string
+{
+    if (!$user) {
+        return '';
+    }
+    $raw = trim((string) ($user['avatar_url'] ?? $user['avatar_src'] ?? ''));
+    if ($raw === '') {
+        return '';
+    }
+    if (preg_match('#^https?://#i', $raw) === 1) {
+        return $raw;
+    }
+    return uploaded($raw);
+}
+
+function avatar_html(?array $person, int $size = 34, string $class = 'avatar'): string
+{
+    $src = user_avatar_src($person);
+    $initials = \Adl\Models\User::initials($person ?? []);
+    if ($src !== '') {
+        return '<img class="' . e(trim($class . ' avatar-photo')) . '" src="' . e($src) . '" alt="" width="' . $size . '" height="' . $size . '">';
+    }
+    return '<span class="' . e($class) . '" style="' . e(avatar_style($initials, $size)) . '">' . e($initials) . '</span>';
+}
+
 function photo(int $index = 0): string
 {
     $photos = [
@@ -72,6 +97,54 @@ function photo(int $index = 0): string
     ];
     $name = $photos[$index] ?? $photos[0];
     return 'https://commons.wikimedia.org/wiki/Special:FilePath/' . rawurlencode($name) . '?width=1200';
+}
+
+function service_cover_label(string $category): string
+{
+    return $category !== '' ? $category : 'Prestation';
+}
+
+function service_cover_html(string $category, string $extraClass = ''): string
+{
+    $label = service_cover_label($category);
+    $class = trim('service-cover ' . $extraClass);
+    return '<div class="' . e($class) . '" role="img" aria-label="' . e('Visuel ' . $label) . '">'
+        . '<span class="service-cover-kicker">acteursdulivre.fr</span>'
+        . '<span class="service-cover-type">' . e($label) . '</span>'
+        . '</div>';
+}
+
+function service_brand_cover_url(string $category): string
+{
+    $label = service_cover_label($category);
+    $safe = htmlspecialchars($label, ENT_XML1 | ENT_QUOTES, 'UTF-8');
+    $svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 480" width="800" height="480">'
+        . '<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">'
+        . '<stop offset="0%" stop-color="#1c2b3c"/><stop offset="100%" stop-color="#15212f"/></linearGradient></defs>'
+        . '<rect width="800" height="480" fill="url(#g)"/>'
+        . '<text x="770" y="220" text-anchor="end" fill="rgba(255,255,255,.08)" font-family="Georgia, serif" font-size="280" font-style="italic">a</text>'
+        . '<text x="630" y="100" fill="#eb963b" font-family="Georgia, serif" font-size="90">’</text>'
+        . '<text x="48" y="400" fill="#efdfce" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="18" letter-spacing="3">ACTEURSDULIVRE.FR</text>'
+        . '<text x="48" y="358" fill="#ffffff" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="52" font-weight="700">' . $safe . '</text>'
+        . '</svg>';
+    return 'data:image/svg+xml;charset=UTF-8,' . rawurlencode($svg);
+}
+
+/** @param array<string, mixed> $item */
+function search_card_media(array $item): string
+{
+    if (!empty($item['thumb'])) {
+        return '<div class="search-card-media" style="background-image:url(\'' . e((string) $item['thumb']) . '\')"></div>';
+    }
+    if (($item['kind'] ?? '') === 'prestations') {
+        return service_cover_html((string) ($item['cat'] ?? ''), 'search-card-media');
+    }
+    $initials = (string) ($item['initials'] ?? '');
+    if ($initials === '') {
+        $initials = mb_strtoupper(mb_substr((string) ($item['title'] ?? 'AD'), 0, 2));
+    }
+    return '<div class="search-card-media search-card-media-plain"><span class="avatar" style="'
+        . e(avatar_style($initials, 42)) . '">' . e($initials) . '</span></div>';
 }
 
 function redirect(string $path, int $code = 302): never
@@ -227,6 +300,7 @@ function icon(string $name, int $size = 20): string
         'send' => '<path d="M3 11.2 21 3l-4.6 18-4.8-6.3L3 11.2zm8.7 2.3 2.5 3.3 2.3-9-6.7 4.4 1.9 1.3z"/>',
         'invoice' => '<path fill-rule="evenodd" d="M7 2h10v20l-2.5-1.3L12 22l-2.5-1.3L7 22V2zm3 5h4v2h-4V7zm0 4h7v2h-7v-2zm0 4h7v2h-7v-2z"/>',
         'mail' => '<path fill-rule="evenodd" d="M3 5h18v14H3V5zm2 2.2 7 5 7-5H5zm0 2.4V17h14V9.6l-7 5-7-5z"/>',
+        'chat' => '<path d="M4 3h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2h-5.2L8 21.4V17H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/>',
         'bell' => '<path d="M12 2a6 6 0 0 1 6 6v4.2l1.6 2.4V16H4.4v-1.4L6 12.2V8a6 6 0 0 1 6-6zm-2.4 16h4.8A2.4 2.4 0 0 1 12 20.4 2.4 2.4 0 0 1 9.6 18z"/>',
         'gear' => '<path fill-rule="evenodd" d="M10.2 2h3.6l.4 2.2c.7.2 1.3.5 1.9.9l2.1-.9 1.8 3.1-1.7 1.5c.2.6.3 1.3.3 2s-.1 1.4-.3 2l1.7 1.5-1.8 3.1-2.1-.9c-.6.4-1.2.7-1.9.9L13.8 22h-3.6l-.4-2.2a7 7 0 0 1-1.9-.9l-2.1.9-1.8-3.1 1.7-1.5A7 7 0 0 1 5.4 12c0-.7.1-1.4.3-2L4 8.5l1.8-3.1 2.1.9c.6-.4 1.2-.7 1.9-.9L10.2 2zM12 8.4A3.6 3.6 0 1 0 12 15.6 3.6 3.6 0 0 0 12 8.4z"/>',
         'arrow' => '<path d="M10 5.6 16.4 12 10 18.4 8.6 17l4.9-5-4.9-5L10 5.6z"/>',

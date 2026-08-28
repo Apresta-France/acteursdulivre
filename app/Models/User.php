@@ -18,6 +18,37 @@ final class User
         return Database::fetch('SELECT * FROM users WHERE email = ?', [strtolower($email)]);
     }
 
+    public static function findByProvider(string $provider, string $providerId): ?array
+    {
+        $col = $provider === 'facebook' ? 'facebook_id' : 'google_id';
+        if ($providerId === '') {
+            return null;
+        }
+        return Database::fetch('SELECT * FROM users WHERE ' . $col . ' = ?', [$providerId]);
+    }
+
+    public static function linkProvider(int $id, string $provider, string $providerId, ?string $avatarUrl = null): void
+    {
+        $col = $provider === 'facebook' ? 'facebook_id' : 'google_id';
+        $data = [$col => $providerId];
+        if (is_string($avatarUrl) && $avatarUrl !== '') {
+            $user = self::find($id);
+            if ($user && empty($user['avatar_url'])) {
+                $data['avatar_url'] = $avatarUrl;
+            }
+        }
+        self::update($id, $data);
+    }
+
+    public static function isOauthOnly(array $user): bool
+    {
+        $hash = (string) ($user['password'] ?? '');
+        return $hash === '' && (
+            (string) ($user['google_id'] ?? '') !== ''
+            || (string) ($user['facebook_id'] ?? '') !== ''
+        );
+    }
+
     public static function create(array $data): int
     {
         $role = $data['role'] ?? 'client';
@@ -31,21 +62,28 @@ final class User
             $role = $offers ? 'prestataire' : 'client';
         }
 
+        $password = (string) ($data['password'] ?? '');
+        $hash = $password !== '' ? password_hash($password, PASSWORD_DEFAULT) : null;
+
         Database::query(
-            'INSERT INTO users (email, password, first_name, last_name, role, seeks_services, offers_services, status, created_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())',
+            'INSERT INTO users (email, password, first_name, last_name, role, seeks_services, offers_services, status, google_id, facebook_id, avatar_url, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())',
             [
                 strtolower($data['email']),
-                password_hash($data['password'], PASSWORD_DEFAULT),
+                $hash,
                 $data['first_name'],
                 $data['last_name'],
                 $role,
                 $seeks,
                 $offers,
                 $data['status'] ?? 'active',
+                $data['google_id'] ?? null,
+                $data['facebook_id'] ?? null,
+                $data['avatar_url'] ?? null,
             ]
         );
         $id = (int) Database::lastId();
+        self::maybeGrantFounder($id);
         if ($offers) {
             self::ensureProfile($id);
         }
@@ -127,6 +165,40 @@ final class User
         return in_array($user['role'] ?? '', ['prestataire', 'admin'], true);
     }
 
+    public static function isFounder(int|array|null $user): bool
+    {
+        if (is_array($user)) {
+            if (array_key_exists('founder', $user)) {
+                return (int) $user['founder'] === 1;
+            }
+            $user = (int) ($user['id'] ?? 0);
+        }
+        $id = (int) ($user ?? 0);
+        if ($id < 1) {
+            return false;
+        }
+        try {
+            $row = Database::fetch('SELECT founder FROM users WHERE id = ?', [$id]);
+        } catch (\Throwable) {
+            return false;
+        }
+        return (int) ($row['founder'] ?? 0) === 1;
+    }
+
+    private static function maybeGrantFounder(int $id): void
+    {
+        try {
+            $limit = Commission::founderLimit();
+            Database::query(
+                'UPDATE users SET founder = 1
+                 WHERE id = ?
+                   AND (SELECT n FROM (SELECT COUNT(*) AS n FROM users WHERE founder = 1) AS taken) < ?',
+                [$id, $limit]
+            );
+        } catch (\Throwable) {
+        }
+    }
+
     public static function roleFromIntents(bool $seeks, bool $offers): string
     {
         return $offers ? 'prestataire' : 'client';
@@ -146,6 +218,27 @@ final class User
             return 'Cherche des prestataires';
         }
         return 'Compte';
+    }
+
+    public static function onboardingPending(array $user): bool
+    {
+        return empty($user['onboarding_done_at']);
+    }
+
+    public static function markOnboardingDone(int $id): void
+    {
+        self::update($id, ['onboarding_done_at' => date('Y-m-d H:i:s')]);
+    }
+
+    /** @param array<string, mixed> $file */
+    public static function storeAvatar(int $userId, array $file): ?string
+    {
+        $stored = store_upload($file, 'avatars', ['jpg', 'jpeg', 'png', 'webp'], 2 * 1024 * 1024);
+        if ($stored === null) {
+            return null;
+        }
+        self::update($userId, ['avatar_url' => $stored]);
+        return $stored;
     }
 
     public static function ensureProfile(int $userId): void

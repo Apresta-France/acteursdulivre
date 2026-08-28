@@ -212,7 +212,7 @@ final class DcEngine
 
     public static function routes(): array
     {
-        return [
+        $routes = [
             'goAccueil' => '/',
             'goResultats' => '/recherche',
             'goFiche' => '/prestations/correction-complete-roman',
@@ -266,5 +266,11 @@ final class DcEngine
             'goCms' => '/admin/journal',
             'goReglages' => '/admin/reglages',
         ];
+        foreach ($routes as $key => $path) {
+            if ($path !== '' && $path[0] !== '#') {
+                $routes[$key] = url($path);
+            }
+        }
+        return $routes;
     }
 }

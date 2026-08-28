@@ -18,7 +18,33 @@
   document.querySelectorAll('[data-accordion]').forEach(function (btn) {
     btn.addEventListener('click', function () {
       var panel = btn.nextElementSibling;
-      if (panel) panel.hidden = !panel.hidden;
+      if (!panel) return;
+      var open = panel.hidden;
+      panel.hidden = !open;
+      btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+      var sign = btn.querySelector('[data-accordion-sign]');
+      if (sign) sign.textContent = open ? '−' : '+';
+    });
+  });
+
+  document.querySelectorAll('[data-user-menu]').forEach(function (btn) {
+    var menu = btn.closest('.user-menu');
+    var panel = menu && menu.querySelector('.user-menu-panel');
+    if (!menu || !panel) return;
+    function setOpen(open) {
+      panel.hidden = !open;
+      menu.classList.toggle('is-open', open);
+      btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    }
+    btn.addEventListener('click', function (event) {
+      event.stopPropagation();
+      setOpen(panel.hidden);
+    });
+    document.addEventListener('click', function (event) {
+      if (!menu.contains(event.target)) setOpen(false);
+    });
+    window.addEventListener('keydown', function (event) {
+      if (event.key === 'Escape') setOpen(false);
     });
   });
 
@@ -391,7 +417,9 @@
     return items.map(function (item) {
       var media = item.thumb
         ? '<div class="search-card-media" style="background-image:url(\'' + escapeHtml(item.thumb) + '\')"></div>'
-        : '<div class="search-card-media search-card-media-plain"><span class="avatar">' + escapeHtml((item.initials || item.title || 'AD').slice(0, 2).toUpperCase()) + '</span></div>';
+        : (item.kind === 'prestations'
+          ? '<div class="search-card-media service-cover" role="img" aria-label="Visuel ' + escapeHtml(item.cat || 'Prestation') + '"><span class="service-cover-kicker">acteursdulivre.fr</span><span class="service-cover-type">' + escapeHtml(item.cat || 'Prestation') + '</span></div>'
+          : '<div class="search-card-media search-card-media-plain"><span class="avatar">' + escapeHtml((item.initials || item.title || 'AD').slice(0, 2).toUpperCase()) + '</span></div>');
       return '<a class="search-card' + (item.is_busy ? ' is-busy' : '') + '" href="' + escapeHtml(item.href) + '">' + media +
         '<div class="search-card-body">' +
           '<div class="search-card-kicker"><span>' + escapeHtml(item.kind_label) + '</span>' +
@@ -550,12 +578,47 @@
 
   var publish = document.querySelector('[data-publish-form]');
   if (publish) {
+    var volumeHints = {};
+    var briefHints = {};
+    try { volumeHints = JSON.parse(publish.getAttribute('data-volume-hints') || '{}'); } catch (e) {}
+    try { briefHints = JSON.parse(publish.getAttribute('data-brief-hints') || '{}'); } catch (e) {}
+
+    function selectedTrade() {
+      return (publish.querySelector('input[name="category_name"]:checked') || {}).value || '';
+    }
+
+    function syncFields() {
+      var cat = selectedTrade();
+      var hint = volumeHints[cat];
+      var wrap = publish.querySelector('[data-volume-wrap]');
+      var input = publish.querySelector('[data-volume-input]');
+      var label = publish.querySelector('[data-volume-label]');
+      var grid = publish.querySelector('[data-publish-metrics]');
+      var brief = publish.querySelector('[data-preview-brief]');
+      if (wrap && input) {
+        if (hint) {
+          wrap.hidden = false;
+          input.disabled = false;
+          if (label) label.textContent = hint.label;
+          input.placeholder = hint.placeholder || '';
+          if (grid) grid.classList.remove('is-two');
+        } else {
+          wrap.hidden = true;
+          input.disabled = true;
+          if (grid) grid.classList.add('is-two');
+        }
+      }
+      if (brief && briefHints[cat]) {
+        brief.placeholder = briefHints[cat];
+      }
+    }
+
     function preview() {
       var title = (publish.querySelector('[data-preview-title]') || {}).value || 'Votre titre apparaîtra ici';
       var brief = (publish.querySelector('[data-preview-brief]') || {}).value || 'Le brief s’affiche au fil de la saisie.';
       var min = (publish.querySelector('[data-preview-min]') || {}).value;
       var max = (publish.querySelector('[data-preview-max]') || {}).value;
-      var cat = (publish.querySelector('input[name="category_name"]:checked') || {}).value || '';
+      var cat = selectedTrade();
       var budget = (min && max) ? min + ' – ' + max + ' €' : (max || min ? (max || min) + ' €' : 'Budget à convenir');
       var outTitle = document.querySelector('[data-preview-out-title]');
       var outBrief = document.querySelector('[data-preview-out-brief]');
@@ -566,8 +629,13 @@
       if (outCat) outCat.textContent = cat;
       if (outBudget) outBudget.textContent = budget;
     }
+
     publish.addEventListener('input', preview);
-    publish.addEventListener('change', preview);
+    publish.addEventListener('change', function () {
+      syncFields();
+      preview();
+    });
+    syncFields();
     preview();
   }
 
@@ -694,5 +762,130 @@
       });
     });
     applyRateKind(currentKind(), false);
+  }
+
+  var coverForm = document.querySelector('[data-service-cover]');
+  if (coverForm) {
+    var coverType = coverForm.querySelector('.service-cover-type');
+    var coverBrand = coverForm.querySelector('.service-cover');
+    var coverPhoto = coverForm.querySelector('[data-cover-photo]');
+    var coverFile = coverForm.querySelector('[data-cover-file]');
+    function setCoverLabel(label) {
+      if (coverType) coverType.textContent = label || 'Prestation';
+    }
+    coverForm.querySelectorAll('input[name="category_name"]').forEach(function (radio) {
+      radio.addEventListener('change', function () {
+        setCoverLabel(radio.value);
+      });
+    });
+    var coverSelect = coverForm.querySelector('[data-cover-trade]');
+    if (coverSelect) {
+      coverSelect.addEventListener('change', function () {
+        var option = coverSelect.options[coverSelect.selectedIndex];
+        setCoverLabel(option ? option.textContent.trim() : coverSelect.value);
+      });
+    }
+    if (coverFile) {
+      coverFile.addEventListener('change', function () {
+        var file = coverFile.files && coverFile.files[0];
+        if (!file || !coverPhoto) {
+          if (coverBrand) coverBrand.hidden = false;
+          if (coverPhoto) coverPhoto.hidden = true;
+          return;
+        }
+        var url = URL.createObjectURL(file);
+        coverPhoto.style.backgroundImage = 'url(\'' + url + '\')';
+        coverPhoto.hidden = false;
+        if (coverBrand) coverBrand.hidden = true;
+      });
+    }
+  }
+
+  document.querySelectorAll('[data-avatar-field]').forEach(function (field) {
+    var input = field.querySelector('[data-avatar-input]');
+    var preview = field.querySelector('[data-avatar-preview]');
+    if (!input || !preview) return;
+    input.addEventListener('change', function () {
+      var file = input.files && input.files[0];
+      if (!file) return;
+      var url = URL.createObjectURL(file);
+      preview.innerHTML = '<img class="avatar avatar-photo" src="' + url + '" alt="" width="88" height="88">';
+      document.querySelectorAll('[data-preview-out-avatar]').forEach(function (slot) {
+        slot.innerHTML = '<img class="avatar avatar-photo" src="' + url + '" alt="" width="56" height="56">';
+      });
+    });
+  });
+
+  document.querySelectorAll('[data-count]').forEach(function (area) {
+    var out = document.querySelector('[data-count-out]');
+    var min = parseInt(area.getAttribute('data-count-min') || '0', 10);
+    function tick() {
+      if (!out) return;
+      var n = (area.value || '').trim().length;
+      out.textContent = n < min
+        ? n + ' caractère' + (n > 1 ? 's' : '') + ' — ' + min + ' donnent déjà une fiche crédible.'
+        : n + ' caractères. C’est suffisant pour commencer.';
+    }
+    area.addEventListener('input', tick);
+    tick();
+  });
+
+  var onboard = document.querySelector('[data-onboard]');
+  if (onboard) {
+    var titleHints = {};
+    var presHints = {};
+    try { titleHints = JSON.parse(onboard.getAttribute('data-title-hints') || '{}'); } catch (e) {}
+    try { presHints = JSON.parse(onboard.getAttribute('data-pres-hints') || '{}'); } catch (e) {}
+
+    function firstTrade() {
+      var checked = onboard.querySelector('[data-onboard-trades] input:checked');
+      return checked ? checked.value : '';
+    }
+
+    function updateFichePreview() {
+      if (!onboard.querySelector('[data-onboard-preview]')) return;
+      var first = ((onboard.querySelector('[data-preview-first]') || {}).value || '').trim();
+      var last = ((onboard.querySelector('[data-preview-last]') || {}).value || '').trim();
+      var title = ((onboard.querySelector('[data-preview-title]') || {}).value || '').trim();
+      var city = ((onboard.querySelector('[data-preview-city]') || {}).value || '').trim();
+      var pres = ((onboard.querySelector('[data-preview-pres]') || {}).value || '').trim();
+      var name = (first + ' ' + last).trim() || 'Vous';
+      var subParts = [];
+      if (title) subParts.push(title);
+      if (city) subParts.push(city);
+      onboard.querySelectorAll('[data-preview-out-name]').forEach(function (el) { el.textContent = name; });
+      onboard.querySelectorAll('[data-preview-out-sub]').forEach(function (el) {
+        el.textContent = subParts.length ? subParts.join(' · ') : 'Le titre et la ville apparaîtront ici';
+      });
+      onboard.querySelectorAll('[data-preview-out-title]').forEach(function (el) {
+        el.textContent = title || 'Titre de la fiche à préciser';
+        if (city) el.textContent += ' · ' + city;
+      });
+      onboard.querySelectorAll('[data-preview-out-pres]').forEach(function (el) {
+        el.textContent = pres || 'Votre présentation s’affiche au fil de la saisie.';
+      });
+      var tradeBox = onboard.querySelector('[data-preview-out-trades]');
+      if (tradeBox) {
+        var labels = [];
+        onboard.querySelectorAll('[data-onboard-trades] input:checked').forEach(function (box) {
+          labels.push('<span class="chip-static">' + escapeHtml(box.value) + '</span>');
+        });
+        tradeBox.innerHTML = labels.join('');
+      }
+    }
+
+    onboard.addEventListener('input', updateFichePreview);
+    onboard.addEventListener('change', function (event) {
+      var target = event.target;
+      if (target && target.closest && target.closest('[data-onboard-trades]')) {
+        var trade = firstTrade();
+        var titleInput = onboard.querySelector('[data-title-input]');
+        var presInput = onboard.querySelector('[data-pres-input]');
+        if (titleInput && titleHints[trade]) titleInput.setAttribute('placeholder', titleHints[trade]);
+        if (presInput && presHints[trade]) presInput.setAttribute('placeholder', presHints[trade]);
+      }
+      updateFichePreview();
+    });
+    updateFichePreview();
   }
 })();

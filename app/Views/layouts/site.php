@@ -28,7 +28,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="<?= e(asset('css/app.css')) ?>?v=m28">
+  <link rel="stylesheet" href="<?= e(asset('css/app.css')) ?>?v=m33">
   <link rel="icon" href="<?= e(asset('img/favicon.ico')) ?>?v=3" sizes="any">
   <link rel="icon" type="image/png" href="<?= e(asset('img/favicon-32x32.png')) ?>?v=3" sizes="32x32">
   <link rel="apple-touch-icon" href="<?= e(asset('img/apple-touch-icon.png')) ?>?v=3">
@@ -44,7 +44,7 @@
         <a href="<?= e(url('/inscription')) ?>">Réserver ma place</a>
       </div>
       <div class="topbar">
-        <span class="topbar-stats">Commission 8 % · devis gratuits · 5 890 professionnels du livre</span>
+        <span class="topbar-stats"><?= e((string) ($topbarStats ?? 'Commission 8 % · devis gratuits')) ?></span>
         <div class="topbar-links">
           <a href="<?= e(url('/aide')) ?>">Aide</a>
           <span>Français · EUR</span>
@@ -73,6 +73,45 @@
           <button type="submit">Chercher</button>
           <div class="search-suggest" data-live-panel hidden></div>
         </form>
+        <?php if (!empty($logged)): ?>
+          <div class="user-menu">
+            <button type="button" class="user-chip" data-user-menu aria-expanded="false" aria-controls="user-menu-panel" aria-haspopup="true">
+              <?php if (!empty($userAvatarUrl)): ?>
+                <img class="avatar avatar-photo" src="<?= e($userAvatarUrl) ?>" alt="" width="38" height="38">
+              <?php else: ?>
+                <span class="avatar" style="<?= e(avatar_style($userInitials ?? 'AD', 38)) ?>"><?= e($userInitials ?? 'AD') ?></span>
+              <?php endif; ?>
+              <span class="user-chip-name"><?= e($userFirst ?? '') ?></span>
+            </button>
+            <div class="user-menu-panel" id="user-menu-panel" hidden>
+              <a href="<?= e(url('/espace')) ?>">Tableau de bord</a>
+              <?php foreach ($espaceNav ?? [] as $group): ?>
+                <?php
+                  $groupItems = array_values(array_filter($group['items'] ?? [], static fn (array $item): bool => ($item['href'] ?? '') !== '/espace'));
+                ?>
+                <?php if ($groupItems !== []): ?>
+                  <?php if (($group['title'] ?? '') !== '' && ($group['title'] ?? '') !== 'Espace'): ?>
+                    <div class="user-menu-title"><?= e($group['title']) ?></div>
+                  <?php else: ?>
+                    <div class="user-menu-sep"></div>
+                  <?php endif; ?>
+                  <?php foreach ($groupItems as $item): ?>
+                    <a href="<?= e(url($item['href'])) ?>"<?= !empty($item['active']) ? ' class="is-active"' : '' ?>><?= e($item['label']) ?></a>
+                  <?php endforeach; ?>
+                <?php endif; ?>
+              <?php endforeach; ?>
+              <?php if (!empty($isAdmin)): ?>
+                <div class="user-menu-sep"></div>
+                <a href="<?= e(url('/admin')) ?>">Administration</a>
+              <?php endif; ?>
+              <div class="user-menu-sep"></div>
+              <form method="post" action="<?= e(url('/deconnexion')) ?>">
+                <?= csrf_field() ?>
+                <button type="submit">Déconnexion</button>
+              </form>
+            </div>
+          </div>
+        <?php endif; ?>
         <button type="button" class="nav-toggle" data-nav-toggle aria-expanded="false" aria-controls="header-panel" aria-label="Ouvrir le menu">
           <span></span><span></span><span></span>
         </button>
@@ -82,21 +121,21 @@
               <?php if (!empty($headerCta)): ?>
                 <a href="<?= e(url($headerCta['href'])) ?>"><?= e($headerCta['label']) ?></a>
               <?php endif; ?>
-              <a href="<?= e(url('/espace/messages')) ?>" class="header-icon-link"><?= icon('mail', 16) ?> Messages <span class="badge-orange"><?= (int) ($unreadMessages ?? 0) ?></span></a>
-              <a href="<?= e(url('/espace/notifications')) ?>" class="header-icon-link"><?= icon('bell', 16) ?> Alertes <span class="badge-soft"><?= (int) ($unreadAlerts ?? 0) ?></span></a>
-              <a href="<?= e(url('/espace')) ?>">Mon espace</a>
+              <?php
+                $headerUnreadMessages = (int) ($unreadMessages ?? 0);
+                $headerUnreadAlerts = (int) ($unreadAlerts ?? 0);
+              ?>
+              <div class="header-icons">
+                <a href="<?= e(url('/espace/messages')) ?>" class="header-icon-link" aria-label="<?= $headerUnreadMessages > 0 ? 'Messages (' . $headerUnreadMessages . ' non lus)' : 'Messages' ?>" title="Messages">
+                  <?= icon('chat', 20) ?>
+                  <?php if ($headerUnreadMessages > 0): ?><span class="badge-orange"><?= $headerUnreadMessages ?></span><?php endif; ?>
+                </a>
+                <a href="<?= e(url('/espace/notifications')) ?>" class="header-icon-link" aria-label="<?= $headerUnreadAlerts > 0 ? 'Notifications (' . $headerUnreadAlerts . ')' : 'Notifications' ?>" title="Notifications">
+                  <?= icon('bell', 20) ?>
+                  <?php if ($headerUnreadAlerts > 0): ?><span class="badge-soft"><?= $headerUnreadAlerts ?></span><?php endif; ?>
+                </a>
+              </div>
             </nav>
-            <a class="user-chip" href="<?= e(url('/espace/parametres')) ?>">
-              <span class="avatar" style="<?= e(avatar_style($userInitials ?? 'AD', 38)) ?>"><?= e($userInitials ?? 'AD') ?></span>
-              <span><?= e($userFirst ?? '') ?> ▾</span>
-            </a>
-            <?php if (!empty($isAdmin)): ?>
-              <a class="header-admin" href="<?= e(url('/admin')) ?>">Administration</a>
-            <?php endif; ?>
-            <form method="post" action="<?= e(url('/deconnexion')) ?>" class="header-logout">
-              <?= csrf_field() ?>
-              <button type="submit">Déconnexion</button>
-            </form>
           <?php else: ?>
             <nav class="header-nav">
               <a href="<?= e(url('/comment-ca-marche')) ?>">Comment ça marche</a>
@@ -156,10 +195,9 @@
         <div class="footer-cols">
           <div>
             <div class="footer-logo">
-              <picture>
-                <source media="(max-width: 768px)" srcset="<?= e(asset('img/logo-mark.png')) ?>?v=1">
-                <img src="<?= e(asset('img/logo.png')) ?>?v=4" alt="acteursdulivre.fr">
-              </picture>
+              <a href="<?= e(url('/')) ?>">
+                <img src="<?= e(asset('img/logo-inv.png')) ?>?v=5" alt="acteursdulivre.fr">
+              </a>
             </div>
             <p>La place de marché des métiers du livre. Auteurs, correcteurs, bêta-lecteurs, illustrateurs, traducteurs, maquettistes, éditeurs, imprimeurs, presse, libraires, narrateurs, agents, salons.</p>
             <div class="socials" data-share data-url="<?= e(\Adl\Data\Share::absolute('/')) ?>" data-title="acteursdulivre.fr" data-text="La place de marché des métiers du livre.">
@@ -207,6 +245,6 @@
       </footer>
     </div>
   </div>
-  <script src="<?= e(asset('js/app.js')) ?>?v=m24"></script>
+  <script src="<?= e(asset('js/app.js')) ?>?v=m27"></script>
 </body>
 </html>

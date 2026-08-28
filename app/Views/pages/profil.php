@@ -6,10 +6,13 @@ if (!$p) {
 ?>
 <div class="profile-page">
   <div class="profile-hero">
-    <span class="avatar profile-avatar" style="<?= e(avatar_style((string) $p['initials'], 104)) ?>"><?= e((string) $p['initials']) ?></span>
+    <?= avatar_html($p, 104, 'avatar profile-avatar') ?>
     <div class="profile-hero-main">
       <div class="profile-hero-line">
         <h1><?= e((string) $p['name']) ?></h1>
+        <?php if (!empty($p['is_founder'])): ?>
+          <span class="profile-badge profile-badge-founder">Membre fondateur</span>
+        <?php endif; ?>
         <span class="profile-badge"><?= e((string) ($p['level'] ?: 'Prestataire')) ?></span>
         <span class="profile-badge profile-badge-avail<?= !empty($p['is_busy']) ? ' is-busy' : ' is-available' ?>"><?= e((string) ($p['availability_label'] ?? (!empty($p['is_busy']) ? 'Occupé' : 'Disponible'))) ?></span>
       </div>

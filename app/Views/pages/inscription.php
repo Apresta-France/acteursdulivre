@@ -9,6 +9,10 @@ $offersOn = old('offers_services', '1') !== '';
     <?php if (!empty($error)): ?>
       <div class="flash flash-error"><?= e($error) ?></div>
     <?php endif; ?>
+    <?php
+    $oauthLead = 'S\'inscrire avec';
+    require ADL_ROOT . '/app/Views/partials/oauth-buttons.php';
+    ?>
     <form method="post" action="<?= e(url('/inscription')) ?>" class="auth-form">
       <?= csrf_field() ?>
       <p class="field" style="margin-bottom: 0;">Que souhaitez-vous faire ?</p>
@@ -16,7 +20,7 @@ $offersOn = old('offers_services', '1') !== '';
         <label class="intent-card<?= $seeksOn ? ' is-on' : '' ?>" data-intent-card>
           <input type="checkbox" name="seeks_services" value="1"<?= $seeksOn ? ' checked' : '' ?>>
           <div class="intent-card-title">Je cherche des prestataires</div>
-          <p>Auteur, éditeur, collectif : commandez des prestations ou publiez vos missions.</p>
+          <p>Auteur, éditeur, collectif : commandez des prestations ou publiez vos recherches.</p>
         </label>
         <label class="intent-card<?= $offersOn ? ' is-on' : '' ?>" data-intent-card>
           <input type="checkbox" name="offers_services" value="1"<?= $offersOn ? ' checked' : '' ?>>
@@ -52,7 +56,7 @@ $offersOn = old('offers_services', '1') !== '';
       </div>
       <label class="auth-legal">
         <input type="checkbox" name="charte" value="1" required>
-        J'accepte la charte qualité, les <a href="<?= e(url('/cgu')) ?>">CGU</a> et la <a href="<?= e(url('/confidentialite')) ?>">politique de confidentialité</a>.
+        J'accepte la charte qualité, les <a href="<?= e(url('/cgu')) ?>">CGU</a>, les <a href="<?= e(url('/cgv')) ?>">CGV</a> et la <a href="<?= e(url('/confidentialite')) ?>">politique de confidentialité</a>.
       </label>
       <div class="auth-actions">
         <button class="btn-orange" type="submit">Créer mon compte</button>

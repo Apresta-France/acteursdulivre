@@ -37,7 +37,8 @@ final class Auth
     public static function attempt(string $email, string $password): bool
     {
         $user = User::findByEmail($email);
-        if (!$user || !password_verify($password, $user['password'])) {
+        $hash = (string) ($user['password'] ?? '');
+        if (!$user || $hash === '' || !password_verify($password, $hash)) {
             return false;
         }
         if (($user['status'] ?? 'active') !== 'active') {

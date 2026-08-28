@@ -7,10 +7,10 @@ $count = count($missions);
 <div class="missions-page">
   <div class="missions-head">
     <div>
-      <h1>Appels d'offres <span>· <?= $count ?> mission<?= $count > 1 ? 's' : '' ?></span></h1>
+      <h1>Appels d'offres <span>· <?= $count ?> recherche<?= $count > 1 ? 's' : '' ?></span></h1>
       <p>Les porteurs de projet publient, vous postulez avec votre devis. Aucune commission sur la candidature.</p>
     </div>
-    <a class="btn-navy" href="<?= e(url('/espace/publier')) ?>">Publier une mission</a>
+    <a class="btn-navy" href="<?= e(url('/espace/publier')) ?>">Publier une recherche</a>
   </div>
 
   <form class="chip-row missions-filters" method="get" action="<?= e(url('/missions')) ?>">
@@ -24,7 +24,7 @@ $count = count($missions);
     <div class="missions-list">
       <?php if ($missions === []): ?>
         <div class="search-empty">
-          <strong>Aucune mission ouverte pour ce métier.</strong>
+          <strong>Aucune recherche ouverte pour ce métier.</strong>
           <span>Publiez la vôtre, ou élargissez le filtre.</span>
         </div>
       <?php else: ?>
@@ -54,7 +54,7 @@ $count = count($missions);
     </div>
     <aside>
       <div class="side-card side-card-warm">
-        <div class="side-title-sm">Publier une mission</div>
+        <div class="side-title-sm">Publier une recherche</div>
         <p>Décrivez le besoin et le budget : les prestataires qualifiés vous envoient leur devis. Gratuit pour le porteur de projet.</p>
         <a class="btn-ghost" href="<?= e(url('/espace/publier')) ?>">Décrire mon besoin</a>
       </div>

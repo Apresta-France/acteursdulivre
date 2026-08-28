@@ -1,6 +1,6 @@
 <div style="padding: 26px 32px 44px;">
           <h1 style="font-family: 'Space Grotesk', sans-serif; font-size: 26px; font-weight: 700; color: #022746; margin: 0 0 4px;">Tableau de bord</h1>
-          <p style="font-size: 14px; color: #66768A; margin: 0 0 22px;">Semaine du 24 au 30 août 2026 · fuseau Europe/Paris</p>
+          <p style="font-size: 14px; color: #66768A; margin: 0 0 22px;">{{ dashSubtitle }}</p>
 
           <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; margin-bottom: 24px;">
             <sc-for list="{{ kpis }}" as="k" hint-placeholder-count="5">
@@ -22,6 +22,7 @@
                     <span style="display: flex; gap: 6px; align-items: center;"><span style="width: 9px; height: 9px; border-radius: 2px; background: #D85D3F; display: block;"></span>en attente</span>
                   </div>
                 </div>
+                <sc-if value="{{ chart }}">
                 <div style="display: flex; align-items: flex-end; gap: 14px; height: 150px;">
                   <sc-for list="{{ chart }}" as="c" hint-placeholder-count="8">
                     <div style="flex: 1; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; gap: 8px; height: 100%;">
@@ -33,6 +34,10 @@
                     </div>
                   </sc-for>
                 </div>
+                </sc-if>
+                <sc-if value="{{ emptyChart }}">
+                  <p style="font-size: 14px; color: #66768A; margin: 8px 0 0;">{{ emptyChart }}</p>
+                </sc-if>
               </div>
 
               <div style="border: 1px solid #E8ECF1; border-radius: 12px; overflow: hidden;">
@@ -62,13 +67,14 @@
                   </span>
                   <span style="font-family: 'Space Grotesk', sans-serif; font-size: 16px; font-weight: 500; color: #022746;">Signalements IA</span>
                 </div>
-                <div style="font-family: 'Space Grotesk', sans-serif; font-size: 30px; font-weight: 700; color: #022746;">7</div>
-                <p style="font-size: 14px; color: #4A5A6B; line-height: 1.6; margin: 6px 0 14px;">Contenus soupçonnés d'avoir été générés. 3 sont issus d'un signalement client, 4 d'un contrôle interne.</p>
-                <button sc-camel-on-click="{{ goModeration }}" style="background: #D85D3F; color: #FFF; border: 0; width: 100%; height: 40px; border-radius: 8px; font-size: 14px; font-weight: 500;">Traiter les signalements</button>
+                <div style="font-family: 'Space Grotesk', sans-serif; font-size: 30px; font-weight: 700; color: #022746;">{{ iaSignalementsCount }}</div>
+                <p style="font-size: 14px; color: #4A5A6B; line-height: 1.6; margin: 6px 0 14px;">{{ iaSignalementsNote }}</p>
+                <button sc-camel-on-click="{{ goModeration }}" style="background: #D85D3F; color: #FFF; border: 0; width: 100%; height: 40px; border-radius: 8px; font-size: 14px; font-weight: 500;">Voir la file de modération</button>
               </div>
 
               <div style="border: 1px solid #E8ECF1; border-radius: 12px; padding: 20px;">
                 <div style="font-family: 'Space Grotesk', sans-serif; font-size: 16px; font-weight: 500; color: #022746; margin-bottom: 14px;">Activité récente</div>
+                <sc-if value="{{ activite }}">
                 <div style="display: flex; flex-direction: column; gap: 14px;">
                   <sc-for list="{{ activite }}" as="a" hint-placeholder-count="6">
                     <div style="display: flex; gap: 10px; align-items: flex-start;">
@@ -80,6 +86,10 @@
                     </div>
                   </sc-for>
                 </div>
+                </sc-if>
+                <sc-if value="{{ emptyActivite }}">
+                  <p style="font-size: 14px; color: #66768A; margin: 0;">{{ emptyActivite }}</p>
+                </sc-if>
               </div>
             </div>
           </div>

@@ -57,14 +57,14 @@ $missions = $missions ?? [];
 
     <section>
       <div class="espace-page-head">
-        <h2>Missions ouvertes</h2>
+        <h2>Recherches ouvertes</h2>
         <a href="<?= e(url('/missions?cat=' . rawurlencode($trade))) ?>">Tout voir</a>
       </div>
       <?php if ($missions === []): ?>
         <div class="search-empty">
-          <strong>Aucune mission ouverte.</strong>
+          <strong>Aucune recherche ouverte.</strong>
           <span>Publiez un appel d'offres pour recevoir des devis.</span>
-          <a class="btn-ghost" href="<?= e(url('/espace/publier')) ?>">Publier une mission</a>
+          <a class="btn-ghost" href="<?= e(url('/espace/publier')) ?>">Publier une recherche</a>
         </div>
       <?php else: ?>
         <div class="my-missions">

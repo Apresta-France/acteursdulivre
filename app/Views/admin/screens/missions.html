@@ -1,6 +1,6 @@
 <div style="padding: 26px 32px 44px;">
           <h1 style="font-family: 'Space Grotesk', sans-serif; font-size: 26px; font-weight: 700; color: #022746; margin: 0 0 4px;">Appels d'offres</h1>
-          <p style="font-size: 14px; color: #66768A; margin: 0 0 20px;">148 missions ouvertes · 12 à modérer avant publication · 6 signalées « budget hors marché »</p>
+          <p style="font-size: 14px; color: #66768A; margin: 0 0 20px;">{{ missionsSubtitle }}</p>
           <div style="border: 1px solid #E8ECF1; border-radius: 12px; overflow: hidden;">
             <sc-for list="{{ missions }}" as="m" hint-placeholder-count="6">
               <div style="display: grid; grid-template-columns: 1fr 140px 120px 110px 190px; gap: 16px; align-items: center; padding: 15px 18px; border-bottom: 1px solid #F2F5F8;">
@@ -20,5 +20,8 @@
                 </div>
               </div>
             </sc-for>
+            <sc-if value="{{ emptyMissions }}">
+              <p style="font-size: 14px; color: #66768A; margin: 0; padding: 28px 18px;">{{ emptyMissions }}</p>
+            </sc-if>
           </div>
         </div>

@@ -48,6 +48,25 @@ final class Service
              JOIN users u ON u.id = s.user_id
              LEFT JOIN profiles p ON p.user_id = u.id
              WHERE s.status = "published"
+               AND NOT EXISTS (
+                    SELECT 1 FROM invoices i
+                    WHERE i.seller_id = s.user_id
+                      AND i.status IN ("issued", "overdue")
+                      AND i.due_at < NOW()
+               )
+             ORDER BY s.created_at DESC'
+        );
+        return array_map([self::class, 'present'], $rows);
+    }
+
+    /** @return list<array<string, mixed>> */
+    public static function all(): array
+    {
+        $rows = Database::fetchAll(
+            'SELECT s.*, u.first_name, u.last_name, p.slug AS profile_slug
+             FROM services s
+             JOIN users u ON u.id = s.user_id
+             LEFT JOIN profiles p ON p.user_id = u.id
              ORDER BY s.created_at DESC'
         );
         return array_map([self::class, 'present'], $rows);
@@ -70,7 +89,16 @@ final class Service
 
     public static function countPublished(): int
     {
-        $row = Database::fetch('SELECT COUNT(*) AS n FROM services WHERE status = "published"');
+        $row = Database::fetch(
+            'SELECT COUNT(*) AS n FROM services s
+             WHERE s.status = "published"
+               AND NOT EXISTS (
+                    SELECT 1 FROM invoices i
+                    WHERE i.seller_id = s.user_id
+                      AND i.status IN ("issued", "overdue")
+                      AND i.due_at < NOW()
+               )'
+        );
         return (int) ($row['n'] ?? 0);
     }
 
@@ -80,6 +108,11 @@ final class Service
      */
     public static function create(int $userId, array $data, array $packages = []): array
     {
+        $status = (string) ($data['status'] ?? 'published');
+        if ($status === 'published') {
+            Invoice::assertCanOffer($userId);
+        }
+
         $title = trim((string) ($data['title'] ?? ''));
         $slug = unique_slug(
             $title,
@@ -97,14 +130,16 @@ final class Service
         }
 
         Database::query(
-            'INSERT INTO services (user_id, category_name, title, slug, excerpt, status, price_from, delay)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+            'INSERT INTO services (user_id, category_name, specialty, title, slug, excerpt, image_path, status, price_from, delay)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
             [
                 $userId,
                 $data['category_name'] ?? null,
+                $data['specialty'] ?? null,
                 $title,
                 $slug,
                 $data['excerpt'] ?? null,
+                $data['image_path'] ?? null,
                 $data['status'] ?? 'published',
                 $priceFrom,
                 $data['delay'] ?? null,
@@ -162,15 +197,18 @@ final class Service
         $row['href'] = '/prestations/' . $row['slug'];
         $row['profile_href'] = !empty($row['profile_slug']) ? '/prestataires/' . $row['profile_slug'] : '';
         $row['packages'] = $packages;
-        $row['img'] = photo(((int) $row['id']) % 6);
+        $imagePath = trim((string) ($row['image_path'] ?? ''));
+        $row['has_image'] = $imagePath !== '';
+        $row['img'] = $imagePath !== '' ? uploaded($imagePath) : service_brand_cover_url((string) ($row['category_name'] ?? ''));
         $row['live'] = true;
         $row['kind'] = 'prestations';
         $row['kind_label'] = 'Prestation';
         $row['cat'] = (string) ($row['category_name'] ?? '');
+        $row['specialty'] = (string) ($row['specialty'] ?? '');
         $row['subtitle'] = $row['by'];
         $row['meta'] = trim(($row['delay'] ?? '') . ($reviews['avg'] !== '' ? ' · ★ ' . $reviews['avg'] : ''));
-        $row['thumb'] = $row['img'];
-        $row['search'] = $row['cat'] . ' ' . $row['title'] . ' ' . $row['by'] . ' ' . ($row['excerpt'] ?? '');
+        $row['thumb'] = $row['has_image'] ? $row['img'] : '';
+        $row['search'] = $row['cat'] . ' ' . $row['specialty'] . ' ' . $row['title'] . ' ' . $row['by'] . ' ' . ($row['excerpt'] ?? '');
         return $row;
     }
 }

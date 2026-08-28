@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Adl\Core;
 
+use Adl\Models\Invoice;
 use Adl\Models\Notification;
 use Adl\Models\Profile;
 use Adl\Models\ReminderSend;
@@ -71,6 +72,7 @@ final class HourlyCron
                 'unanswered_application' => 0,
                 'unanswered_message' => 0,
                 'pending_project' => 0,
+                'invoices_overdue' => 0,
             ];
             $errors = [];
 
@@ -79,6 +81,7 @@ final class HourlyCron
             self::remindUnansweredApplications($stats, $errors);
             self::remindUnansweredMessages($stats, $errors);
             self::remindPendingProjects($stats, $errors);
+            self::markOverdueInvoices($stats, $errors);
 
             Setting::set('cron_hourly_last_run', date('c'));
 
@@ -449,6 +452,36 @@ final class HourlyCron
             if ($sent) {
                 $stats['pending_project']++;
             }
+        }
+    }
+
+    /** @param array<string, int> $stats @param list<string> $errors */
+    private static function markOverdueInvoices(array &$stats, array &$errors): void
+    {
+        try {
+            Invoice::markOverdue();
+            foreach (Invoice::overdueUnnotified() as $row) {
+                $invoice = Invoice::present($row);
+                $sellerId = (int) ($invoice['seller_id'] ?? 0);
+                if ($sellerId < 1) {
+                    continue;
+                }
+                if (Notification::hasUnread($sellerId, 'invoice_overdue', 'invoice', (int) $invoice['id'])) {
+                    continue;
+                }
+                Notification::create(
+                    $sellerId,
+                    'Facture échue — prestations suspendues',
+                    'La facture ' . $invoice['number'] . ' n\'a pas été réglée. Vos fiches ne sont plus proposées tant que le paiement n\'est pas reçu.',
+                    '/espace/facturation',
+                    'invoice_overdue',
+                    'invoice',
+                    (int) $invoice['id']
+                );
+                $stats['invoices_overdue']++;
+            }
+        } catch (Throwable $e) {
+            $errors[] = 'invoices_overdue : ' . $e->getMessage();
         }
     }
 

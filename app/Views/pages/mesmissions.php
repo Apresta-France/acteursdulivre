@@ -5,10 +5,10 @@ $open = count(array_filter($missions, static fn (array $m): bool => ($m['status'
 <div class="espace-page">
   <div class="espace-page-head">
     <div>
-      <h1>Mes missions publiées</h1>
-      <p><?= $open ?> mission<?= $open > 1 ? 's' : '' ?> ouverte<?= $open > 1 ? 's' : '' ?> · <?= count($missions) ?> au total.</p>
+      <h1>Mes recherches publiées</h1>
+      <p><?= $open ?> recherche<?= $open > 1 ? 's' : '' ?> ouverte<?= $open > 1 ? 's' : '' ?> · <?= count($missions) ?> au total.</p>
     </div>
-    <a class="btn-navy" href="<?= e(url('/espace/publier')) ?>">Publier une mission</a>
+    <a class="btn-navy" href="<?= e(url('/espace/publier')) ?>">Publier une recherche</a>
   </div>
 
   <?php if (!empty($saved)): ?>
@@ -17,9 +17,9 @@ $open = count(array_filter($missions, static fn (array $m): bool => ($m['status'
 
   <?php if ($missions === []): ?>
     <div class="search-empty">
-      <strong>Vous n'avez pas encore publié de mission.</strong>
+      <strong>Vous n'avez pas encore publié de recherche.</strong>
       <span>Décrivez un besoin : les prestataires du métier choisi pourront y répondre.</span>
-      <a class="btn-orange" href="<?= e(url('/espace/publier')) ?>">Publier une mission</a>
+      <a class="btn-orange" href="<?= e(url('/espace/publier')) ?>">Publier une recherche</a>
     </div>
   <?php else: ?>
     <div class="my-missions">
@@ -30,7 +30,7 @@ $open = count(array_filter($missions, static fn (array $m): bool => ($m['status'
             <span class="status-pill status-<?= e((string) $m['status']) ?>"><?= e((string) $m['status_label']) ?></span>
           </div>
           <div class="mission-row-sub">
-            <?= e((string) ($m['category_name'] ?? 'Mission')) ?>
+            <?= e((string) ($m['category_name'] ?? 'Recherche')) ?>
             · publiée <?= e((string) $m['when']) ?>
             · échéance <?= e((string) $m['deadline_label']) ?>
           </div>

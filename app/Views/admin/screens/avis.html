@@ -1,6 +1,6 @@
 <div style="padding: 26px 32px 44px;">
           <h1 style="font-family: 'Space Grotesk', sans-serif; font-size: 26px; font-weight: 700; color: #022746; margin: 0 0 4px;">Avis signalés</h1>
-          <p style="font-size: 14px; color: #66768A; margin: 0 0 20px;">Un avis n'est publiable qu'après une mission réellement facturée. 5 contestations en attente.</p>
+          <p style="font-size: 14px; color: #66768A; margin: 0 0 20px;">{{ avisSubtitle }}</p>
           <div style="display: flex; flex-direction: column; gap: 14px;">
             <sc-for list="{{ avisSignales }}" as="a" hint-placeholder-count="4">
               <div style="border: 1px solid #E8ECF1; border-radius: 12px; padding: 20px; display: grid; grid-template-columns: 1fr 180px; gap: 22px; align-items: start;">
@@ -21,5 +21,8 @@
                 </div>
               </div>
             </sc-for>
+            <sc-if value="{{ emptyAvis }}">
+              <p style="font-size: 14px; color: #66768A; margin: 0; padding: 28px 18px; border: 1px solid #E8ECF1; border-radius: 12px;">{{ emptyAvis }}</p>
+            </sc-if>
           </div>
         </div>

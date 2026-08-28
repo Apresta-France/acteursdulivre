@@ -1,6 +1,6 @@
 <div style="padding: 26px 32px 44px;">
           <h1 style="font-family: 'Space Grotesk', sans-serif; font-size: 26px; font-weight: 700; color: #022746; margin: 0 0 4px;">Litiges et médiation</h1>
-          <p style="font-size: 14px; color: #66768A; margin: 0 0 22px;">4 dossiers ouverts · délai d'intervention garanti 72 h</p>
+          <p style="font-size: 14px; color: #66768A; margin: 0 0 22px;">{{ litigesSubtitle }}</p>
 
           <div style="display: grid; grid-template-columns: 340px 1fr; gap: 24px; align-items: start;">
             <div style="border: 1px solid #E8ECF1; border-radius: 12px; overflow: hidden;">
@@ -14,8 +14,12 @@
                   <div style="font-size: 13px; color: #8496A8; margin-top: 5px;">{{ l.parties }} · {{ l.montant }}</div>
                 </div>
               </sc-for>
+              <sc-if value="{{ emptyLitiges }}">
+                <p style="font-size: 14px; color: #66768A; margin: 0; padding: 28px 18px;">{{ emptyLitiges }}</p>
+              </sc-if>
             </div>
 
+            <sc-if value="{{ hasLitige }}">
             <div style="border: 1px solid #E8ECF1; border-radius: 12px; padding: 24px;">
               <div style="display: flex; justify-content: space-between; align-items: flex-start; padding-bottom: 18px; border-bottom: 1px solid #EEF1F5;">
                 <div>
@@ -64,5 +68,9 @@
                 </div>
               </div>
             </div>
+            </sc-if>
+            <sc-if value="{{ emptyLitige }}">
+              <div style="border: 1px solid #E8ECF1; border-radius: 12px; padding: 28px 24px; color: #66768A; font-size: 14px; line-height: 1.6;">{{ emptyLitige }}</div>
+            </sc-if>
           </div>
         </div>

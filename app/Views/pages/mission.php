@@ -1,11 +1,11 @@
 <?php
 $live = $liveMission ?? null;
 if (!$live) {
-    not_found('Cette mission n\'est plus disponible.');
+    not_found('Cette recherche n\'est plus disponible.');
 }
 ?>
 <div class="mission-page">
-  <div class="search-crumb">Appels d'offres · <?= e((string) ($live['category_name'] ?? 'Mission')) ?></div>
+  <div class="search-crumb">Appels d'offres · <?= e((string) ($live['category_name'] ?? 'Recherche')) ?></div>
   <div class="publish-grid">
     <div>
       <div class="mission-row-title" style="margin-bottom: 10px;">
@@ -16,7 +16,9 @@ if (!$live) {
       <div class="facts">
         <div><span>Métier</span><strong><?= e((string) ($live['category_name'] ?: '—')) ?></strong></div>
         <div><span>Budget</span><strong><?= e((string) $live['budget']) ?></strong></div>
-        <div><span>Volume</span><strong><?= e((string) ($live['volume'] ?: 'à préciser')) ?></strong></div>
+        <?php if (trim((string) ($live['volume'] ?? '')) !== ''): ?>
+          <div><span>Volume</span><strong><?= e((string) $live['volume']) ?></strong></div>
+        <?php endif; ?>
         <div><span>Échéance</span><strong><?= e((string) $live['deadline_label']) ?></strong></div>
       </div>
       <h2>Le besoin</h2>
@@ -35,7 +37,7 @@ if (!$live) {
           <span class="avatar" style="<?= e(avatar_style((string) $live['initials'], 46)) ?>"><?= e((string) $live['initials']) ?></span>
           <span>
             <strong><?= e((string) $live['by']) ?></strong>
-            <em>Mission publiée sur la plateforme</em>
+            <em>Recherche publiée sur la plateforme</em>
           </span>
         </div>
       </div>

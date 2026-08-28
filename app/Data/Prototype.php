@@ -37,7 +37,7 @@ final class Prototype
             'Missions', 'Mission', 'Suivi', 'Commandes', 'Creer', 'Inscription', 'Comment', 'Tarifs',
             'Confiance', 'Aide', 'Metier', 'Apropos', 'Journal', 'Article', 'Contact', 'Legal',
             'Connexion', 'Notifications', 'MesPrestations', 'MesMissions', 'Candidatures', 'Favoris',
-            'Avis', 'Vitrine', 'Parametres', 'Facturation',
+            'Avis', 'Vitrine', 'Parametres', 'Facturation', 'Bienvenue',
         ] as $name) {
             $key = 'is' . $name;
             if (!isset($data[$key])) {
@@ -50,7 +50,7 @@ final class Prototype
             'commande' => 'isCommande', 'profil' => 'isProfil', 'publier' => 'isPublier',
             'messagerie' => 'isMessagerie', 'dashboard' => 'isDashboard', 'missions' => 'isMissions',
             'mission' => 'isMission', 'suivi' => 'isSuivi', 'commandes' => 'isCommandes',
-            'creer' => 'isCreer', 'inscription' => 'isInscription', 'comment' => 'isComment',
+            'creer' => 'isCreer', 'inscription' => 'isInscription', 'inscription-sso' => 'isInscription', 'comment' => 'isComment',
             'tarifs' => 'isTarifs', 'confiance' => 'isConfiance', 'aide' => 'isAide',
             'metier' => 'isMetier', 'apropos' => 'isApropos', 'journal' => 'isJournal',
             'article' => 'isArticle', 'contact' => 'isContact', 'legal' => 'isLegal',
@@ -58,6 +58,7 @@ final class Prototype
             'mesprestations' => 'isMesPrestations', 'mesmissions' => 'isMesMissions',
             'candidatures' => 'isCandidatures', 'favoris' => 'isFavoris', 'avis' => 'isAvis',
             'vitrine' => 'isVitrine', 'parametres' => 'isParametres', 'facturation' => 'isFacturation',
+            'bienvenue' => 'isBienvenue',
         ];
         if (isset($map[$screen])) {
             $data[$map[$screen]] = true;
@@ -107,16 +108,16 @@ final class Prototype
         $footerCols = [
             ['title' => 'Porteurs de projet', 'links' => [
                 ['label' => 'Chercher un prestataire', 'href' => '/recherche'],
-                ['label' => 'Publier une mission', 'href' => '/espace/publier'],
+                ['label' => 'Publier une recherche', 'href' => '/espace/publier'],
                 ['label' => 'Mes commandes', 'href' => '/espace/commandes'],
                 ['label' => 'Devis & factures', 'href' => '/confiance'],
                 ['label' => 'Contrats types', 'href' => '/confiance'],
             ]],
             ['title' => 'Prestataires', 'links' => [
                 ['label' => 'Créer ma vitrine', 'href' => '/inscription'],
-                ['label' => 'Créer une prestation', 'href' => '/espace/prestations/creer'],
+                ['label' => 'Proposer une prestation', 'href' => '/espace/prestations/creer'],
                 ['label' => 'Appels d\'offres', 'href' => '/missions'],
-                ['label' => 'Niveaux & commission', 'href' => '/tarifs'],
+                ['label' => 'Commission', 'href' => '/tarifs'],
                 ['label' => 'Ma vitrine & mon CV', 'href' => '/espace/vitrine'],
             ]],
             ['title' => 'La plateforme', 'links' => [
@@ -150,8 +151,10 @@ final class Prototype
                 ['id' => 'x', 'short' => 'X', 'label' => 'Partager sur X', 'href' => 'https://twitter.com/intent/tweet?url=' . rawurlencode(Share::absolute('/')) . '&text=' . rawurlencode('acteursdulivre.fr')],
             ],
             'footerCols' => $footerCols,
+            'topbarStats' => self::topbarStats(),
             'footerMetiers' => ['Auteurs', 'Illustrateurs', 'Correcteurs', 'Bêta-lecteurs', 'Traducteurs', 'Maquettistes', 'Éditeurs', 'Imprimeurs', 'Presse & com', 'Libraires', 'Narrateurs audio', 'Agents littéraires', 'Salons & événements'],
             'userInitials' => $initials,
+            'userAvatarUrl' => user_avatar_src($user),
             'userFirst' => $first,
             'userName' => $user ? User::displayName($user) : 'Marion Vasseur',
             'isAdmin' => ($user['role'] ?? '') === 'admin',
@@ -181,7 +184,7 @@ final class Prototype
                 ['v' => '5 890', 'k' => 'professionnels du livre inscrits'],
                 ['v' => '2 314', 'k' => 'prestations à prix affiché'],
                 ['v' => '48 h', 'k' => 'pour recevoir trois devis'],
-                ['v' => '8 %', 'k' => 'de commission, sans abonnement'],
+                ['v' => '8 %', 'k' => 'dès la 2ᵉ mission, sans abonnement'],
             ],
             'homeMetiers' => self::homeMetiers(),
             'homeFeatured' => array_map(static function (array $x, int $i): array {
@@ -300,15 +303,17 @@ final class Prototype
                 'kpis' => [],
                 'operations' => [],
                 'suggestions' => Catalog::suggestionsForTrade('Correction'),
+                'openMissionsLabel' => format_int($openMissions) . ' recherche' . ($openMissions > 1 ? 's' : '') . ' ouverte' . ($openMissions > 1 ? 's' : ''),
+                'openMissionsCta' => $openMissions > 0 ? 'Voir les recherches' : 'Voir les appels d\'offres',
                 'inscriptionProof' => [
                     ['v' => format_int($pros), 'k' => 'professionnels du livre inscrits'],
-                    ['v' => format_int($openMissions), 'k' => 'missions ouvertes'],
-                    ['v' => $commission . ' %', 'k' => 'de commission, sans abonnement'],
+                    ['v' => format_int($openMissions), 'k' => 'recherches ouvertes'],
+                    ['v' => $commission . ' %', 'k' => 'dès la 2ᵉ mission, sans abonnement'],
                 ],
                 'ways' => [
                     ['kicker' => 'Annuaire', 'title' => 'Chercher un profil', 'body' => 'Filtrez par métier, spécialité, ville et tarif, puis engagez la discussion.', 'points' => [format_int($pros) . ' profils', 'Avis vérifiés', 'Réponse en 24 h en moyenne'], 'cta' => 'Parcourir l\'annuaire', 'href' => '/recherche'],
                     ['kicker' => 'Prestations', 'title' => 'Acheter une prestation', 'body' => 'Des offres packagées à prix, délai et périmètre affichés. Vous commandez en deux clics.', 'points' => [format_int($services) . ' prestations', 'Options à la carte', 'Contrat et facture inclus'], 'cta' => 'Voir les prestations', 'href' => '/recherche?type=prestations'],
-                    ['kicker' => 'Appels d\'offres', 'title' => 'Publier une mission', 'body' => 'Décrivez le besoin et le budget : les prestataires qualifiés vous envoient leur devis.', 'points' => [format_int($openMissions) . ' missions ouvertes', 'Gratuit pour tous', 'Commission uniquement à l\'attribution'], 'cta' => 'Publier une mission', 'href' => '/espace/publier'],
+                    ['kicker' => 'Recherche', 'title' => 'Publier une recherche', 'body' => 'Décrivez le besoin et le budget : les prestataires qualifiés vous envoient leur devis.', 'points' => [format_int($openMissions) . ' recherches ouvertes', 'Gratuit pour tous', '1ʳᵉ mission offerte, puis 8 %'], 'cta' => 'Publier une recherche', 'href' => '/espace/publier'],
                 ],
             ];
         } catch (\Throwable) {
@@ -520,7 +525,7 @@ final class Prototype
             'suiviDocs' => ['Contrat de prestation signé', 'Facture d\'acompte', 'Conditions de la mission (PDF)'],
             'commandeTabs' => self::chips(['En cours (3)', 'Livrées (14)', 'En litige (0)', 'Brouillons (2)'], 0),
             'commandes' => self::commandes(),
-            'creerSteps' => self::steps(['La prestation', 'Les formules', 'Les visuels', 'Publication'], 0),
+            'creerSteps' => self::steps(['La prestation', 'Les formules', 'Le visuel', 'Publication'], 0),
             'creerFormules' => [
                 ['name' => 'Essentielle', 'desc' => 'Correction orthotypographique', 'price' => '420 €', 'delay' => '8 jours'],
                 ['name' => 'Standard', 'desc' => '+ rapport de lecture, 1 aller-retour', 'price' => '780 €', 'delay' => '3 semaines'],
@@ -544,54 +549,54 @@ final class Prototype
             'checklist' => self::todo([
                 ['label' => 'Titre clair, sans superlatif', 'ok' => true],
                 ['label' => 'Trois formules renseignées', 'ok' => true],
-                ['label' => 'Trois visuels minimum', 'ok' => true],
+                ['label' => 'Visuel optionnel — sinon visuel charté ADL', 'ok' => true],
                 ['label' => 'Périmètre et exclusions précisés', 'ok' => false],
                 ['label' => 'Délais réalistes sur votre charge actuelle', 'ok' => false],
             ]),
             'roles' => [
-                ['title' => 'Je cherche des prestataires', 'desc' => 'Auteur, éditeur, collectif : commandez des prestations ou publiez vos missions.', 'style' => 'border: 1.5px solid #E8ECF1; background: #FFF; border-radius: 12px; padding: 20px; cursor: pointer;'],
+                ['title' => 'Je cherche des prestataires', 'desc' => 'Auteur, éditeur, collectif : commandez des prestations ou publiez vos recherches.', 'style' => 'border: 1.5px solid #E8ECF1; background: #FFF; border-radius: 12px; padding: 20px; cursor: pointer;'],
                 ['title' => 'Je propose mes services', 'desc' => 'Correcteur, bêta-lecteur, illustrateur, imprimeur, libraire : créez votre vitrine et vos formules.', 'style' => 'border: 1.5px solid #022746; background: #FBFCFE; border-radius: 12px; padding: 20px; cursor: pointer;'],
             ],
             'onboarding' => [
                 ['num' => '01', 'title' => 'Un compte, deux usages', 'body' => 'Cherchez des prestataires, proposez vos services, ou les deux. Rien n\'est exclusif.'],
                 ['num' => '02', 'title' => 'Un espace qui s\'adapte', 'body' => 'Les menus et actions correspondent à ce que vous avez choisi. Vous pourrez modifier ce choix plus tard.'],
                 ['num' => '03', 'title' => 'L\'engagement sans IA', 'body' => 'Si vous proposez vos services, vous signez l\'engagement : aucun livrable produit par une IA générative.'],
-                ['num' => '04', 'title' => 'Vous commencez tout de suite', 'body' => 'Publiez une mission, complétez votre vitrine, ou parcourez l\'annuaire — selon votre choix.'],
+                ['num' => '04', 'title' => 'Vous commencez tout de suite', 'body' => 'Publiez une recherche, complétez votre vitrine, ou parcourez l\'annuaire — selon votre choix.'],
             ],
             'inscriptionProof' => [
                 ['v' => '5 890', 'k' => 'professionnels du livre inscrits'],
                 ['v' => '48 h', 'k' => 'pour recevoir trois devis'],
-                ['v' => '8 %', 'k' => 'de commission, sans abonnement'],
+                ['v' => '8 %', 'k' => 'dès la 2ᵉ mission, sans abonnement'],
             ],
             'ways' => [
                 ['kicker' => 'Annuaire', 'title' => 'Chercher un profil', 'body' => 'Filtrez par métier, spécialité, ville et tarif, puis engagez la discussion.', 'points' => ['5 890 profils', 'Avis vérifiés', 'Réponse en 24 h en moyenne'], 'cta' => 'Parcourir l\'annuaire', 'href' => '/recherche'],
                 ['kicker' => 'Prestations', 'title' => 'Acheter une prestation', 'body' => 'Des offres packagées à prix, délai et périmètre affichés. Vous commandez en deux clics.', 'points' => ['2 314 prestations', 'Options à la carte', 'Contrat et facture inclus'], 'cta' => 'Voir les prestations', 'href' => '/prestations/correction-complete-roman'],
-                ['kicker' => 'Appels d\'offres', 'title' => 'Publier une mission', 'body' => 'Décrivez le besoin et le budget : les prestataires qualifiés vous envoient leur devis.', 'points' => ['148 missions ouvertes', 'Trois devis en 48 h', 'Gratuit pour tous'], 'cta' => 'Publier une mission', 'href' => '/espace/publier'],
+                ['kicker' => 'Recherche', 'title' => 'Publier une recherche', 'body' => 'Décrivez le besoin et le budget : les prestataires qualifiés vous envoient leur devis.', 'points' => ['148 recherches ouvertes', 'Trois devis en 48 h', 'Gratuit pour tous'], 'cta' => 'Publier une recherche', 'href' => '/espace/publier'],
             ],
             'steps4' => [
-                ['num' => '01', 'title' => 'Décrivez le besoin', 'body' => 'Métier, volume, budget, échéance : un formulaire court.'],
+                ['num' => '01', 'title' => 'Décrivez le besoin', 'body' => 'Métier, brief, budget, échéance : un formulaire court.'],
                 ['num' => '02', 'title' => 'Comparez', 'body' => 'Devis, réalisations, avis vérifiés et délais côte à côte.'],
                 ['num' => '03', 'title' => 'Travaillez cadré', 'body' => 'Contrat type adapté au métier, jalons et messagerie intégrée.'],
-                ['num' => '04', 'title' => 'Payez à la livraison', 'body' => 'Facture émise via la plateforme, réglée une fois le rendu validé.'],
+                ['num' => '04', 'title' => 'Validez et notez', 'body' => 'Le client confirme la mission, note la prestation : la commission prestataire est alors facturée.'],
             ],
             'commentImg' => photo(2),
             'niveaux' => self::niveaux(),
             'exemple' => [
                 ['k' => 'Prestation vendue (formule Standard)', 'v' => '780 €', 'style' => 'color: #14202C;'],
-                ['k' => 'Commission plateforme, 8 %', 'v' => '− 62 €', 'style' => 'color: #D85D3F;'],
-                ['k' => 'Versé au prestataire', 'v' => '718 €', 'style' => 'color: #022746; font-weight: 700; font-family: \'Space Grotesk\', sans-serif;'],
-                ['k' => 'Au niveau Expert, 6 %', 'v' => '733 €', 'style' => 'color: #66768A;'],
+                ['k' => '1ʳᵉ mission : commission', 'v' => '0 €', 'style' => 'color: #2E6B45;'],
+                ['k' => 'À partir de la 2ᵉ : commission 8 %', 'v' => '− 62 €', 'style' => 'color: #D85D3F;'],
+                ['k' => 'Le prestataire conserve (dès la 2ᵉ)', 'v' => '718 €', 'style' => 'color: #022746; font-weight: 700; font-family: \'Space Grotesk\', sans-serif;'],
             ],
             'gratuit' => [
-                'Créer un compte, une vitrine et autant de formules que nécessaire',
-                'Publier une mission et recevoir des devis',
+                'Créer un compte, une vitrine et autant de fiches que nécessaire — aucun abonnement',
+                'Publier une recherche, proposer une mission ou une prestation',
                 'Candidater aux appels d\'offres',
                 'Échanger par messagerie, envoyer des devis et des contrats',
-                'Annuler avant le démarrage d\'une mission',
+                'La première mission réalisée : aucune commission',
             ],
             'garanties' => [
                 ['kicker' => 'Profils', 'title' => 'Vérification à l\'entrée', 'body' => 'Justificatif d\'activité, une référence professionnelle contrôlée et un entretien pour les métiers de fabrication. Les faux profils sont retirés sous 24 h.'],
-                ['kicker' => 'Paiement', 'title' => 'Devis, contrat, facture', 'body' => 'Chaque mission passe par un devis chiffré, un contrat type et une facture émise via la plateforme. Le règlement intervient à la livraison validée, sous 30 jours.'],
+                ['kicker' => 'Paiement', 'title' => 'Devis, contrat, facture', 'body' => 'Chaque mission passe par un devis chiffré et un contrat type. Le client confirme et note ; la plateforme facture alors sa commission au prestataire, payable sous 15 jours.'],
                 ['kicker' => 'Litiges', 'title' => 'Médiation sous 72 h', 'body' => 'Un médiateur de la plateforme lit les échanges et la livraison, puis propose une répartition. Recours possible devant le médiateur de la consommation.'],
             ],
             'charte' => [
@@ -600,7 +605,7 @@ final class Prototype
                 ['num' => '03', 'title' => 'Confidentialité du manuscrit', 'body' => 'Aucun extrait diffusé sans autorisation écrite. NDA disponible en un clic.'],
                 ['num' => '04', 'title' => 'Droits clairs', 'body' => 'Cession, durée, supports et territoires écrits noir sur blanc dans le contrat.'],
                 ['num' => '05', 'title' => 'Aucune IA générative', 'body' => 'Textes, illustrations et voix sont produits par des humains. Pas de génération automatique, pas de sous-traitance cachée, pas d\'entraînement de modèle sur les manuscrits confiés.'],
-                ['num' => '06', 'title' => 'Avis sincères', 'body' => 'Un avis ne peut être laissé qu\'après une mission réellement payée sur la plateforme.'],
+                ['num' => '06', 'title' => 'Avis sincères', 'body' => 'Le client note la qualité, l\'efficacité et la satisfaction globale lorsqu\'il confirme que la mission est terminée.'],
             ],
             'litige' => [
                 ['num' => '01', 'title' => 'Signalement', 'body' => 'Depuis le suivi de commande, en décrivant l\'écart au brief. Le règlement est suspendu le temps de l\'examen.'],
@@ -612,7 +617,7 @@ final class Prototype
             'aideCats' => [
                 ['title' => 'Commandes & livraisons', 'desc' => 'Commander, valider, annuler, prolonger un délai.', 'n' => 24],
                 ['title' => 'Paiements & factures', 'desc' => 'Factures, règlements, TVA, relevés de commission.', 'n' => 18],
-                ['title' => 'Profil & niveaux', 'desc' => 'Vérification, badges, passage au niveau Expert.', 'n' => 15],
+                ['title' => 'Profil & vitrine', 'desc' => 'Vérification, badges, visibilité dans l\'annuaire.', 'n' => 15],
                 ['title' => 'Droits & contrats', 'desc' => 'Cessions, confidentialité, mentions obligatoires.', 'n' => 11],
             ],
             'aideFaq' => self::aideFaq(),
@@ -878,7 +883,7 @@ final class Prototype
     private static function filters(): array
     {
         return [
-            ['label' => 'Spécialité', 'options' => [['l' => 'Roman', 'n' => 184], ['l' => 'Jeunesse', 'n' => 96], ['l' => 'Essai / document', 'n' => 78], ['l' => 'BD & graphique', 'n' => 31], ['l' => 'Poésie', 'n' => 23]]],
+            ['label' => 'Spécialité', 'options' => [['l' => 'Global', 'n' => 210], ['l' => 'Roman', 'n' => 184], ['l' => 'Jeunesse', 'n' => 96], ['l' => 'Essai / document', 'n' => 78], ['l' => 'BD & graphique', 'n' => 31], ['l' => 'Poésie', 'n' => 23]]],
             ['label' => 'Prestation', 'options' => [['l' => 'Correction orthotypo', 'n' => 240], ['l' => 'Préparation de copie', 'n' => 87], ['l' => 'Réécriture', 'n' => 54], ['l' => 'Relecture sur épreuves', 'n' => 31]]],
             ['label' => 'Délai', 'options' => [['l' => 'Moins d\'une semaine', 'n' => 96], ['l' => '1 à 3 semaines', 'n' => 210], ['l' => 'Plus d\'un mois', 'n' => 106]]],
             ['label' => 'Niveau du prestataire', 'options' => [['l' => 'Experte / Expert', 'n' => 62], ['l' => 'Confirmé', 'n' => 188], ['l' => 'Nouveau', 'n' => 162]]],
@@ -983,26 +988,36 @@ final class Prototype
             ['Corrigez-vous le fond du texte ?', 'Le rapport de lecture pointe les incohérences, les longueurs et les répétitions, mais je ne réécris pas sans votre accord. Pour une réécriture, prenez la formule Complète ou une prestation dédiée.'],
             ['Comment se passe la confidentialité ?', 'Un accord de confidentialité peut être signé avant transmission du manuscrit, en option gratuite. Aucun extrait n\'est publié dans mon portfolio sans votre autorisation écrite.'],
         ];
-        $out = [];
-        foreach ($items as $i => [$q, $a]) {
-            $out[] = ['q' => $q, 'a' => $a, 'open' => $i === 0, 'sign' => $i === 0 ? '−' : '+'];
-        }
-        return $out;
+        return self::faqItems($items);
     }
 
     private static function aideFaq(): array
     {
         $items = [
-            ['Quand le prestataire est-il payé ?', 'La facture est émise à la validation de la livraison, ou automatiquement 7 jours après si vous ne réagissez pas. Le règlement est dû sous 30 jours, 15 jours au niveau Expert.'],
+            ['Quand la commission est-elle facturée ?', 'Lorsque le client confirme que la mission est finalisée et note la prestation (qualité, efficacité, satisfaction). La facture est alors émise au prestataire, payable sous 15 jours.'],
             ['Puis-je annuler une commande ?', 'Gratuitement tant que le prestataire n\'a pas démarré. Après démarrage, l\'annulation se négocie dans la messagerie ; à défaut d\'accord, un médiateur tranche.'],
-            ['Qui facture le client final ?', 'Le prestataire facture directement son client. La plateforme émet un relevé mensuel de commission, et une facture par mission pour les acheteurs institutionnels.'],
-            ['Comment sont calculés les niveaux ?', 'Nombre de missions livrées, note moyenne, taux de respect des délais et délai de réponse, sur les douze derniers mois.'],
-            ['La plateforme prend-elle une commission sur les appels d\'offres ?', 'Publier et candidater sont gratuits. La commission de 8 % s\'applique uniquement à la mission attribuée et réalisée.'],
+            ['Qui facture le client final ?', 'Le prestataire facture directement son client. La plateforme facture sa commission au prestataire, à la validation de la mission.'],
+            ['La première mission est-elle payante ?', 'Non. La première mission réalisée via la plateforme est entièrement gratuite. À partir de la deuxième, la commission est de 8 %.'],
+            ['La plateforme prend-elle une commission sur les appels d\'offres ?', 'Publier et candidater sont gratuits, sans abonnement. La commission de 8 % s\'applique uniquement à partir de la deuxième mission réalisée.'],
             ['L\'IA générative est-elle autorisée sur la plateforme ?', 'Non. Aucun livrable ne peut être produit par une IA générative : ni texte, ni illustration, ni voix. Les prestataires s\'y engagent à l\'inscription, et les manuscrits confiés ne servent jamais à entraîner un modèle.'],
         ];
+        return self::faqItems($items);
+    }
+
+    /** @param list<array{0: string, 1: string}> $items */
+    private static function faqItems(array $items): array
+    {
         $out = [];
         foreach ($items as $i => [$q, $a]) {
-            $out[] = ['q' => $q, 'a' => $a, 'open' => $i === 0, 'sign' => $i === 0 ? '−' : '+'];
+            $open = $i === 0;
+            $out[] = [
+                'q' => $q,
+                'a' => $a,
+                'open' => $open,
+                'sign' => $open ? '−' : '+',
+                'panelAttr' => $open ? '' : 'hidden',
+                'expanded' => $open ? 'true' : 'false',
+            ];
         }
         return $out;
     }
@@ -1034,7 +1049,7 @@ final class Prototype
             ['Votre mission a reçu 3 nouvelles candidatures', 'Essai historique, 240 pages — 7 candidatures au total.', 'hier', true, '/espace/missions'],
             ['Versement effectué', '718 € virés sur votre compte pour la commande nº 2455-04.', '3 sept.', false, '/espace/facturation'],
             ['Avis publié', 'Éditions La Ligne vous a attribué 5 étoiles.', '1er sept.', false, '/prestataires/marion-vasseur'],
-            ['Plus que 33 missions avant le niveau Expert', 'Commission réduite à 6 % et mise en avant dans les résultats.', '28 août', false, '/espace'],
+            ['Première mission offerte', 'Aucune commission sur votre première mission réalisée. Ensuite, 8 %.', '28 août', false, '/espace'],
         ];
         $out = [];
         foreach ($items as [$title, $body, $when, $unread, $href]) {
@@ -1118,8 +1133,8 @@ final class Prototype
 
     private static function avisCriteres(): array
     {
-        $labels = ['Qualité du travail livré', 'Respect des délais', 'Communication', 'Rapport qualité-prix'];
-        $notes = [5, 5, 4, 5];
+        $labels = ['Qualité de la prestation', 'Efficacité', 'Satisfaction globale'];
+        $notes = [5, 4, 5];
         $out = [];
         foreach ($labels as $i => $label) {
             $stars = [];
@@ -1134,8 +1149,8 @@ final class Prototype
     private static function toggles(): array
     {
         $items = [
-            ['Disponible pour de nouvelles missions', 'Votre vitrine affiche « disponible dès maintenant ».', true],
-            ['Alertes de nouvelles missions', 'Un e-mail dès qu\'une mission correspond à vos métiers.', true],
+            ['Disponible pour de nouveaux appels d\'offres', 'Votre vitrine affiche « disponible dès maintenant ».', true],
+            ['Alertes de nouvelles recherches', 'Un e-mail dès qu\'une recherche correspond à vos métiers.', true],
             ['Résumé hebdomadaire', 'Vues, contacts et conversions de vos prestations.', false],
             ['Afficher mon portfolio publiquement', 'Uniquement les projets dont vous avez l\'autorisation.', true],
         ];
@@ -1322,9 +1337,8 @@ final class Prototype
     private static function niveaux(): array
     {
         return [
-            ['kicker' => 'Entrée', 'name' => 'Nouveau', 'pct' => '8 %', 'items' => ['Vitrine et formules illimitées', 'Candidatures gratuites', 'Devis et factures', 'Contrats types inclus'], 'card' => 'border-radius: 14px; padding: 26px; background: #FFF; color: #022746; border: 1px solid #E8ECF1;', 'kickerColor' => self::ORANGE],
-            ['kicker' => 'Après 30 missions', 'name' => 'Confirmé', 'pct' => '8 %', 'items' => ['Badge Confirmé sur la vitrine', 'Statistiques de conversion', 'Support prioritaire', 'Mise en avant ponctuelle'], 'card' => 'border-radius: 14px; padding: 26px; background: #022746; color: #E4EDF5; border: 1px solid #022746;', 'kickerColor' => '#E8845F'],
-            ['kicker' => 'Après 120 missions', 'name' => 'Expert', 'pct' => '6 %', 'items' => ['Commission réduite à 6 %', 'Mise en avant dans les résultats', 'Accès aux missions institutionnelles', 'Règlement garanti sous 15 jours'], 'card' => 'border-radius: 14px; padding: 26px; background: #FFF; color: #022746; border: 1px solid #E8ECF1;', 'kickerColor' => self::ORANGE],
+            ['kicker' => 'Pour commencer', 'name' => 'Première mission', 'pct' => '0 %', 'items' => ['Aucun abonnement', 'Compte, vitrine et fiches libres', 'Candidatures et devis gratuits', 'Commission plateforme offerte'], 'card' => 'border-radius: 14px; padding: 26px; background: #022746; color: #E4EDF5; border: 1px solid #022746;', 'kickerColor' => '#E8845F'],
+            ['kicker' => 'Ensuite', 'name' => 'À partir de la 2ᵉ', 'pct' => '8 %', 'items' => ['Uniquement sur les missions réalisées', 'Facturée au prestataire à la validation', 'Avis client obligatoire (qualité, efficacité, satisfaction)', '15 jours pour régler, sinon les offres sont suspendues'], 'card' => 'border-radius: 14px; padding: 26px; background: #FFF; color: #022746; border: 1px solid #E8ECF1;', 'kickerColor' => self::ORANGE],
         ];
     }
 
@@ -1409,6 +1423,18 @@ final class Prototype
         return $out;
     }
 
+    private static function topbarStats(): string
+    {
+        try {
+            $pros = User::countOfferers();
+            $commission = \Adl\Models\Setting::get('commission_percent', '8') ?: '8';
+            $label = $pros > 1 ? 'professionnels du livre' : 'professionnel du livre';
+            return '1ʳᵉ mission offerte · puis ' . $commission . ' % · ' . format_int($pros) . ' ' . $label;
+        } catch (\Throwable) {
+            return '1ʳᵉ mission offerte · puis 8 % · sans abonnement';
+        }
+    }
+
     private static function liveUnreadAlerts(?array $user): int
     {
         if (!$user) {
@@ -1433,10 +1459,10 @@ final class Prototype
     private static function headerCta(bool $seeks, bool $offers): ?array
     {
         if ($seeks) {
-            return ['label' => 'Publier une mission', 'href' => '/espace/publier'];
+            return ['label' => 'Publier une recherche', 'href' => '/espace/publier'];
         }
         if ($offers) {
-            return ['label' => 'Créer une prestation', 'href' => '/espace/prestations/creer'];
+            return ['label' => 'Proposer une prestation', 'href' => '/espace/prestations/creer'];
         }
         return null;
     }
@@ -1459,11 +1485,11 @@ final class Prototype
 
         if ($seeks) {
             $groups[] = [
-                'title' => 'Chercher',
+                'title' => 'Recherche',
                 'items' => [
                     $item('Annuaire', '/recherche', '', 'search'),
-                    $item('Publier une mission', '/espace/publier', 'publier', 'file-plus'),
-                    $item('Mes missions', '/espace/missions', 'mesmissions', 'clipboard'),
+                    $item('Publier une recherche', '/espace/publier', 'publier', 'file-plus'),
+                    $item('Mes recherches', '/espace/missions', 'mesmissions', 'clipboard'),
                     $item('Mes commandes', '/espace/commandes', 'commandes', 'bag'),
                     $item('Favoris', '/espace/favoris', 'favoris', 'heart'),
                 ],
@@ -1475,7 +1501,7 @@ final class Prototype
                 'title' => 'Proposer',
                 'items' => [
                     $item('Ma vitrine', '/espace/vitrine', 'vitrine', 'id'),
-                    $item('Créer une prestation', '/espace/prestations/creer', 'creer', 'plus-box'),
+                    $item('Proposer une prestation', '/espace/prestations/creer', 'creer', 'plus-box'),
                     $item('Mes prestations', '/espace/prestations', 'mesprestations', 'grid'),
                     $item('Appels d\'offres', '/missions', '', 'megaphone'),
                     $item('Mes candidatures', '/espace/candidatures', 'candidatures', 'send'),

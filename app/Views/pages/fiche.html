@@ -62,12 +62,10 @@
             <div style="border: 1px solid #E8ECF1; border-radius: 14px; overflow: hidden;">
               <sc-for list="{{ faq }}" as="f" hint-placeholder-count="4">
                 <div style="border-bottom: 1px solid #F2F5F8;">
-                  <div sc-camel-on-click="{{ f.onClick }}" style="padding: 16px 18px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; font-size: 15px; color: #14202C;">
-                    {{ f.q }}<span style="color: #8496A8; font-family: 'Space Grotesk', monospace;">{{ f.sign }}</span>
-                  </div>
-                  <sc-if value="{{ f.open }}" hint-placeholder-val="{{ false }}">
-                    <div style="padding: 0 18px 18px; font-size: 15px; color: #4A5A6B; line-height: 1.65; max-width: 62em;">{{ f.a }}</div>
-                  </sc-if>
+                  <button type="button" data-accordion aria-expanded="{{ f.expanded }}" class="faq-q" style="padding: 16px 18px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; font-size: 15px; color: #14202C;">
+                    {{ f.q }}<span data-accordion-sign style="color: #8496A8; font-family: 'Space Grotesk', monospace;">{{ f.sign }}</span>
+                  </button>
+                  <div {{ f.panelAttr }} style="padding: 0 18px 18px; font-size: 15px; color: #4A5A6B; line-height: 1.65; max-width: 62em;">{{ f.a }}</div>
                 </div>
               </sc-for>
             </div>

@@ -5,6 +5,7 @@
     <?php if (!empty($error)): ?>
       <div class="flash flash-error"><?= e($error) ?></div>
     <?php endif; ?>
+    <?php require ADL_ROOT . '/app/Views/partials/oauth-buttons.php'; ?>
     <form method="post" action="<?= e(url('/connexion')) ?>" style="display: flex; flex-direction: column; gap: 16px;">
       <?= csrf_field() ?>
       <div>

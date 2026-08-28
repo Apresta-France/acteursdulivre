@@ -55,6 +55,11 @@ final class InstallController
             'MAIL_ENCRYPTION' => $request->string('MAIL_ENCRYPTION', 'tls'),
             'MAIL_FROM_ADDRESS' => $request->string('MAIL_FROM_ADDRESS', 'bonjour@acteursdulivre.fr'),
             'MAIL_FROM_NAME' => $request->string('MAIL_FROM_NAME', 'Acteurs du Livre'),
+            'SESSION_NAME' => 'adl_session',
+            'GOOGLE_CLIENT_ID' => '',
+            'GOOGLE_CLIENT_SECRET' => '',
+            'FACEBOOK_APP_ID' => '',
+            'FACEBOOK_APP_SECRET' => '',
         ];
 
         $adminEmail = strtolower($request->string('ADMIN_EMAIL'));

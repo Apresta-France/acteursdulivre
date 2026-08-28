@@ -11,6 +11,7 @@ use Adl\Core\View;
 use Adl\Data\AdminCatalog;
 use Adl\Models\EmailTemplate;
 use Adl\Models\Setting;
+use Adl\Models\Taxonomy;
 use Throwable;
 
 final class AdminController
@@ -75,6 +76,71 @@ final class AdminController
         $this->screen('reglages');
     }
 
+    public function listes(Request $request): void
+    {
+        Auth::requireAdmin();
+        try {
+            $trades = Taxonomy::list(Taxonomy::KIND_TRADE);
+            $specialties = Taxonomy::list(Taxonomy::KIND_SPECIALTY);
+        } catch (Throwable) {
+            $trades = [];
+            $specialties = [];
+        }
+        foreach ($trades as &$term) {
+            $term['usage'] = Taxonomy::usageCount($term);
+        }
+        unset($term);
+        foreach ($specialties as &$term) {
+            $term['usage'] = Taxonomy::usageCount($term);
+        }
+        unset($term);
+
+        View::render('admin/listes', AdminCatalog::forScreen('listes', [
+            'trades' => $trades,
+            'specialties' => $specialties,
+            'saved' => flash('saved'),
+            'error' => flash('error'),
+        ]), 'layouts/admin');
+    }
+
+    public function listesSave(Request $request): void
+    {
+        Auth::requireAdmin();
+        $action = $request->string('action');
+        $id = $request->int('id');
+
+        try {
+            if ($action === 'create') {
+                Taxonomy::create(
+                    $request->string('kind'),
+                    $request->string('name'),
+                    $request->bool('is_global')
+                );
+                flash('saved', 'Terme ajouté à la liste.');
+            } elseif ($action === 'save' && $id) {
+                Taxonomy::update(
+                    $id,
+                    $request->string('name'),
+                    $request->bool('enabled'),
+                    $request->bool('is_global')
+                );
+                flash('saved', 'Terme enregistré.');
+            } elseif ($action === 'delete' && $id) {
+                Taxonomy::delete($id);
+                flash('saved', 'Terme supprimé.');
+            } elseif (($action === 'up' || $action === 'down') && $id) {
+                Taxonomy::move($id, $action);
+                flash('saved', 'Ordre mis à jour.');
+            } else {
+                flash('error', 'Action inconnue.');
+            }
+        } catch (Throwable $e) {
+            flash('error', $e->getMessage());
+        }
+
+        redirect('/admin/listes');
+    }
+
     public function smtp(Request $request): void
     {
         Auth::requireAdmin();
@@ -107,6 +173,26 @@ final class AdminController
             flash('error', $e->getMessage());
         }
         redirect('/admin/smtp');
+    }
+
+    public function sso(Request $request): void
+    {
+        Auth::requireAdmin();
+        View::render('admin/sso', AdminCatalog::forScreen('sso', [
+            'settings' => Setting::all(),
+            'saved' => flash('saved') ? true : false,
+            'error' => flash('error'),
+        ]), 'layouts/admin');
+    }
+
+    public function ssoSave(Request $request): void
+    {
+        Auth::requireAdmin();
+        foreach (['google_client_id', 'google_client_secret', 'facebook_app_id', 'facebook_app_secret'] as $key) {
+            Setting::set($key, $request->string($key, ''));
+        }
+        flash('saved', true);
+        redirect('/admin/sso');
     }
 
     public function emails(Request $request): void

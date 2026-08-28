@@ -1,6 +1,6 @@
 <div style="padding: 26px 32px 44px;">
           <h1 style="font-family: 'Space Grotesk', sans-serif; font-size: 26px; font-weight: 700; color: #022746; margin: 0 0 4px;">Commandes et finances</h1>
-          <p style="font-size: 14px; color: #66768A; margin: 0 0 22px;">Août 2026 · les montants sont hors taxes</p>
+          <p style="font-size: 14px; color: #66768A; margin: 0 0 22px;">{{ financesSubtitle }}</p>
 
           <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 24px;">
             <sc-for list="{{ finKpis }}" as="k" hint-placeholder-count="4">
@@ -30,6 +30,9 @@
                   <span><span style="{{ c.statutStyle }}">{{ c.statut }}</span></span>
                 </div>
               </sc-for>
+              <sc-if value="{{ emptyCommandes }}">
+                <p style="font-size: 14px; color: #66768A; margin: 0; padding: 28px 18px;">{{ emptyCommandes }}</p>
+              </sc-if>
             </div>
             <div style="display: flex; flex-direction: column; gap: 16px;">
               <div style="border: 1px solid #E8ECF1; border-radius: 12px; padding: 20px;">
@@ -44,8 +47,13 @@
                       <span style="font-family: 'Space Grotesk', monospace; color: #D85D3F;">{{ i.montant }}</span>
                     </div>
                   </sc-for>
+                  <sc-if value="{{ emptyImpayes }}">
+                    <p style="font-size: 14px; color: #66768A; margin: 0;">{{ emptyImpayes }}</p>
+                  </sc-if>
                 </div>
+                <sc-if value="{{ impayes }}">
                 <button style="background: #022746; color: #FFF; border: 0; width: 100%; height: 40px; border-radius: 8px; font-size: 14px; margin-top: 16px;">Envoyer les relances</button>
+                </sc-if>
               </div>
               <div style="border: 1px solid #E8ECF1; border-radius: 12px; padding: 20px;">
                 <div style="font-family: 'Space Grotesk', sans-serif; font-size: 16px; font-weight: 500; color: #022746; margin-bottom: 12px;">Commission par métier</div>
@@ -56,6 +64,9 @@
                       <div style="height: 5px; background: #EEF1F5; border-radius: 3px; margin-top: 7px; overflow: hidden;"><div style="{{ c.bar }}"></div></div>
                     </div>
                   </sc-for>
+                  <sc-if value="{{ emptyCommissionMetier }}">
+                    <p style="font-size: 14px; color: #66768A; margin: 0;">{{ emptyCommissionMetier }}</p>
+                  </sc-if>
                 </div>
               </div>
             </div>

@@ -2,11 +2,13 @@
 $old = is_array($old ?? null) ? $old : [];
 $selected = (string) ($old['category_name'] ?? 'Correction');
 $trades = $trades ?? \Adl\Data\Catalog::trades();
+$volumeHint = \Adl\Data\Catalog::volumeHint($selected);
+$briefHint = \Adl\Data\Catalog::briefHint($selected);
 ?>
 <div class="espace-page publish-page">
   <div class="espace-page-head">
     <div>
-      <h1>Décrivez votre mission</h1>
+      <h1>Décrivez votre recherche</h1>
       <p>Plus le brief est précis, plus les devis sont justes. Trois minutes suffisent.</p>
     </div>
   </div>
@@ -16,7 +18,9 @@ $trades = $trades ?? \Adl\Data\Catalog::trades();
   <?php endif; ?>
 
   <div class="publish-grid">
-    <form class="param-form publish-form" method="post" action="<?= e(url('/espace/publier')) ?>" enctype="multipart/form-data" data-publish-form>
+    <form class="param-form publish-form" method="post" action="<?= e(url('/espace/publier')) ?>" enctype="multipart/form-data" data-publish-form
+          data-volume-hints="<?= e(json_encode(\Adl\Data\Catalog::VOLUME_HINTS, JSON_UNESCAPED_UNICODE)) ?>"
+          data-brief-hints="<?= e(json_encode(\Adl\Data\Catalog::BRIEF_HINTS, JSON_UNESCAPED_UNICODE)) ?>">
       <?= csrf_field() ?>
 
       <div>
@@ -32,48 +36,51 @@ $trades = $trades ?? \Adl\Data\Catalog::trades();
       </div>
 
       <div>
-        <label class="field" for="mission-title">Titre de la mission</label>
-        <input class="input" id="mission-title" name="title" required maxlength="255"
+        <label class="field" for="search-title">Titre de la recherche</label>
+        <input class="input" id="search-title" name="title" required maxlength="255"
                value="<?= e((string) ($old['title'] ?? '')) ?>"
                placeholder="Recherche correcteur pour essai historique, 240 pages"
                data-preview-title>
       </div>
 
       <div>
-        <label class="field" for="mission-brief">Brief</label>
-        <textarea class="textarea" id="mission-brief" name="brief" required rows="6"
-                  placeholder="Genre, volume en signes, état du texte, attentes, contraintes de calendrier…"
+        <label class="field" for="search-brief">Brief</label>
+        <textarea class="textarea" id="search-brief" name="brief" required rows="6"
+                  placeholder="<?= e($briefHint) ?>"
                   data-preview-brief><?= e((string) ($old['brief'] ?? '')) ?></textarea>
       </div>
 
-      <div class="form-grid-3">
-        <div>
-          <label class="field" for="mission-volume">Volume</label>
-          <input class="input" id="mission-volume" name="volume" value="<?= e((string) ($old['volume'] ?? '')) ?>" placeholder="420 000 signes">
+      <div class="form-grid-3<?= $volumeHint ? '' : ' is-two' ?>" data-publish-metrics>
+        <div data-volume-wrap<?= $volumeHint ? '' : ' hidden' ?>>
+          <label class="field" for="search-volume" data-volume-label><?= e($volumeHint['label'] ?? 'Volume') ?></label>
+          <input class="input" id="search-volume" name="volume" data-volume-input
+                 value="<?= e((string) ($old['volume'] ?? '')) ?>"
+                 placeholder="<?= e($volumeHint['placeholder'] ?? '') ?>"
+                 <?= $volumeHint ? '' : ' disabled' ?>>
         </div>
         <div>
-          <label class="field" for="mission-min">Budget min. (€)</label>
-          <input class="input" id="mission-min" name="budget_min" inputmode="numeric" value="<?= e((string) ($old['budget_min'] ?? '')) ?>" placeholder="600" data-preview-min>
+          <label class="field" for="search-min">Budget min. (€)</label>
+          <input class="input" id="search-min" name="budget_min" inputmode="numeric" value="<?= e((string) ($old['budget_min'] ?? '')) ?>" placeholder="600" data-preview-min>
         </div>
         <div>
-          <label class="field" for="mission-max">Budget max. (€)</label>
-          <input class="input" id="mission-max" name="budget_max" inputmode="numeric" value="<?= e((string) ($old['budget_max'] ?? '')) ?>" placeholder="900" data-preview-max>
+          <label class="field" for="search-max">Budget max. (€)</label>
+          <input class="input" id="search-max" name="budget_max" inputmode="numeric" value="<?= e((string) ($old['budget_max'] ?? '')) ?>" placeholder="900" data-preview-max>
         </div>
       </div>
 
       <div>
-        <label class="field" for="mission-deadline">Échéance</label>
-        <input class="input" id="mission-deadline" type="date" name="deadline" value="<?= e((string) ($old['deadline'] ?? '')) ?>">
+        <label class="field" for="search-deadline">Échéance</label>
+        <input class="input" id="search-deadline" type="date" name="deadline" value="<?= e((string) ($old['deadline'] ?? '')) ?>">
       </div>
 
       <div>
-        <label class="field" for="mission-file">Pièce jointe (optionnel)</label>
-        <input class="input" id="mission-file" type="file" name="attachment" accept=".pdf,.doc,.docx,.odt,.txt">
+        <label class="field" for="search-file">Pièce jointe (optionnel)</label>
+        <input class="input" id="search-file" type="file" name="attachment" accept=".pdf,.doc,.docx,.odt,.txt">
         <p class="field-help">Extrait, sommaire ou cahier des charges — PDF, DOCX, ODT, 20 Mo max.</p>
       </div>
 
       <div class="auth-actions publish-actions">
-        <button class="btn-orange" type="submit" name="intent" value="publish">Publier la mission</button>
+        <button class="btn-orange" type="submit" name="intent" value="publish">Publier la recherche</button>
         <button class="btn-ghost" type="submit" name="intent" value="draft">Enregistrer le brouillon</button>
       </div>
     </form>
@@ -103,7 +110,7 @@ $trades = $trades ?? \Adl\Data\Catalog::trades();
       </div>
       <div class="side-card side-card-warm">
         <div class="side-title-sm">Ce qui se passe ensuite</div>
-        <p>Votre mission est visible par les prestataires du métier choisi. Vous recevez en moyenne trois devis en 48 heures. Le paiement n'intervient qu'après accord — il n'est pas demandé ici.</p>
+        <p>Votre recherche est visible par les prestataires du métier choisi. Vous recevez en moyenne trois devis en 48 heures. Le paiement n'intervient qu'après accord — il n'est pas demandé ici.</p>
       </div>
     </aside>
   </div>

@@ -10,6 +10,8 @@ if ($portfolio === []) {
 }
 $selectedTrades = $p['trades'] ?? [];
 $selectedGenres = $p['genres'] ?? [];
+$trades = $trades ?? \Adl\Data\Catalog::trades();
+$genres = $genres ?? \Adl\Data\Catalog::specialties();
 $tools = implode(', ', $p['tools'] ?? []);
 $completion = (int) ($completion ?? ($p['completion'] ?? 0));
 $publicHref = !empty($p['slug']) ? url('/prestataires/' . $p['slug']) : '';
@@ -25,7 +27,7 @@ if ($rateKind === 'percent') {
   <div class="espace-page-head">
     <div>
       <h1>Ma vitrine</h1>
-      <p>Profil complété à <?= $completion ?> %. Les vitrines précises reçoivent nettement plus de demandes.</p>
+      <p>Profil complété à <?= $completion ?> %. Les vitrines précises reçoivent nettement plus de demandes.<?php if (!empty($p['is_founder'])): ?> <span class="profile-badge profile-badge-founder" style="vertical-align: middle;">Membre fondateur</span><?php endif; ?></p>
     </div>
     <div class="vitrine-head-actions">
       <?php if ($publicHref): ?>
@@ -55,6 +57,13 @@ if ($rateKind === 'percent') {
     <?= csrf_field() ?>
 
     <div data-tab-panel="identite">
+      <?php
+        $avatarSrc = (string) ($profile['avatar_src'] ?? $userAvatarUrl ?? '');
+        $initials = (string) ($userInitials ?? \Adl\Models\Profile::initials($p));
+        $inputId = 'vitrine-avatar';
+        $help = 'JPG, PNG ou WebP, 2 Mo maximum. Visible sur votre fiche publique.';
+        require ADL_ROOT . '/app/Views/partials/avatar-field.php';
+      ?>
       <div class="form-grid-2">
         <div>
           <label class="field" for="first_name">Prénom</label>
@@ -198,7 +207,8 @@ if ($rateKind === 'percent') {
       </div>
 
       <div>
-        <span class="field">Genres et domaines</span>
+        <span class="field">Spécialités</span>
+        <p class="field-help">Types de textes que vous travaillez. Choisissez Global si vous intervenez sur tous les genres.</p>
         <div class="chip-row">
           <?php foreach ($genres as $genre): ?>
             <label class="chip<?= in_array($genre, $selectedGenres, true) ? ' is-on' : '' ?>">

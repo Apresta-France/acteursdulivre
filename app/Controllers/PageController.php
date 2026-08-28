@@ -120,7 +120,9 @@ final class PageController
             'meta' => Share::meta(
                 $service['title'],
                 trim((string) ($service['excerpt'] ?: $service['by'] . ' · ' . $service['price'])),
-                Share::absolute($service['href'])
+                Share::absolute($service['href']),
+                'website',
+                !empty($service['has_image']) ? $service['img'] : null
             ),
         ]);
     }

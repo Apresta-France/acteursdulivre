@@ -24,7 +24,7 @@ $todos = [];
 if ($seeks && $missionCount === 0) {
     $todos[] = [
         'icon' => 'file-plus',
-        'title' => 'Publier votre première mission',
+        'title' => 'Publier votre première recherche',
         'body' => 'Décrivez le besoin et le budget : les prestataires du métier choisi pourront y répondre.',
         'href' => '/espace/publier',
         'cta' => 'Rédiger l\'annonce',
@@ -44,18 +44,33 @@ if ($offers && $profileCompletion < 80) {
   <div class="espace-page-head">
     <div>
       <h1>Bonjour <?= e($first) ?></h1>
-      <p><?= e($subtitle) ?></p>
+      <p><?= e($subtitle) ?><?php if (!empty($isFounder)): ?> <span class="profile-badge profile-badge-founder" style="vertical-align: middle;">Membre fondateur</span><?php endif; ?></p>
     </div>
     <div class="dash-hero-actions">
       <?php if ($seeks): ?>
-        <a class="btn-orange" href="<?= e(url('/espace/publier')) ?>"><?= icon('file-plus', 16) ?> Publier une mission</a>
+        <a class="btn-orange" href="<?= e(url('/espace/publier')) ?>"><?= icon('file-plus', 16) ?> Publier une recherche</a>
       <?php endif; ?>
       <?php if ($offers): ?>
-        <a class="btn-navy" href="<?= e(url('/espace/prestations/creer')) ?>"><?= icon('plus-box', 16) ?> Créer une prestation</a>
+        <a class="btn-navy" href="<?= e(url('/espace/prestations/creer')) ?>"><?= icon('plus-box', 16) ?> Proposer une prestation</a>
       <?php endif; ?>
       <a class="btn-ghost" href="<?= e(url('/espace/parametres')) ?>"><?= icon('sliders', 16) ?> Mes usages</a>
     </div>
   </div>
+
+  <?php if (!empty($onboardingPending)): ?>
+    <div class="dash-onboard">
+      <div>
+        <strong>Votre compte n’est pas encore installé</strong>
+        <em><?php
+          $top = $onboardingPriorities[0] ?? null;
+          echo e($top
+            ? (string) $top['title'] . ' — ' . (string) $top['body']
+            : 'Quelques minutes suffisent pour que votre fiche existe vraiment.');
+        ?></em>
+      </div>
+      <a class="btn-orange" href="<?= e(url('/espace/bienvenue')) ?>">Reprendre l’accueil</a>
+    </div>
+  <?php endif; ?>
 
   <?php if (!empty($saved)): ?>
     <div class="flash flash-ok"><?= e(is_string($saved) ? $saved : 'Enregistré.') ?></div>
@@ -63,6 +78,7 @@ if ($offers && $profileCompletion < 80) {
   <?php if (!empty($error)): ?>
     <div class="flash flash-error"><?= e((string) $error) ?></div>
   <?php endif; ?>
+  <?php require ADL_ROOT . '/app/Views/partials/billing-banner.php'; ?>
 
   <?php if ($offers): ?>
     <section class="avail-banner<?= $availabilityBusy ? ' is-busy' : ' is-available' ?>">
@@ -70,9 +86,9 @@ if ($offers && $profileCompletion < 80) {
       <div>
         <strong>Vous êtes <?= $availabilityBusy ? 'Occupé' : 'Disponible' ?></strong>
         <em><?php if ($availabilityBusy): ?>
-          Votre vitrine indique que vous n'acceptez pas de nouvelles missions<?= $availabilityNote !== '' ? ' · ' . e($availabilityNote) : '' ?>. Les porteurs de projet peuvent toujours vous écrire.
+          Votre vitrine indique que vous n'acceptez pas de nouveaux appels d'offres<?= $availabilityNote !== '' ? ' · ' . e($availabilityNote) : '' ?>. Les porteurs de projet peuvent toujours vous écrire.
         <?php else: ?>
-          Les porteurs de projet voient que vous acceptez de nouvelles missions<?= $availabilityNote !== '' ? ' · ' . e($availabilityNote) : '' ?>. Passez en Occupé dès que votre planning est saturé.
+          Les porteurs de projet voient que vous acceptez de nouveaux appels d'offres<?= $availabilityNote !== '' ? ' · ' . e($availabilityNote) : '' ?>. Passez en Occupé dès que votre planning est saturé.
         <?php endif; ?></em>
       </div>
       <form method="post" action="<?= e(url('/espace/disponibilite')) ?>" class="mode-switch">
@@ -102,7 +118,7 @@ if ($offers && $profileCompletion < 80) {
       <a class="dash-stat" href="<?= e(url('/espace/missions')) ?>">
         <span class="dash-ico"><?= icon('clipboard', 18) ?></span>
         <span>
-          <strong>Missions</strong>
+          <strong>Recherches</strong>
           <em><?= $openMissionCount ?> ouverte<?= $openMissionCount > 1 ? 's' : '' ?> · <?= $missionCount ?> au total</em>
         </span>
       </a>
@@ -148,13 +164,13 @@ if ($offers && $profileCompletion < 80) {
         </a>
         <a class="dash-card dash-card-accent" href="<?= e(url('/espace/publier')) ?>">
           <span class="dash-ico"><?= icon('file-plus', 20) ?></span>
-          <strong>Publier une mission</strong>
+          <strong>Publier une recherche</strong>
           <span>Décrivez le besoin et le budget : les prestataires qualifiés vous envoient leur devis.</span>
           <span class="dash-card-cta">Rédiger l'annonce <?= icon('arrow', 14) ?></span>
         </a>
         <a class="dash-card" href="<?= e(url('/espace/missions')) ?>">
           <span class="dash-ico"><?= icon('clipboard', 20) ?></span>
-          <strong>Mes missions</strong>
+          <strong>Mes recherches</strong>
           <span>Suivez les appels d'offres que vous avez publiés et les devis reçus.</span>
           <span class="dash-card-cta">Voir le suivi <?= icon('arrow', 14) ?></span>
         </a>
@@ -180,15 +196,15 @@ if ($offers && $profileCompletion < 80) {
         </a>
         <a class="dash-card dash-card-accent" href="<?= e(url('/espace/prestations/creer')) ?>">
           <span class="dash-ico"><?= icon('plus-box', 20) ?></span>
-          <strong>Créer une prestation</strong>
+          <strong>Proposer une prestation</strong>
           <span>Une offre packagée à prix, délai et périmètre affichés.</span>
           <span class="dash-card-cta">Composer l'offre <?= icon('arrow', 14) ?></span>
         </a>
         <a class="dash-card" href="<?= e(url('/missions')) ?>">
           <span class="dash-ico"><?= icon('megaphone', 20) ?></span>
           <strong>Voir les appels d'offres</strong>
-          <span>Candidatez gratuitement aux missions publiées par les porteurs de projet.</span>
-          <span class="dash-card-cta">Parcourir les missions <?= icon('arrow', 14) ?></span>
+          <span>Candidatez gratuitement aux recherches publiées par les porteurs de projet.</span>
+          <span class="dash-card-cta">Parcourir les appels d'offres <?= icon('arrow', 14) ?></span>
         </a>
         <a class="dash-card" href="<?= e(url('/espace/candidatures')) ?>">
           <span class="dash-ico"><?= icon('send', 20) ?></span>

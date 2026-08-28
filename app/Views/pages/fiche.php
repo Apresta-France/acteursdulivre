@@ -6,15 +6,23 @@ if (!$service) {
 $packages = $service['packages'] ?? [];
 ?>
 <div class="fiche-page">
-  <div class="search-crumb">Prestations · <?= e((string) ($service['cat'] ?: 'Offre')) ?></div>
+  <div class="search-crumb">Prestations · <?= e((string) ($service['cat'] ?: 'Offre')) ?><?php if (!empty($service['specialty'])): ?> · <?= e((string) $service['specialty']) ?><?php endif; ?></div>
   <div class="publish-grid">
     <div>
+      <?php if (!empty($service['has_image'])): ?>
+        <div class="service-cover-hero" style="background-image:url('<?= e((string) $service['img']) ?>')" role="img" aria-label="<?= e('Visuel de la prestation') ?>"></div>
+      <?php else: ?>
+        <?= service_cover_html((string) ($service['cat'] ?? ''), 'is-hero') ?>
+      <?php endif; ?>
       <h1><?= e((string) $service['title']) ?></h1>
       <p class="journal-lead"><?= e((string) ($service['excerpt'] ?: 'Prestation proposée par ' . $service['by'] . '.')) ?></p>
       <div class="facts">
         <div><span>Prix</span><strong><?= e((string) $service['price']) ?></strong></div>
         <div><span>Délai</span><strong><?= e((string) ($service['delay'] ?: 'à convenir')) ?></strong></div>
-        <div><span>Métier</span><strong><?= e((string) ($service['cat'] ?: '—')) ?></strong></div>
+        <div><span>Métier</span><strong><?= e((string) ($service['cat'] ? \Adl\Data\Catalog::tradeTitle((string) $service['cat']) : '—')) ?></strong></div>
+        <?php if (!empty($service['specialty'])): ?>
+          <div><span>Spécialité</span><strong><?= e((string) $service['specialty']) ?></strong></div>
+        <?php endif; ?>
         <div><span>Avis</span><strong><?= $service['reviews'] > 0 ? e((string) $service['rating']) . ' · ' . (int) $service['reviews'] : 'Pas encore d\'avis' ?></strong></div>
       </div>
 

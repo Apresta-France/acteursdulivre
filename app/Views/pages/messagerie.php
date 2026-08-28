@@ -2,7 +2,7 @@
   <div class="espace-page-head">
     <div>
       <h1>Messagerie</h1>
-      <p>Les échanges autour des missions et des prestations.</p>
+      <p>Les échanges autour des recherches et des prestations.</p>
     </div>
   </div>
 

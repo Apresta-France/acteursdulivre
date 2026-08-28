@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="<?= e(asset('css/app.css')) ?>?v=m20">
+  <link rel="stylesheet" href="<?= e(asset('css/app.css')) ?>?v=m21">
   <link rel="icon" href="<?= e(asset('img/favicon.ico')) ?>?v=3" sizes="any">
   <link rel="icon" type="image/png" href="<?= e(asset('img/favicon-32x32.png')) ?>?v=3" sizes="32x32">
   <link rel="apple-touch-icon" href="<?= e(asset('img/apple-touch-icon.png')) ?>?v=3">
@@ -55,7 +55,7 @@
           <form class="admin-search" action="<?= e(url('/admin/utilisateurs')) ?>" method="get">
             <input type="search" name="q" value="<?= e($query ?? '') ?>" placeholder="Rechercher un profil, une commande, une mission…">
           </form>
-          <span class="admin-countdown">Pré-ouverture · J-37 avant l'ouverture clients</span>
+          <span class="admin-countdown"><?= e($adminCountdown ?? 'Pré-ouverture · ouverture clients en octobre 2026') ?></span>
           <a class="admin-ghost" href="<?= e(url('/admin/journal')) ?>">Journal d'audit</a>
           <a class="admin-ghost" href="<?= e(url('/espace')) ?>">Mon espace</a>
           <form method="post" action="<?= e(url('/deconnexion')) ?>">

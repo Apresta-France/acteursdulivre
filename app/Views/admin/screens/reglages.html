@@ -9,9 +9,9 @@
 
             <div style="display: flex; flex-direction: column; gap: 22px;">
               <div style="border: 1px solid #E8ECF1; border-radius: 12px; padding: 20px;">
-                <div style="font-family: 'Space Grotesk', sans-serif; font-size: 16px; color: #022746; margin-bottom: 16px;">Commission par niveau</div>
+                <div style="font-family: 'Space Grotesk', sans-serif; font-size: 16px; color: #022746; margin-bottom: 16px;">Commission (1ʳᵉ mission offerte, puis 8&nbsp;%)</div>
                 <div style="display: flex; flex-direction: column; gap: 12px;">
-                  <sc-for list="{{ commissionRows }}" as="c" hint-placeholder-count="3">
+                  <sc-for list="{{ commissionRows }}" as="c" hint-placeholder-count="2">
                     <div style="display: grid; grid-template-columns: 1fr 110px 150px; gap: 14px; align-items: center;">
                       <span style="font-size: 15px; color: #14202C;">{{ c.niveau }}</span>
                       <input value="{{ c.pct }}" sc-camel-on-change="{{ c.onPct }}" style="border: 1px solid #E1E7ED; border-radius: 8px; padding: 11px 12px; font-size: 14px; outline: none; font-family: 'Space Grotesk', monospace;">

@@ -43,9 +43,15 @@ return static function (Router $router): void {
     $router->post('/connexion', [AuthController::class, 'login']);
     $router->get('/inscription', [AuthController::class, 'registerForm']);
     $router->post('/inscription', [AuthController::class, 'register']);
+    $router->get('/inscription/sso', [AuthController::class, 'completeSsoForm']);
+    $router->post('/inscription/sso', [AuthController::class, 'completeSso']);
+    $router->get('/auth/{provider}', [AuthController::class, 'oauthStart']);
+    $router->get('/auth/{provider}/callback', [AuthController::class, 'oauthCallback']);
     $router->post('/deconnexion', [AuthController::class, 'logout']);
 
     $router->get('/espace', [AccountController::class, 'dashboard']);
+    $router->get('/espace/bienvenue', [AccountController::class, 'onboarding']);
+    $router->post('/espace/bienvenue', [AccountController::class, 'onboardingSave']);
     $router->get('/espace/publier', [AccountController::class, 'publier']);
     $router->post('/espace/publier', [AccountController::class, 'publierSave']);
     $router->get('/espace/commande', [AccountController::class, 'commande']);
@@ -62,6 +68,7 @@ return static function (Router $router): void {
     $router->get('/espace/notifications/{id}', [AccountController::class, 'notificationOpen']);
     $router->get('/espace/favoris', [AccountController::class, 'favoris']);
     $router->get('/espace/avis', [AccountController::class, 'avis']);
+    $router->post('/espace/avis/{id}', [AccountController::class, 'avisSave']);
     $router->get('/espace/vitrine', [AccountController::class, 'vitrine']);
     $router->post('/espace/vitrine', [AccountController::class, 'vitrineSave']);
     $router->post('/espace/disponibilite', [AccountController::class, 'disponibiliteSave']);
@@ -81,9 +88,13 @@ return static function (Router $router): void {
     $router->get('/admin/pre-ouverture', [AdminController::class, 'preOuverture']);
     $router->get('/admin/journal', [AdminController::class, 'journal']);
     $router->get('/admin/reglages', [AdminController::class, 'reglages']);
+    $router->get('/admin/listes', [AdminController::class, 'listes']);
+    $router->post('/admin/listes', [AdminController::class, 'listesSave']);
     $router->get('/admin/smtp', [AdminController::class, 'smtp']);
     $router->post('/admin/smtp', [AdminController::class, 'smtpSave']);
     $router->post('/admin/smtp/test', [AdminController::class, 'smtpTest']);
+    $router->get('/admin/sso', [AdminController::class, 'sso']);
+    $router->post('/admin/sso', [AdminController::class, 'ssoSave']);
     $router->get('/admin/emails', [AdminController::class, 'emails']);
     $router->get('/admin/emails/{id}', [AdminController::class, 'emailEdit']);
     $router->post('/admin/emails/{id}', [AdminController::class, 'emailSave']);

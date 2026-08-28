@@ -10,6 +10,7 @@ use Adl\Models\PortfolioItem;
 use Adl\Models\Profile;
 use Adl\Models\Service;
 use Adl\Models\Setting;
+use Adl\Models\Taxonomy;
 use Adl\Models\User;
 
 final class Catalog
@@ -18,7 +19,30 @@ final class Catalog
         'all' => 'Tout',
         'prestations' => 'Prestations',
         'prestataires' => 'Prestataires',
-        'missions' => 'Missions',
+        'missions' => 'Recherches',
+    ];
+
+    /** Volume utile pour les métiers quantifiables ; absent = champ masqué (le brief suffit). */
+    public const VOLUME_HINTS = [
+        'Correction' => ['label' => 'Volume', 'placeholder' => '420 000 signes'],
+        'Bêta-lecture' => ['label' => 'Volume', 'placeholder' => '240 pages'],
+        'Traduction' => ['label' => 'Volume', 'placeholder' => '80 000 mots'],
+        'Maquette' => ['label' => 'Volume', 'placeholder' => '256 pages'],
+        'Impression' => ['label' => 'Tirage', 'placeholder' => '500 exemplaires'],
+        'Audio' => ['label' => 'Durée', 'placeholder' => '6 heures'],
+    ];
+
+    public const BRIEF_HINTS = [
+        'Correction' => 'Genre, état du texte, attentes, contraintes de calendrier…',
+        'Bêta-lecture' => 'Genre, public visé, ce que vous attendez de la lecture, calendrier…',
+        'Illustration' => 'Couverture ou intérieur, style souhaité, format, références…',
+        'Traduction' => 'Langues, genre, public, contraintes éditoriales, calendrier…',
+        'Maquette' => 'Format, nombre de pages, contraintes graphiques, calendrier…',
+        'Édition' => 'Projet, accompagnement souhaité, calendrier…',
+        'Impression' => 'Format, papier, façonnage, quantité, calendrier…',
+        'Presse & com' => 'Ouvrage, cibles, actions souhaitées, calendrier…',
+        'Librairie' => 'Ouvrage, diffusion souhaitée, zone, calendrier…',
+        'Audio' => 'Durée estimée, ton, public, contraintes techniques…',
     ];
 
     public const TRADE_LABELS = [
@@ -34,15 +58,54 @@ final class Catalog
         'Audio' => 'Narrateurs audio',
     ];
 
+    public const TRADE_TITLES = [
+        'Correction' => 'Correction & relecture',
+        'Bêta-lecture' => 'Bêta-lecture',
+        'Illustration' => 'Illustration',
+        'Traduction' => 'Traduction',
+        'Maquette' => 'Maquette',
+        'Édition' => 'Édition',
+        'Impression' => 'Impression',
+        'Presse & com' => 'Presse & communication',
+        'Librairie' => 'Librairie',
+        'Audio' => 'Narration audio',
+    ];
+
+    public static function tradeTitle(string $trade): string
+    {
+        return self::TRADE_TITLES[$trade] ?? $trade;
+    }
+
     /** @return list<string> */
     public static function trades(): array
     {
-        return Profile::TRADES;
+        return Taxonomy::names(Taxonomy::KIND_TRADE);
+    }
+
+    /** @return list<string> */
+    public static function specialties(): array
+    {
+        return Taxonomy::names(Taxonomy::KIND_SPECIALTY);
+    }
+
+    /** @return array{label: string, placeholder: string}|null */
+    public static function volumeHint(string $trade): ?array
+    {
+        return self::VOLUME_HINTS[$trade] ?? null;
+    }
+
+    public static function briefHint(string $trade): string
+    {
+        return self::BRIEF_HINTS[$trade] ?? 'Attentes, contraintes, calendrier…';
     }
 
     public static function tradeFromSlug(string $slug): ?string
     {
-        foreach (self::trades() as $trade) {
+        $trades = array_values(array_unique(array_merge(
+            self::trades(),
+            Taxonomy::names(Taxonomy::KIND_TRADE, false)
+        )));
+        foreach ($trades as $trade) {
             if (slugify($trade) === $slug || slugify(self::TRADE_LABELS[$trade] ?? $trade) === $slug) {
                 return $trade;
             }
@@ -169,12 +232,12 @@ final class Catalog
             foreach (Mission::open() as $mission) {
                 $out[] = [
                     'kind' => 'missions',
-                    'kind_label' => 'Mission',
+                    'kind_label' => 'Recherche',
                     'title' => $mission['title'],
-                    'subtitle' => $mission['by'] . ' · ' . ($mission['category_name'] ?: 'Mission'),
+                    'subtitle' => $mission['by'] . ' · ' . ($mission['category_name'] ?: 'Recherche'),
                     'href' => $mission['href'],
                     'cat' => (string) ($mission['category_name'] ?? ''),
-                    'meta' => $mission['budget'] . ' · avant le ' . $mission['deadline_label'],
+                    'meta' => $mission['budget'] . (!empty($mission['deadline']) ? ' · avant le ' . $mission['deadline_label'] : ' · échéance à convenir'),
                     'price' => $mission['budget'],
                     'thumb' => '',
                     'initials' => $mission['initials'],
@@ -308,10 +371,10 @@ final class Catalog
         }
 
         return [
-            ['v' => format_int($pros), 'k' => 'professionnels du livre inscrits'],
-            ['v' => format_int($services), 'k' => 'prestations à prix affiché'],
-            ['v' => format_int($missions), 'k' => 'missions ouvertes'],
-            ['v' => $commission . ' %', 'k' => 'de commission, sans abonnement'],
+            ['v' => format_int($pros), 'k' => $pros > 1 ? 'professionnels du livre inscrits' : 'professionnel du livre inscrit'],
+            ['v' => format_int($services), 'k' => $services > 1 ? 'prestations à prix affiché' : 'prestation à prix affiché'],
+            ['v' => format_int($missions), 'k' => $missions > 1 ? 'missions ouvertes' : 'mission ouverte'],
+            ['v' => $commission . ' %', 'k' => 'dès la 2ᵉ mission, sans abonnement'],
         ];
     }
 
@@ -356,6 +419,7 @@ final class Catalog
             'live' => true,
             'name' => $name,
             'initials' => Profile::initials($profile),
+            'avatar_src' => user_avatar_src($profile),
             'title' => (string) ($profile['title'] ?? 'Prestataire'),
             'city' => (string) ($profile['city'] ?? ''),
             'level' => (string) ($profile['level'] ?? 'Nouveau'),
@@ -381,6 +445,7 @@ final class Catalog
             'tags' => $tags,
             'website' => (string) ($profile['website'] ?? ''),
             'href' => Profile::publicHref($profile),
+            'is_founder' => !empty($profile['is_founder']),
         ];
     }
 

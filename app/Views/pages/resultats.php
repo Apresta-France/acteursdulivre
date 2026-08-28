@@ -13,7 +13,7 @@ $heading = $q !== '' ? $q : ($cat !== '' ? $cat : 'Tous les métiers du livre');
      data-initial="<?= e(json_encode($searchState ?? ['results' => $results, 'count' => $count, 'query' => $q, 'type' => $type, 'cat' => $cat, 'available_only' => !empty($availableOnly)], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)) ?>">
   <div class="search-banner">
     <span class="search-banner-badge">Annuaire</span>
-    Les résultats se mettent à jour pendant que vous tapez — prestations, profils et missions au même endroit.
+    Les résultats se mettent à jour pendant que vous tapez — prestations, profils et recherches au même endroit.
   </div>
 
   <div class="search-layout">
@@ -58,8 +58,8 @@ $heading = $q !== '' ? $q : ($cat !== '' ? $cat : 'Tous les métiers du livre');
 
       <div class="search-aside-card">
         <div class="search-aside-title">Pas le temps de comparer ?</div>
-        <p>Publiez votre mission : les prestataires vous envoient leurs devis.</p>
-        <a class="btn-ghost" href="<?= e(url('/espace/publier')) ?>">Publier une mission</a>
+        <p>Publiez votre recherche : les prestataires vous envoient leurs devis.</p>
+        <a class="btn-ghost" href="<?= e(url('/espace/publier')) ?>">Publier une recherche</a>
       </div>
     </aside>
 
@@ -81,18 +81,12 @@ $heading = $q !== '' ? $q : ($cat !== '' ? $cat : 'Tous les métiers du livre');
         <?php if ($results === []): ?>
           <div class="search-empty">
             <strong>Aucun résultat pour cette recherche.</strong>
-            <span>Essayez un métier (illustration, traduction…) ou publiez une mission.</span>
+            <span>Essayez un métier (illustration, traduction…) ou publiez une recherche.</span>
           </div>
         <?php else: ?>
           <?php foreach ($results as $item): ?>
             <a class="search-card<?= !empty($item['is_busy']) ? ' is-busy' : '' ?>" href="<?= e(url((string) $item['href'])) ?>">
-              <?php if (!empty($item['thumb'])): ?>
-                <div class="search-card-media" style="background-image:url('<?= e((string) $item['thumb']) ?>')"></div>
-              <?php else: ?>
-                <div class="search-card-media search-card-media-plain">
-                  <span class="avatar" style="<?= e(avatar_style((string) ($item['initials'] ?: mb_strtoupper(mb_substr((string) $item['title'], 0, 2))), 42)) ?>"><?= e((string) ($item['initials'] ?: mb_strtoupper(mb_substr((string) $item['title'], 0, 2)))) ?></span>
-                </div>
-              <?php endif; ?>
+              <?= search_card_media($item) ?>
               <div class="search-card-body">
                 <div class="search-card-kicker">
                   <span><?= e((string) $item['kind_label']) ?></span>
