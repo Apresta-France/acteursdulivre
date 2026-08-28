@@ -95,7 +95,7 @@ final class LegalPages
             [
                 'title' => 'Contact',
                 'blocks' => [
-                    ['html' => '<ul><li>Contact général : <a href="mailto:bonjour@acteursdulivre.fr">bonjour@acteursdulivre.fr</a></li><li>Litiges et médiation : <a href="mailto:mediation@acteursdulivre.fr">mediation@acteursdulivre.fr</a></li><li>Presse : <a href="mailto:presse@acteursdulivre.fr">presse@acteursdulivre.fr</a></li><li>Formulaire : <a href="' . e(url('/contact')) . '">page Contact</a></li></ul>'],
+                    ['html' => '<ul><li>Contact général : <a href="mailto:bonjour@acteursdulivre.fr">bonjour@acteursdulivre.fr</a></li><li>Litiges et médiation : <a href="mailto:mediation@acteursdulivre.fr">mediation@acteursdulivre.fr</a></li><li>Presse : <a href="mailto:presse@acteursdulivre.fr">presse@acteursdulivre.fr</a></li><li>Facebook : <a href="' . e(Socials::FACEBOOK) . '" target="_blank" rel="noopener noreferrer">facebook.com/acteursdulivre</a></li><li>Instagram : <a href="' . e(Socials::INSTAGRAM) . '" target="_blank" rel="noopener noreferrer">instagram.com/acteursdulivre.fr</a></li><li>Formulaire : <a href="' . e(url('/contact')) . '">page Contact</a></li></ul>'],
                 ],
             ],
             [

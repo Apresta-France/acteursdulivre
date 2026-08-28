@@ -250,13 +250,12 @@
               </a>
             </div>
             <p>La place de marché des métiers du livre. Dix-huit métiers, de l'écriture au salon.</p>
-            <div class="socials" data-share data-url="<?= e(\Adl\Data\Share::absolute('/')) ?>" data-title="acteursdulivre.fr" data-text="La place de marché des métiers du livre.">
+            <div class="socials">
               <?php foreach ($socials ?? [] as $s): ?>
                 <?php if (is_array($s)): ?>
                   <?php $sid = (string) ($s['id'] ?? ''); ?>
                   <a href="<?= e((string) ($s['href'] ?? '#')) ?>"
-                     data-share-network="<?= e($sid) ?>"
-                     <?= !empty($s['copy']) ? 'data-share-copy' : 'target="_blank" rel="noopener noreferrer"' ?>
+                     target="_blank" rel="noopener noreferrer"
                      title="<?= e((string) ($s['label'] ?? $s['short'] ?? '')) ?>"
                      aria-label="<?= e((string) ($s['label'] ?? $s['short'] ?? '')) ?>"><?= icon('share-' . $sid, 16) ?></a>
                 <?php else: ?>

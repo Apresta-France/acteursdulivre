@@ -363,9 +363,7 @@ final class Seo
                 'url' => Share::absolute('/contact'),
                 'availableLanguage' => 'French',
             ],
-            'sameAs' => [
-                'https://editions-tesseract.fr/',
-            ],
+            'sameAs' => Socials::sameAs(),
         ];
     }
 
@@ -636,6 +634,8 @@ acteursdulivre.fr met en relation des porteurs de projet (auteurs, éditeurs, co
 
 ## Contact
 bonjour@acteursdulivre.fr — médiation@acteursdulivre.fr — presse@acteursdulivre.fr
+Facebook : https://www.facebook.com/acteursdulivre/
+Instagram : https://www.instagram.com/acteursdulivre.fr/
 MD;
     }
 

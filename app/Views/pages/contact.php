@@ -31,9 +31,17 @@
     <div style="border: 1px solid #E8ECF1; border-radius: 14px; padding: 22px;">
       <div style="font-family: 'Space Grotesk', sans-serif; font-size: 16px; font-weight: 500; color: #022746; margin-bottom: 12px;">Autres canaux</div>
       <?php foreach ($contactCanaux ?? [] as $c): ?>
-        <div style="display: flex; justify-content: space-between; font-size: 15px; margin-bottom: 12px;">
+        <div style="display: flex; justify-content: space-between; font-size: 15px; margin-bottom: 12px; gap: 12px;">
           <span style="color: #8496A8;"><?= e($c['k']) ?></span>
-          <span style="color: #14202C;"><?= e($c['v']) ?></span>
+          <?php
+            $href = (string) ($c['href'] ?? '');
+            $external = str_starts_with($href, 'http');
+          ?>
+          <?php if ($href !== ''): ?>
+            <a href="<?= e($href) ?>"<?= $external ? ' target="_blank" rel="noopener noreferrer"' : '' ?> style="color: #14202C; text-align: right;"><?= e($c['v']) ?></a>
+          <?php else: ?>
+            <span style="color: #14202C; text-align: right;"><?= e($c['v']) ?></span>
+          <?php endif; ?>
         </div>
       <?php endforeach; ?>
     </div>
