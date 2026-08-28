@@ -28,11 +28,12 @@
             <span><?= e((string) $order['status_label']) ?></span>
             <strong><?= e((string) $order['amount_label']) ?></strong>
           </div>
-          <?php if (!empty($order['can_confirm']) && (int) ($order['buyer_id'] ?? 0) === (int) (\Adl\Core\Auth::id() ?? 0)): ?>
-            <div class="auth-actions" style="margin-top: 14px;">
+          <div class="auth-actions" style="margin-top: 14px;">
+            <a class="btn-ghost" href="<?= e(url((string) ($order['href'] ?? '/espace/suivi'))) ?>">Ouvrir le suivi</a>
+            <?php if (!empty($order['can_confirm']) && (int) ($order['buyer_id'] ?? 0) === (int) (\Adl\Core\Auth::id() ?? 0)): ?>
               <a class="btn-orange" href="<?= e(url('/espace/avis')) ?>">Valider et noter</a>
-            </div>
-          <?php endif; ?>
+            <?php endif; ?>
+          </div>
         </article>
       <?php endforeach; ?>
     </div>

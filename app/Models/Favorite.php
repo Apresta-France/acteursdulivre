@@ -29,4 +29,32 @@ final class Favorite
         }
         return $out;
     }
+
+    public static function has(int $userId, int $serviceId): bool
+    {
+        $row = Database::fetch(
+            'SELECT service_id FROM favorites WHERE user_id = ? AND service_id = ?',
+            [$userId, $serviceId]
+        );
+        return $row !== null;
+    }
+
+    public static function toggle(int $userId, int $serviceId): bool
+    {
+        if (!Service::find($serviceId)) {
+            throw new \RuntimeException('Cette prestation est introuvable.');
+        }
+        if (self::has($userId, $serviceId)) {
+            Database::query(
+                'DELETE FROM favorites WHERE user_id = ? AND service_id = ?',
+                [$userId, $serviceId]
+            );
+            return false;
+        }
+        Database::query(
+            'INSERT INTO favorites (user_id, service_id, created_at) VALUES (?, ?, NOW())',
+            [$userId, $serviceId]
+        );
+        return true;
+    }
 }

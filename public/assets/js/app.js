@@ -318,17 +318,89 @@
     var countEl = searchPage.querySelector('[data-search-count]');
     var titleEl = searchPage.querySelector('.search-head h1');
     var headerInput = document.querySelector('[data-live-input]');
+    var hiddenQ = filters.querySelector('[data-search-q]');
+    var activeBox = searchPage.querySelector('[data-search-active]');
+    var budgetMin = filters.querySelector('[data-budget-min]');
+    var budgetMax = filters.querySelector('[data-budget-max]');
+    var budgetFill = searchPage.querySelector('[data-budget-fill]');
+    var budgetLabel = searchPage.querySelector('[data-budget-label]');
+    var BUDGET_DEFAULT_MIN = 200;
+    var BUDGET_DEFAULT_MAX = 4000;
+
+    function formatBudget(n) {
+      return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + ' €';
+    }
+
+    function syncBudget() {
+      if (!budgetMin || !budgetMax) return;
+      var min = parseInt(budgetMin.value, 10);
+      var max = parseInt(budgetMax.value, 10);
+      if (min > max) {
+        var tmp = min;
+        min = max;
+        max = tmp;
+        budgetMin.value = min;
+        budgetMax.value = max;
+      }
+      var span = parseInt(budgetMax.max, 10) || BUDGET_DEFAULT_MAX;
+      if (budgetFill) {
+        budgetFill.style.left = (min / span * 100) + '%';
+        budgetFill.style.right = (100 - max / span * 100) + '%';
+      }
+      if (budgetLabel) budgetLabel.textContent = formatBudget(min) + ' — ' + formatBudget(max);
+    }
 
     function currentParams() {
       var data = new FormData(filters);
       var params = new URLSearchParams();
       var forcedType = searchPage.getAttribute('data-type') || '';
-      ['q', 'dispo'].forEach(function (key) {
-        var value = (data.get(key) || '').toString().trim();
-        if (value) params.set(key, value);
+      var q = (data.get('q') || '').toString().trim();
+      if (q) params.set('q', q);
+      ['kind', 'metier', 'spec', 'delay', 'level', 'trust'].forEach(function (key) {
+        data.getAll(key + '[]').forEach(function (value) {
+          if (value) params.append(key + '[]', value);
+        });
       });
+      var min = budgetMin ? parseInt(budgetMin.value, 10) : BUDGET_DEFAULT_MIN;
+      var max = budgetMax ? parseInt(budgetMax.value, 10) : BUDGET_DEFAULT_MAX;
+      if (min !== BUDGET_DEFAULT_MIN) params.set('bmin', String(min));
+      if (max !== BUDGET_DEFAULT_MAX) params.set('bmax', String(max));
       if (forcedType && forcedType !== 'all') params.set('type', forcedType);
       return params;
+    }
+
+    function syncActive() {
+      if (!activeBox) return;
+      var chips = [];
+      filters.querySelectorAll('input[type="checkbox"]:checked').forEach(function (input) {
+        var txt = input.closest('label') && input.closest('label').querySelector('.sf-txt');
+        chips.push({
+          name: (input.name || '').replace('[]', ''),
+          value: input.value,
+          label: txt ? txt.textContent : input.value
+        });
+      });
+      var min = budgetMin ? parseInt(budgetMin.value, 10) : BUDGET_DEFAULT_MIN;
+      var max = budgetMax ? parseInt(budgetMax.value, 10) : BUDGET_DEFAULT_MAX;
+      if (min !== BUDGET_DEFAULT_MIN || max !== BUDGET_DEFAULT_MAX) {
+        chips.push({ name: 'budget', value: '', label: formatBudget(min) + ' — ' + formatBudget(max) });
+      }
+      activeBox.hidden = chips.length === 0;
+      activeBox.innerHTML = chips.map(function (chip) {
+        return '<button type="button" class="sf-chip" data-clear-name="' + escapeHtml(chip.name) + '" data-clear-value="' + escapeHtml(chip.value) + '">' + escapeHtml(chip.label) + ' ✕</button>';
+      }).join('');
+    }
+
+    function clearFilter(name, value) {
+      if (name === 'budget') {
+        if (budgetMin) budgetMin.value = BUDGET_DEFAULT_MIN;
+        if (budgetMax) budgetMax.value = BUDGET_DEFAULT_MAX;
+        syncBudget();
+        return;
+      }
+      filters.querySelectorAll('input[name="' + name + '[]"]').forEach(function (input) {
+        if (input.value === value) input.checked = false;
+      });
     }
 
     var update = debounce(function () {
@@ -347,7 +419,7 @@
         var next = display.toString();
         history.replaceState(null, '', window.location.pathname + (next ? '?' + next : ''));
         if (headerInput) headerInput.value = data.query || '';
-        syncChips(filters);
+        syncActive();
         refreshShareBars(searchPage, {
           url: window.location.href,
           title: 'Recherche : ' + (data.query || data.cat || 'Tous les métiers du livre'),
@@ -356,8 +428,40 @@
       });
     }, 160);
 
-    filters.addEventListener('input', update);
+    syncBudget();
+    syncActive();
+    filters.addEventListener('input', function () {
+      syncBudget();
+      update();
+    });
     filters.addEventListener('change', update);
+    if (headerInput) {
+      headerInput.addEventListener('input', function () {
+        if (hiddenQ) hiddenQ.value = headerInput.value;
+        update();
+      });
+    }
+    searchPage.addEventListener('click', function (event) {
+      var chip = event.target.closest('[data-clear-name]');
+      if (chip) {
+        clearFilter(chip.getAttribute('data-clear-name'), chip.getAttribute('data-clear-value') || '');
+        syncBudget();
+        syncActive();
+        update();
+        return;
+      }
+      var reset = event.target.closest('[data-search-reset]');
+      if (!reset) return;
+      event.preventDefault();
+      filters.querySelectorAll('input[type="checkbox"]').forEach(function (input) { input.checked = false; });
+      if (budgetMin) budgetMin.value = BUDGET_DEFAULT_MIN;
+      if (budgetMax) budgetMax.value = BUDGET_DEFAULT_MAX;
+      if (hiddenQ) hiddenQ.value = '';
+      if (headerInput) headerInput.value = '';
+      syncBudget();
+      syncActive();
+      update();
+    });
   }
 
   document.querySelectorAll('[data-mode-switch]').forEach(function (group) {

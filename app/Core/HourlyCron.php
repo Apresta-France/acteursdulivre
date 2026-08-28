@@ -283,10 +283,10 @@ final class HourlyCron
 
         foreach ($conversations as $conversation) {
             $waiting = Database::fetchAll(
-                'SELECT DISTINCT u.id, u.email, u.first_name, u.last_name, u.status
-                 FROM messages m
-                 JOIN users u ON u.id = m.user_id
-                 WHERE m.conversation_id = ? AND m.user_id != ? AND u.status = \'active\'',
+                'SELECT u.id, u.email, u.first_name, u.last_name, u.status
+                 FROM conversation_participants p
+                 JOIN users u ON u.id = p.user_id
+                 WHERE p.conversation_id = ? AND p.user_id != ? AND u.status = \'active\'',
                 [(int) $conversation['id'], (int) $conversation['last_user_id']]
             );
             $subject = trim((string) ($conversation['subject'] ?? '')) ?: 'votre conversation';
@@ -301,11 +301,11 @@ final class HourlyCron
                         'prenom' => $user['first_name'],
                         'sujet' => $subject,
                         'delai' => $delay,
-                        'lien' => url('/espace/messages'),
+                        'lien' => url('/espace/messages/' . (int) $conversation['id']),
                     ],
                     'Un message attend votre réponse',
                     'Concernant « ' . $subject . ' », envoyé ' . $delay . '.',
-                    '/espace/messages',
+                    '/espace/messages/' . (int) $conversation['id'],
                     'conversation',
                     (int) $conversation['id'],
                     self::REQUEST_COOLDOWN_HOURS,

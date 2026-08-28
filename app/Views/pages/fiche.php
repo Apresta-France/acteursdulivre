@@ -39,6 +39,11 @@ $packages = $service['packages'] ?? [];
                 <span><?= e((string) ($package['delay'] ?: 'Délai à convenir')) ?></span>
                 <strong><?= e((string) $package['price_label']) ?></strong>
               </div>
+              <?php if (!empty($canOrder)): ?>
+                <div class="auth-actions" style="margin-top: 12px;">
+                  <a class="btn-ghost" href="<?= e(url('/espace/commande?prestation=' . rawurlencode((string) $service['slug']) . '&formule=' . (int) ($package['id'] ?? 0))) ?>">Commander cette formule</a>
+                </div>
+              <?php endif; ?>
             </article>
           <?php endforeach; ?>
         </div>
@@ -57,6 +62,28 @@ $packages = $service['packages'] ?? [];
         <?php if (!empty($service['profile_href'])): ?>
           <div class="auth-actions" style="margin-top: 16px;">
             <a class="btn-ghost" href="<?= e(url((string) $service['profile_href'])) ?>">Voir la vitrine</a>
+          </div>
+        <?php endif; ?>
+        <?php
+          $viewer = \Adl\Core\Auth::user();
+          $owner = $viewer && (int) ($viewer['id'] ?? 0) === (int) ($service['user_id'] ?? 0);
+        ?>
+        <?php if (!$owner): ?>
+          <div class="auth-actions" style="margin-top: 16px; flex-wrap: wrap;">
+            <?php if (!empty($canOrder)): ?>
+              <a class="btn-orange" href="<?= e(url('/espace/commande?prestation=' . rawurlencode((string) $service['slug']))) ?>">Commander</a>
+            <?php elseif (!$viewer): ?>
+              <a class="btn-orange" href="<?= e(url('/connexion')) ?>">Se connecter pour commander</a>
+            <?php elseif ($viewer && !\Adl\Models\User::seeksServices($viewer)): ?>
+              <a class="btn-ghost" href="<?= e(url('/espace/parametres')) ?>">Activer « je cherche » pour commander</a>
+            <?php endif; ?>
+            <?php if ($viewer && \Adl\Models\User::seeksServices($viewer)): ?>
+              <form method="post" action="<?= e(url('/espace/favoris/' . (int) $service['id'])) ?>">
+                <?= csrf_field() ?>
+                <input type="hidden" name="back" value="<?= e((string) $service['href']) ?>">
+                <button class="btn-ghost" type="submit"><?= !empty($isFavorite) ? 'Retirer des favoris' : 'Ajouter aux favoris' ?></button>
+              </form>
+            <?php endif; ?>
           </div>
         <?php endif; ?>
       </div>

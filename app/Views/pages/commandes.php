@@ -31,6 +31,9 @@
             <span><?= e((string) $order['status_label']) ?></span>
             <strong><?= e((string) $order['amount_label']) ?></strong>
           </div>
+          <div class="auth-actions" style="margin-top: 14px;">
+            <a class="btn-ghost" href="<?= e(url((string) ($order['href'] ?? '/espace/suivi'))) ?>">Suivre</a>
+          </div>
         </article>
       <?php endforeach; ?>
     </div>

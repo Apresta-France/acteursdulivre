@@ -20,7 +20,7 @@
         <label style="display: flex; gap: 8px; align-items: center; color: #4A5A6B;">
           <input type="checkbox" name="remember" value="1"> Rester connecté
         </label>
-        <span style="color: #D85D3F;">Mot de passe oublié ?</span>
+        <a href="<?= e(url('/mot-de-passe-oublie')) ?>" style="color: #D85D3F;">Mot de passe oublié ?</a>
       </div>
       <button class="btn-orange" type="submit">Se connecter</button>
       <div style="text-align: center; font-size: 14px; color: #66768A;">Pas encore de compte ? <a href="<?= e(url('/inscription')) ?>">Créer un compte</a></div>

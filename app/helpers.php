@@ -198,6 +198,29 @@ function search_norm(string $text): string
     return strtolower(ascii_fold(mb_strtolower($text)));
 }
 
+/**
+ * @param list<array{v: string, l: string, n: int|string}> $options
+ * @param list<string> $selected
+ */
+function search_filter_group(string $name, string $label, array $options, array $selected = []): string
+{
+    $html = '<div class="sf-group"><div class="sf-group-label">' . e($label) . '</div><div class="sf-opts">';
+    foreach ($options as $opt) {
+        $value = (string) ($opt['v'] ?? '');
+        $on = in_array($value, $selected, true);
+        if (!$on && (int) ($opt['n'] ?? 0) === 0 && in_array($name, ['metier', 'spec'], true)) {
+            continue;
+        }
+        $html .= '<label class="sf-opt">'
+            . '<input type="checkbox" name="' . e($name) . '[]" value="' . e($value) . '"' . ($on ? ' checked' : '') . '>'
+            . '<span class="sf-box" aria-hidden="true"></span>'
+            . '<span class="sf-txt">' . e((string) ($opt['l'] ?? $value)) . '</span>'
+            . '<span class="sf-n">' . e((string) ($opt['n'] ?? 0)) . '</span>'
+            . '</label>';
+    }
+    return $html . '</div></div>';
+}
+
 function unique_slug(string $base, callable $taken): string
 {
     $slug = slugify($base) ?: 'item';

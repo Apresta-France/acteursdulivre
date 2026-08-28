@@ -52,7 +52,7 @@
   <?php if (!empty($isAccueil)): ?>
   <link rel="preload" as="image" href="<?= e(photo(0)) ?>">
   <?php endif; ?>
-  <link rel="stylesheet" href="<?= e(asset('css/app.css')) ?>?v=m38">
+  <link rel="stylesheet" href="<?= e(asset('css/app.css')) ?>?v=m39">
   <link rel="icon" href="<?= e(asset('img/favicon.ico')) ?>?v=3" sizes="any">
   <link rel="icon" type="image/png" href="<?= e(asset('img/favicon-32x32.png')) ?>?v=3" sizes="32x32">
   <link rel="apple-touch-icon" href="<?= e(asset('img/apple-touch-icon.png')) ?>?v=3">
@@ -209,6 +209,14 @@
       </div>
 
       <main>
+        <?php if (empty($inEspace)): ?>
+          <?php if ($siteFlash = flash('saved')): ?>
+            <div class="flash flash-ok" style="margin: 16px 24px 0;"><?= e(is_string($siteFlash) ? $siteFlash : 'Enregistré.') ?></div>
+          <?php endif; ?>
+          <?php if ($siteError = flash('error')): ?>
+            <div class="flash flash-error" style="margin: 16px 24px 0;"><?= e((string) $siteError) ?></div>
+          <?php endif; ?>
+        <?php endif; ?>
         <?php if (!empty($inEspace)): ?>
           <div class="espace-shell r-done">
             <?php require ADL_ROOT . '/app/Views/partials/espace-nav.php'; ?>
@@ -227,8 +235,10 @@
             <div class="footer-news-title">Le point sur les métiers du livre, une fois par mois</div>
             <div>Tarifs observés, nouveaux prestataires, contrats types. Pas de publicité, désinscription en un clic.</div>
           </div>
-          <form class="footer-news-form" action="<?= e(url('/contact')) ?>" method="get">
-            <input type="email" name="email" placeholder="votre@email.fr">
+          <form class="footer-news-form" action="<?= e(url('/newsletter')) ?>" method="post">
+            <?= csrf_field() ?>
+            <input type="hidden" name="back" value="<?= e((string) ($_SERVER['REQUEST_URI'] ?? '/')) ?>">
+            <input type="email" name="email" placeholder="votre@email.fr" required>
             <button type="submit">S'inscrire</button>
           </form>
         </div>
@@ -239,7 +249,7 @@
                 <img src="<?= e(asset('img/logo-inv.png')) ?>?v=5" alt="acteursdulivre.fr" width="154" height="42" loading="lazy" decoding="async">
               </a>
             </div>
-            <p>La place de marché des métiers du livre. Auteurs, correcteurs, bêta-lecteurs, illustrateurs, traducteurs, maquettistes, éditeurs, imprimeurs, presse, libraires, narrateurs, agents, salons.</p>
+            <p>La place de marché des métiers du livre. Dix-huit métiers, de l'écriture au salon.</p>
             <div class="socials" data-share data-url="<?= e(\Adl\Data\Share::absolute('/')) ?>" data-title="acteursdulivre.fr" data-text="La place de marché des métiers du livre.">
               <?php foreach ($socials ?? [] as $s): ?>
                 <?php if (is_array($s)): ?>
@@ -292,6 +302,6 @@
       </footer>
     </div>
   </div>
-  <script src="<?= e(asset('js/app.js')) ?>?v=m29"></script>
+  <script src="<?= e(asset('js/app.js')) ?>?v=m30"></script>
 </body>
 </html>

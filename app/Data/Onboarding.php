@@ -21,6 +21,11 @@ final class Onboarding
         'Presse & com' => 'Attaché·e de presse et visibilité du livre',
         'Librairie' => 'Librairie indépendante, conseil et diffusion',
         'Audio' => 'Narration de livres audio',
+        'Iconographie' => 'Iconographe, essais et documentaires',
+        'Lecture éditoriale' => 'Lecture éditoriale, romans et essais',
+        'Photographie' => 'Photographie d\'auteurs et d\'ouvrages',
+        'Reliure' => 'Reliure d\'art et petits tirages',
+        'Juridique' => 'Contrats d\'édition et droits d\'auteur',
     ];
 
     public const PRESENTATION_HINTS = [
@@ -34,6 +39,11 @@ final class Onboarding
         'Presse & com' => 'Dites quelles cibles vous savez atteindre, et comment vous travaillez avec l’auteur ou la maison.',
         'Librairie' => 'Présentez votre fonds, votre zone, et la façon dont vous accueillez les ouvrages.',
         'Audio' => 'Précisez votre timbre, les genres narrés, et les contraintes techniques que vous maîtrisez.',
+        'Iconographie' => 'Précisez les domaines (histoire, sciences, jeunesse…), les sources que vous maîtrisez, et votre rapport aux droits.',
+        'Lecture éditoriale' => 'Dites quels genres vous évaluez, ce que contient votre rapport, et pour qui vous lisez (maisons, auteurs, agents).',
+        'Photographie' => 'Décrivez vos usages (portrait, ouvrage, reportage), votre lumière, et les cessions que vous proposez.',
+        'Reliure' => 'Indiquez les techniques, les matériaux, et les volumes que vous acceptez.',
+        'Juridique' => 'Précisez vos domaines (contrats, cessions, image, litiges) et le type de clients que vous accompagnez.',
     ];
 
     /** @param array<string, mixed> $user */

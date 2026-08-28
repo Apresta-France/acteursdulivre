@@ -30,6 +30,7 @@ return static function (Router $router): void {
     $router->get('/prestataires/{slug}', [PageController::class, 'profil']);
     $router->get('/missions', [PageController::class, 'missions']);
     $router->get('/missions/{slug}', [PageController::class, 'mission']);
+    $router->post('/missions/{slug}/candidater', [AccountController::class, 'applicationCreate']);
     $router->get('/comment-ca-marche', [PageController::class, 'comment']);
     $router->get('/tarifs', [PageController::class, 'tarifs']);
     $router->get('/confiance', [PageController::class, 'confiance']);
@@ -37,6 +38,8 @@ return static function (Router $router): void {
     $router->get('/journal', [PageController::class, 'journal']);
     $router->get('/journal/{slug}', [PageController::class, 'article']);
     $router->get('/aide', [PageController::class, 'aide']);
+    $router->post('/newsletter', [PageController::class, 'newsletter']);
+    $router->post('/signaler', [PageController::class, 'report']);
     $router->get('/mentions-legales', [PageController::class, 'legal']);
     $router->get('/cgu', [PageController::class, 'legal']);
     $router->get('/cgv', [PageController::class, 'legal']);
@@ -47,6 +50,10 @@ return static function (Router $router): void {
 
     $router->get('/connexion', [AuthController::class, 'loginForm']);
     $router->post('/connexion', [AuthController::class, 'login']);
+    $router->get('/mot-de-passe-oublie', [AuthController::class, 'forgotForm']);
+    $router->post('/mot-de-passe-oublie', [AuthController::class, 'forgot']);
+    $router->get('/mot-de-passe/{token}', [AuthController::class, 'resetForm']);
+    $router->post('/mot-de-passe/{token}', [AuthController::class, 'reset']);
     $router->get('/inscription', [AuthController::class, 'registerForm']);
     $router->post('/inscription', [AuthController::class, 'register']);
     $router->get('/inscription/sso', [AuthController::class, 'completeSsoForm']);
@@ -61,25 +68,39 @@ return static function (Router $router): void {
     $router->get('/espace/publier', [AccountController::class, 'publier']);
     $router->post('/espace/publier', [AccountController::class, 'publierSave']);
     $router->get('/espace/commande', [AccountController::class, 'commande']);
+    $router->post('/espace/commande', [AccountController::class, 'commandeSave']);
     $router->get('/espace/suivi', [AccountController::class, 'suivi']);
+    $router->get('/espace/suivi/{id}', [AccountController::class, 'suiviShow']);
+    $router->post('/espace/suivi/{id}/accepter', [AccountController::class, 'suiviAccept']);
+    $router->post('/espace/suivi/{id}/livrer', [AccountController::class, 'suiviDeliver']);
+    $router->post('/espace/suivi/{id}/litige', [AccountController::class, 'suiviDispute']);
     $router->get('/espace/commandes', [AccountController::class, 'commandes']);
     $router->get('/espace/missions', [AccountController::class, 'missions']);
     $router->get('/espace/candidatures', [AccountController::class, 'candidatures']);
+    $router->post('/espace/candidatures/{id}/accepter', [AccountController::class, 'applicationAccept']);
+    $router->post('/espace/candidatures/{id}/refuser', [AccountController::class, 'applicationReject']);
     $router->get('/espace/prestations', [AccountController::class, 'prestations']);
     $router->get('/espace/prestations/creer', [AccountController::class, 'creer']);
     $router->post('/espace/prestations/creer', [AccountController::class, 'creerSave']);
+    $router->get('/espace/prestations/{id}/modifier', [AccountController::class, 'prestationEdit']);
+    $router->post('/espace/prestations/{id}/modifier', [AccountController::class, 'prestationEditSave']);
     $router->get('/espace/messages', [AccountController::class, 'messages']);
+    $router->get('/espace/messages/{id}', [AccountController::class, 'messageShow']);
+    $router->post('/espace/messages/{id}', [AccountController::class, 'messageSend']);
     $router->get('/espace/notifications', [AccountController::class, 'notifications']);
     $router->post('/espace/notifications/lues', [AccountController::class, 'notificationsRead']);
     $router->get('/espace/notifications/{id}', [AccountController::class, 'notificationOpen']);
     $router->get('/espace/favoris', [AccountController::class, 'favoris']);
+    $router->post('/espace/favoris/{id}', [AccountController::class, 'favorisToggle']);
     $router->get('/espace/avis', [AccountController::class, 'avis']);
     $router->post('/espace/avis/{id}', [AccountController::class, 'avisSave']);
     $router->get('/espace/vitrine', [AccountController::class, 'vitrine']);
     $router->post('/espace/vitrine', [AccountController::class, 'vitrineSave']);
+    $router->post('/espace/vitrine/justificatif', [AccountController::class, 'vitrineVerification']);
     $router->post('/espace/disponibilite', [AccountController::class, 'disponibiliteSave']);
     $router->get('/espace/parametres', [AccountController::class, 'parametres']);
     $router->post('/espace/parametres', [AccountController::class, 'parametresSave']);
+    $router->post('/espace/parametres/mot-de-passe', [AccountController::class, 'parametresPassword']);
     $router->get('/espace/facturation', [AccountController::class, 'facturation']);
 
     $router->get('/admin', [AdminController::class, 'dashboard']);
@@ -87,6 +108,7 @@ return static function (Router $router): void {
     $router->post('/admin/verifications/{id}', [AdminController::class, 'verificationSave']);
     $router->get('/admin/moderation', [AdminController::class, 'moderation']);
     $router->post('/admin/moderation/{type}/{id}', [AdminController::class, 'moderationSave']);
+    $router->post('/admin/signalements/{id}', [AdminController::class, 'reportSave']);
     $router->get('/admin/litiges', [AdminController::class, 'litiges']);
     $router->post('/admin/litiges/{id}', [AdminController::class, 'litigeSave']);
     $router->get('/admin/avis', [AdminController::class, 'avis']);

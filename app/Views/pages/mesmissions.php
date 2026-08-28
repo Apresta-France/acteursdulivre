@@ -40,6 +40,9 @@ $open = count(array_filter($missions, static fn (array $m): bool => ($m['status'
           </div>
           <div class="auth-actions" style="margin-top: 14px;">
             <a class="btn-ghost" href="<?= e(url((string) $m['href'])) ?>">Voir l'annonce</a>
+            <?php if ((int) ($m['applicants'] ?? 0) > 0): ?>
+              <a class="btn-navy" href="<?= e(url((string) $m['href'] . '#candidatures')) ?>">Voir les candidatures</a>
+            <?php endif; ?>
           </div>
         </article>
       <?php endforeach; ?>

@@ -13,8 +13,13 @@ use Adl\Data\LegalPages;
 use Adl\Data\Seo;
 use Adl\Data\Share;
 use Adl\Data\Sitemap;
+use Adl\Models\Application;
 use Adl\Models\Article;
+use Adl\Models\Favorite;
+use Adl\Models\Mission;
+use Adl\Models\Newsletter;
 use Adl\Models\Profile;
+use Adl\Models\Report;
 use Adl\Models\Service;
 use Adl\Models\User;
 
@@ -71,12 +76,14 @@ final class PageController
 
     public function searchApi(Request $request): void
     {
+        $filters = self::searchFilters($request);
         $found = Catalog::search(
             $request->string('q'),
             $request->string('type', 'all'),
             $request->string('cat'),
             max(1, min(48, $request->int('limit', 24) ?? 24)),
-            $request->bool('dispo')
+            $request->bool('dispo'),
+            $filters
         );
         foreach (['results', 'suggestions'] as $key) {
             foreach ($found[$key] as $i => $item) {
@@ -269,11 +276,39 @@ final class PageController
             }
         }
 
+        $viewer = Auth::user();
+        $isOwner = $viewer && (int) ($viewer['id'] ?? 0) === (int) ($mission['user_id'] ?? 0);
+        $myApplication = null;
+        $applications = [];
+        if ($isOwner) {
+            try {
+                $applications = Application::forMission((int) $mission['id']);
+                foreach ($applications as $app) {
+                    if (($app['status'] ?? '') === 'sent') {
+                        Application::markViewed((int) $app['id'], (int) $viewer['id']);
+                    }
+                }
+                $applications = Application::forMission((int) $mission['id']);
+            } catch (\Throwable) {
+            }
+        } elseif ($viewer && User::offersServices($viewer)) {
+            try {
+                $myApplication = Application::findForUserOnMission((int) $mission['id'], (int) $viewer['id']);
+            } catch (\Throwable) {
+            }
+        }
         $brief = trim((string) ($mission['brief'] ?? ''));
         View::page('mission', [
             'title' => $mission['title'],
             'slug' => $slug,
             'liveMission' => $mission,
+            'isOwner' => $isOwner,
+            'canApply' => $viewer && User::offersServices($viewer) && !$isOwner && ($mission['status'] ?? '') === 'open',
+            'myApplication' => $myApplication,
+            'applications' => $applications,
+            'old' => flash('old') ?: [],
+            'error' => flash('error'),
+            'saved' => flash('saved'),
             'suggestions' => Catalog::suggestionsForTrade((string) ($mission['category_name'] ?? '')),
             'meta' => Seo::build(
                 (string) $mission['title'],
@@ -385,10 +420,45 @@ final class PageController
 
     public function aide(Request $request): void
     {
+        $query = $request->string('q');
         View::page('aide', [
             'title' => 'Centre d\'aide',
+            'helpQuery' => $query,
+            'reportError' => flash('error'),
+            'reportSaved' => flash('saved'),
             'meta' => Seo::forScreen('aide'),
         ]);
+    }
+
+    public function newsletter(Request $request): void
+    {
+        try {
+            Newsletter::subscribe($request->string('email'));
+            flash('saved', 'Inscription enregistrée. Merci.');
+        } catch (\Throwable $e) {
+            flash('error', $e->getMessage());
+        }
+        $back = $request->string('back');
+        redirect($back !== '' ? $back : '/');
+    }
+
+    public function report(Request $request): void
+    {
+        $viewer = Auth::user();
+        try {
+            Report::create(
+                $viewer ? (int) $viewer['id'] : null,
+                $request->string('type', 'user'),
+                $request->int('id'),
+                $request->string('reason'),
+                $request->string('body')
+            );
+            flash('saved', 'Signalement reçu. L\'équipe de modération le traitera.');
+        } catch (\Throwable $e) {
+            flash('error', $e->getMessage());
+        }
+        $back = $request->string('back');
+        redirect($back !== '' ? $back : '/aide');
     }
 
     public function legal(Request $request): void
@@ -434,14 +504,15 @@ final class PageController
         }
         $cat = $request->string('cat');
         $availableOnly = $request->bool('dispo');
-        $target = Catalog::redirectPath($request->path(), $query, $type, $cat, $availableOnly);
+        $filters = self::searchFilters($request);
+        $target = Catalog::redirectPath($request->path(), $query, $type, $cat, $availableOnly, $filters);
         if ($target !== null) {
             redirect($target, 301);
         }
 
-        $found = Catalog::search($query, $type, $cat, 48, $availableOnly);
+        $found = Catalog::search($query, $type, $cat, 48, $availableOnly, $filters);
         $hub = Catalog::typePath($type);
-        $indexable = $query === '' && $cat === '' && !$availableOnly;
+        $indexable = $query === '' && $cat === '' && !$availableOnly && !Catalog::hasFacetFilters($filters);
         $copy = match ($type) {
             'prestations' => [
                 'title' => 'Prestations des métiers du livre',
@@ -470,6 +541,8 @@ final class PageController
             'searchResults' => $found['results'],
             'searchState' => $found,
             'availableOnly' => $availableOnly,
+            'searchFilters' => $found['filters'] ?? $filters,
+            'searchFacets' => $found['facets'] ?? [],
             'trades' => Catalog::trades(),
             'searchTypes' => Catalog::TYPES,
             'catalogHeading' => $heading,
@@ -527,5 +600,20 @@ final class PageController
 
         flash('contact_sent', true);
         redirect('/contact');
+    }
+
+    /** @return array<string, mixed> */
+    private static function searchFilters(Request $request): array
+    {
+        return [
+            'kinds' => $request->strings('kind'),
+            'metiers' => $request->strings('metier'),
+            'specs' => $request->strings('spec'),
+            'delays' => $request->strings('delay'),
+            'levels' => $request->strings('level'),
+            'trust' => $request->strings('trust'),
+            'bmin' => $request->int('bmin'),
+            'bmax' => $request->int('bmax'),
+        ];
     }
 }

@@ -17,6 +17,7 @@ use Adl\Models\Invoice;
 use Adl\Models\Mission;
 use Adl\Models\Order;
 use Adl\Models\Profile;
+use Adl\Models\Report;
 use Adl\Models\Review;
 use Adl\Models\Service;
 use Adl\Models\Setting;
@@ -90,6 +91,7 @@ final class AdminController
                 ['label' => 'Factures en retard', 'n' => $overdue, 'href' => '/admin/finances', 'note' => 'commissions échues'],
                 ['label' => 'Litiges', 'n' => $disputes, 'href' => '/admin/litiges', 'note' => 'commandes en médiation'],
                 ['label' => 'Avis masqués', 'n' => $hiddenReviews, 'href' => '/admin/avis', 'note' => 'retirés du public'],
+                ['label' => 'Signalements', 'n' => self::reportCount(), 'href' => '/admin/moderation', 'note' => 'ouverts'],
             ],
             'activity' => $activity,
         ]);
@@ -128,10 +130,28 @@ final class AdminController
 
     public function moderation(Request $request): void
     {
+        $reports = [];
+        try {
+            $reports = Report::all();
+        } catch (Throwable) {
+        }
         $this->page('moderation', 'admin/moderation', [
             'services' => Service::all(),
             'missions' => Mission::all(),
+            'reports' => $reports,
         ]);
+    }
+
+    public function reportSave(Request $request, string $id): void
+    {
+        Auth::requireAdmin();
+        try {
+            Report::setStatus((int) $id, $request->string('status', 'closed'));
+            flash('saved', 'Signalement mis à jour.');
+        } catch (Throwable $e) {
+            flash('error', $e->getMessage());
+        }
+        redirect('/admin/moderation');
     }
 
     public function moderationSave(Request $request, string $type, string $id): void
@@ -584,6 +604,15 @@ final class AdminController
         EmailTemplate::update((int) $id, $request->string('subject'), $request->input('body_html', ''));
         flash('saved', true);
         redirect('/admin/emails');
+    }
+
+    private static function reportCount(): int
+    {
+        try {
+            return Report::countOpen();
+        } catch (Throwable) {
+            return 0;
+        }
     }
 
     private function page(string $screen, string $view, array $extra = []): void

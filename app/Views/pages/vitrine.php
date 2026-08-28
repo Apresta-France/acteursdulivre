@@ -293,6 +293,30 @@ if ($rateKind === 'percent') {
       <button class="btn-orange" type="submit">Enregistrer la vitrine</button>
     </div>
   </form>
+
+  <section class="side-card" style="margin-top: 36px;">
+    <div class="side-kicker">Justificatif d'activité</div>
+    <?php
+      $verify = (string) ($p['verification_status'] ?? '');
+      $verifyLabel = match ($verify) {
+          'verified' => 'Profil vérifié',
+          'refused' => 'Dossier refusé — vous pouvez renvoyer un justificatif',
+          'pending' => 'Dossier en cours de vérification',
+          default => 'Aucun justificatif envoyé',
+      };
+    ?>
+    <p><?= e($verifyLabel) ?><?php if (!empty($p['verification_doc_name'])): ?> · <?= e((string) $p['verification_doc_name']) ?><?php endif; ?></p>
+    <form method="post" action="<?= e(url('/espace/vitrine/justificatif')) ?>" enctype="multipart/form-data" class="param-form">
+      <?= csrf_field() ?>
+      <label class="field" for="justificatif">KBIS, avis SIREN, attestation URSSAF ou équivalent (PDF, JPG, PNG — 8 Mo)</label>
+      <input class="input" id="justificatif" type="file" name="justificatif" accept=".pdf,image/jpeg,image/png,image/webp" required>
+      <label class="field" for="verify-note" style="margin-top: 12px;">Note (optionnel)</label>
+      <input class="input" id="verify-note" name="note" value="<?= e((string) ($p['verification_note'] ?? '')) ?>" placeholder="Numéro SIRET, forme juridique…">
+      <div class="auth-actions" style="margin-top: 14px;">
+        <button class="btn-navy" type="submit">Envoyer pour vérification</button>
+      </div>
+    </form>
+  </section>
 </div>
 
 <template id="tpl-skills">

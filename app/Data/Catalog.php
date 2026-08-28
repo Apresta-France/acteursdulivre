@@ -8,6 +8,7 @@ use Adl\Models\Article;
 use Adl\Models\Mission;
 use Adl\Models\PortfolioItem;
 use Adl\Models\Profile;
+use Adl\Models\Review;
 use Adl\Models\Service;
 use Adl\Models\Setting;
 use Adl\Models\Taxonomy;
@@ -30,6 +31,9 @@ final class Catalog
         'Maquette' => ['label' => 'Volume', 'placeholder' => '256 pages'],
         'Impression' => ['label' => 'Tirage', 'placeholder' => '500 exemplaires'],
         'Audio' => ['label' => 'Durée', 'placeholder' => '6 heures'],
+        'Lecture éditoriale' => ['label' => 'Volume', 'placeholder' => '240 pages'],
+        'Iconographie' => ['label' => 'Volume', 'placeholder' => '40 visuels'],
+        'Reliure' => ['label' => 'Tirage', 'placeholder' => '30 exemplaires'],
     ];
 
     public const BRIEF_HINTS = [
@@ -46,6 +50,11 @@ final class Catalog
         'Audio' => 'Durée estimée, ton, public, contraintes techniques…',
         'Agent littéraire' => 'Projet, genre, ce que vous attendez d’un accompagnement, calendrier…',
         'Salons' => 'Type d’événement, dates, lieu, public, prestations souhaitées…',
+        'Iconographie' => 'Ouvrage, nombre de visuels, droits souhaités, sources, calendrier…',
+        'Lecture éditoriale' => 'Genre, public, ce que vous attendez du rapport, calendrier…',
+        'Photographie' => 'Usage (portrait, ouvrage, reportage), format, droits, calendrier…',
+        'Reliure' => 'Type de reliure, quantité, matériaux, calendrier…',
+        'Juridique' => 'Type d’acte (contrat, cession, litige), ouvrage, calendrier…',
     ];
 
     public const TRADE_LABELS = [
@@ -62,7 +71,33 @@ final class Catalog
         'Audio' => 'Narrateurs audio',
         'Agent littéraire' => 'Agents littéraires',
         'Salons' => 'Salons & événements',
+        'Iconographie' => 'Iconographes',
+        'Lecture éditoriale' => 'Lecteurs éditoriaux',
+        'Photographie' => 'Photographes',
+        'Reliure' => 'Relieurs',
+        'Juridique' => 'Juristes',
     ];
+
+    public const DELAYS = [
+        'week' => 'Moins d\'une semaine',
+        'mid' => '1 à 3 semaines',
+        'month' => 'Plus d\'un mois',
+    ];
+
+    public const LEVELS = [
+        'expert' => 'Experte / Expert',
+        'confirme' => 'Confirmé',
+        'nouveau' => 'Nouveau',
+    ];
+
+    public const TRUST = [
+        'verified' => 'Profil vérifié',
+        'rated' => 'Avis 4,5 et plus',
+        'available' => 'Disponibles uniquement',
+    ];
+
+    public const BUDGET_MIN = 200;
+    public const BUDGET_MAX = 4000;
 
     public const TRADE_TITLES = [
         'Écriture' => 'Écriture & prête-plume',
@@ -78,6 +113,11 @@ final class Catalog
         'Audio' => 'Narration audio',
         'Agent littéraire' => 'Agent littéraire',
         'Salons' => 'Salons & événements',
+        'Iconographie' => 'Iconographie',
+        'Lecture éditoriale' => 'Lecture éditoriale',
+        'Photographie' => 'Photographie',
+        'Reliure' => 'Reliure',
+        'Juridique' => 'Juridique & droits d\'auteur',
     ];
 
     public static function tradeTitle(string $trade): string
@@ -179,7 +219,25 @@ final class Catalog
             'Imprimeurs' => 'Impression',
             'Impression offset' => 'Impression',
             'Impression numérique' => 'Impression',
-            'Reliure & finitions' => 'Impression',
+            'Iconographe' => 'Iconographie',
+            'Iconographes' => 'Iconographie',
+            'Recherche iconographique' => 'Iconographie',
+            'Lecteur éditorial' => 'Lecture éditoriale',
+            'Lecteurs éditoriaux' => 'Lecture éditoriale',
+            'Comité de lecture' => 'Lecture éditoriale',
+            'Évaluation de manuscrit' => 'Lecture éditoriale',
+            'Photographe' => 'Photographie',
+            'Photographes' => 'Photographie',
+            'Photo d\'auteur' => 'Photographie',
+            'Relieur' => 'Reliure',
+            'Relieurs' => 'Reliure',
+            'Reliure & finitions' => 'Reliure',
+            'Reliure d\'art' => 'Reliure',
+            'Juriste' => 'Juridique',
+            'Juristes' => 'Juridique',
+            'Droits d\'auteur' => 'Juridique',
+            'Contrats & droits d\'auteur' => 'Juridique',
+            'Contrats éditoriaux' => 'Juridique',
             'Presse' => 'Presse & com',
             'Attaché de presse' => 'Presse & com',
             'Attachés de presse' => 'Presse & com',
@@ -210,21 +268,23 @@ final class Catalog
                 'Auteurs & prête-plume' => 'Écriture',
                 'Correction orthotypo' => 'Correction',
                 'Bêta-lecture' => 'Bêta-lecture',
+                'Lecture éditoriale' => 'Lecture éditoriale',
                 'Préparation de copie' => 'Correction',
                 'Réécriture' => 'Écriture',
                 'Traduction littéraire' => 'Traduction',
             ],
             'Fabriquer' => [
                 'Illustration & couverture' => 'Illustration',
+                'Iconographie' => 'Iconographie',
+                'Photographie' => 'Photographie',
                 'Maquette intérieure' => 'Maquette',
-                'Direction artistique' => 'Maquette',
                 'Impression offset' => 'Impression',
-                'Impression numérique' => 'Impression',
-                'Reliure & finitions' => 'Impression',
+                'Reliure & finitions' => 'Reliure',
             ],
             'Éditer & diffuser' => [
                 'Édition & direction de collection' => 'Édition',
                 'Agents littéraires' => 'Agent littéraire',
+                'Contrats & droits d\'auteur' => 'Juridique',
                 'Dépôt légal & ISBN' => 'Édition',
                 'Diffusion en librairie' => 'Librairie',
                 'Vente en ligne' => 'Librairie',
@@ -292,9 +352,9 @@ final class Catalog
     /**
      * URL publique propre, ou null si la requête (texte libre, dispo…) doit rester une recherche.
      */
-    public static function redirectPath(string $currentPath, string $q, string $type, string $cat, bool $availableOnly): ?string
+    public static function redirectPath(string $currentPath, string $q, string $type, string $cat, bool $availableOnly, array $filters = []): ?string
     {
-        if ($availableOnly) {
+        if ($availableOnly || self::hasFacetFilters($filters)) {
             return null;
         }
         $type = array_key_exists($type, self::TYPES) ? $type : 'all';
@@ -311,6 +371,7 @@ final class Catalog
     }
 
     /**
+     * @param array<string, mixed> $filters
      * @return array{
      *   query: string,
      *   type: string,
@@ -319,14 +380,17 @@ final class Catalog
      *   results: list<array<string, mixed>>,
      *   groups: array<string, list<array<string, mixed>>>,
      *   suggestions: list<array<string, mixed>>,
-     *   available_only: bool
+     *   available_only: bool,
+     *   filters: array<string, mixed>,
+     *   facets: array<string, list<array{v: string, l: string, n: int}>>
      * }
      */
-    public static function search(string $q, string $type = 'all', string $cat = '', int $limit = 48, bool $availableOnly = false): array
+    public static function search(string $q, string $type = 'all', string $cat = '', int $limit = 48, bool $availableOnly = false, array $filters = []): array
     {
         $type = array_key_exists($type, self::TYPES) ? $type : 'all';
-        $items = [];
+        $filters = self::normalizeFilters($filters, $availableOnly);
 
+        $items = [];
         if ($type === 'all' || $type === 'prestations') {
             $items = array_merge($items, self::services());
         }
@@ -337,12 +401,10 @@ final class Catalog
             $items = array_merge($items, self::missions());
         }
 
-        $scored = [];
+        $pool = [];
         foreach ($items as $item) {
-            if ($cat !== '' && search_norm((string) ($item['cat'] ?? '')) !== search_norm($cat)) {
-                continue;
-            }
-            if ($availableOnly && ($item['kind'] ?? '') === 'prestataires' && !empty($item['is_busy'])) {
+            $item = self::decorate($item);
+            if ($cat !== '' && !self::itemHasTrade($item, [$cat])) {
                 continue;
             }
             $score = self::score($q, $item);
@@ -350,6 +412,15 @@ final class Catalog
                 continue;
             }
             $item['score'] = $score;
+            $pool[] = $item;
+        }
+
+        $facets = self::facetOptions($pool, $type);
+        $scored = [];
+        foreach ($pool as $item) {
+            if (!self::matchesFacets($item, $filters)) {
+                continue;
+            }
             $scored[] = $item;
         }
 
@@ -371,8 +442,60 @@ final class Catalog
             'results' => $results,
             'groups' => $groups,
             'suggestions' => array_slice($results, 0, 8),
-            'available_only' => $availableOnly,
+            'available_only' => $availableOnly || in_array('available', $filters['trust'], true),
+            'filters' => $filters,
+            'facets' => $facets,
         ];
+    }
+
+    /**
+     * @param array<string, mixed> $raw
+     * @return array{kinds: list<string>, metiers: list<string>, specs: list<string>, delays: list<string>, levels: list<string>, trust: list<string>, bmin: ?int, bmax: ?int}
+     */
+    public static function normalizeFilters(array $raw, bool $availableOnly = false): array
+    {
+        $pick = static function (array $values, array $allowed): array {
+            $out = [];
+            foreach ($values as $value) {
+                $value = (string) $value;
+                if (isset($allowed[$value]) || in_array($value, $allowed, true)) {
+                    $out[] = $value;
+                }
+            }
+            return array_values(array_unique($out));
+        };
+
+        $trust = $pick($raw['trust'] ?? [], array_keys(self::TRUST));
+        if ($availableOnly && !in_array('available', $trust, true)) {
+            $trust[] = 'available';
+        }
+
+        $bmin = isset($raw['bmin']) && $raw['bmin'] !== '' && $raw['bmin'] !== null ? (int) $raw['bmin'] : null;
+        $bmax = isset($raw['bmax']) && $raw['bmax'] !== '' && $raw['bmax'] !== null ? (int) $raw['bmax'] : null;
+
+        return [
+            'kinds' => $pick($raw['kinds'] ?? [], ['prestations', 'prestataires', 'missions']),
+            'metiers' => array_values(array_filter(array_map('strval', $raw['metiers'] ?? []))),
+            'specs' => array_values(array_filter(array_map('strval', $raw['specs'] ?? []))),
+            'delays' => $pick($raw['delays'] ?? [], array_keys(self::DELAYS)),
+            'levels' => $pick($raw['levels'] ?? [], array_keys(self::LEVELS)),
+            'trust' => $trust,
+            'bmin' => $bmin,
+            'bmax' => $bmax,
+        ];
+    }
+
+    public static function hasFacetFilters(array $filters): bool
+    {
+        $filters = self::normalizeFilters($filters);
+        return $filters['kinds'] !== []
+            || $filters['metiers'] !== []
+            || $filters['specs'] !== []
+            || $filters['delays'] !== []
+            || $filters['levels'] !== []
+            || $filters['trust'] !== []
+            || ($filters['bmin'] !== null && $filters['bmin'] !== self::BUDGET_MIN)
+            || ($filters['bmax'] !== null && $filters['bmax'] !== self::BUDGET_MAX);
     }
 
     /** @return list<array<string, mixed>> */
@@ -401,13 +524,18 @@ final class Catalog
                     'subtitle' => trim((string) ($profile['title'] ?? 'Prestataire')) . ($profile['city'] ? ' · ' . $profile['city'] : ''),
                     'href' => Profile::publicHref($profile),
                     'cat' => $cat,
+                    'trades' => $trades,
                     'meta' => implode(' · ', array_slice($profile['genres'] ?: $trades, 0, 4)),
                     'price' => Profile::formatRateSearch($profile),
+                    'hourly_rate' => (string) ($profile['hourly_rate'] ?? ''),
                     'thumb' => '',
                     'initials' => Profile::initials($profile),
                     'excerpt' => (string) ($profile['presentation'] ?? ''),
                     'city' => (string) ($profile['city'] ?? ''),
                     'genres' => $profile['genres'] ?? [],
+                    'level' => (string) ($profile['level'] ?? 'Nouveau'),
+                    'verified' => ($profile['verification_status'] ?? '') === Profile::VERIFY_VERIFIED,
+                    'rating' => Review::statsForUser((int) $profile['user_id'])['avg'] ?? '',
                     'live' => true,
                     'availability_status' => $profile['availability_status'] ?? Profile::STATUS_AVAILABLE,
                     'availability_label' => $profile['availability_label'] ?? Profile::statusLabel($profile),
@@ -643,7 +771,244 @@ final class Catalog
             'website' => (string) ($profile['website'] ?? ''),
             'href' => Profile::publicHref($profile),
             'is_founder' => !empty($profile['is_founder']),
+            'user_id' => (int) ($profile['user_id'] ?? 0),
+            'is_verified' => !empty($profile['is_verified']),
+            'reviews' => Review::forTarget((int) ($profile['user_id'] ?? 0), 8),
+            'review_stats' => Review::statsForUser((int) ($profile['user_id'] ?? 0)),
+            'services' => array_values(array_filter(
+                Service::forUser((int) ($profile['user_id'] ?? 0)),
+                static fn (array $service): bool => ($service['status'] ?? '') === 'published'
+            )),
         ];
+    }
+
+    /** @param array<string, mixed> $item */
+    private static function decorate(array $item): array
+    {
+        $item['delay_bucket'] = self::delayBucket((string) ($item['delay'] ?? $item['deadline'] ?? ''));
+        $item['price_num'] = self::priceAmount($item);
+        $item['rating_num'] = self::ratingAmount($item['rating'] ?? 0);
+        $item['verified'] = !empty($item['verified']);
+        $item['level_key'] = self::levelKey((string) ($item['level'] ?? ''));
+        $specs = [];
+        foreach (array_merge(
+            [(string) ($item['specialty'] ?? '')],
+            is_array($item['genres'] ?? null) ? $item['genres'] : []
+        ) as $spec) {
+            $spec = trim((string) $spec);
+            if ($spec !== '') {
+                $specs[] = $spec;
+            }
+        }
+        $item['specialties'] = $specs !== [] ? array_values(array_unique($specs)) : [Taxonomy::GLOBAL_NAME];
+        return $item;
+    }
+
+    /** @param array<string, mixed> $item */
+    private static function matchesFacets(array $item, array $filters): bool
+    {
+        if ($filters['kinds'] !== [] && !in_array((string) ($item['kind'] ?? ''), $filters['kinds'], true)) {
+            return false;
+        }
+        if ($filters['metiers'] !== [] && !self::itemHasTrade($item, $filters['metiers'])) {
+            return false;
+        }
+        if ($filters['specs'] !== [] && !self::itemHasSpec($item, $filters['specs'])) {
+            return false;
+        }
+        if ($filters['delays'] !== [] && !in_array((string) ($item['delay_bucket'] ?? ''), $filters['delays'], true)) {
+            return false;
+        }
+        if ($filters['levels'] !== [] && !in_array((string) ($item['level_key'] ?? ''), $filters['levels'], true)) {
+            return false;
+        }
+        if (in_array('verified', $filters['trust'], true) && empty($item['verified'])) {
+            return false;
+        }
+        if (in_array('rated', $filters['trust'], true) && ($item['rating_num'] ?? 0) < 4.5) {
+            return false;
+        }
+        if (in_array('available', $filters['trust'], true) && ($item['kind'] ?? '') === 'prestataires' && !empty($item['is_busy'])) {
+            return false;
+        }
+        $bmin = $filters['bmin'];
+        $bmax = $filters['bmax'];
+        $budgetOn = ($bmin !== null && $bmin !== self::BUDGET_MIN) || ($bmax !== null && $bmax !== self::BUDGET_MAX);
+        if ($budgetOn) {
+            $price = $item['price_num'] ?? null;
+            if ($price !== null) {
+                if ($bmin !== null && $price < $bmin) {
+                    return false;
+                }
+                if ($bmax !== null && $price > $bmax) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    /**
+     * @param list<array<string, mixed>> $pool
+     * @return array<string, list<array{v: string, l: string, n: int}>>
+     */
+    private static function facetOptions(array $pool, string $type): array
+    {
+        $kinds = [];
+        foreach (self::TYPES as $value => $label) {
+            if ($value === 'all') {
+                continue;
+            }
+            $kinds[] = ['v' => $value, 'l' => $label, 'n' => self::countWhere($pool, static fn (array $i): bool => ($i['kind'] ?? '') === $value)];
+        }
+
+        $metiers = [];
+        foreach (self::trades() as $trade) {
+            $metiers[] = ['v' => $trade, 'l' => $trade, 'n' => self::countWhere($pool, static fn (array $i): bool => self::itemHasTrade($i, [$trade]))];
+        }
+
+        $specs = [];
+        foreach (self::specialties() as $spec) {
+            $specs[] = ['v' => $spec, 'l' => $spec, 'n' => self::countWhere($pool, static fn (array $i): bool => self::itemHasSpec($i, [$spec]))];
+        }
+
+        $delays = [];
+        foreach (self::DELAYS as $value => $label) {
+            $delays[] = ['v' => $value, 'l' => $label, 'n' => self::countWhere($pool, static fn (array $i): bool => ($i['delay_bucket'] ?? '') === $value)];
+        }
+
+        $levels = [];
+        foreach (self::LEVELS as $value => $label) {
+            $levels[] = ['v' => $value, 'l' => $label, 'n' => self::countWhere($pool, static fn (array $i): bool => ($i['level_key'] ?? '') === $value)];
+        }
+
+        $trust = [
+            ['v' => 'verified', 'l' => self::TRUST['verified'], 'n' => self::countWhere($pool, static fn (array $i): bool => !empty($i['verified']))],
+            ['v' => 'rated', 'l' => self::TRUST['rated'], 'n' => self::countWhere($pool, static fn (array $i): bool => ($i['rating_num'] ?? 0) >= 4.5)],
+            ['v' => 'available', 'l' => self::TRUST['available'], 'n' => self::countWhere($pool, static fn (array $i): bool => ($i['kind'] ?? '') !== 'prestataires' || empty($i['is_busy']))],
+        ];
+
+        $out = [
+            'kind' => $kinds,
+            'metier' => $metiers,
+            'spec' => $specs,
+            'delay' => $delays,
+            'level' => $levels,
+            'trust' => $trust,
+        ];
+        if ($type !== 'all') {
+            unset($out['kind']);
+        }
+        return $out;
+    }
+
+    /**
+     * @param list<array<string, mixed>> $items
+     * @param callable(array<string, mixed>): bool $fn
+     */
+    private static function countWhere(array $items, callable $fn): int
+    {
+        $n = 0;
+        foreach ($items as $item) {
+            if ($fn($item)) {
+                $n++;
+            }
+        }
+        return $n;
+    }
+
+    /** @param array<string, mixed> $item */
+    private static function itemHasTrade(array $item, array $trades): bool
+    {
+        $hay = array_merge([(string) ($item['cat'] ?? '')], is_array($item['trades'] ?? null) ? $item['trades'] : []);
+        foreach ($trades as $trade) {
+            $want = search_norm((string) $trade);
+            foreach ($hay as $value) {
+                if ($value !== '' && search_norm((string) $value) === $want) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    /** @param array<string, mixed> $item */
+    private static function itemHasSpec(array $item, array $specs): bool
+    {
+        $hay = $item['specialties'] ?? [];
+        foreach ($specs as $spec) {
+            $want = search_norm((string) $spec);
+            foreach ($hay as $value) {
+                if (search_norm((string) $value) === $want) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private static function delayBucket(string $delay): string
+    {
+        $delay = search_norm($delay);
+        if ($delay === '') {
+            return '';
+        }
+        if (preg_match('/(\d+)\s*jour/', $delay, $m)) {
+            $n = (int) $m[1];
+            return $n <= 7 ? 'week' : ($n <= 21 ? 'mid' : 'month');
+        }
+        if (preg_match('/(\d+)\s*semaine/', $delay, $m)) {
+            $n = (int) $m[1];
+            return $n <= 1 ? 'week' : ($n <= 3 ? 'mid' : 'month');
+        }
+        if (str_contains($delay, 'mois')) {
+            return 'month';
+        }
+        return '';
+    }
+
+    /** @param array<string, mixed> $item */
+    private static function priceAmount(array $item): ?int
+    {
+        if (isset($item['price_from']) && $item['price_from'] !== '' && $item['price_from'] !== null) {
+            return (int) $item['price_from'];
+        }
+        if (isset($item['budget_min']) && $item['budget_min'] !== '' && $item['budget_min'] !== null) {
+            return (int) $item['budget_min'];
+        }
+        foreach ([$item['hourly_rate'] ?? '', $item['price'] ?? ''] as $raw) {
+            $raw = (string) $raw;
+            if ($raw === '' || str_contains($raw, '%')) {
+                continue;
+            }
+            if (preg_match('/(\d[\d\s]*)/', $raw, $m)) {
+                return (int) str_replace([' ', "\u{00a0}"], '', $m[1]);
+            }
+        }
+        return null;
+    }
+
+    private static function ratingAmount(mixed $rating): float
+    {
+        if ($rating === '' || $rating === null) {
+            return 0.0;
+        }
+        return (float) str_replace(',', '.', (string) $rating);
+    }
+
+    private static function levelKey(string $level): string
+    {
+        $level = search_norm($level);
+        if (str_contains($level, 'expert')) {
+            return 'expert';
+        }
+        if (str_contains($level, 'confirm')) {
+            return 'confirme';
+        }
+        if ($level === '' || str_contains($level, 'nouveau') || str_contains($level, 'nouvelle') || str_contains($level, 'initie')) {
+            return 'nouveau';
+        }
+        return 'nouveau';
     }
 
     /** @param array<string, mixed> $item */

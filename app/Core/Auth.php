@@ -12,6 +12,9 @@ final class Auth
     {
         $id = $_SESSION['user_id'] ?? null;
         if (!$id) {
+            $id = self::resumeRemember();
+        }
+        if (!$id) {
             return null;
         }
         $user = User::find((int) $id);
@@ -34,7 +37,7 @@ final class Auth
         return $user ? (int) $user['id'] : null;
     }
 
-    public static function attempt(string $email, string $password): bool
+    public static function attempt(string $email, string $password, bool $remember = false): bool
     {
         $user = User::findByEmail($email);
         $hash = (string) ($user['password'] ?? '');
@@ -44,20 +47,24 @@ final class Auth
         if (($user['status'] ?? 'active') !== 'active') {
             return false;
         }
-        self::login($user);
+        self::login($user, $remember);
         return true;
     }
 
-    public static function login(array $user): void
+    public static function login(array $user, bool $remember = false): void
     {
         session_regenerate_id(true);
         $_SESSION['user_id'] = (int) $user['id'];
         $_SESSION['_user_cache'] = $user;
         User::touchLastLogin((int) $user['id']);
+        if ($remember) {
+            self::issueRemember((int) $user['id']);
+        }
     }
 
     public static function logout(): void
     {
+        self::forgetRemember();
         unset($_SESSION['user_id'], $_SESSION['_user_cache']);
         session_regenerate_id(true);
     }
@@ -101,5 +108,87 @@ final class Auth
             redirect('/espace');
         }
         return $user;
+    }
+
+    private static function issueRemember(int $userId): void
+    {
+        try {
+            $selector = bin2hex(random_bytes(9));
+            $token = bin2hex(random_bytes(32));
+            Database::query(
+                'INSERT INTO remember_tokens (user_id, selector, token_hash, expires_at, created_at)
+                 VALUES (?, ?, ?, DATE_ADD(NOW(), INTERVAL 30 DAY), NOW())',
+                [$userId, $selector, hash('sha256', $token)]
+            );
+            self::setRememberCookie($selector . ':' . $token);
+        } catch (\Throwable) {
+        }
+    }
+
+    private static function resumeRemember(): ?int
+    {
+        $raw = (string) ($_COOKIE['adl_remember'] ?? '');
+        if (!str_contains($raw, ':')) {
+            return null;
+        }
+        [$selector, $token] = explode(':', $raw, 2);
+        if ($selector === '' || $token === '') {
+            return null;
+        }
+        try {
+            $row = Database::fetch(
+                'SELECT user_id, token_hash, expires_at FROM remember_tokens WHERE selector = ?',
+                [$selector]
+            );
+        } catch (\Throwable) {
+            return null;
+        }
+        if (!$row || strtotime((string) $row['expires_at']) < time()) {
+            self::clearRememberCookie();
+            return null;
+        }
+        if (!hash_equals((string) $row['token_hash'], hash('sha256', $token))) {
+            self::clearRememberCookie();
+            return null;
+        }
+        $_SESSION['user_id'] = (int) $row['user_id'];
+        return (int) $row['user_id'];
+    }
+
+    private static function forgetRemember(): void
+    {
+        $raw = (string) ($_COOKIE['adl_remember'] ?? '');
+        if (str_contains($raw, ':')) {
+            $selector = explode(':', $raw, 2)[0];
+            try {
+                Database::query('DELETE FROM remember_tokens WHERE selector = ?', [$selector]);
+            } catch (\Throwable) {
+            }
+        }
+        self::clearRememberCookie();
+    }
+
+    private static function setRememberCookie(string $value): void
+    {
+        setcookie('adl_remember', $value, [
+            'expires' => time() + 60 * 60 * 24 * 30,
+            'path' => '/',
+            'secure' => (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off'),
+            'httponly' => true,
+            'samesite' => 'Lax',
+        ]);
+        $_COOKIE['adl_remember'] = $value;
+    }
+
+    private static function clearRememberCookie(): void
+    {
+        setcookie('adl_remember', '', [
+            'expires' => time() - 3600,
+            'path' => '/',
+            'secure' => (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off'),
+            'httponly' => true,
+            'samesite' => 'Lax',
+        ]);
+        unset($_COOKIE['adl_remember']);
     }
 }

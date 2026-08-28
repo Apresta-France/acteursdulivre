@@ -59,6 +59,29 @@ if ($oauthProviders === [] && \Adl\Core\Env::bool('APP_DEBUG')) {
     </div>
   </form>
 
+  <form method="post" action="<?= e(url('/espace/parametres/mot-de-passe')) ?>" class="param-form" style="margin-top: 36px;">
+    <?= csrf_field() ?>
+    <p class="field">Mot de passe</p>
+    <p class="espace-page-lead" style="margin-top: 0;">8 caractères minimum. Laissez le champ actuel vide si votre compte n'a pas encore de mot de passe.</p>
+    <div>
+      <label class="field" for="current_password">Mot de passe actuel</label>
+      <input class="input" id="current_password" type="password" name="current_password">
+    </div>
+    <div class="auth-name-grid">
+      <div>
+        <label class="field" for="password">Nouveau mot de passe</label>
+        <input class="input" id="password" type="password" name="password" required minlength="8">
+      </div>
+      <div>
+        <label class="field" for="password_confirmation">Confirmation</label>
+        <input class="input" id="password_confirmation" type="password" name="password_confirmation" required minlength="8">
+      </div>
+    </div>
+    <div class="auth-actions">
+      <button class="btn-navy" type="submit">Mettre à jour le mot de passe</button>
+    </div>
+  </form>
+
   <?php if ($oauthProviders !== []): ?>
     <div class="param-oauth">
       <p class="field">Connexions sociales</p>

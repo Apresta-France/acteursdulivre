@@ -4,7 +4,7 @@
           <div>
             <div style="font-family: 'Space Grotesk', monospace; font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: #D85D3F; margin-bottom: 18px;">La place de marché des métiers du livre</div>
             <h1 style="font-family: 'Space Grotesk', sans-serif; font-size: 52px; line-height: 1.04; font-weight: 700; color: #022746; margin: 0 0 18px; letter-spacing: -.02em;">Un livre, ça se fait à plusieurs.</h1>
-            <p style="font-size: 18px; line-height: 1.65; color: #4A5A6B; margin: 0 0 26px; max-width: 34em;">Auteurs, correcteurs, bêta-lecteurs, illustrateurs, traducteurs, maquettistes, imprimeurs, attachés de presse, libraires, narrateurs, agents, salons : trouvez les bonnes personnes, comparez des prestations à prix affichés, ou publiez votre recherche.</p>
+            <p style="font-size: 18px; line-height: 1.65; color: #4A5A6B; margin: 0 0 26px; max-width: 34em;">Dix-huit métiers, de l'écriture au salon : trouvez les bonnes personnes, comparez des prestations à prix affichés, ou publiez votre recherche.</p>
             <div style="display: flex; align-items: center; background: #FFF; border: 1px solid #E1E7ED; border-radius: 12px; padding: 0 6px 0 18px; height: 58px; box-shadow: 0 10px 30px rgba(2,39,70,.07); max-width: 620px;">
               <input value="{{ query }}" sc-camel-on-change="{{ onQuery }}" placeholder="De quoi votre livre a-t-il besoin ?" style="flex: 1; border: 0; outline: none; font-size: 16px; color: #14202C;">
               <button sc-camel-on-click="{{ goResultats }}" style="background: #D85D3F; border: 0; color: #FFF; height: 44px; padding: 0 24px; border-radius: 8px; font-size: 15px; font-weight: 500;">Chercher</button>
@@ -44,7 +44,7 @@
             <h2 style="font-family: 'Space Grotesk', sans-serif; font-size: 27px; font-weight: 700; color: #022746; margin: 0;">Les métiers du livre</h2>
             <span sc-camel-on-click="{{ goResultats }}" style="font-size: 14px; color: #D85D3F; cursor: pointer;">Parcourir l'annuaire →</span>
           </div>
-          <div style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px;">
+          <div class="r-cols-6" style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px;">
             <sc-for list="{{ homeMetiers }}" as="m">
             <a href="{{ m.href }}" style="background: #FFF; border: 1px solid #E8ECF1; border-radius: 10px; padding: 16px; cursor: pointer; text-decoration: none; display: block;">
               <div style="display: flex; align-items: center; gap: 11px;">

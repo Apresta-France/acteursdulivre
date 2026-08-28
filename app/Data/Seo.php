@@ -155,6 +155,26 @@ final class Seo
                 'h1' => 'Salons du livre et événements',
                 'lead' => 'Organisation de rencontres, dédicaces et salons. Dates, lieu et public précisés dans l\'appel d\'offres ou la fiche.',
             ],
+            'Iconographie' => [
+                'h1' => 'Iconographie et droits d\'images',
+                'lead' => 'Iconographes pour rechercher, légender et négocier les visuels d\'un ouvrage. Sources, droits et usages précisés dès le brief.',
+            ],
+            'Lecture éditoriale' => [
+                'h1' => 'Lecture éditoriale et comité de lecture',
+                'lead' => 'Faites évaluer un manuscrit : ligne, public, potentiel. Un avis de lecteur éditorial, distinct de la bêta-lecture.',
+            ],
+            'Photographie' => [
+                'h1' => 'Photographie du livre et portraits d\'auteurs',
+                'lead' => 'Photographes pour portraits, photos d\'ouvrages ou reportage de salon. Usage et cession de droits cadrés.',
+            ],
+            'Reliure' => [
+                'h1' => 'Reliure d\'art et façonnage',
+                'lead' => 'Relieurs pour reliure artisanale, restauration ou petits tirages soignés. Matériaux et quantité précisés.',
+            ],
+            'Juridique' => [
+                'h1' => 'Juristes du livre et droits d\'auteur',
+                'lead' => 'Contrats d\'édition, cessions, image et litiges. Un conseil juridique spécialisé livre, pas un cabinet généraliste imposé.',
+            ],
         ];
 
         $row = $map[$trade] ?? [
@@ -589,7 +609,7 @@ TXT;
 > Place de marché francophone des métiers du livre, éditée par EDITIONS TESSERACT (SAS, Sainghin-en-Weppes, France). Site : {$home}
 
 ## En une phrase
-acteursdulivre.fr met en relation des porteurs de projet (auteurs, éditeurs, collectifs) et des prestataires du livre (correcteurs, bêta-lecteurs, illustrateurs, traducteurs, maquettistes, imprimeurs, attachés de presse, libraires, narrateurs, agents, salons).
+acteursdulivre.fr met en relation des porteurs de projet (auteurs, éditeurs, collectifs) et des prestataires du livre (correcteurs, bêta-lecteurs, lecteurs éditoriaux, illustrateurs, iconographes, photographes, traducteurs, maquettistes, imprimeurs, relieurs, attachés de presse, libraires, narrateurs, agents, juristes, salons).
 
 ## Faits
 - Pas d'éditeur des ouvrages des utilisateurs : contrats conclus entre le porteur de projet et le prestataire.

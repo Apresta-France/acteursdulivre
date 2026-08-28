@@ -119,6 +119,57 @@ final class User
         Database::query('UPDATE users SET last_login_at = NOW() WHERE id = ?', [$id]);
     }
 
+    public static function setPassword(int $id, string $password): void
+    {
+        if (strlen($password) < 8) {
+            throw new \RuntimeException('Le mot de passe doit contenir au moins 8 caractères.');
+        }
+        self::update($id, ['password' => password_hash($password, PASSWORD_DEFAULT)]);
+    }
+
+    public static function requestPasswordReset(string $email): ?string
+    {
+        $user = self::findByEmail($email);
+        if (!$user || self::isOauthOnly($user)) {
+            return null;
+        }
+        $token = bin2hex(random_bytes(32));
+        Database::query(
+            'INSERT INTO password_resets (email, token, created_at) VALUES (?, ?, NOW())
+             ON DUPLICATE KEY UPDATE token = VALUES(token), created_at = NOW()',
+            [strtolower((string) $user['email']), hash('sha256', $token)]
+        );
+        return $token;
+    }
+
+    public static function consumePasswordReset(string $token): ?array
+    {
+        $hash = hash('sha256', $token);
+        $row = Database::fetch(
+            'SELECT email, created_at FROM password_resets WHERE token = ?',
+            [$hash]
+        );
+        if (!$row) {
+            return null;
+        }
+        $created = strtotime((string) ($row['created_at'] ?? ''));
+        if ($created === false || $created < time() - 3600) {
+            Database::query('DELETE FROM password_resets WHERE token = ?', [$hash]);
+            return null;
+        }
+        $user = self::findByEmail((string) $row['email']);
+        if (!$user) {
+            Database::query('DELETE FROM password_resets WHERE token = ?', [$hash]);
+            return null;
+        }
+        return $user;
+    }
+
+    public static function clearPasswordReset(string $email): void
+    {
+        Database::query('DELETE FROM password_resets WHERE email = ?', [strtolower($email)]);
+    }
+
     public static function all(): array
     {
         return Database::fetchAll('SELECT id, email, first_name, last_name, role, seeks_services, offers_services, status, last_login_at, created_at FROM users ORDER BY id DESC');

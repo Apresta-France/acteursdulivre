@@ -40,6 +40,7 @@ $online = count(array_filter($services, static fn (array $s): bool => ($s['statu
           </div>
           <div class="auth-actions" style="margin-top: 14px;">
             <a class="btn-ghost" href="<?= e(url((string) $s['href'])) ?>">Voir la fiche</a>
+            <a class="btn-navy" href="<?= e(url('/espace/prestations/' . (int) $s['id'] . '/modifier')) ?>">Modifier</a>
           </div>
         </article>
       <?php endforeach; ?>

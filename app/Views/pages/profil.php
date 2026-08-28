@@ -13,6 +13,9 @@ if (!$p) {
         <?php if (!empty($p['is_founder'])): ?>
           <span class="profile-badge profile-badge-founder">Membre fondateur</span>
         <?php endif; ?>
+        <?php if (!empty($p['is_verified'])): ?>
+          <span class="profile-badge">Vérifié</span>
+        <?php endif; ?>
         <span class="profile-badge"><?= e((string) ($p['level'] ?: 'Prestataire')) ?></span>
         <span class="profile-badge profile-badge-avail<?= !empty($p['is_busy']) ? ' is-busy' : ' is-available' ?>"><?= e((string) ($p['availability_label'] ?? (!empty($p['is_busy']) ? 'Occupé' : 'Disponible'))) ?></span>
       </div>
@@ -30,10 +33,10 @@ if (!$p) {
     <div class="profile-hero-actions">
       <?php if (!empty($p['is_busy'])): ?>
         <p class="profile-avail-note">Planning actuellement chargé. Vous pouvez laisser un message pour une date ultérieure.</p>
-        <a class="btn-orange" href="<?= e(url('/espace/messages')) ?>">Envoyer un message</a>
+        <a class="btn-orange" href="<?= e(url('/espace/messages?avec=' . (int) ($p['user_id'] ?? 0) . '&sujet=' . rawurlencode('Message'))) ?>">Envoyer un message</a>
       <?php else: ?>
-        <a class="btn-orange" href="<?= e(url('/espace/messages')) ?>">Demander un devis</a>
-        <a class="btn-ghost-light" href="<?= e(url('/espace/messages')) ?>">Envoyer un message</a>
+        <a class="btn-orange" href="<?= e(url('/espace/messages?avec=' . (int) ($p['user_id'] ?? 0) . '&sujet=' . rawurlencode('Demande de devis'))) ?>">Demander un devis</a>
+        <a class="btn-ghost-light" href="<?= e(url('/espace/messages?avec=' . (int) ($p['user_id'] ?? 0))) ?>">Envoyer un message</a>
       <?php endif; ?>
       <?php
         $shareUrl = $meta['url'] ?? \Adl\Data\Share::current();
@@ -100,6 +103,36 @@ if (!$p) {
         </div>
       <?php endif; ?>
 
+      <?php if (!empty($p['services'])): ?>
+        <h2>Prestations</h2>
+        <div class="my-missions">
+          <?php foreach ($p['services'] as $offer): ?>
+            <a class="side-card" href="<?= e(url((string) $offer['href'])) ?>" style="text-decoration: none;">
+              <div class="mission-row-title"><?= e((string) $offer['title']) ?></div>
+              <div class="side-foot">
+                <span><?= e((string) ($offer['delay'] ?: '')) ?></span>
+                <strong><?= e((string) $offer['price']) ?></strong>
+              </div>
+            </a>
+          <?php endforeach; ?>
+        </div>
+      <?php endif; ?>
+
+      <?php if (!empty($p['reviews'])): ?>
+        <h2>Avis<?php if (!empty($p['review_stats']['count'])): ?> · <?= e((string) $p['review_stats']['avg']) ?> / 5<?php endif; ?></h2>
+        <div class="my-missions">
+          <?php foreach ($p['reviews'] as $review): ?>
+            <article class="side-card">
+              <div class="mission-row-title"><?= e((string) $review['who']) ?> · <?= e((string) $review['note']) ?></div>
+              <?php if (!empty($review['txt'])): ?>
+                <p class="profile-text"><?= e((string) $review['txt']) ?></p>
+              <?php endif; ?>
+              <div class="mission-row-sub"><?= e((string) $review['when']) ?></div>
+            </article>
+          <?php endforeach; ?>
+        </div>
+      <?php endif; ?>
+
       <?php if (!empty($p['education'])): ?>
         <h2>Formation</h2>
         <div class="timeline">
@@ -130,6 +163,20 @@ if (!$p) {
           <?php if (!empty($p['trades'])): ?><div><span>Métiers</span><strong><?= e(implode(', ', $p['trades'])) ?></strong></div><?php endif; ?>
           <?php if ($p['website'] !== ''): ?><div><span>Site</span><a href="<?= e((string) $p['website']) ?>"><?= e((string) $p['website']) ?></a></div><?php endif; ?>
         </div>
+        <form method="post" action="<?= e(url('/signaler')) ?>" style="margin-top: 16px;">
+          <?= csrf_field() ?>
+          <input type="hidden" name="type" value="user">
+          <input type="hidden" name="id" value="<?= (int) ($p['user_id'] ?? 0) ?>">
+          <input type="hidden" name="back" value="<?= e((string) ($p['href'] ?? '/')) ?>">
+          <label class="field" for="report-reason">Signaler ce profil</label>
+          <select class="input" id="report-reason" name="reason" required>
+            <?php foreach (\Adl\Models\Report::REASONS as $value => $label): ?>
+              <option value="<?= e($value) ?>"><?= e($label) ?></option>
+            <?php endforeach; ?>
+          </select>
+          <textarea class="textarea" name="body" rows="2" placeholder="Précision (optionnel)" style="margin-top: 8px;"></textarea>
+          <button class="btn-ghost" type="submit" style="margin-top: 10px;">Envoyer le signalement</button>
+        </form>
       </div>
       <?php if (!empty($p['tools'])): ?>
         <div class="side-card">

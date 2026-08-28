@@ -20,6 +20,137 @@ final class Order
 
     public const COMPLETABLE = ['delivered', 'in_progress'];
 
+    /**
+     * @param array{buyer_id: int, seller_id: int, amount?: int, service_id?: ?int, mission_id?: ?int, brief?: ?string, package_name?: ?string} $data
+     * @return array<string, mixed>
+     */
+    public static function create(array $data): array
+    {
+        $buyerId = (int) ($data['buyer_id'] ?? 0);
+        $sellerId = (int) ($data['seller_id'] ?? 0);
+        if ($buyerId < 1 || $sellerId < 1 || $buyerId === $sellerId) {
+            throw new \RuntimeException('Cette commande ne peut pas être créée.');
+        }
+        Invoice::assertCanOffer($sellerId);
+
+        $number = self::nextNumber();
+        Database::query(
+            'INSERT INTO orders (number, buyer_id, seller_id, service_id, mission_id, amount, status, brief, package_name, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, "pending", ?, ?, NOW())',
+            [
+                $number,
+                $buyerId,
+                $sellerId,
+                $data['service_id'] ?? null,
+                $data['mission_id'] ?? null,
+                (int) ($data['amount'] ?? 0),
+                trim((string) ($data['brief'] ?? '')) ?: null,
+                trim((string) ($data['package_name'] ?? '')) ?: null,
+            ]
+        );
+
+        $order = self::find((int) Database::lastId());
+        if (!$order) {
+            throw new \RuntimeException('La commande n\'a pas pu être créée.');
+        }
+
+        Notification::create(
+            $sellerId,
+            'Nouvelle commande ' . $order['num'],
+            'Un porteur de projet a ouvert « ' . $order['title'] . ' ». Acceptez-la pour démarrer.',
+            '/espace/suivi/' . (int) $order['id'],
+            'order_created',
+            'order',
+            (int) $order['id']
+        );
+
+        return $order;
+    }
+
+    public static function acceptBySeller(int $id, int $sellerId): array
+    {
+        $order = self::requireParty($id, $sellerId, 'seller');
+        if (($order['status'] ?? '') !== 'pending') {
+            throw new \RuntimeException('Cette commande n\'est plus en attente.');
+        }
+        Database::query(
+            'UPDATE orders SET status = "in_progress", accepted_at = NOW() WHERE id = ? AND status = "pending"',
+            [$id]
+        );
+        Notification::create(
+            (int) $order['buyer_id'],
+            'Commande acceptée ' . $order['num'],
+            'Le prestataire a accepté « ' . $order['title'] . ' » et démarre le travail.',
+            '/espace/suivi/' . $id,
+            'order_accepted',
+            'order',
+            $id
+        );
+        return self::find($id) ?? $order;
+    }
+
+    public static function deliverBySeller(int $id, int $sellerId): array
+    {
+        $order = self::requireParty($id, $sellerId, 'seller');
+        if (($order['status'] ?? '') !== 'in_progress') {
+            throw new \RuntimeException('Acceptez d\'abord la commande avant de livrer.');
+        }
+        Database::query(
+            'UPDATE orders SET status = "delivered", delivered_at = NOW() WHERE id = ? AND status = "in_progress"',
+            [$id]
+        );
+        Notification::create(
+            (int) $order['buyer_id'],
+            'Livraison à valider ' . $order['num'],
+            '« ' . $order['title'] . ' » est livrée. Validez et notez la mission pour clôturer.',
+            '/espace/suivi/' . $id,
+            'order_delivered',
+            'order',
+            $id
+        );
+        return self::find($id) ?? $order;
+    }
+
+    public static function openDispute(int $id, int $userId, string $reason): array
+    {
+        $order = self::requireParty($id, $userId);
+        $reason = trim($reason);
+        if ($reason === '') {
+            throw new \RuntimeException('Indiquez le motif du litige.');
+        }
+        $current = (string) ($order['status'] ?? 'pending');
+        if (!in_array($current, ['pending', 'in_progress', 'delivered'], true)) {
+            throw new \RuntimeException('Un litige ne peut être ouvert que sur une commande en cours ou livrée.');
+        }
+        Database::query(
+            'UPDATE orders SET status = "dispute", dispute_reason = ?, dispute_opened_by = ?, dispute_at = NOW() WHERE id = ?',
+            [$reason, $userId, $id]
+        );
+        $otherId = (int) $order['buyer_id'] === $userId ? (int) $order['seller_id'] : (int) $order['buyer_id'];
+        Notification::create(
+            $otherId,
+            'Litige ouvert sur ' . $order['num'],
+            'Un litige a été signalé : ' . $reason,
+            '/espace/suivi/' . $id,
+            'order_dispute',
+            'order',
+            $id
+        );
+        return self::find($id) ?? $order;
+    }
+
+    public static function findForUser(int $id, int $userId): ?array
+    {
+        $order = self::find($id);
+        if (!$order) {
+            return null;
+        }
+        if ((int) $order['buyer_id'] !== $userId && (int) $order['seller_id'] !== $userId) {
+            return null;
+        }
+        return $order;
+    }
+
     public static function find(int $id): ?array
     {
         $row = Database::fetch(
@@ -330,11 +461,45 @@ final class Order
         };
         $row['when'] = time_ago($row['created_at'] ?? null);
         $row['can_confirm'] = empty($row['confirmed_at']) && in_array($status, self::COMPLETABLE, true);
+        $row['can_accept'] = $status === 'pending';
+        $row['can_deliver'] = $status === 'in_progress';
+        $row['can_dispute'] = in_array($status, ['pending', 'in_progress', 'delivered'], true);
         $row['confirm_href'] = '/espace/avis';
-        $row['href'] = '/espace/suivi';
+        $row['href'] = '/espace/suivi/' . (int) ($row['id'] ?? 0);
         $row['commission_label'] = !empty($row['confirmed_at']) || ($row['commission_percent'] ?? null) !== null
             ? format_euros((int) ($row['commission_amount'] ?? 0))
             : '';
         return $row;
+    }
+
+    private static function nextNumber(): string
+    {
+        $year = date('Y');
+        $row = Database::fetch(
+            'SELECT COUNT(*) AS n FROM orders WHERE number LIKE ?',
+            ['ADL-' . $year . '-%']
+        );
+        return sprintf('ADL-%s-%04d', $year, ((int) ($row['n'] ?? 0)) + 1);
+    }
+
+    /** @return array<string, mixed> */
+    private static function requireParty(int $id, int $userId, ?string $role = null): array
+    {
+        $order = self::find($id);
+        if (!$order) {
+            throw new \RuntimeException('Cette commande est introuvable.');
+        }
+        $buyer = (int) $order['buyer_id'] === $userId;
+        $seller = (int) $order['seller_id'] === $userId;
+        if ($role === 'seller' && !$seller) {
+            throw new \RuntimeException('Seul le prestataire peut effectuer cette action.');
+        }
+        if ($role === 'buyer' && !$buyer) {
+            throw new \RuntimeException('Seul le porteur de projet peut effectuer cette action.');
+        }
+        if (!$buyer && !$seller) {
+            throw new \RuntimeException('Cette commande est introuvable.');
+        }
+        return $order;
     }
 }

@@ -11,6 +11,7 @@ use Adl\Data\Catalog;
 use Adl\Data\Onboarding;
 use Adl\Models\Application;
 use Adl\Models\Commission;
+use Adl\Models\Conversation;
 use Adl\Models\Favorite;
 use Adl\Models\Invoice;
 use Adl\Models\Mission;
@@ -304,8 +305,113 @@ final class AccountController
 
     public function commande(Request $request): void
     {
-        Auth::requireSeeker();
-        View::page('commande', ['title' => 'Commande & paiement']);
+        $user = Auth::requireSeeker();
+        $slug = $request->string('prestation');
+        $service = null;
+        if ($slug !== '') {
+            try {
+                $service = Service::findBySlug($slug);
+            } catch (\Throwable) {
+                $service = null;
+            }
+        }
+        if (
+            !$service
+            || ($service['status'] ?? '') !== 'published'
+            || !User::isPublicOfferer((int) ($service['user_id'] ?? 0))
+        ) {
+            View::page('commande', [
+                'title' => 'Confirmer la commande',
+                'service' => null,
+                'error' => flash('error'),
+            ]);
+            return;
+        }
+        if ((int) $service['user_id'] === (int) $user['id']) {
+            flash('error', 'Vous ne pouvez pas commander votre propre prestation.');
+            redirect((string) $service['href']);
+        }
+
+        $packageId = $request->int('formule');
+        $selected = null;
+        foreach ($service['packages'] ?? [] as $package) {
+            if ($packageId && (int) ($package['id'] ?? 0) === $packageId) {
+                $selected = $package;
+                break;
+            }
+        }
+        if (!$selected && ($service['packages'] ?? []) !== []) {
+            $selected = $service['packages'][0];
+        }
+
+        View::page('commande', [
+            'title' => 'Confirmer la commande',
+            'service' => $service,
+            'selectedPackage' => $selected,
+            'old' => flash('old') ?: [],
+            'error' => flash('error'),
+        ]);
+    }
+
+    public function commandeSave(Request $request): void
+    {
+        $user = Auth::requireSeeker();
+        $service = Service::find((int) $request->string('service_id'));
+        if (
+            !$service
+            || ($service['status'] ?? '') !== 'published'
+            || !User::isPublicOfferer((int) ($service['user_id'] ?? 0))
+        ) {
+            flash('error', 'Cette prestation n\'est plus disponible.');
+            redirect('/prestations');
+        }
+        if ((int) $service['user_id'] === (int) $user['id']) {
+            flash('error', 'Vous ne pouvez pas commander votre propre prestation.');
+            redirect((string) $service['href']);
+        }
+
+        $packageId = $request->int('package_id');
+        $selected = null;
+        foreach ($service['packages'] ?? [] as $package) {
+            if ($packageId && (int) ($package['id'] ?? 0) === $packageId) {
+                $selected = $package;
+                break;
+            }
+        }
+        $amount = $selected
+            ? (int) ($selected['price'] ?? 0)
+            : (int) ($service['price_from'] ?? 0);
+        $brief = $request->string('brief');
+
+        try {
+            $order = Order::create([
+                'buyer_id' => (int) $user['id'],
+                'seller_id' => (int) $service['user_id'],
+                'service_id' => (int) $service['id'],
+                'amount' => $amount,
+                'brief' => $brief,
+                'package_name' => $selected['name'] ?? null,
+            ]);
+            Conversation::open((int) $user['id'], (int) $service['user_id'], [
+                'subject' => (string) $service['title'],
+                'order_id' => (int) $order['id'],
+                'service_id' => (int) $service['id'],
+            ]);
+            if ($brief !== '') {
+                $thread = Conversation::open((int) $user['id'], (int) $service['user_id'], [
+                    'order_id' => (int) $order['id'],
+                    'service_id' => (int) $service['id'],
+                ]);
+                Conversation::send((int) $thread['id'], (int) $user['id'], $brief);
+            }
+        } catch (\Throwable $e) {
+            flash('error', $e->getMessage());
+            flash('old', $request->all());
+            redirect('/espace/commande?prestation=' . rawurlencode((string) $service['slug']));
+        }
+
+        flash('saved', 'Commande ouverte. Le prestataire a été prévenu : le règlement de la commission interviendra à la validation de la mission.');
+        redirect('/espace/suivi/' . (int) $order['id']);
     }
 
     public function suivi(Request $request): void
@@ -324,7 +430,70 @@ final class AccountController
         View::page('suivi', [
             'title' => 'Suivi de commande',
             'orders' => $orders,
+            'saved' => flash('saved'),
+            'error' => flash('error'),
         ]);
+    }
+
+    public function suiviShow(Request $request, string $id): void
+    {
+        $user = Auth::requireUser();
+        $order = Order::findForUser((int) $id, (int) $user['id']);
+        if (!$order) {
+            not_found('Cette commande est introuvable.');
+        }
+        $thread = null;
+        try {
+            $thread = Conversation::open((int) $order['buyer_id'], (int) $order['seller_id'], [
+                'order_id' => (int) $order['id'],
+            ]);
+        } catch (\Throwable) {
+        }
+        View::page('suivi-detail', [
+            'title' => 'Suivi ' . $order['num'],
+            'order' => $order,
+            'isBuyer' => (int) $order['buyer_id'] === (int) $user['id'],
+            'isSeller' => (int) $order['seller_id'] === (int) $user['id'],
+            'threadHref' => $thread['href'] ?? '/espace/messages',
+            'saved' => flash('saved'),
+            'error' => flash('error'),
+        ]);
+    }
+
+    public function suiviAccept(Request $request, string $id): void
+    {
+        $user = Auth::requireUser();
+        try {
+            Order::acceptBySeller((int) $id, (int) $user['id']);
+            flash('saved', 'Commande acceptée. Vous pouvez maintenant livrer.');
+        } catch (\Throwable $e) {
+            flash('error', $e->getMessage());
+        }
+        redirect('/espace/suivi/' . (int) $id);
+    }
+
+    public function suiviDeliver(Request $request, string $id): void
+    {
+        $user = Auth::requireUser();
+        try {
+            Order::deliverBySeller((int) $id, (int) $user['id']);
+            flash('saved', 'Livraison signalée. Le porteur de projet peut maintenant valider et noter.');
+        } catch (\Throwable $e) {
+            flash('error', $e->getMessage());
+        }
+        redirect('/espace/suivi/' . (int) $id);
+    }
+
+    public function suiviDispute(Request $request, string $id): void
+    {
+        $user = Auth::requireUser();
+        try {
+            Order::openDispute((int) $id, (int) $user['id'], $request->string('reason'));
+            flash('saved', 'Litige ouvert. L\'équipe de médiation a été prévenue.');
+        } catch (\Throwable $e) {
+            flash('error', $e->getMessage());
+        }
+        redirect('/espace/suivi/' . (int) $id);
     }
 
     public function commandes(Request $request): void
@@ -523,13 +692,265 @@ final class AccountController
         redirect(!empty($service['slug']) ? '/prestations/' . $service['slug'] : '/espace/prestations');
     }
 
+    public function prestationEdit(Request $request, string $id): void
+    {
+        $user = Auth::requireOfferer();
+        $service = Service::find((int) $id);
+        if (!$service || (int) ($service['user_id'] ?? 0) !== (int) $user['id']) {
+            not_found('Cette prestation est introuvable.');
+        }
+        $billing = self::billingState((int) $user['id']);
+        $quote = ['percent' => 0, 'first_free' => true, 'completed' => 0];
+        try {
+            $quote = Commission::quoteForSeller((int) $user['id']);
+        } catch (\Throwable) {
+        }
+        $old = flash('old') ?: [
+            'title' => $service['title'] ?? '',
+            'excerpt' => $service['excerpt'] ?? '',
+            'category_name' => $service['category_name'] ?? '',
+            'specialty' => $service['specialty'] ?? '',
+            'delay' => $service['delay'] ?? '',
+            'price_from' => $service['price_from'] ?? '',
+            'packages' => array_map(static function (array $p): array {
+                return [
+                    'name' => $p['name'] ?? '',
+                    'description' => $p['description'] ?? '',
+                    'price' => $p['price'] ?? '',
+                    'delay' => $p['delay'] ?? '',
+                ];
+            }, $service['packages'] ?? []),
+        ];
+        View::page('creer', [
+            'title' => 'Modifier la prestation',
+            'editing' => true,
+            'serviceId' => (int) $service['id'],
+            'trades' => Catalog::trades(),
+            'specialties' => Catalog::specialties(),
+            'commission' => (string) ($quote['first_free'] ? 0 : $quote['percent']),
+            'firstMissionFree' => $quote['first_free'],
+            'standardCommission' => (string) Commission::percentForSeller((int) $user['id']),
+            'isFounder' => !empty($quote['founder']),
+            'billingBlock' => $billing['block'],
+            'error' => flash('error'),
+            'old' => $old,
+        ]);
+    }
+
+    public function prestationEditSave(Request $request, string $id): void
+    {
+        $user = Auth::requireOfferer();
+        $service = Service::find((int) $id);
+        if (!$service || (int) ($service['user_id'] ?? 0) !== (int) $user['id']) {
+            not_found('Cette prestation est introuvable.');
+        }
+
+        $title = $request->string('title');
+        $excerpt = $request->string('excerpt');
+        $category = $request->string('category_name');
+        $specialty = $request->string('specialty');
+        $draft = $request->string('intent') === 'draft';
+
+        $packagesInput = [];
+        foreach ($request->list('packages') as $row) {
+            if (!is_array($row)) {
+                continue;
+            }
+            $packagesInput[] = [
+                'name' => trim((string) ($row['name'] ?? '')),
+                'description' => trim((string) ($row['description'] ?? '')),
+                'price' => trim((string) ($row['price'] ?? '')),
+                'delay' => trim((string) ($row['delay'] ?? '')),
+            ];
+        }
+        $old = [
+            'title' => $title,
+            'excerpt' => $excerpt,
+            'category_name' => $category,
+            'specialty' => $specialty,
+            'delay' => $request->string('delay'),
+            'price_from' => $request->string('price_from'),
+            'packages' => $packagesInput,
+        ];
+
+        if ($title === '' || $category === '') {
+            flash('error', 'Indiquez au moins le métier et le titre de la prestation.');
+            flash('old', $old);
+            redirect('/espace/prestations/' . (int) $id . '/modifier');
+        }
+
+        $imagePath = $service['image_path'] ?? null;
+        try {
+            $stored = store_upload(
+                $request->file('image'),
+                'prestations',
+                ['jpg', 'jpeg', 'png', 'webp', 'gif'],
+                5 * 1024 * 1024
+            );
+            if ($stored) {
+                $imagePath = $stored;
+            }
+        } catch (\Throwable $e) {
+            flash('error', $e->getMessage());
+            flash('old', $old);
+            redirect('/espace/prestations/' . (int) $id . '/modifier');
+        }
+
+        $packages = [];
+        foreach ($packagesInput as $row) {
+            if ($row['name'] === '') {
+                continue;
+            }
+            $packages[] = [
+                'name' => $row['name'],
+                'description' => $row['description'],
+                'price' => self::money($row['price']) ?? 0,
+                'delay' => $row['delay'],
+            ];
+        }
+
+        try {
+            $updated = Service::update((int) $id, (int) $user['id'], [
+                'title' => $title,
+                'excerpt' => $excerpt !== '' ? $excerpt : null,
+                'category_name' => $category,
+                'specialty' => $specialty !== '' ? $specialty : null,
+                'image_path' => $imagePath,
+                'delay' => $request->string('delay') ?: null,
+                'price_from' => self::money($request->string('price_from')),
+                'status' => $draft ? 'draft' : 'published',
+            ], $packages);
+        } catch (\Throwable $e) {
+            flash('error', $e->getMessage());
+            flash('old', $old);
+            redirect('/espace/prestations/' . (int) $id . '/modifier');
+        }
+
+        flash('saved', $draft ? 'Brouillon enregistré.' : 'Prestation mise à jour.');
+        redirect(!empty($updated['slug']) ? '/prestations/' . $updated['slug'] : '/espace/prestations');
+    }
+
     public function messages(Request $request): void
     {
-        Auth::requireUser();
+        $user = Auth::requireUser();
+        $avec = $request->int('avec');
+        if ($avec) {
+            try {
+                $thread = Conversation::open((int) $user['id'], $avec, [
+                    'subject' => $request->string('sujet'),
+                    'service_id' => $request->int('prestation'),
+                    'mission_id' => $request->int('mission'),
+                ]);
+                redirect('/espace/messages/' . (int) $thread['id']);
+            } catch (\Throwable $e) {
+                flash('error', $e->getMessage());
+            }
+        }
+        try {
+            $threads = Conversation::forUser((int) $user['id']);
+        } catch (\Throwable) {
+            $threads = [];
+        }
         View::page('messagerie', [
             'title' => 'Messagerie',
-            'threads' => [],
+            'threads' => $threads,
+            'thread' => null,
+            'messages' => [],
+            'saved' => flash('saved'),
+            'error' => flash('error'),
         ]);
+    }
+
+    public function messageShow(Request $request, string $id): void
+    {
+        $user = Auth::requireUser();
+        $thread = Conversation::findForUser((int) $id, (int) $user['id']);
+        if (!$thread) {
+            not_found('Cette conversation est introuvable.');
+        }
+        Conversation::markRead((int) $id, (int) $user['id']);
+        View::page('messagerie', [
+            'title' => (string) ($thread['other']['name'] ?? 'Messagerie'),
+            'threads' => Conversation::forUser((int) $user['id']),
+            'thread' => $thread,
+            'messages' => Conversation::messages((int) $id),
+            'saved' => flash('saved'),
+            'error' => flash('error'),
+        ]);
+    }
+
+    public function messageSend(Request $request, string $id): void
+    {
+        $user = Auth::requireUser();
+        try {
+            Conversation::send((int) $id, (int) $user['id'], $request->string('body'));
+        } catch (\Throwable $e) {
+            flash('error', $e->getMessage());
+        }
+        redirect('/espace/messages/' . (int) $id);
+    }
+
+    public function applicationCreate(Request $request, string $slug): void
+    {
+        $user = Auth::requireOfferer();
+        $mission = Mission::findBySlug($slug);
+        if (!$mission) {
+            not_found('Cette recherche n\'est plus disponible.');
+        }
+        try {
+            Application::create(
+                (int) $mission['id'],
+                (int) $user['id'],
+                self::money($request->string('price')),
+                $request->string('delay') ?: null,
+                $request->string('message')
+            );
+            flash('saved', 'Candidature envoyée. Le porteur de projet a été prévenu.');
+        } catch (\Throwable $e) {
+            flash('error', $e->getMessage());
+            flash('old', $request->all());
+            redirect('/missions/' . rawurlencode($slug));
+        }
+        redirect('/espace/candidatures');
+    }
+
+    public function applicationAccept(Request $request, string $id): void
+    {
+        $user = Auth::requireSeeker();
+        try {
+            $order = Application::accept((int) $id, (int) $user['id']);
+            flash('saved', 'Candidature acceptée. La commande est ouverte.');
+            redirect('/espace/suivi/' . (int) $order['id']);
+        } catch (\Throwable $e) {
+            flash('error', $e->getMessage());
+            redirect('/espace/missions');
+        }
+    }
+
+    public function applicationReject(Request $request, string $id): void
+    {
+        $user = Auth::requireSeeker();
+        try {
+            Application::reject((int) $id, (int) $user['id']);
+            flash('saved', 'Candidature écartée.');
+        } catch (\Throwable $e) {
+            flash('error', $e->getMessage());
+        }
+        $back = $request->string('back');
+        redirect($back !== '' ? $back : '/espace/missions');
+    }
+
+    public function favorisToggle(Request $request, string $id): void
+    {
+        $user = Auth::requireSeeker();
+        try {
+            $on = Favorite::toggle((int) $user['id'], (int) $id);
+            flash('saved', $on ? 'Prestation ajoutée aux favoris.' : 'Prestation retirée des favoris.');
+        } catch (\Throwable $e) {
+            flash('error', $e->getMessage());
+        }
+        $back = $request->string('back');
+        redirect($back !== '' ? $back : '/espace/favoris');
     }
 
     public function notifications(Request $request): void
@@ -583,6 +1004,8 @@ final class AccountController
         View::page('favoris', [
             'title' => 'Favoris',
             'favorites' => $favorites,
+            'saved' => flash('saved'),
+            'error' => flash('error'),
         ]);
     }
 
@@ -809,6 +1232,45 @@ final class AccountController
         ]);
         flash('saved', true);
         redirect('/espace/parametres');
+    }
+
+    public function parametresPassword(Request $request): void
+    {
+        $user = Auth::requireUser();
+        if (User::isOauthOnly($user)) {
+            flash('error', 'Ce compte se connecte avec Google ou Facebook. Ajoutez un mot de passe uniquement si vous en créez un nouveau.');
+        }
+        $current = $request->string('current_password');
+        $password = $request->string('password');
+        $confirm = $request->string('password_confirmation');
+        $hash = (string) ($user['password'] ?? '');
+        if ($hash !== '' && !password_verify($current, $hash)) {
+            flash('error', 'Le mot de passe actuel est incorrect.');
+            redirect('/espace/parametres');
+        }
+        if (strlen($password) < 8) {
+            flash('error', 'Le nouveau mot de passe doit contenir au moins 8 caractères.');
+            redirect('/espace/parametres');
+        }
+        if ($password !== $confirm) {
+            flash('error', 'Les deux mot de passe ne correspondent pas.');
+            redirect('/espace/parametres');
+        }
+        User::setPassword((int) $user['id'], $password);
+        flash('saved', true);
+        redirect('/espace/parametres');
+    }
+
+    public function vitrineVerification(Request $request): void
+    {
+        $user = Auth::requireOfferer();
+        try {
+            Profile::storeVerificationDoc((int) $user['id'], $request->file('justificatif'), $request->string('note'));
+            flash('saved', 'Justificatif envoyé. L\'équipe le vérifiera sous peu.');
+        } catch (\Throwable $e) {
+            flash('error', $e->getMessage());
+        }
+        redirect('/espace/vitrine');
     }
 
     public function facturation(Request $request): void

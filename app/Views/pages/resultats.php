@@ -4,10 +4,42 @@ $type = (string) ($searchType ?? 'all');
 $cat = (string) ($searchCat ?? '');
 $results = $searchResults ?? [];
 $count = (int) ($searchCount ?? count($results));
-$types = $searchTypes ?? \Adl\Data\Catalog::TYPES;
-$trades = $trades ?? \Adl\Data\Catalog::trades();
 $heading = (string) ($catalogHeading ?? ($q !== '' ? $q : ($cat !== '' ? $cat : 'Tous les métiers du livre')));
 $typeHub = \Adl\Data\Catalog::typePath($type);
+$filters = $searchFilters ?? ['kinds' => [], 'metiers' => [], 'specs' => [], 'delays' => [], 'levels' => [], 'trust' => [], 'bmin' => null, 'bmax' => null];
+$facets = $searchFacets ?? [];
+$bmin = $filters['bmin'] ?? \Adl\Data\Catalog::BUDGET_MIN;
+$bmax = $filters['bmax'] ?? \Adl\Data\Catalog::BUDGET_MAX;
+if ($bmin === null) {
+    $bmin = \Adl\Data\Catalog::BUDGET_MIN;
+}
+if ($bmax === null) {
+    $bmax = \Adl\Data\Catalog::BUDGET_MAX;
+}
+$groups = [
+    ['name' => 'kind', 'label' => 'Type', 'key' => 'kinds', 'facet' => 'kind'],
+    ['name' => 'metier', 'label' => 'Métier', 'key' => 'metiers', 'facet' => 'metier'],
+    ['name' => 'spec', 'label' => 'Spécialité', 'key' => 'specs', 'facet' => 'spec'],
+    ['name' => 'delay', 'label' => 'Délai', 'key' => 'delays', 'facet' => 'delay'],
+    ['name' => 'level', 'label' => 'Niveau du prestataire', 'key' => 'levels', 'facet' => 'level'],
+    ['name' => 'trust', 'label' => 'Confiance', 'key' => 'trust', 'facet' => 'trust'],
+];
+$active = [];
+foreach ($groups as $group) {
+    foreach ($filters[$group['key']] ?? [] as $value) {
+        $label = $value;
+        foreach ($facets[$group['facet']] ?? [] as $opt) {
+            if (($opt['v'] ?? '') === $value) {
+                $label = (string) $opt['l'];
+                break;
+            }
+        }
+        $active[] = ['name' => $group['name'], 'value' => $value, 'label' => $label];
+    }
+}
+if ((int) $bmin !== \Adl\Data\Catalog::BUDGET_MIN || (int) $bmax !== \Adl\Data\Catalog::BUDGET_MAX) {
+    $active[] = ['name' => 'budget', 'value' => '', 'label' => format_int((int) $bmin) . ' € — ' . format_int((int) $bmax) . ' €'];
+}
 ?>
 <div class="search-page" data-search-page
      data-api="<?= e(url('/api/recherche')) ?>"
@@ -22,31 +54,30 @@ $typeHub = \Adl\Data\Catalog::typePath($type);
     <aside class="search-aside">
       <div class="search-aside-head">
         <span>Filtres</span>
-        <a href="<?= e(url($typeHub)) ?>">Réinitialiser</a>
+        <a href="<?= e(url($typeHub)) ?>" data-search-reset>Réinitialiser</a>
+      </div>
+      <div class="sf-active" data-search-active<?= $active === [] ? ' hidden' : '' ?>>
+        <?php foreach ($active as $chip): ?>
+          <button type="button" class="sf-chip" data-clear-name="<?= e($chip['name']) ?>" data-clear-value="<?= e($chip['value']) ?>"><?= e($chip['label']) ?> ✕</button>
+        <?php endforeach; ?>
       </div>
       <form class="search-filters" data-search-filters>
-        <label class="field" for="search-q">Recherche</label>
-        <input class="input" id="search-q" type="search" name="q" value="<?= e($q) ?>" placeholder="correcteur, illustration, jeunesse…" autocomplete="off" data-search-input>
+        <input type="hidden" name="q" value="<?= e($q) ?>" data-search-q>
+        <?php foreach ($groups as $group): ?>
+          <?php if (!empty($facets[$group['facet']])): ?>
+            <?= search_filter_group($group['name'], $group['label'], $facets[$group['facet']], $filters[$group['key']] ?? []) ?>
+          <?php endif; ?>
+        <?php endforeach; ?>
 
-        <p class="field">Type</p>
-        <div class="chip-row">
-          <?php foreach ($types as $value => $label): ?>
-            <a class="chip<?= $type === $value ? ' is-on' : '' ?>" href="<?= e(url(\Adl\Data\Catalog::typePath($value))) ?>"><?= e($label) ?></a>
-          <?php endforeach; ?>
+        <div class="sf-budget" data-budget>
+          Budget<br>
+          <span class="sf-budget-val" data-budget-label><?= format_int((int) $bmin) ?> € — <?= format_int((int) $bmax) ?> €</span>
+          <div class="sf-slider">
+            <div class="sf-slider-track"><div class="sf-slider-fill" data-budget-fill></div></div>
+            <input type="range" name="bmin" min="0" max="<?= (int) \Adl\Data\Catalog::BUDGET_MAX ?>" step="50" value="<?= (int) $bmin ?>" data-budget-min>
+            <input type="range" name="bmax" min="0" max="<?= (int) \Adl\Data\Catalog::BUDGET_MAX ?>" step="50" value="<?= (int) $bmax ?>" data-budget-max>
+          </div>
         </div>
-
-        <p class="field">Métier</p>
-        <div class="chip-row">
-          <a class="chip<?= $cat === '' ? ' is-on' : '' ?>" href="<?= e(url($typeHub)) ?>">Tous</a>
-          <?php foreach ($trades as $trade): ?>
-            <a class="chip<?= $cat === $trade ? ' is-on' : '' ?>" href="<?= e(url(\Adl\Data\Catalog::tradePath($trade))) ?>"><?= e($trade) ?></a>
-          <?php endforeach; ?>
-        </div>
-
-        <label class="search-check">
-          <input type="checkbox" name="dispo" value="1"<?= !empty($availableOnly) ? ' checked' : '' ?>>
-          Prestataires disponibles uniquement
-        </label>
       </form>
 
       <div class="search-aside-card">

@@ -157,7 +157,7 @@ final class Prototype
             'espaceNav' => $logged ? self::espaceNav($screen, User::seeksServices($user), User::offersServices($user)) : [],
             'headerCta' => self::headerCta(User::seeksServices($user), User::offersServices($user)),
             'routes' => DcEngine::routes(),
-            'unreadMessages' => 0,
+            'unreadMessages' => self::liveUnreadMessages($user),
             'unreadAlerts' => self::liveUnreadAlerts($user),
         ];
     }
@@ -773,9 +773,16 @@ final class Prototype
             ['01', 'Auteurs', '1 240'], ['02', 'Correcteurs', '1 105'], ['03', 'Bêta-lecteurs', '210'], ['04', 'Illustrateurs', '860'],
             ['05', 'Traducteurs', '520'], ['06', 'Maquettistes', '470'], ['07', 'Éditeurs', '310'], ['08', 'Imprimeurs', '148'],
             ['09', 'Presse & com', '236'], ['10', 'Libraires', '690'], ['11', 'Narrateurs audio', '174'], ['12', 'Agents littéraires', '62'],
-            ['13', 'Salons & événements', '98'],
+            ['13', 'Salons & événements', '98'], ['14', 'Iconographes', '84'], ['15', 'Lecteurs éditoriaux', '112'],
+            ['16', 'Photographes', '76'], ['17', 'Relieurs', '41'], ['18', 'Juristes', '38'],
         ];
-        return array_map(static fn (array $m): array => ['num' => $m[0], 'name' => $m[1], 'count' => $m[2], 'href' => '/metiers/' . slugify($m[1])], $rows);
+        return array_map(static fn (array $m): array => [
+            'num' => $m[0],
+            'name' => $m[1],
+            'count' => $m[2],
+            'countLabel' => $m[2] . ' profils',
+            'href' => '/metiers/' . slugify($m[1]),
+        ], $rows);
     }
 
     private static function homeMissions(): array
@@ -1436,6 +1443,18 @@ final class Prototype
         }
     }
 
+    private static function liveUnreadMessages(?array $user): int
+    {
+        if (!$user) {
+            return 0;
+        }
+        try {
+            return \Adl\Models\Conversation::unreadCount((int) $user['id']);
+        } catch (\Throwable) {
+            return 0;
+        }
+    }
+
     private static function liveUnreadAlerts(?array $user): int
     {
         if (!$user) {
@@ -1451,7 +1470,7 @@ final class Prototype
     private static function isEspaceScreen(string $screen): bool
     {
         return in_array($screen, [
-            'dashboard', 'publier', 'commande', 'suivi', 'commandes', 'mesmissions',
+            'dashboard', 'publier', 'commande', 'suivi', 'suivi-detail', 'commandes', 'mesmissions',
             'candidatures', 'mesprestations', 'creer', 'messagerie', 'notifications',
             'favoris', 'avis', 'vitrine', 'parametres', 'facturation',
         ], true);

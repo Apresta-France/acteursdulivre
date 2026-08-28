@@ -2,11 +2,39 @@
 $services = $services ?? [];
 $missions = $missions ?? [];
 ?>
+<?php $reports = $reports ?? []; ?>
 <div class="admin-page">
   <h1>Modération</h1>
-  <p class="admin-lead">Retirez une prestation ou clôturez un appel d’offres s’il enfreint la charte (IA générative, hors plateforme, droits).</p>
+  <p class="admin-lead">Retirez une prestation ou clôturez un appel d’offres s’il enfreint la charte (IA générative, hors plateforme, droits). Traitez aussi les signalements utilisateurs.</p>
   <?php if (!empty($saved)): ?><div class="flash flash-ok"><?= e(is_string($saved) ? $saved : 'Enregistré.') ?></div><?php endif; ?>
   <?php if (!empty($error)): ?><div class="flash flash-error"><?= e((string) $error) ?></div><?php endif; ?>
+
+  <h2 class="admin-h2">Signalements</h2>
+  <?php if ($reports === []): ?><p class="admin-muted">Aucun signalement.</p><?php endif; ?>
+  <div class="admin-stack" style="margin-bottom: 28px;">
+    <?php foreach ($reports as $r): ?>
+      <article class="admin-card">
+        <div class="admin-dossier-who">
+          <div>
+            <strong><?= e((string) $r['type_label']) ?> · <?= e((string) $r['reason_label']) ?></strong>
+            <span><?= e((string) $r['who']) ?> · <?= e((string) $r['when']) ?></span>
+            <?php if (!empty($r['body'])): ?><em><?= e((string) $r['body']) ?></em><?php endif; ?>
+          </div>
+          <span class="admin-pill tone-<?= ($r['status'] ?? '') === 'closed' ? 'green' : 'orange' ?>"><?= e((string) $r['status_label']) ?></span>
+        </div>
+        <div class="admin-actions">
+          <a class="admin-ghost" href="<?= e(url((string) $r['href'])) ?>">Voir</a>
+          <?php if (($r['status'] ?? '') !== 'closed'): ?>
+            <form method="post" action="<?= e(url('/admin/signalements/' . (int) $r['id'])) ?>">
+              <?= csrf_field() ?>
+              <input type="hidden" name="status" value="closed">
+              <button class="btn-navy" type="submit">Marquer traité</button>
+            </form>
+          <?php endif; ?>
+        </div>
+      </article>
+    <?php endforeach; ?>
+  </div>
 
   <h2 class="admin-h2">Prestations</h2>
   <?php if ($services === []): ?><p class="admin-muted">Aucune prestation.</p><?php endif; ?>

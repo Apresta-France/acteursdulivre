@@ -15,6 +15,7 @@ final class Profile
         'Écriture', 'Correction', 'Bêta-lecture', 'Illustration', 'Traduction', 'Maquette',
         'Édition', 'Impression', 'Presse & com', 'Librairie', 'Audio',
         'Agent littéraire', 'Salons',
+        'Iconographie', 'Lecture éditoriale', 'Photographie', 'Reliure', 'Juridique',
     ];
 
     public const GENRES = [
@@ -43,6 +44,7 @@ final class Profile
     public static function forAdmin(string $filter = 'pending'): array
     {
         $sql = 'SELECT p.id, p.user_id, p.slug, p.title, p.city, p.verification_status, p.updated_at,
+                       p.verification_doc_path, p.verification_doc_name, p.verification_note,
                        p.trades_json, u.first_name, u.last_name, u.email, u.avatar_url, u.created_at, u.status AS user_status
                 FROM profiles p
                 JOIN users u ON u.id = p.user_id
@@ -58,6 +60,9 @@ final class Profile
         return array_map(static function (array $row): array {
             $row['trades'] = self::decode($row['trades_json'] ?? null);
             $row['name'] = User::displayName($row);
+            $row['doc_href'] = !empty($row['verification_doc_path'])
+                ? uploaded((string) $row['verification_doc_path'])
+                : '';
             $row['status'] = (string) ($row['verification_status'] ?? '') ?: self::VERIFY_PENDING;
             $row['status_label'] = match ($row['status']) {
                 self::VERIFY_VERIFIED => 'Vérifié',
@@ -93,6 +98,29 @@ final class Profile
             'UPDATE profiles SET verification_status = ?, updated_at = NOW() WHERE user_id = ?',
             [$status, $userId]
         );
+    }
+
+    public static function storeVerificationDoc(int $userId, array $file, string $note = ''): void
+    {
+        $profile = self::ensure($userId);
+        $stored = store_upload($file, 'verifications', ['pdf', 'jpg', 'jpeg', 'png', 'webp'], 8 * 1024 * 1024);
+        if ($stored === null) {
+            throw new \RuntimeException('Ajoutez un justificatif (PDF, JPG ou PNG, 8 Mo max).');
+        }
+        Database::query(
+            'UPDATE profiles
+             SET verification_doc_path = ?, verification_doc_name = ?, verification_note = ?,
+                 verification_status = ?, updated_at = NOW()
+             WHERE user_id = ?',
+            [
+                $stored,
+                (string) ($file['name'] ?? 'justificatif'),
+                trim($note) !== '' ? trim($note) : null,
+                self::VERIFY_PENDING,
+                $userId,
+            ]
+        );
+        unset($profile);
     }
 
     public static function findByUser(int $userId): ?array
@@ -416,6 +444,11 @@ final class Profile
         $row['completion'] = self::completeness($row);
         $row['avatar_src'] = user_avatar_src($row);
         $row['is_founder'] = (int) ($row['founder'] ?? 0) === 1;
+        $row['verification_status'] = (string) ($row['verification_status'] ?? '');
+        $row['is_verified'] = $row['verification_status'] === self::VERIFY_VERIFIED;
+        $row['verification_doc_href'] = !empty($row['verification_doc_path'])
+            ? uploaded((string) $row['verification_doc_path'])
+            : '';
         return $row;
     }
 

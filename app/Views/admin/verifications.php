@@ -30,6 +30,9 @@ $dossiers = $dossiers ?? [];
           <span class="admin-pill tone-<?= e($d['status'] === 'verified' ? 'green' : ($d['status'] === 'refused' ? 'orange' : 'navy')) ?>"><?= e($d['status_label']) ?></span>
         </div>
         <div class="admin-actions">
+          <?php if (!empty($d['doc_href'])): ?>
+            <a class="admin-ghost" href="<?= e((string) $d['doc_href']) ?>" target="_blank" rel="noopener">Justificatif</a>
+          <?php endif; ?>
           <?php if (!empty($d['slug'])): ?>
             <a class="admin-ghost" href="<?= e(url('/prestataires/' . $d['slug'])) ?>">Voir la vitrine</a>
           <?php endif; ?>

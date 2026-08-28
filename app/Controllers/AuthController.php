@@ -40,7 +40,7 @@ final class AuthController
             redirect('/connexion');
         }
 
-        if (!Auth::attempt($email, $password)) {
+        if (!Auth::attempt($email, $password, $request->bool('remember'))) {
             flash('error', 'E-mail ou mot de passe incorrect.');
             $_SESSION['_old'] = ['email' => $email];
             redirect('/connexion');
@@ -147,6 +147,83 @@ final class AuthController
     {
         Auth::logout();
         redirect('/');
+    }
+
+    public function forgotForm(Request $request): void
+    {
+        if (Auth::check()) {
+            redirect('/espace');
+        }
+        View::page('mot-de-passe-oublie', [
+            'title' => 'Mot de passe oublié',
+            'sent' => flash('saved') ? true : false,
+            'error' => flash('error'),
+            'meta' => \Adl\Data\Seo::forScreen('connexion'),
+        ]);
+    }
+
+    public function forgot(Request $request): void
+    {
+        $email = strtolower($request->string('email'));
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            flash('error', 'Indiquez l\'e-mail de votre compte.');
+            redirect('/mot-de-passe-oublie');
+        }
+        try {
+            $token = User::requestPasswordReset($email);
+            if ($token) {
+                $user = User::findByEmail($email);
+                Mailer::sendTemplate('reset-password', $email, [
+                    'prenom' => (string) ($user['first_name'] ?? ''),
+                    'lien' => url('/mot-de-passe/' . $token),
+                ]);
+            }
+        } catch (Throwable) {
+        }
+        flash('saved', true);
+        redirect('/mot-de-passe-oublie');
+    }
+
+    public function resetForm(Request $request, string $token): void
+    {
+        if (Auth::check()) {
+            redirect('/espace');
+        }
+        $user = User::consumePasswordReset($token);
+        if (!$user) {
+            flash('error', 'Ce lien a expiré. Demandez un nouveau message.');
+            redirect('/mot-de-passe-oublie');
+        }
+        View::page('mot-de-passe', [
+            'title' => 'Nouveau mot de passe',
+            'token' => $token,
+            'error' => flash('error'),
+            'meta' => \Adl\Data\Seo::forScreen('connexion'),
+        ]);
+    }
+
+    public function reset(Request $request, string $token): void
+    {
+        $user = User::consumePasswordReset($token);
+        if (!$user) {
+            flash('error', 'Ce lien a expiré. Demandez un nouveau message.');
+            redirect('/mot-de-passe-oublie');
+        }
+        $password = $request->string('password');
+        $confirm = $request->string('password_confirmation');
+        if (strlen($password) < 8) {
+            flash('error', 'Le mot de passe doit contenir au moins 8 caractères.');
+            redirect('/mot-de-passe/' . rawurlencode($token));
+        }
+        if ($password !== $confirm) {
+            flash('error', 'Les deux mot de passe ne correspondent pas.');
+            redirect('/mot-de-passe/' . rawurlencode($token));
+        }
+        User::setPassword((int) $user['id'], $password);
+        User::clearPasswordReset((string) $user['email']);
+        Auth::login($user);
+        flash('saved', 'Votre mot de passe a été mis à jour.');
+        redirect('/espace');
     }
 
     public function oauthStart(Request $request, string $provider): void

@@ -175,6 +175,59 @@ final class Service
         return self::find($id) ?? ['slug' => $slug];
     }
 
+    /**
+     * @param array<string, mixed> $data
+     * @param list<array<string, mixed>> $packages
+     */
+    public static function update(int $id, int $userId, array $data, array $packages = []): array
+    {
+        $service = self::find($id);
+        if (!$service || (int) ($service['user_id'] ?? 0) !== $userId) {
+            throw new \RuntimeException('Cette prestation est introuvable.');
+        }
+
+        $status = (string) ($data['status'] ?? $service['status'] ?? 'published');
+        if ($status === 'published') {
+            Invoice::assertCanOffer($userId);
+        }
+
+        $title = trim((string) ($data['title'] ?? $service['title'] ?? ''));
+        $priceFrom = isset($data['price_from']) ? (int) $data['price_from'] : null;
+        if ($priceFrom === null) {
+            foreach ($packages as $package) {
+                if (isset($package['price']) && (int) $package['price'] > 0) {
+                    $priceFrom = (int) $package['price'];
+                    break;
+                }
+            }
+        }
+
+        $imagePath = array_key_exists('image_path', $data)
+            ? $data['image_path']
+            : ($service['image_path'] ?? null);
+
+        Database::query(
+            'UPDATE services
+             SET category_name = ?, specialty = ?, title = ?, excerpt = ?, image_path = ?, status = ?, price_from = ?, delay = ?
+             WHERE id = ? AND user_id = ?',
+            [
+                $data['category_name'] ?? $service['category_name'] ?? null,
+                $data['specialty'] ?? $service['specialty'] ?? null,
+                $title,
+                $data['excerpt'] ?? $service['excerpt'] ?? null,
+                $imagePath,
+                $status,
+                $priceFrom,
+                $data['delay'] ?? $service['delay'] ?? null,
+                $id,
+                $userId,
+            ]
+        );
+        self::replacePackages($id, $packages);
+
+        return self::find($id) ?? $service;
+    }
+
     /** @param list<array<string, mixed>> $packages */
     public static function replacePackages(int $serviceId, array $packages): void
     {

@@ -19,7 +19,7 @@ $coverLabel = \Adl\Data\Catalog::tradeTitle($selected);
 <div class="espace-page publish-page">
   <div class="espace-page-head">
     <div>
-      <h1>Proposer une prestation</h1>
+      <h1><?= !empty($editing) ? 'Modifier la prestation' : 'Proposer une prestation' ?></h1>
       <p>Prix, délai et périmètre affichés : les porteurs de projet comparent et commandent.</p>
     </div>
   </div>
@@ -30,7 +30,7 @@ $coverLabel = \Adl\Data\Catalog::tradeTitle($selected);
   <?php require ADL_ROOT . '/app/Views/partials/billing-banner.php'; ?>
 
   <div class="publish-grid">
-    <form class="param-form publish-form" method="post" action="<?= e(url('/espace/prestations/creer')) ?>" enctype="multipart/form-data" data-service-cover>
+    <form class="param-form publish-form" method="post" action="<?= e(url(!empty($editing) ? '/espace/prestations/' . (int) ($serviceId ?? 0) . '/modifier' : '/espace/prestations/creer')) ?>" enctype="multipart/form-data" data-service-cover>
       <?= csrf_field() ?>
 
       <div>

@@ -63,6 +63,23 @@ final class Request
         return is_array($value) ? $value : [];
     }
 
+    /** @return list<string> */
+    public function strings(string $key): array
+    {
+        $raw = $this->input($key);
+        if (!is_array($raw)) {
+            $raw = $raw === null || $raw === '' ? [] : [$raw];
+        }
+        $out = [];
+        foreach ($raw as $value) {
+            $value = trim((string) $value);
+            if ($value !== '') {
+                $out[] = $value;
+            }
+        }
+        return array_values(array_unique($out));
+    }
+
     /** @return array<string, mixed> */
     public function file(string $key): array
     {

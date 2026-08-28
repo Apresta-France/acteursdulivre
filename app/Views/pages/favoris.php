@@ -8,6 +8,10 @@
     <a class="btn-navy" href="<?= e(url('/prestations')) ?>">Parcourir les prestations</a>
   </div>
 
+  <?php if (!empty($saved)): ?>
+    <div class="flash flash-ok"><?= e(is_string($saved) ? $saved : 'Enregistré.') ?></div>
+  <?php endif; ?>
+
   <?php if ($favorites === []): ?>
     <div class="search-empty">
       <strong>Aucun favori pour le moment.</strong>
@@ -26,6 +30,10 @@
           </div>
           <div class="auth-actions" style="margin-top: 14px;">
             <a class="btn-ghost" href="<?= e(url((string) $item['href'])) ?>">Voir la fiche</a>
+            <form method="post" action="<?= e(url('/espace/favoris/' . (int) $item['id'])) ?>">
+              <?= csrf_field() ?>
+              <button class="btn-ghost" type="submit">Retirer</button>
+            </form>
           </div>
         </article>
       <?php endforeach; ?>
