@@ -82,6 +82,8 @@ return static function (Router $router): void {
     $router->get('/admin/litiges', [AdminController::class, 'litiges']);
     $router->get('/admin/avis', [AdminController::class, 'avis']);
     $router->get('/admin/utilisateurs', [AdminController::class, 'utilisateurs']);
+    $router->get('/admin/utilisateurs/{id}', [AdminController::class, 'utilisateur']);
+    $router->post('/admin/utilisateurs/{id}', [AdminController::class, 'utilisateurSave']);
     $router->get('/admin/prestations', [AdminController::class, 'prestations']);
     $router->get('/admin/missions', [AdminController::class, 'missions']);
     $router->get('/admin/finances', [AdminController::class, 'finances']);

@@ -474,13 +474,7 @@ final class LegalPages
                 ],
             ],
             [
-                'title' => '3. Stockage local (navigateur)',
-                'blocks' => [
-                    ['p' => 'Un widget de test de charte graphique peut enregistrer trois couleurs (marine, orange, beige) dans le localStorage du navigateur, uniquement sur votre appareil, pour prévisualiser l\'interface. Ce n\'est pas un cookie, ce n\'est pas transmis à nos serveurs, et cela ne sert pas à vous identifier. Vous pouvez l\'effacer via « Réinitialiser » dans le widget ou en vidant les données du site dans votre navigateur.'],
-                ],
-            ],
-            [
-                'title' => '4. Tiers : Google Fonts et connexion sociale',
+                'title' => '3. Tiers : Google Fonts et connexion sociale',
                 'blocks' => [
                     ['p' => 'La police Space Grotesk est chargée depuis fonts.googleapis.com / fonts.gstatic.com. Votre navigateur établit une connexion vers ces serveurs, ce qui peut entraîner le traitement d\'une adresse IP par Google. Nous ne contrôlons pas les cookies éventuellement déposés par Google sur ses propres domaines.'],
                     ['p' => 'Si vous cliquez sur « Continuer avec Google » ou « Continuer avec Facebook », vous quittez temporairement la Plateforme pour vous authentifier chez ce prestataire. Des cookies peuvent alors être déposés sur leurs domaines, selon leurs politiques. Nous ne déposons pas de cookie publicitaire à cette occasion.'],
@@ -488,13 +482,13 @@ final class LegalPages
                 ],
             ],
             [
-                'title' => '5. Newsletter et formulaires',
+                'title' => '4. Newsletter et formulaires',
                 'blocks' => [
                     ['p' => 'Le bandeau d\'inscription à la lettre d\'information du pied de page renvoie aujourd\'hui vers la page Contact : aucune liste n\'est alimentée automatiquement par un cookie. Si vous nous écrivez, vos données suivent la politique de confidentialité.'],
                 ],
             ],
             [
-                'title' => '6. Gérer les cookies',
+                'title' => '5. Gérer les cookies',
                 'blocks' => [
                     ['p' => 'Vous pouvez supprimer les cookies du site via les paramètres de votre navigateur. La suppression du cookie de session vous déconnecte.'],
                     ['html' => '<p>Pour en savoir plus sur les données personnelles : <a href="' . e(url('/confidentialite')) . '">politique de confidentialité</a>. Contact : <a href="mailto:bonjour@acteursdulivre.fr">bonjour@acteursdulivre.fr</a>.</p>'],

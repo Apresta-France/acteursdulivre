@@ -10,8 +10,10 @@ use Adl\Core\Request;
 use Adl\Core\View;
 use Adl\Data\AdminCatalog;
 use Adl\Models\EmailTemplate;
+use Adl\Models\Profile;
 use Adl\Models\Setting;
 use Adl\Models\Taxonomy;
+use Adl\Models\User;
 use Throwable;
 
 final class AdminController
@@ -43,7 +45,96 @@ final class AdminController
 
     public function utilisateurs(Request $request): void
     {
-        $this->screen('users', ['query' => $request->string('q', '')]);
+        Auth::requireAdmin();
+        $query = $request->string('q', '');
+        $filtre = $request->string('filtre', 'tous');
+        $allowed = ['tous', 'prestataires', 'porteurs', 'admins', 'suspendus'];
+        if (!in_array($filtre, $allowed, true)) {
+            $filtre = 'tous';
+        }
+
+        $accounts = User::search($query, $filtre);
+        $filters = [];
+        foreach ([
+            'tous' => 'Tous',
+            'prestataires' => 'Prestataires',
+            'porteurs' => 'Porteurs de projet',
+            'admins' => 'Administrateurs',
+            'suspendus' => 'Suspendus',
+        ] as $id => $label) {
+            $params = [];
+            if ($query !== '') {
+                $params['q'] = $query;
+            }
+            if ($id !== 'tous') {
+                $params['filtre'] = $id;
+            }
+            $href = '/admin/utilisateurs' . ($params === [] ? '' : '?' . http_build_query($params));
+            $filters[] = [
+                'id' => $id,
+                'label' => $label,
+                'href' => $href,
+                'on' => $id === $filtre,
+            ];
+        }
+
+        $n = count($accounts);
+        $subtitle = format_int($n) . ' ' . ($n > 1 ? 'comptes' : 'compte');
+        if ($query !== '') {
+            $subtitle .= ' pour « ' . $query . ' »';
+        }
+
+        View::render('admin/utilisateurs', AdminCatalog::forScreen('users', [
+            'query' => $query,
+            'filtre' => $filtre,
+            'accounts' => $accounts,
+            'userFilters' => $filters,
+            'usersSubtitle' => $subtitle,
+            'saved' => flash('saved'),
+            'error' => flash('error'),
+        ]), 'layouts/admin');
+    }
+
+    public function utilisateur(Request $request, string $id): void
+    {
+        Auth::requireAdmin();
+        $account = User::find((int) $id);
+        if (!$account) {
+            flash('error', 'Utilisateur introuvable.');
+            redirect('/admin/utilisateurs');
+        }
+
+        $isSelf = (int) $account['id'] === (int) (Auth::id() ?? 0);
+        $onlyAdmin = ($account['role'] ?? '') === 'admin' && User::countAdmins() <= 1;
+        $profile = null;
+        try {
+            $profile = Profile::findByUser((int) $account['id']);
+        } catch (Throwable) {
+            $profile = null;
+        }
+
+        View::render('admin/utilisateur', AdminCatalog::forScreen('users', [
+            'title' => User::displayName($account),
+            'account' => $account,
+            'profile' => $profile,
+            'isSelf' => $isSelf,
+            'lockRole' => $isSelf || $onlyAdmin,
+            'lockStatus' => $isSelf,
+            'saved' => flash('saved'),
+            'error' => flash('error'),
+        ]), 'layouts/admin');
+    }
+
+    public function utilisateurSave(Request $request, string $id): void
+    {
+        $actor = Auth::requireAdmin();
+        try {
+            User::updateAccess((int) $id, $request->string('role'), $request->string('status'), (int) $actor['id']);
+            flash('saved', 'Compte mis à jour.');
+        } catch (Throwable $e) {
+            flash('error', $e->getMessage());
+        }
+        redirect('/admin/utilisateurs/' . (int) $id);
     }
 
     public function prestations(Request $request): void

@@ -110,7 +110,100 @@ final class User
 
     public static function all(): array
     {
-        return Database::fetchAll('SELECT id, email, first_name, last_name, role, seeks_services, offers_services, status, created_at FROM users ORDER BY id DESC');
+        return Database::fetchAll('SELECT id, email, first_name, last_name, role, seeks_services, offers_services, status, last_login_at, created_at FROM users ORDER BY id DESC');
+    }
+
+    /** @return list<array<string, mixed>> */
+    public static function search(string $query = '', string $filter = 'tous'): array
+    {
+        $sql = 'SELECT id, email, first_name, last_name, role, seeks_services, offers_services, status, last_login_at, created_at, avatar_url
+                FROM users WHERE 1=1';
+        $params = [];
+        $query = trim($query);
+        if ($query !== '') {
+            $sql .= ' AND (email LIKE ? OR first_name LIKE ? OR last_name LIKE ? OR CONCAT(first_name, \' \', last_name) LIKE ?)';
+            $like = '%' . $query . '%';
+            $params = [$like, $like, $like, $like];
+        }
+        if ($filter === 'prestataires') {
+            $sql .= ' AND offers_services = 1';
+        } elseif ($filter === 'porteurs') {
+            $sql .= ' AND seeks_services = 1';
+        } elseif ($filter === 'admins') {
+            $sql .= ' AND role = "admin"';
+        } elseif ($filter === 'suspendus') {
+            $sql .= ' AND status = "suspended"';
+        }
+        $sql .= ' ORDER BY id DESC';
+        return Database::fetchAll($sql, $params);
+    }
+
+    public static function countAdmins(): int
+    {
+        $row = Database::fetch('SELECT COUNT(*) AS n FROM users WHERE role = "admin"');
+        return (int) ($row['n'] ?? 0);
+    }
+
+    public static function roleLabel(string $role): string
+    {
+        return match ($role) {
+            'admin' => 'Administrateur',
+            'prestataire' => 'Prestataire',
+            default => 'Porteur de projet',
+        };
+    }
+
+    public static function statusLabel(string $status): string
+    {
+        return match ($status) {
+            'suspended' => 'Suspendu',
+            'pending' => 'En attente',
+            default => 'Actif',
+        };
+    }
+
+    public static function updateAccess(int $id, string $role, string $status, int $actorId): void
+    {
+        $roles = ['client', 'prestataire', 'admin'];
+        $statuses = ['active', 'pending', 'suspended'];
+        if (!in_array($role, $roles, true) || !in_array($status, $statuses, true)) {
+            throw new \InvalidArgumentException('Rôle ou statut invalide.');
+        }
+
+        $user = self::find($id);
+        if (!$user) {
+            throw new \RuntimeException('Utilisateur introuvable.');
+        }
+
+        $wasAdmin = ($user['role'] ?? '') === 'admin';
+        if ($wasAdmin && $role !== 'admin' && self::countAdmins() <= 1) {
+            throw new \RuntimeException('Impossible de retirer le dernier administrateur.');
+        }
+        if ($id === $actorId && $role !== 'admin') {
+            throw new \RuntimeException('Vous ne pouvez pas retirer votre propre accès administrateur.');
+        }
+        if ($id === $actorId && $status !== 'active') {
+            throw new \RuntimeException('Vous ne pouvez pas suspendre ou mettre en attente votre propre compte.');
+        }
+
+        $data = [
+            'role' => $role,
+            'status' => $status,
+        ];
+        if ($role === 'admin') {
+            $data['seeks_services'] = 1;
+            $data['offers_services'] = 1;
+        } elseif ($role === 'prestataire') {
+            $data['offers_services'] = 1;
+        } else {
+            $data['seeks_services'] = 1;
+            $data['offers_services'] = 0;
+        }
+
+        self::update($id, $data);
+        if ($role === 'admin' || $role === 'prestataire') {
+            self::ensureProfile($id);
+        }
     }
 
     public static function countAll(): int
