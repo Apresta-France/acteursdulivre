@@ -73,6 +73,7 @@ final class HourlyCron
                 'unanswered_message' => 0,
                 'pending_project' => 0,
                 'invoices_overdue' => 0,
+                'delivery_validation' => 0,
             ];
             $errors = [];
 
@@ -81,6 +82,7 @@ final class HourlyCron
             self::remindUnansweredApplications($stats, $errors);
             self::remindUnansweredMessages($stats, $errors);
             self::remindPendingProjects($stats, $errors);
+            self::remindSilentClients($stats, $errors);
             self::markOverdueInvoices($stats, $errors);
 
             Setting::set('cron_hourly_last_run', date('c'));
@@ -456,6 +458,60 @@ final class HourlyCron
     }
 
     /** @param array<string, int> $stats @param list<string> $errors */
+    private static function remindSilentClients(array &$stats, array &$errors): void
+    {
+        $hours = 5 * 24;
+        try {
+            $orders = Database::fetchAll(
+                "SELECT o.id, o.number, o.buyer_id,
+                        buyer.email, buyer.first_name, buyer.last_name, buyer.status
+                 FROM orders o
+                 JOIN users buyer ON buyer.id = o.buyer_id
+                 WHERE o.status = 'delivered'
+                   AND o.confirmed_at IS NULL
+                   AND o.delivered_at IS NOT NULL
+                   AND o.delivered_at <= DATE_SUB(NOW(), INTERVAL {$hours} HOUR)
+                   AND buyer.status = 'active'"
+            );
+        } catch (Throwable) {
+            return;
+        }
+
+        foreach ($orders as $order) {
+            $title = 'Commande ' . (string) ($order['number'] ?? ('#' . $order['id']));
+            $detail = 'La livraison de ' . $title . ' attend votre validation et votre avis. Sans réponse après relance, la livraison pourra être considérée comme acceptée.';
+            $buyer = User::find((int) $order['buyer_id']) ?? [
+                'id' => (int) $order['buyer_id'],
+                'email' => $order['email'],
+                'first_name' => $order['first_name'],
+                'last_name' => $order['last_name'],
+            ];
+            $sent = self::dispatch(
+                $buyer,
+                'delivery_validation',
+                'relance-projet',
+                [
+                    'prenom' => $order['first_name'],
+                    'titre' => $title,
+                    'detail' => $detail,
+                    'lien' => url('/espace/suivi/' . (int) $order['id']),
+                ],
+                'Livraison à valider',
+                $detail,
+                '/espace/suivi/' . (int) $order['id'],
+                'order',
+                (int) $order['id'],
+                7 * 24,
+                3,
+                $errors
+            );
+            if ($sent) {
+                $stats['delivery_validation']++;
+            }
+        }
+    }
+
+    /** @param array<string, int> $stats @param list<string> $errors */
     private static function markOverdueInvoices(array &$stats, array &$errors): void
     {
         try {
@@ -464,6 +520,10 @@ final class HourlyCron
                 $invoice = Invoice::present($row);
                 $sellerId = (int) ($invoice['seller_id'] ?? 0);
                 if ($sellerId < 1) {
+                    continue;
+                }
+                $seller = User::find($sellerId);
+                if ($seller && !User::wantsEmail($seller, 'jalons')) {
                     continue;
                 }
                 if (Notification::hasUnread($sellerId, 'invoice_overdue', 'invoice', (int) $invoice['id'])) {
@@ -507,6 +567,16 @@ final class HourlyCron
         $userId = (int) $user['id'];
         $email = trim((string) ($user['email'] ?? ''));
         if ($userId < 1 || $email === '') {
+            return false;
+        }
+
+        $channel = match ($kind) {
+            'unanswered_message' => 'messages',
+            'pending_project', 'delivery_validation' => 'jalons',
+            'unanswered_application', 'missing_mission', 'profile_incomplete' => 'missions',
+            default => null,
+        };
+        if ($channel !== null && !User::wantsEmail($user, $channel)) {
             return false;
         }
 

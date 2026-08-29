@@ -82,8 +82,8 @@ final class Prototype
     private static function shared(?array $user, bool $logged, string $screen): array
     {
         $navy = self::NAVY;
-        $initials = $user ? User::initials($user) : 'MV';
-        $first = $user['first_name'] ?? 'Marion';
+        $initials = $user ? User::initials($user) : 'AD';
+        $first = $user['first_name'] ?? '';
 
         $railNames = Catalog::trades();
         $rail = [];
@@ -144,7 +144,7 @@ final class Prototype
             'userInitials' => $initials,
             'userAvatarUrl' => user_avatar_src($user),
             'userFirst' => $first,
-            'userName' => $user ? User::displayName($user) : 'Marion Vasseur',
+            'userName' => $user ? User::displayName($user) : '',
             'isAdmin' => ($user['role'] ?? '') === 'admin',
             'seeksServices' => User::seeksServices($user),
             'offersServices' => User::offersServices($user),
@@ -168,12 +168,7 @@ final class Prototype
             'homeImg1' => photo(0),
             'homeImg2' => photo(5),
             'homeImg3' => photo(4),
-            'homeStats' => [
-                ['v' => '5 890', 'k' => 'professionnels du livre inscrits'],
-                ['v' => '2 314', 'k' => 'prestations à prix affiché'],
-                ['v' => '48 h', 'k' => 'pour recevoir trois devis'],
-                ['v' => '8 %', 'k' => 'dès la 2ᵉ mission, sans abonnement'],
-            ],
+            'homeStats' => Catalog::homeStats(),
             'homeMetiers' => self::homeMetiers(),
             'homeFeatured' => array_map(static function (array $x, int $i): array {
                 $x['img'] = photo($i);
@@ -183,18 +178,10 @@ final class Prototype
                 return $x;
             }, array_slice($services, 0, 3), array_keys(array_slice($services, 0, 3))),
             'homeEntry' => self::homeEntry(),
-            'missionsBandStats' => [
-                ['v' => '48 h', 'k' => 'pour que le porteur de projet reçoive trois devis'],
-                ['v' => '0 €', 'k' => 'pour candidater : aucune commission sur la candidature'],
-                ['v' => '62 %', 'k' => 'des missions attribuées à un devis reçu la première semaine'],
-            ],
+            'missionsBandStats' => Catalog::missionsBandStats(),
             'homeMissionFilters' => self::chips(['Toutes', 'Correction', 'Illustration', 'Traduction', 'Impression', 'Presse & com'], 0, true),
             'homeMissions' => self::homeMissions(),
-            'homeTemoins' => [
-                ['txt' => 'J\'ai monté toute la fabrication de mon roman ici : correction, maquette, impression à Rennes. Trois devis en deux jours.', 'who' => 'Claire Lemoine', 'role' => 'Autrice autoéditée, 2 titres', 'initials' => 'CL', 'avatar' => avatar_style('CL', 34)],
-                ['txt' => 'Nous sous-traitons nos pics de correction depuis un an. Les devis cadrés ont réglé le problème des acomptes.', 'who' => 'Éditions La Ligne', 'role' => 'Maison d\'édition, Lyon', 'initials' => 'EL', 'avatar' => avatar_style('EL', 34)],
-                ['txt' => 'Je remplis mon planning sans démarcher. Les briefs arrivent déjà cadrés, avec le volume et le budget.', 'who' => 'Atelier Kess', 'role' => 'Illustration jeunesse', 'initials' => 'AK', 'avatar' => avatar_style('AK', 34)],
-            ],
+            'homeTemoins' => [],
             'journal' => self::journalPreview(),
             'journalCats' => self::chips(['Tout', 'Tarifs', 'Contrats', 'Métier', 'Fabrication', 'Diffusion'], 0),
             'journalAll' => self::journalAll(),
@@ -274,6 +261,9 @@ final class Prototype
                 'homeFeatured' => $featured,
                 'homeEntry' => $entry !== [] ? $entry : $featured,
                 'homeMissions' => Catalog::homeMissions(5),
+                'homeTemoins' => Catalog::homeReviews(3),
+                'equipe' => Catalog::equipe(),
+                'missionsBandStats' => Catalog::missionsBandStats(),
                 'journal' => $journal,
                 'journalAll' => $journalAll,
                 'services' => Catalog::services(),
@@ -299,8 +289,8 @@ final class Prototype
                     ['v' => $commission . ' %', 'k' => 'dès la 2ᵉ mission, sans abonnement'],
                 ],
                 'ways' => [
-                    ['kicker' => 'Annuaire', 'title' => 'Chercher un profil', 'body' => 'Filtrez par métier, spécialité, ville et tarif, puis engagez la discussion.', 'points' => [format_int($pros) . ' profils', 'Avis vérifiés', 'Réponse en 24 h en moyenne'], 'cta' => 'Parcourir l\'annuaire', 'href' => '/recherche'],
-                    ['kicker' => 'Prestations', 'title' => 'Acheter une prestation', 'body' => 'Des offres packagées à prix, délai et périmètre affichés. Vous ouvrez un suivi à jalons : le règlement se fait hors plateforme.', 'points' => [format_int($services) . ' prestations', 'Options à la carte', 'Devis, jalons et facture'], 'cta' => 'Voir les prestations', 'href' => '/prestations'],
+                    ['kicker' => 'Annuaire', 'title' => 'Chercher un profil', 'body' => 'Filtrez par métier, spécialité, ville et tarif, puis engagez la discussion.', 'points' => [format_int($pros) . ' profil' . ($pros > 1 ? 's' : ''), 'Avis après mission réelle', 'Messagerie intégrée'], 'cta' => 'Parcourir l\'annuaire', 'href' => '/recherche'],
+                    ['kicker' => 'Prestations', 'title' => 'Acheter une prestation', 'body' => 'Des offres packagées à prix, délai et périmètre affichés. Vous ouvrez un suivi à jalons : le règlement se fait hors plateforme.', 'points' => [format_int($services) . ' prestation' . ($services > 1 ? 's' : ''), 'Options à la carte', 'Devis, jalons et facture'], 'cta' => 'Voir les prestations', 'href' => '/prestations'],
                     ['kicker' => 'Recherche', 'title' => 'Publier une recherche', 'body' => 'Décrivez le besoin et le budget : les prestataires qualifiés vous envoient leur devis.', 'points' => [format_int($openMissions) . ' recherches ouvertes', 'Gratuit pour tous', '1ʳᵉ mission offerte, puis 8 %'], 'cta' => 'Publier une recherche', 'href' => '/espace/publier'],
                 ],
             ];
@@ -357,12 +347,7 @@ final class Prototype
                 ['kicker' => 'Prix', 'title' => 'Des repères publics', 'body' => 'Les fourchettes observées sur la plateforme sont publiées métier par métier. Un auteur qui débute doit pouvoir savoir ce que coûte une correction.'],
                 ['kicker' => 'Métier', 'title' => 'Le travail suivi', 'body' => 'Devis cadrés, jalons obligatoires, médiation : le travail livré se confirme étape par étape. Le règlement se fait entre les parties, hors plateforme.'],
             ],
-            'equipe' => [
-                ['name' => 'Léa Rousset', 'role' => 'Rédaction & contenus', 'initials' => 'LR', 'avatar' => avatar_style('LR', 44)],
-                ['name' => 'Samuel Ohayon', 'role' => 'Produit', 'initials' => 'SO', 'avatar' => avatar_style('SO', 44)],
-                ['name' => 'Awa Diallo', 'role' => 'Relation prestataires', 'initials' => 'AD', 'avatar' => avatar_style('AD', 44)],
-                ['name' => 'Thomas Béraud', 'role' => 'Médiation & litiges', 'initials' => 'TB', 'avatar' => avatar_style('TB', 44)],
-            ],
+            'equipe' => Catalog::equipe(),
             'articleAvatar' => avatar_style('LR', 40),
             'budgetType' => [
                 ['k' => 'Correction complète, 520 000 signes', 'v' => '620 – 1 100 €'],
@@ -554,14 +539,14 @@ final class Prototype
                 ['num' => '04', 'title' => 'Vous commencez tout de suite', 'body' => 'Publiez une recherche, complétez votre vitrine, ou parcourez l\'annuaire — selon votre choix.'],
             ],
             'inscriptionProof' => [
-                ['v' => '5 890', 'k' => 'professionnels du livre inscrits'],
-                ['v' => '48 h', 'k' => 'pour recevoir trois devis'],
+                ['v' => '0 €', 'k' => 'aucun abonnement'],
+                ['v' => '1ʳᵉ', 'k' => 'mission offerte au prestataire'],
                 ['v' => '8 %', 'k' => 'dès la 2ᵉ mission, sans abonnement'],
             ],
             'ways' => [
-                ['kicker' => 'Annuaire', 'title' => 'Chercher un profil', 'body' => 'Filtrez par métier, spécialité, ville et tarif, puis engagez la discussion.', 'points' => ['5 890 profils', 'Avis vérifiés', 'Réponse en 24 h en moyenne'], 'cta' => 'Parcourir l\'annuaire', 'href' => '/recherche'],
-                ['kicker' => 'Prestations', 'title' => 'Acheter une prestation', 'body' => 'Des offres packagées à prix, délai et périmètre affichés. Vous ouvrez un suivi à jalons : le règlement se fait hors plateforme.', 'points' => ['2 314 prestations', 'Options à la carte', 'Devis, jalons et facture'], 'cta' => 'Voir les prestations', 'href' => '/prestations/correction-complete-roman'],
-                ['kicker' => 'Recherche', 'title' => 'Publier une recherche', 'body' => 'Décrivez le besoin et le budget : les prestataires qualifiés vous envoient leur devis.', 'points' => ['148 recherches ouvertes', 'Trois devis en 48 h', 'Gratuit pour tous'], 'cta' => 'Publier une recherche', 'href' => '/espace/publier'],
+                ['kicker' => 'Annuaire', 'title' => 'Chercher un profil', 'body' => 'Filtrez par métier, spécialité, ville et tarif, puis engagez la discussion.', 'points' => ['Profils publiés', 'Avis après mission réelle', 'Messagerie intégrée'], 'cta' => 'Parcourir l\'annuaire', 'href' => '/recherche'],
+                ['kicker' => 'Prestations', 'title' => 'Acheter une prestation', 'body' => 'Des offres packagées à prix, délai et périmètre affichés. Vous ouvrez un suivi à jalons : le règlement se fait hors plateforme.', 'points' => ['Prix affiché', 'Options à la carte', 'Devis, jalons et facture'], 'cta' => 'Voir les prestations', 'href' => '/prestations'],
+                ['kicker' => 'Recherche', 'title' => 'Publier une recherche', 'body' => 'Décrivez le besoin et le budget : les prestataires qualifiés vous envoient leur devis.', 'points' => ['Appels d\'offres ouverts', 'Candidatures gratuites', '1ʳᵉ mission offerte, puis 8 %'], 'cta' => 'Publier une recherche', 'href' => '/espace/publier'],
             ],
             'steps4' => [
                 ['num' => '01', 'title' => 'Décrivez le besoin', 'body' => 'Métier, brief, budget, échéance : un formulaire court.'],
@@ -587,7 +572,7 @@ final class Prototype
             'garanties' => [
                 ['kicker' => 'Profils', 'title' => 'Vérification à l\'entrée', 'body' => 'Justificatif d\'activité, une référence professionnelle contrôlée et un entretien pour les métiers de fabrication. Les faux profils sont retirés sous 24 h.'],
                 ['kicker' => 'Suivi', 'title' => 'Jalons, pas d\'encaissement', 'body' => 'Client et prestataire se règlent hors plateforme. Le suivi impose les jalons (devis, factures, déclarations, livraison, validation). La commission est facturée au prestataire à la validation, payable sous 15 jours.'],
-                ['kicker' => 'Litiges', 'title' => 'Médiation sous 72 h', 'body' => 'Un médiateur de la plateforme lit les échanges et la livraison, puis propose une répartition. Recours possible devant le médiateur de la consommation.'],
+                ['kicker' => 'Litiges', 'title' => 'Médiation interne', 'body' => 'Un signalement met les jalons en pause. L\'équipe lit les échanges et propose un accord sur les sommes déjà versées ou encore dues. Recours possible devant la juridiction compétente.'],
             ],
             'charte' => [
                 ['num' => '01', 'title' => 'Prix annoncé, prix facturé', 'body' => 'Aucun supplément qui n\'ait été accepté par écrit avant le démarrage.'],
@@ -601,7 +586,7 @@ final class Prototype
                 ['num' => '01', 'title' => 'Signalement', 'body' => 'Depuis le suivi de commande, en décrivant l\'écart au brief. Les jalons sont en pause le temps de l\'examen.'],
                 ['num' => '02', 'title' => 'Échange encadré', 'body' => '72 h pour trouver un accord dans la messagerie, avec un modérateur en lecture.'],
                 ['num' => '03', 'title' => 'Médiation', 'body' => 'À défaut d\'accord, un médiateur propose un accord sur les sommes déjà versées ou encore dues entre les parties.'],
-                ['num' => '04', 'title' => 'Recours', 'body' => 'Vous restez libre de saisir le médiateur de la consommation ou la juridiction compétente.'],
+                ['num' => '04', 'title' => 'Recours', 'body' => 'Vous restez libre de saisir la juridiction compétente.'],
             ],
             'contrats' => ['Prestation de service — correction, maquette', 'Cession de droits — illustration, traduction', 'Mandat — presse et communication', 'Bon de commande — impression'],
             'aideCats' => [
@@ -1001,7 +986,7 @@ final class Prototype
         $items = [
             ['Quand la commission est-elle facturée ?', 'Lorsque le client confirme que la mission est finalisée et note la prestation (qualité, efficacité, satisfaction). La facture est alors émise au prestataire — c\'est son dernier jalon — payable sous 15 jours.'],
             ['Comment se règlent les missions ?', 'Client et prestataire se règlent entre eux (virement, chèque, facture entreprise…). La plateforme n\'encaisse rien. Chaque étape se confirme dans le suivi : devis, factures, déclarations de règlement, livraison, validation.'],
-            ['Puis-je annuler une commande ?', 'Gratuitement tant que le prestataire n\'a pas démarré (aucun jalon commencé). Après démarrage, l\'annulation se négocie dans la messagerie ; à défaut d\'accord, un médiateur tranche.'],
+            ['Puis-je annuler une commande ?', 'Gratuitement tant que le prestataire n\'a pas démarré (aucun jalon commencé). Après démarrage, l\'annulation se négocie dans la messagerie ; à défaut d\'accord, la médiation interne reprend le dossier.'],
             ['Qui facture le client final ?', 'Le prestataire facture directement son client, hors plateforme. La plateforme facture uniquement sa commission au prestataire, à la validation de la mission.'],
             ['La première mission est-elle payante ?', 'Non. La première mission réalisée via la plateforme est entièrement gratuite. À partir de la deuxième, la commission est de 8 %.'],
             ['La plateforme prend-elle une commission sur les appels d\'offres ?', 'Publier et candidater sont gratuits, sans abonnement. La commission de 8 % s\'applique uniquement à partir de la deuxième mission réalisée.'],

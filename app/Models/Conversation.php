@@ -99,23 +99,44 @@ final class Conversation
         return self::hydrateForUser($row ?? ['id' => $id], $fromId);
     }
 
-    public static function send(int $conversationId, int $userId, string $body): array
+    /**
+     * @param array<string, mixed>|null $file
+     */
+    public static function send(int $conversationId, int $userId, string $body, ?array $file = null): array
     {
         $thread = self::findForUser($conversationId, $userId);
         if (!$thread) {
             throw new RuntimeException('Cette conversation est introuvable.');
         }
         $body = trim($body);
-        if ($body === '') {
-            throw new RuntimeException('Écrivez un message avant d\'envoyer.');
-        }
         if (mb_strlen($body) > 8000) {
             throw new RuntimeException('Le message est trop long.');
         }
 
+        $attachment = null;
+        if (is_array($file) && ($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE) {
+            $attachment = store_private_upload(
+                $file,
+                'messages/' . $conversationId,
+                ['pdf', 'jpg', 'jpeg', 'png', 'webp', 'txt', 'doc', 'docx', 'odt'],
+                8 * 1024 * 1024
+            );
+        }
+        if ($body === '' && $attachment === null) {
+            throw new RuntimeException('Écrivez un message ou joignez un fichier.');
+        }
+
         Database::query(
-            'INSERT INTO messages (conversation_id, user_id, body, created_at) VALUES (?, ?, ?, NOW())',
-            [$conversationId, $userId, $body]
+            'INSERT INTO messages (conversation_id, user_id, body, attachment_path, attachment_name, attachment_size, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, NOW())',
+            [
+                $conversationId,
+                $userId,
+                $body !== '' ? $body : null,
+                $attachment['path'] ?? null,
+                $attachment['name'] ?? null,
+                $attachment['size'] ?? null,
+            ]
         );
         $messageId = (int) Database::lastId();
         Database::query('UPDATE conversations SET updated_at = NOW() WHERE id = ?', [$conversationId]);
@@ -124,12 +145,15 @@ final class Conversation
             [$conversationId, $userId]
         );
 
+        $preview = $body !== ''
+            ? $body
+            : 'Pièce jointe : ' . (string) ($attachment['name'] ?? 'fichier');
         $otherId = (int) ($thread['other']['id'] ?? 0);
         if ($otherId > 0) {
             Notification::create(
                 $otherId,
                 'Nouveau message de ' . User::displayName(User::find($userId) ?? []),
-                mb_strlen($body) > 140 ? mb_substr($body, 0, 137) . '…' : $body,
+                mb_strlen($preview) > 140 ? mb_substr($preview, 0, 137) . '…' : $preview,
                 '/espace/messages/' . $conversationId,
                 'message',
                 'conversation',
@@ -138,6 +162,63 @@ final class Conversation
         }
 
         return Database::fetch('SELECT * FROM messages WHERE id = ?', [$messageId]) ?? [];
+    }
+
+    public static function findByOrder(int $orderId): ?array
+    {
+        $row = Database::fetch(
+            'SELECT * FROM conversations WHERE order_id = ? ORDER BY id DESC LIMIT 1',
+            [$orderId]
+        );
+        return $row ? self::present($row) : null;
+    }
+
+    /** @return array{path: string, name: string, mime: string} */
+    public static function attachmentForUser(int $conversationId, int $messageId, int $userId): array
+    {
+        if (!self::findForUser($conversationId, $userId)) {
+            throw new RuntimeException('Cette conversation est introuvable.');
+        }
+        $row = Database::fetch(
+            'SELECT attachment_path, attachment_name FROM messages
+             WHERE id = ? AND conversation_id = ?',
+            [$messageId, $conversationId]
+        );
+        $path = trim((string) ($row['attachment_path'] ?? ''));
+        if ($path === '') {
+            throw new RuntimeException('Aucune pièce jointe.');
+        }
+        $name = trim((string) ($row['attachment_name'] ?? '')) ?: 'piece-jointe';
+        $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+        $mimes = upload_mime_map();
+        return [
+            'path' => $path,
+            'name' => $name,
+            'mime' => $mimes[$ext][0] ?? 'application/octet-stream',
+        ];
+    }
+
+    /** @return list<array<string, mixed>> */
+    public static function exportForUser(int $userId): array
+    {
+        $rows = Database::fetchAll(
+            'SELECT c.id, c.subject, m.body, m.attachment_name, m.created_at
+             FROM messages m
+             JOIN conversations c ON c.id = m.conversation_id
+             JOIN conversation_participants p ON p.conversation_id = c.id AND p.user_id = ?
+             WHERE m.user_id = ?
+             ORDER BY m.id ASC',
+            [$userId, $userId]
+        );
+        return array_map(static function (array $row): array {
+            return [
+                'conversation_id' => (int) $row['id'],
+                'subject' => $row['subject'],
+                'body' => $row['body'],
+                'attachment' => $row['attachment_name'],
+                'created_at' => $row['created_at'],
+            ];
+        }, $rows);
     }
 
     public static function markRead(int $conversationId, int $userId): void
@@ -164,6 +245,13 @@ final class Conversation
             $row['who'] = User::displayName($row);
             $row['initials'] = User::initials($row);
             $row['when'] = time_ago($row['created_at'] ?? null);
+            $row['has_file'] = trim((string) ($row['attachment_path'] ?? '')) !== '';
+            $row['file_href'] = $row['has_file']
+                ? '/espace/messages/' . (int) $row['conversation_id'] . '/fichier/' . (int) $row['id']
+                : '';
+            $row['file_label'] = (string) ($row['attachment_name'] ?? '');
+            $size = (int) ($row['attachment_size'] ?? 0);
+            $row['file_size'] = $size > 0 ? format_bytes($size) : '';
             return $row;
         }, $rows);
     }
@@ -209,7 +297,7 @@ final class Conversation
             [(int) $row['id'], $userId]
         );
         $last = Database::fetch(
-            'SELECT body, user_id, created_at FROM messages
+            'SELECT body, attachment_name, user_id, created_at FROM messages
              WHERE conversation_id = ? ORDER BY id DESC LIMIT 1',
             [(int) $row['id']]
         );
@@ -230,7 +318,11 @@ final class Conversation
             'initials' => User::initials($other),
             'avatar_url' => $other['avatar_url'] ?? '',
         ] : ['id' => 0, 'name' => 'Conversation', 'initials' => 'AD', 'avatar_url' => ''];
-        $presented['preview'] = $last ? (string) $last['body'] : 'Aucun message pour le moment.';
+        $preview = trim((string) ($last['body'] ?? ''));
+        if ($preview === '' && !empty($last['attachment_name'])) {
+            $preview = 'Pièce jointe : ' . $last['attachment_name'];
+        }
+        $presented['preview'] = $preview !== '' ? $preview : 'Aucun message pour le moment.';
         $presented['when'] = time_ago($last['created_at'] ?? $row['updated_at'] ?? $row['created_at'] ?? null);
         $presented['unread'] = $unread;
         $presented['href'] = '/espace/messages/' . (int) $row['id'];

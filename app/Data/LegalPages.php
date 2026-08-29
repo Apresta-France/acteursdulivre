@@ -7,7 +7,7 @@ namespace Adl\Data;
 final class LegalPages
 {
     public const UPDATED = '29 août 2026';
-    public const VERSION = '1.3';
+    public const VERSION = '1.4';
 
     public static function slugs(): array
     {
@@ -117,7 +117,7 @@ final class LegalPages
             [
                 'title' => 'Crédits',
                 'blocks' => [
-                    ['p' => 'Typographie d\'interface : Space Grotesk (police auto-hébergée). Photographies de démonstration : visuels de prototype, destinés à l\'illustration de l\'interface avant ouverture complète.'],
+                    ['p' => 'Typographie d\'interface : Space Grotesk, police auto-hébergée sur les serveurs de la Plateforme.'],
                 ],
             ],
             [
@@ -157,7 +157,7 @@ final class LegalPages
             [
                 'title' => '4. Pré-ouverture',
                 'blocks' => [
-                    ['p' => 'Tant que la bannière « Pré-ouverture » est affichée, l\'inscription est ouverte aux auteurs et professionnels du livre. L\'ouverture aux clients est prévue en octobre 2026. Certaines fonctions (pièces jointes avancées, médiation outillée) peuvent encore évoluer.'],
+                    ['p' => 'Tant que la bannière « Pré-ouverture » est affichée, l\'inscription est ouverte aux auteurs et professionnels du livre. L\'ouverture aux clients est prévue en octobre 2026.'],
                     ['p' => 'Les présentes CGU s\'appliquent dès l\'inscription. Le suivi à jalons et la facturation de commission s\'appliquent dès qu\'une commande est ouverte, y compris pendant la pré-ouverture.'],
                 ],
             ],
@@ -345,33 +345,25 @@ final class LegalPages
                 'title' => '12. Litiges entre Client et Prestataire',
                 'blocks' => [
                     ['p' => 'En cas d\'écart au brief :'],
-                    ['html' => '<ol><li>signalement depuis le suivi de commande ; les jalons sont alors en pause ;</li><li>72 heures d\'échange encadré dans la messagerie, avec un modérateur en lecture si nécessaire ;</li><li>à défaut d\'accord, médiation interne : proposition d\'accord sur les sommes déjà versées ou encore dues entre les parties, et sur la commission le cas échéant ;</li><li>chaque partie reste libre de saisir un médiateur de la consommation (si le Client est consommateur) ou la juridiction compétente.</li></ol>'],
+                    ['html' => '<ol><li>signalement depuis le suivi de commande ; les jalons sont alors en pause ;</li><li>72 heures d\'échange encadré dans la messagerie, avec un modérateur en lecture si nécessaire ;</li><li>à défaut d\'accord, médiation interne : proposition d\'accord sur les sommes déjà versées ou encore dues entre les parties, et sur la commission le cas échéant ;</li><li>chaque partie reste libre de saisir la juridiction compétente.</li></ol>'],
                     ['html' => '<p>Contact médiation : <a href="mailto:mediation@acteursdulivre.fr">mediation@acteursdulivre.fr</a>.</p>'],
                 ],
             ],
             [
-                'title' => '13. Médiation de la consommation',
-                'blocks' => [
-                    ['p' => 'Conformément aux articles L.611-1 et suivants du Code de la consommation, le Client consommateur peut recourir gratuitement à un médiateur de la consommation en cas de litige non résolu avec EDITIONS TESSERACT au titre du service d\'intermédiation.'],
-                    ['p' => 'Le médiateur de la consommation désigné par EDITIONS TESSERACT sera indiqué sur cette page au plus tard à l\'ouverture de la place de marché aux clients (octobre 2026). En attendant cette désignation, toute réclamation écrite peut être adressée à mediation@acteursdulivre.fr.'],
-                    ['html' => '<p>La plateforme européenne de règlement en ligne des litiges est accessible à l\'adresse : <a href="https://ec.europa.eu/consumers/odr">https://ec.europa.eu/consumers/odr</a>.</p>'],
-                ],
-            ],
-            [
-                'title' => '14. Garanties',
+                'title' => '13. Garanties',
                 'blocks' => [
                     ['p' => 'EDITIONS TESSERACT garantit que le service d\'intermédiation est fourni avec la diligence raisonnable d\'un professionnel. Elle ne garantit pas le résultat d\'une mission réalisée par un tiers.'],
                     ['p' => 'Le Client consommateur bénéficie de la garantie légale de conformité pour le service fourni par EDITIONS TESSERACT, dans les conditions du Code de la consommation. Les réclamations se font à bonjour@acteursdulivre.fr.'],
                 ],
             ],
             [
-                'title' => '15. Responsabilité',
+                'title' => '14. Responsabilité',
                 'blocks' => [
                     ['p' => 'EDITIONS TESSERACT n\'est pas responsable des manquements du Prestataire ou du Client à leurs obligations réciproques. Sa responsabilité au titre des CGV est limitée aux dommages directs liés au service d\'intermédiation, dans les mêmes limites que celles énoncées aux CGU, sous réserve des droits impératifs des consommateurs.'],
                 ],
             ],
             [
-                'title' => '16. Modification et droit applicable',
+                'title' => '15. Modification et droit applicable',
                 'blocks' => [
                     ['p' => 'Les CGV peuvent être mises à jour. Les missions en cours restent soumises à la version en vigueur au jour de l\'acceptation du devis ou de la commande.'],
                     ['p' => 'Les CGV sont régies par le droit français. Compétence des tribunaux selon les règles de droit commun, siège à Sainghin-en-Weppes, sous réserve des règles protectrices des consommateurs.'],
@@ -419,7 +411,7 @@ final class LegalPages
                 'title' => '5. Hébergement et transferts',
                 'blocks' => [
                     ['p' => 'Les données sont hébergées en Suisse chez Infomaniak Network SA. La Suisse bénéficie d\'une décision d\'adéquation de la Commission européenne : le transfert n\'exige pas de clauses contractuelles types supplémentaires de ce seul fait.'],
-                    ['p' => 'La feuille de style typographique est chargée depuis les serveurs de Google Fonts. Cette requête peut transiter hors Union européenne. Voir la politique cookies.'],
+                    ['p' => 'La police d\'interface Space Grotesk est auto-hébergée sur les serveurs de la Plateforme. Aucune requête n\'est faite vers Google Fonts.'],
                     ['p' => 'Si vous utilisez la connexion Google ou Facebook, un échange a lieu avec ces prestataires. Selon leur configuration, des données peuvent être traitées hors Union européenne, sous les garanties qu\'ils publient (clauses types, décision d\'adéquation ou mesures équivalentes).'],
                 ],
             ],
@@ -478,9 +470,9 @@ final class LegalPages
             [
                 'title' => '3. Tiers : Google Fonts et connexion sociale',
                 'blocks' => [
-                    ['p' => 'La police Space Grotesk est chargée depuis fonts.googleapis.com / fonts.gstatic.com. Votre navigateur établit une connexion vers ces serveurs, ce qui peut entraîner le traitement d\'une adresse IP par Google. Nous ne contrôlons pas les cookies éventuellement déposés par Google sur ses propres domaines.'],
+                    ['p' => 'La police Space Grotesk est servie depuis les serveurs de la Plateforme. Aucun cookie n\'est déposé de ce fait par un tiers typographique.'],
                     ['p' => 'Si vous cliquez sur « Continuer avec Google » ou « Continuer avec Facebook », vous quittez temporairement la Plateforme pour vous authentifier chez ce prestataire. Des cookies peuvent alors être déposés sur leurs domaines, selon leurs politiques. Nous ne déposons pas de cookie publicitaire à cette occasion.'],
-                    ['p' => 'Vous pouvez bloquer les polices tierces dans votre navigateur ; l\'interface basculera sur une police système. La connexion sociale n\'est pas obligatoire : un compte e-mail et mot de passe reste disponible.'],
+                    ['p' => 'La connexion sociale n\'est pas obligatoire : un compte e-mail et mot de passe reste disponible.'],
                 ],
             ],
             [

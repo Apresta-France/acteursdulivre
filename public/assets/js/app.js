@@ -905,4 +905,45 @@
     });
     updateFichePreview();
   }
+
+  document.querySelectorAll('[data-dropzone]').forEach(function (form) {
+    var zone = form.querySelector('[data-dropzone-zone]');
+    var input = form.querySelector('input[type="file"]');
+    var label = form.querySelector('[data-dropzone-label]');
+    if (!zone || !input || !label) return;
+    var original = label.textContent;
+    function setFile(file) {
+      if (!file) {
+        label.textContent = original;
+        zone.classList.remove('has-file');
+        return;
+      }
+      label.textContent = file.name;
+      zone.classList.add('has-file');
+    }
+    zone.addEventListener('click', function () { input.click(); });
+    input.addEventListener('change', function () {
+      setFile(input.files && input.files[0] ? input.files[0] : null);
+    });
+    ['dragenter', 'dragover'].forEach(function (ev) {
+      zone.addEventListener(ev, function (e) {
+        e.preventDefault();
+        zone.classList.add('is-over');
+      });
+    });
+    ['dragleave', 'drop'].forEach(function (ev) {
+      zone.addEventListener(ev, function (e) {
+        e.preventDefault();
+        zone.classList.remove('is-over');
+      });
+    });
+    zone.addEventListener('drop', function (e) {
+      var files = e.dataTransfer && e.dataTransfer.files;
+      if (!files || !files[0]) return;
+      var transfer = new DataTransfer();
+      transfer.items.add(files[0]);
+      input.files = transfer.files;
+      setFile(files[0]);
+    });
+  });
 })();

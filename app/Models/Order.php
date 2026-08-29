@@ -367,16 +367,42 @@ final class Order
                 Database::query('UPDATE orders SET status = ? WHERE id = ?', ['cancelled', $id]);
                 Invoice::cancelOpenForOrder($id);
             });
+            if ($current === 'dispute') {
+                self::notifyParties($id, 'Commande annulée après médiation', 'La commande ' . $order['num'] . ' a été annulée par l\'équipe.');
+            }
             return;
         }
 
         if ($status === 'in_progress' && $current === 'dispute') {
-            $restore = !empty($order['confirmed_at']) ? 'confirmed' : 'in_progress';
+            $restore = !empty($order['delivered_at']) ? 'delivered' : 'in_progress';
+            if (!empty($order['confirmed_at'])) {
+                $restore = 'confirmed';
+            }
             Database::query('UPDATE orders SET status = ? WHERE id = ?', [$restore, $id]);
+            self::notifyParties($id, 'Litige clôturé — suivi repris', 'L\'équipe a repris le suivi de ' . $order['num'] . '. Les jalons peuvent reprendre.');
             return;
         }
 
         Database::query('UPDATE orders SET status = ? WHERE id = ?', [$status, $id]);
+    }
+
+    public static function setDisputeNote(int $id, string $note): void
+    {
+        Database::query('UPDATE orders SET dispute_admin_note = ? WHERE id = ?', [trim($note), $id]);
+    }
+
+    private static function notifyParties(int $orderId, string $title, string $body): void
+    {
+        $order = self::findBare($orderId) ?? self::find($orderId);
+        if (!$order) {
+            return;
+        }
+        foreach ([(int) $order['buyer_id'], (int) $order['seller_id']] as $uid) {
+            if ($uid < 1) {
+                continue;
+            }
+            Notification::create($uid, $title, $body, '/espace/suivi/' . $orderId, 'order_mediation', 'order', $orderId);
+        }
     }
 
     /** @return list<array<string, mixed>> */
@@ -534,6 +560,9 @@ final class Order
         $row['can_dispute'] = in_array($status, ['pending', 'in_progress', 'delivered'], true);
         $row['confirm_href'] = '/espace/avis';
         $row['href'] = '/espace/suivi/' . (int) ($row['id'] ?? 0);
+        $row['dispute_reason'] = trim((string) ($row['dispute_reason'] ?? ''));
+        $row['dispute_admin_note'] = trim((string) ($row['dispute_admin_note'] ?? ''));
+        $row['dispute_when'] = !empty($row['dispute_at']) ? time_ago($row['dispute_at']) : '';
         $row['commission_label'] = !empty($row['confirmed_at']) || ($row['commission_percent'] ?? null) !== null
             ? format_euros((int) ($row['commission_amount'] ?? 0))
             : '';

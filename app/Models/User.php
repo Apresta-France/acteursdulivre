@@ -96,6 +96,9 @@ final class User
             'email', 'password', 'first_name', 'last_name', 'role', 'status',
             'seeks_services', 'offers_services', 'google_id', 'facebook_id',
             'avatar_url', 'onboarding_done_at', 'founder',
+            'notify_messages', 'notify_jalons', 'notify_missions', 'notify_newsletter',
+            'company_name', 'siret', 'vat_number', 'billing_address', 'iban',
+            'deleted_at',
         ];
         $fields = [];
         $params = [];
@@ -427,6 +430,92 @@ final class User
     public static function markOnboardingDone(int $id): void
     {
         self::update($id, ['onboarding_done_at' => date('Y-m-d H:i:s')]);
+    }
+
+    public static function wantsEmail(array $user, string $channel): bool
+    {
+        $col = match ($channel) {
+            'messages' => 'notify_messages',
+            'jalons' => 'notify_jalons',
+            'missions' => 'notify_missions',
+            'newsletter' => 'notify_newsletter',
+            default => null,
+        };
+        if ($col === null) {
+            return true;
+        }
+        return !array_key_exists($col, $user) || (int) $user[$col] === 1;
+    }
+
+    public static function assertCanClose(int $id): void
+    {
+        $open = Database::fetch(
+            'SELECT COUNT(*) AS n FROM orders
+             WHERE (buyer_id = ? OR seller_id = ?)
+               AND status IN ("pending", "in_progress", "delivered", "dispute")',
+            [$id, $id]
+        );
+        if ((int) ($open['n'] ?? 0) > 0) {
+            throw new \RuntimeException('Terminez ou faites clôturer d\'abord les commandes en cours ou en litige.');
+        }
+        if (Invoice::pendingInvoice($id) || Invoice::sellerIsBlocked($id)) {
+            throw new \RuntimeException('Réglez d\'abord les factures de commission ouvertes.');
+        }
+    }
+
+    public static function closeAccount(int $id): void
+    {
+        self::assertCanClose($id);
+        $token = bin2hex(random_bytes(6));
+        self::update($id, [
+            'first_name' => 'Compte',
+            'last_name' => 'clôturé',
+            'email' => 'closed-' . $id . '-' . $token . '@invalid.local',
+            'password' => password_hash(bin2hex(random_bytes(24)), PASSWORD_DEFAULT),
+            'avatar_url' => '',
+            'google_id' => null,
+            'facebook_id' => null,
+            'iban' => null,
+            'status' => 'suspended',
+            'deleted_at' => date('Y-m-d H:i:s'),
+        ]);
+    }
+
+    /** @return array<string, mixed> */
+    public static function exportPayload(int $id): array
+    {
+        $user = self::find($id);
+        if (!$user) {
+            throw new \RuntimeException('Compte introuvable.');
+        }
+        unset($user['password'], $user['google_id'], $user['facebook_id']);
+
+        $profile = null;
+        try {
+            $profile = Profile::findByUser($id);
+        } catch (\Throwable) {
+        }
+
+        $safe = static function (callable $fn): mixed {
+            try {
+                return $fn();
+            } catch (\Throwable) {
+                return [];
+            }
+        };
+
+        return [
+            'exported_at' => date('c'),
+            'user' => $user,
+            'profile' => $profile,
+            'orders_buyer' => $safe(static fn () => Order::forBuyer($id)),
+            'orders_seller' => $safe(static fn () => Order::forSeller($id)),
+            'invoices' => $safe(static fn () => Invoice::forSeller($id)),
+            'missions' => $safe(static fn () => Mission::forUser($id)),
+            'messages_sent' => $safe(static fn () => Conversation::exportForUser($id)),
+            'reviews_received' => $safe(static fn () => Review::forTarget($id, 200)),
+            'legal' => $safe(static fn () => LegalAcceptance::forUser($id)),
+        ];
     }
 
     /** @param array<string, mixed> $file */

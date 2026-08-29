@@ -32,6 +32,20 @@ final class LegalAcceptance
         );
     }
 
+    /** @return list<array<string, mixed>> */
+    public static function forUser(int $userId): array
+    {
+        try {
+            return Database::fetchAll(
+                'SELECT document, version, context, accepted_at FROM legal_acceptances
+                 WHERE user_id = ? ORDER BY accepted_at DESC',
+                [$userId]
+            );
+        } catch (\Throwable) {
+            return [];
+        }
+    }
+
     public static function has(int $userId, string $document, ?string $version = null): bool
     {
         $version = $version ?? LegalPages::VERSION;

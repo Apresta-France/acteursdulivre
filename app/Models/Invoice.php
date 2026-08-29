@@ -23,6 +23,18 @@ final class Invoice
         return $row ? self::present($row) : null;
     }
 
+    public static function findForSeller(int $id, int $sellerId): ?array
+    {
+        $row = Database::fetch(
+            'SELECT i.*, o.number AS order_number, o.amount AS order_amount
+             FROM invoices i
+             JOIN orders o ON o.id = i.order_id
+             WHERE i.id = ? AND i.seller_id = ?',
+            [$id, $sellerId]
+        );
+        return $row ? self::present($row) : null;
+    }
+
     /** @return list<array<string, mixed>> */
     public static function all(): array
     {
@@ -235,6 +247,7 @@ final class Invoice
         $row['is_overdue'] = $overdue;
         $row['is_open'] = in_array($status, ['issued', 'overdue'], true);
         $row['href'] = '/espace/facturation';
+        $row['pdf_href'] = '/espace/facturation/' . (int) ($row['id'] ?? 0) . '/pdf';
         $row['seller'] = trim(($row['first_name'] ?? '') . ' ' . ($row['last_name'] ?? ''));
         return $row;
     }

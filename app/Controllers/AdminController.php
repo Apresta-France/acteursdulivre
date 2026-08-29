@@ -184,6 +184,10 @@ final class AdminController
     {
         Auth::requireAdmin();
         try {
+            $note = $request->string('note');
+            if ($note !== '') {
+                Order::setDisputeNote((int) $id, $note);
+            }
             Order::setStatus((int) $id, $request->string('status'));
             flash('saved', 'Commande mise à jour.');
         } catch (Throwable $e) {

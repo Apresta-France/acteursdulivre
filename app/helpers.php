@@ -273,11 +273,49 @@ function format_euros(?int $amount): string
     return format_int($amount) . ' €';
 }
 
-function store_upload(array $file, string $subdir, array $allowedExt, int $maxBytes): ?string
+function format_bytes(int $bytes): string
 {
-    if (($file['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
-        return null;
+    if ($bytes < 1024) {
+        return $bytes . ' o';
     }
+    if ($bytes < 1024 * 1024) {
+        return rtrim(rtrim(number_format($bytes / 1024, 1, ',', ' '), '0'), ',') . ' Ko';
+    }
+    return rtrim(rtrim(number_format($bytes / (1024 * 1024), 1, ',', ' '), '0'), ',') . ' Mo';
+}
+
+function upload_safe_name(string $name): string
+{
+    $base = basename(str_replace('\\', '/', $name));
+    $base = preg_replace('/[^a-zA-Z0-9._-]+/', '-', $base) ?? '';
+    $base = trim($base, '.-');
+    if (mb_strlen($base) > 160) {
+        $ext = strtolower(pathinfo($base, PATHINFO_EXTENSION));
+        $stem = pathinfo($base, PATHINFO_FILENAME);
+        $base = mb_substr($stem, 0, 140) . ($ext !== '' ? '.' . $ext : '');
+    }
+    return $base;
+}
+
+/** @return array<string, list<string>> */
+function upload_mime_map(): array
+{
+    return [
+        'pdf' => ['application/pdf'],
+        'jpg' => ['image/jpeg'],
+        'jpeg' => ['image/jpeg'],
+        'png' => ['image/png'],
+        'webp' => ['image/webp'],
+        'gif' => ['image/gif'],
+        'txt' => ['text/plain'],
+        'doc' => ['application/msword'],
+        'docx' => ['application/vnd.openxmlformats-officedocument.wordprocessingml.document'],
+        'odt' => ['application/vnd.oasis.opendocument.text'],
+    ];
+}
+
+function assert_upload(array $file, array $allowedExt, int $maxBytes): string
+{
     if (($file['error'] ?? UPLOAD_ERR_OK) !== UPLOAD_ERR_OK || !is_uploaded_file((string) ($file['tmp_name'] ?? ''))) {
         throw new RuntimeException('Le fichier n\'a pas pu être transmis.');
     }
@@ -287,22 +325,94 @@ function store_upload(array $file, string $subdir, array $allowedExt, int $maxBy
 
     $name = (string) ($file['name'] ?? '');
     $ext = strtolower(pathinfo($name, PATHINFO_EXTENSION));
-    if (!in_array($ext, $allowedExt, true)) {
+    if ($ext === '' || !in_array($ext, $allowedExt, true)) {
         throw new RuntimeException('Format de fichier non accepté.');
     }
+    if (preg_match('/\.(php|phtml|phar|exe|js|html|htm|svg|sh|bat|cmd)\./i', $name)) {
+        throw new RuntimeException('Format de fichier non accepté.');
+    }
+
+    $tmp = (string) $file['tmp_name'];
+    $map = upload_mime_map();
+    if (isset($map[$ext]) && class_exists(\finfo::class)) {
+        $mime = (new \finfo(FILEINFO_MIME_TYPE))->file($tmp) ?: '';
+        if (!in_array($mime, $map[$ext], true)) {
+            throw new RuntimeException('Le type du fichier ne correspond pas à son extension.');
+        }
+    }
+
+    return $ext;
+}
+
+function store_upload(array $file, string $subdir, array $allowedExt, int $maxBytes): ?string
+{
+    if (($file['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
+        return null;
+    }
+    $ext = assert_upload($file, $allowedExt, $maxBytes);
 
     $dir = ADL_ROOT . '/public/uploads/' . trim($subdir, '/');
     if (!is_dir($dir) && !mkdir($dir, 0775, true) && !is_dir($dir)) {
         throw new RuntimeException('Impossible de créer le dossier d\'upload.');
     }
 
-    $filename = bin2hex(random_bytes(8)) . '-' . preg_replace('/[^a-z0-9._-]+/i', '-', $name);
-    $filename = trim($filename, '-') ?: (bin2hex(random_bytes(8)) . '.' . $ext);
+    $safe = upload_safe_name((string) ($file['name'] ?? ''));
+    $filename = bin2hex(random_bytes(8)) . '-' . ($safe !== '' ? $safe : ('fichier.' . $ext));
     if (!move_uploaded_file((string) $file['tmp_name'], $dir . '/' . $filename)) {
         throw new RuntimeException('Le fichier n\'a pas pu être enregistré.');
     }
 
     return trim($subdir, '/') . '/' . $filename;
+}
+
+/** @return array{path: string, name: string, size: int}|null */
+function store_private_upload(array $file, string $subdir, array $allowedExt, int $maxBytes): ?array
+{
+    if (($file['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
+        return null;
+    }
+    $ext = assert_upload($file, $allowedExt, $maxBytes);
+    $original = upload_safe_name((string) ($file['name'] ?? '')) ?: ('fichier.' . $ext);
+    $size = (int) ($file['size'] ?? 0);
+
+    $dir = ADL_ROOT . '/storage/uploads/' . trim($subdir, '/');
+    if (!is_dir($dir) && !mkdir($dir, 0775, true) && !is_dir($dir)) {
+        throw new RuntimeException('Impossible de créer le dossier d\'upload.');
+    }
+
+    $stored = bin2hex(random_bytes(16)) . '.' . $ext;
+    if (!move_uploaded_file((string) $file['tmp_name'], $dir . '/' . $stored)) {
+        throw new RuntimeException('Le fichier n\'a pas pu être enregistré.');
+    }
+
+    return [
+        'path' => trim($subdir, '/') . '/' . $stored,
+        'name' => $original,
+        'size' => $size,
+    ];
+}
+
+function send_private_file(string $relative, string $downloadName, string $mime = 'application/octet-stream'): never
+{
+    $relative = str_replace(['\\', "\0"], '/', $relative);
+    if (str_contains($relative, '..')) {
+        not_found('Fichier introuvable.');
+    }
+    $full = ADL_ROOT . '/storage/uploads/' . ltrim($relative, '/');
+    $root = realpath(ADL_ROOT . '/storage/uploads');
+    $real = realpath($full);
+    if ($root === false || $real === false || !str_starts_with($real, $root) || !is_file($real)) {
+        not_found('Fichier introuvable.');
+    }
+
+    $name = upload_safe_name($downloadName) ?: 'piece-jointe';
+    header('Content-Type: ' . $mime);
+    header('Content-Disposition: attachment; filename="' . $name . '"');
+    header('Content-Length: ' . (string) filesize($real));
+    header('X-Content-Type-Options: nosniff');
+    header('Cache-Control: private, no-store');
+    readfile($real);
+    exit;
 }
 
 function admin_date(?string $datetime, string $empty = '—'): string

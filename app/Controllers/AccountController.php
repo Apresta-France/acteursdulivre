@@ -441,6 +441,9 @@ final class AccountController
     {
         $user = Auth::requireUser();
         $order = Order::findForUser((int) $id, (int) $user['id']);
+        if (!$order && ($user['role'] ?? '') === 'admin') {
+            $order = Order::find((int) $id);
+        }
         if (!$order) {
             not_found('Cette commande est introuvable.');
         }
@@ -915,11 +918,22 @@ final class AccountController
     {
         $user = Auth::requireUser();
         try {
-            Conversation::send((int) $id, (int) $user['id'], $request->string('body'));
+            Conversation::send((int) $id, (int) $user['id'], $request->string('body'), $request->file('attachment'));
         } catch (\Throwable $e) {
             flash('error', $e->getMessage());
         }
         redirect('/espace/messages/' . (int) $id);
+    }
+
+    public function messageFile(Request $request, string $id, string $mid): void
+    {
+        $user = Auth::requireUser();
+        try {
+            $file = Conversation::attachmentForUser((int) $id, (int) $mid, (int) $user['id']);
+        } catch (\Throwable $e) {
+            not_found($e->getMessage());
+        }
+        send_private_file($file['path'], $file['name'], $file['mime']);
     }
 
     public function applicationCreate(Request $request, string $slug): void
@@ -1222,6 +1236,15 @@ final class AccountController
             'avatarSrc' => user_avatar_src($user),
             'seeksChecked' => User::seeksServices($user),
             'offersChecked' => User::offersServices($user),
+            'notifyMessages' => !isset($user['notify_messages']) || (int) $user['notify_messages'] === 1,
+            'notifyJalons' => !isset($user['notify_jalons']) || (int) $user['notify_jalons'] === 1,
+            'notifyMissions' => !isset($user['notify_missions']) || (int) $user['notify_missions'] === 1,
+            'notifyNewsletter' => !empty($user['notify_newsletter']),
+            'companyName' => (string) ($user['company_name'] ?? ''),
+            'siret' => (string) ($user['siret'] ?? ''),
+            'vatNumber' => (string) ($user['vat_number'] ?? ''),
+            'billingAddress' => (string) ($user['billing_address'] ?? ''),
+            'iban' => (string) ($user['iban'] ?? ''),
             'linkedProviders' => [
                 'google' => (string) ($user['google_id'] ?? '') !== '',
                 'facebook' => (string) ($user['facebook_id'] ?? '') !== '',
@@ -1264,6 +1287,82 @@ final class AccountController
         ]);
         flash('saved', true);
         redirect('/espace/parametres');
+    }
+
+    public function parametresNotifs(Request $request): void
+    {
+        $user = Auth::requireUser();
+        try {
+            User::update((int) $user['id'], [
+                'notify_messages' => $request->bool('notify_messages') ? 1 : 0,
+                'notify_jalons' => $request->bool('notify_jalons') ? 1 : 0,
+                'notify_missions' => $request->bool('notify_missions') ? 1 : 0,
+                'notify_newsletter' => $request->bool('notify_newsletter') ? 1 : 0,
+            ]);
+            flash('saved', true);
+        } catch (\Throwable $e) {
+            flash('error', $e->getMessage());
+        }
+        redirect('/espace/parametres');
+    }
+
+    public function parametresBilling(Request $request): void
+    {
+        $user = Auth::requireUser();
+        $siret = preg_replace('/\s+/', '', $request->string('siret')) ?? '';
+        $vat = strtoupper(preg_replace('/\s+/', '', $request->string('vat_number')) ?? '');
+        $iban = strtoupper(preg_replace('/\s+/', '', $request->string('iban')) ?? '');
+        if ($siret !== '' && !preg_match('/^\d{14}$/', $siret)) {
+            flash('error', 'Le SIRET doit contenir 14 chiffres.');
+            redirect('/espace/parametres');
+        }
+        if ($vat !== '' && !preg_match('/^[A-Z]{2}[A-Z0-9]{2,13}$/', $vat)) {
+            flash('error', 'Le numéro de TVA n\'est pas au bon format.');
+            redirect('/espace/parametres');
+        }
+        if ($iban !== '' && !preg_match('/^[A-Z]{2}\d{2}[A-Z0-9]{10,30}$/', $iban)) {
+            flash('error', 'L\'IBAN n\'est pas au bon format.');
+            redirect('/espace/parametres');
+        }
+        User::update((int) $user['id'], [
+            'company_name' => $request->string('company_name') ?: null,
+            'siret' => $siret !== '' ? $siret : null,
+            'vat_number' => $vat !== '' ? $vat : null,
+            'billing_address' => $request->string('billing_address') ?: null,
+            'iban' => $iban !== '' ? $iban : null,
+        ]);
+        flash('saved', true);
+        redirect('/espace/parametres');
+    }
+
+    public function parametresExport(Request $request): void
+    {
+        $user = Auth::requireUser();
+        $payload = User::exportPayload((int) $user['id']);
+        header('Content-Type: application/json; charset=utf-8');
+        header('Content-Disposition: attachment; filename="acteursdulivre-donnees-' . (int) $user['id'] . '.json"');
+        header('X-Content-Type-Options: nosniff');
+        echo json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
+        exit;
+    }
+
+    public function parametresClose(Request $request): void
+    {
+        $user = Auth::requireUser();
+        $confirm = $request->string('confirm');
+        if ($confirm !== 'CLOTURER') {
+            flash('error', 'Saisissez CLOTURER pour confirmer la fermeture du compte.');
+            redirect('/espace/parametres');
+        }
+        try {
+            User::closeAccount((int) $user['id']);
+            Auth::logout();
+            flash('saved', 'Votre compte a été clôturé.');
+            redirect('/');
+        } catch (\Throwable $e) {
+            flash('error', $e->getMessage());
+            redirect('/espace/parametres');
+        }
     }
 
     public function parametresPassword(Request $request): void
@@ -1340,6 +1439,20 @@ final class AccountController
             'billingBlock' => $billing['block'],
             'billingWarning' => $billing['warning'],
         ]);
+    }
+
+    public function facturePdf(Request $request, string $id): void
+    {
+        $user = Auth::requireOfferer();
+        $invoice = Invoice::findForSeller((int) $id, (int) $user['id']);
+        if (!$invoice) {
+            not_found('Cette facture est introuvable.');
+        }
+        View::render('pages/facture-pdf', [
+            'title' => 'Facture ' . $invoice['number'],
+            'invoice' => $invoice,
+            'seller' => $user,
+        ], null);
     }
 
     /** @return array{block: ?array<string, mixed>, warning: ?array<string, mixed>} */

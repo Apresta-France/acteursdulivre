@@ -79,6 +79,64 @@ $oauthProviders = OAuth::enabledProviders();
     </div>
   </form>
 
+  <form method="post" action="<?= e(url('/espace/parametres/notifications')) ?>" class="param-form" style="margin-top: 36px;">
+    <?= csrf_field() ?>
+    <p class="field">Notifications</p>
+    <p class="espace-page-lead" style="margin-top: 0;">Les messages restent visibles ici. Ces cases concernent les e-mails de relance.</p>
+    <label class="check-row"><input type="checkbox" name="notify_messages" value="1"<?= !empty($notifyMessages) ? ' checked' : '' ?>> Relances si un message reste sans réponse</label>
+    <label class="check-row"><input type="checkbox" name="notify_jalons" value="1"<?= !empty($notifyJalons) ? ' checked' : '' ?>> Jalons : livraison à valider, projet en cours, facture échue</label>
+    <label class="check-row"><input type="checkbox" name="notify_missions" value="1"<?= !empty($notifyMissions) ? ' checked' : '' ?>> Missions : candidature en attente, vitrine incomplète</label>
+    <label class="check-row"><input type="checkbox" name="notify_newsletter" value="1"<?= !empty($notifyNewsletter) ? ' checked' : '' ?>> Lettre d'information mensuelle</label>
+    <div class="auth-actions">
+      <button class="btn-navy" type="submit">Enregistrer les notifications</button>
+    </div>
+  </form>
+
+  <form method="post" action="<?= e(url('/espace/parametres/facturation')) ?>" class="param-form" style="margin-top: 36px;">
+    <?= csrf_field() ?>
+    <p class="field">Facturation</p>
+    <p class="espace-page-lead" style="margin-top: 0;">Mentions reprises sur votre facture de commission. L'IBAN n'est jamais utilisé pour encaisser une mission.</p>
+    <label class="field" for="company_name">Raison sociale</label>
+    <input class="input" id="company_name" name="company_name" value="<?= e((string) ($companyName ?? '')) ?>">
+    <div class="auth-name-grid">
+      <div>
+        <label class="field" for="siret">SIRET</label>
+        <input class="input" id="siret" name="siret" inputmode="numeric" autocomplete="off" value="<?= e((string) ($siret ?? '')) ?>">
+      </div>
+      <div>
+        <label class="field" for="vat_number">N° TVA</label>
+        <input class="input" id="vat_number" name="vat_number" autocomplete="off" value="<?= e((string) ($vatNumber ?? '')) ?>">
+      </div>
+    </div>
+    <label class="field" for="billing_address">Adresse de facturation</label>
+    <textarea class="textarea" id="billing_address" name="billing_address" rows="3"><?= e((string) ($billingAddress ?? '')) ?></textarea>
+    <label class="field" for="iban">IBAN (facultatif, pour vos propres mentions)</label>
+    <input class="input" id="iban" name="iban" autocomplete="off" value="<?= e((string) ($iban ?? '')) ?>">
+    <div class="auth-actions">
+      <button class="btn-navy" type="submit">Enregistrer la facturation</button>
+    </div>
+  </form>
+
+  <div class="param-form" style="margin-top: 36px;">
+    <p class="field">Vos données</p>
+    <p class="espace-page-lead" style="margin-top: 0;">Téléchargez une copie JSON de votre compte, profil, commandes, messages envoyés et avis.</p>
+    <form method="post" action="<?= e(url('/espace/parametres/export')) ?>">
+      <?= csrf_field() ?>
+      <button class="btn-ghost" type="submit">Exporter mes données</button>
+    </form>
+  </div>
+
+  <form method="post" action="<?= e(url('/espace/parametres/cloture')) ?>" class="param-form param-danger" style="margin-top: 36px;">
+    <?= csrf_field() ?>
+    <p class="field">Clôturer le compte</p>
+    <p class="espace-page-lead" style="margin-top: 0;">Impossible s'il reste une commande en cours, un litige ou une facture de commission ouverte. Les factures déjà émises sont conservées. Saisissez <strong>CLOTURER</strong> pour confirmer.</p>
+    <label class="field" for="confirm">Confirmation</label>
+    <input class="input" id="confirm" name="confirm" autocomplete="off">
+    <div class="auth-actions">
+      <button class="btn-ghost" type="submit">Clôturer mon compte</button>
+    </div>
+  </form>
+
   <?php if ($oauthProviders !== []): ?>
     <div class="param-oauth">
       <p class="field">Connexions sociales</p>

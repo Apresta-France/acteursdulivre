@@ -73,6 +73,33 @@ final class Review
         }, $rows);
     }
 
+    /** @return list<array<string, mixed>> */
+    public static function recentPublic(int $limit = 3): array
+    {
+        try {
+            $rows = Database::fetchAll(
+                "SELECT r.*, u.first_name, u.last_name, p.title AS profile_title
+                 FROM reviews r
+                 JOIN users u ON u.id = r.author_id
+                 LEFT JOIN profiles p ON p.user_id = r.author_id
+                 WHERE r.hidden_at IS NULL AND TRIM(COALESCE(r.body, '')) != ''
+                 ORDER BY r.created_at DESC
+                 LIMIT " . max(1, $limit)
+            );
+        } catch (\Throwable) {
+            return [];
+        }
+
+        return array_map(static function (array $row): array {
+            $row['who'] = User::displayName($row);
+            $row['initials'] = User::initials($row);
+            $row['txt'] = (string) ($row['body'] ?? '');
+            $row['role'] = trim((string) ($row['profile_title'] ?? ''));
+            $row['note'] = str_replace('.', ',', (string) $row['rating']);
+            return $row;
+        }, $rows);
+    }
+
     public static function forOrderAuthor(int $orderId, int $authorId): ?array
     {
         return Database::fetch(

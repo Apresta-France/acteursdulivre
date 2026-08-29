@@ -89,6 +89,7 @@ return static function (Router $router): void {
     $router->get('/espace/messages', [AccountController::class, 'messages']);
     $router->get('/espace/messages/{id}', [AccountController::class, 'messageShow']);
     $router->post('/espace/messages/{id}', [AccountController::class, 'messageSend']);
+    $router->get('/espace/messages/{id}/fichier/{mid}', [AccountController::class, 'messageFile']);
     $router->get('/espace/notifications', [AccountController::class, 'notifications']);
     $router->post('/espace/notifications/lues', [AccountController::class, 'notificationsRead']);
     $router->get('/espace/notifications/{id}', [AccountController::class, 'notificationOpen']);
@@ -103,7 +104,12 @@ return static function (Router $router): void {
     $router->get('/espace/parametres', [AccountController::class, 'parametres']);
     $router->post('/espace/parametres', [AccountController::class, 'parametresSave']);
     $router->post('/espace/parametres/mot-de-passe', [AccountController::class, 'parametresPassword']);
+    $router->post('/espace/parametres/notifications', [AccountController::class, 'parametresNotifs']);
+    $router->post('/espace/parametres/facturation', [AccountController::class, 'parametresBilling']);
+    $router->post('/espace/parametres/export', [AccountController::class, 'parametresExport']);
+    $router->post('/espace/parametres/cloture', [AccountController::class, 'parametresClose']);
     $router->get('/espace/facturation', [AccountController::class, 'facturation']);
+    $router->get('/espace/facturation/{id}/pdf', [AccountController::class, 'facturePdf']);
 
     $router->get('/admin', [AdminController::class, 'dashboard']);
     $router->get('/admin/verifications', [AdminController::class, 'verifications']);

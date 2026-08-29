@@ -253,7 +253,7 @@ $mine = !empty($action['mine']);
         <form class="jalon-dispute" method="post" action="<?= e(url('/espace/suivi/' . (int) $order['id'] . '/litige')) ?>">
           <?= csrf_field() ?>
           <label class="field" for="reason">Signaler un litige</label>
-          <textarea class="textarea" id="reason" name="reason" rows="3" required placeholder="Décrivez le désaccord. Un médiateur pourra reprendre le dossier."></textarea>
+          <textarea class="textarea" id="reason" name="reason" rows="3" required placeholder="Décrivez le désaccord. Les jalons sont mis en pause ; l’équipe reprend le dossier."></textarea>
           <div class="jalon-actions">
             <button class="btn-ghost" type="submit">Ouvrir un litige</button>
           </div>

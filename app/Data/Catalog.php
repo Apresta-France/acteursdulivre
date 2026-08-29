@@ -703,6 +703,41 @@ final class Catalog
         ];
     }
 
+    /** @return list<array{v: string, k: string}> */
+    public static function missionsBandStats(): array
+    {
+        try {
+            $commission = Setting::get('commission_percent', '8') ?: '8';
+        } catch (\Throwable) {
+            $commission = '8';
+        }
+
+        return [
+            ['v' => '0 €', 'k' => 'pour candidater : aucune commission sur la candidature'],
+            ['v' => '1ʳᵉ', 'k' => 'mission offerte au prestataire, sans commission'],
+            ['v' => $commission . ' %', 'k' => 'dès la 2ᵉ mission réalisée, sans abonnement'],
+        ];
+    }
+
+    /** @return list<array<string, mixed>> */
+    public static function homeReviews(int $limit = 3): array
+    {
+        try {
+            return Review::recentPublic($limit);
+        } catch (\Throwable) {
+            return [];
+        }
+    }
+
+    /** @return list<array{name: string, role: string, initials: string}> */
+    public static function equipe(): array
+    {
+        return [
+            ['name' => 'Julien LARZILLIÈRE', 'role' => 'Président — TERCIUM, EDITIONS TESSERACT', 'initials' => 'JL'],
+            ['name' => 'Guillaume REYNAERT', 'role' => 'Directeur général — GPR PROJECTS', 'initials' => 'GR'],
+        ];
+    }
+
     /** @return list<array<string, mixed>> */
     public static function journalPreview(int $limit = 3): array
     {

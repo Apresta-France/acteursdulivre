@@ -34,11 +34,12 @@ $due = (int) ($dueAmount ?? 0);
             <span><?= (int) ($invoice['amount'] ?? 0) === 0 ? 'Première mission offerte' : rtrim(rtrim((string) ($invoice['commission_percent'] ?? '8'), '0'), '.') . ' %' ?></span>
             <strong><?= e((string) $invoice['amount_label']) ?></strong>
           </div>
-          <?php if (!empty($invoice['order_id'])): ?>
-            <div class="auth-actions" style="margin-top: 12px;">
+          <div class="auth-actions" style="margin-top: 12px;">
+            <a class="btn-ghost" href="<?= e(url((string) ($invoice['pdf_href'] ?? '/espace/facturation/' . (int) $invoice['id'] . '/pdf'))) ?>">Télécharger / imprimer en PDF</a>
+            <?php if (!empty($invoice['order_id'])): ?>
               <a class="btn-ghost" href="<?= e(url('/espace/suivi/' . (int) $invoice['order_id'])) ?>">Ouvrir le suivi</a>
-            </div>
-          <?php endif; ?>
+            <?php endif; ?>
+          </div>
         </article>
       <?php endforeach; ?>
     </div>

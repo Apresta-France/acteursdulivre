@@ -7,7 +7,7 @@ $messages = $messages ?? [];
   <div class="espace-page-head">
     <div>
       <h1>Messagerie</h1>
-      <p>Les échanges autour des recherches, des devis et des commandes.</p>
+      <p>Les échanges autour des recherches, des devis et des commandes. Vous pouvez joindre un fichier (PDF, image, Word, 8&nbsp;Mo max.).</p>
     </div>
   </div>
 
@@ -54,13 +54,24 @@ $messages = $messages ?? [];
             <?php foreach ($messages as $msg): ?>
               <article class="msg<?= (int) ($msg['user_id'] ?? 0) === (int) (\Adl\Core\Auth::id() ?? 0) ? ' is-mine' : '' ?>">
                 <div class="msg-meta"><?= e((string) $msg['who']) ?> · <?= e((string) $msg['when']) ?></div>
-                <p><?= nl2br(e((string) $msg['body'])) ?></p>
+                <?php if (trim((string) ($msg['body'] ?? '')) !== ''): ?>
+                  <p><?= nl2br(e((string) $msg['body'])) ?></p>
+                <?php endif; ?>
+                <?php if (!empty($msg['has_file'])): ?>
+                  <a class="msg-file" href="<?= e(url((string) $msg['file_href'])) ?>">
+                    <?= e((string) $msg['file_label']) ?><?= !empty($msg['file_size']) ? ' · ' . e((string) $msg['file_size']) : '' ?>
+                  </a>
+                <?php endif; ?>
               </article>
             <?php endforeach; ?>
           </div>
-          <form class="inbox-compose" method="post" action="<?= e(url('/espace/messages/' . (int) $thread['id'])) ?>">
+          <form class="inbox-compose" method="post" action="<?= e(url('/espace/messages/' . (int) $thread['id'])) ?>" enctype="multipart/form-data" data-dropzone>
             <?= csrf_field() ?>
-            <textarea class="textarea" name="body" rows="3" required placeholder="Votre message…"></textarea>
+            <textarea class="textarea" name="body" rows="3" placeholder="Votre message…"></textarea>
+            <label class="dropzone" data-dropzone-zone>
+              <input type="file" name="attachment" accept=".pdf,.jpg,.jpeg,.png,.webp,.txt,.doc,.docx,.odt" hidden>
+              <span data-dropzone-label>Joindre un fichier — glissez-déposez ou choisissez depuis votre ordinateur</span>
+            </label>
             <button class="btn-orange" type="submit">Envoyer</button>
           </form>
         <?php endif; ?>
