@@ -3,7 +3,7 @@
   <div class="espace-page-head">
     <div>
       <h1>Mes commandes</h1>
-      <p><?= count($orders) ?> commande<?= count($orders) > 1 ? 's' : '' ?>.</p>
+      <p><?= count($orders) ?> commande<?= count($orders) > 1 ? 's' : '' ?> · suivi à jalons, règlement hors plateforme.</p>
     </div>
     <a class="btn-navy" href="<?= e(url('/prestations')) ?>">Trouver une prestation</a>
   </div>
@@ -11,7 +11,7 @@
   <?php if ($orders === []): ?>
     <div class="search-empty">
       <strong>Aucune commande pour le moment.</strong>
-      <span>Les prestations achetées et les missions attribuées apparaîtront ici.</span>
+      <span>Les missions attribuées apparaîtront ici, avec leur suivi à jalons. Le règlement se fait hors plateforme.</span>
       <a class="btn-orange" href="<?= e(url('/recherche')) ?>">Parcourir l'annuaire</a>
     </div>
   <?php else: ?>
@@ -28,7 +28,7 @@
             · <?= e((string) $order['when']) ?>
           </div>
           <div class="side-foot">
-            <span><?= e((string) $order['status_label']) ?></span>
+            <span><?= e((string) (($order['next_jalon_label'] ?? '') !== '' ? $order['next_jalon_label'] : $order['status_label'])) ?></span>
             <strong><?= e((string) $order['amount_label']) ?></strong>
           </div>
           <div class="auth-actions" style="margin-top: 14px;">

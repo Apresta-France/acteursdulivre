@@ -41,7 +41,7 @@ $packages = $service['packages'] ?? [];
               </div>
               <?php if (!empty($canOrder)): ?>
                 <div class="auth-actions" style="margin-top: 12px;">
-                  <a class="btn-ghost" href="<?= e(url('/espace/commande?prestation=' . rawurlencode((string) $service['slug']) . '&formule=' . (int) ($package['id'] ?? 0))) ?>">Commander cette formule</a>
+                  <a class="btn-ghost" href="<?= e(url('/espace/commande?prestation=' . rawurlencode((string) $service['slug']) . '&formule=' . (int) ($package['id'] ?? 0))) ?>">Ouvrir cette formule</a>
                 </div>
               <?php endif; ?>
             </article>
@@ -71,12 +71,13 @@ $packages = $service['packages'] ?? [];
         <?php if (!$owner): ?>
           <div class="auth-actions" style="margin-top: 16px; flex-wrap: wrap;">
             <?php if (!empty($canOrder)): ?>
-              <a class="btn-orange" href="<?= e(url('/espace/commande?prestation=' . rawurlencode((string) $service['slug']))) ?>">Commander</a>
+              <a class="btn-orange" href="<?= e(url('/espace/commande?prestation=' . rawurlencode((string) $service['slug']))) ?>">Ouvrir une commande</a>
             <?php elseif (!$viewer): ?>
               <a class="btn-orange" href="<?= e(url('/connexion')) ?>">Se connecter pour commander</a>
             <?php elseif ($viewer && !\Adl\Models\User::seeksServices($viewer)): ?>
               <a class="btn-ghost" href="<?= e(url('/espace/parametres')) ?>">Activer « je cherche » pour commander</a>
             <?php endif; ?>
+            <p class="field-help" style="margin: 10px 0 0;">Aucun paiement ici : le prestataire envoie un devis, vous vous réglez hors plateforme, jalon par jalon.</p>
             <?php if ($viewer && \Adl\Models\User::seeksServices($viewer)): ?>
               <form method="post" action="<?= e(url('/espace/favoris/' . (int) $service['id'])) ?>">
                 <?= csrf_field() ?>

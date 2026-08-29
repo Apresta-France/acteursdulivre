@@ -6,8 +6,8 @@ namespace Adl\Data;
 
 final class LegalPages
 {
-    public const UPDATED = '28 août 2026';
-    public const VERSION = '1.1';
+    public const UPDATED = '29 août 2026';
+    public const VERSION = '1.3';
 
     public static function slugs(): array
     {
@@ -102,7 +102,8 @@ final class LegalPages
                 'title' => 'Objet de la Plateforme',
                 'blocks' => [
                     ['p' => 'acteursdulivre.fr est une place de marché des métiers du livre. Elle met en relation des porteurs de projet (auteurs, éditeurs, collectifs, institutions) et des prestataires (correcteurs, bêta-lecteurs, illustrateurs, traducteurs, maquettistes, imprimeurs, attachés de presse, libraires, narrateurs, agents, organisateurs de salons, notamment).'],
-                    ['p' => 'EDITIONS TESSERACT n\'est ni l\'éditeur des ouvrages des utilisateurs, ni l\'employeur, ni l\'agent des prestataires. Les contrats de prestation, de cession de droits ou de mandat sont conclus entre le porteur de projet et le prestataire. La Plateforme intervient au titre de l\'intermédiation, de l\'outillage (vitrine, missions, messagerie, contrats types, facturation) et, le cas échéant, de la médiation.'],
+                    ['p' => 'EDITIONS TESSERACT n\'est ni l\'éditeur des ouvrages des utilisateurs, ni l\'employeur, ni l\'agent des prestataires. Les accords de prestation sont conclus entre le porteur de projet et le prestataire, notamment par l\'acceptation du devis dans le suivi. La Plateforme intervient au titre de l\'intermédiation, de l\'outillage (vitrine, missions, messagerie, suivi à jalons, facturation de la commission) et, le cas échéant, de la médiation. Elle ne génère pas de contrat type ni d\'accord de confidentialité.'],
+                    ['p' => 'La Plateforme n\'encaisse pas le prix des missions. Le Client et le Prestataire se règlent directement, hors de la Plateforme. EDITIONS TESSERACT suit les jalons déclarés par les parties, puis facture sa commission au Prestataire lorsque le Client confirme et note la mission.'],
                     ['p' => 'La Plateforme est actuellement en pré-ouverture : les professionnels du livre peuvent créer un compte. L\'ouverture aux clients est annoncée pour octobre 2026.'],
                 ],
             ],
@@ -142,22 +143,22 @@ final class LegalPages
             [
                 'title' => '2. Définitions',
                 'blocks' => [
-                    ['html' => '<ul><li><strong>Porteur de projet</strong> ou <strong>Client</strong> : personne qui cherche un prestataire, commande une prestation ou publie une recherche.</li><li><strong>Prestataire</strong> : professionnel du livre qui propose ses services via une vitrine, des formules ou des candidatures.</li><li><strong>Utilisateur</strong> : toute personne qui consulte ou utilise la Plateforme, avec ou sans compte.</li><li><strong>Mission</strong> : prestation convenue entre un Client et un Prestataire à la suite d\'une commande de formule ou de l\'acceptation d\'un devis.</li><li><strong>Plateforme</strong> : le site acteursdulivre.fr et les services associés.</li></ul>'],
+                    ['html' => '<ul><li><strong>Porteur de projet</strong> ou <strong>Client</strong> : personne qui cherche un prestataire, commande une prestation ou publie une recherche.</li><li><strong>Prestataire</strong> : professionnel du livre qui propose ses services via une vitrine, des formules ou des candidatures.</li><li><strong>Utilisateur</strong> : toute personne qui consulte ou utilise la Plateforme, avec ou sans compte.</li><li><strong>Mission</strong> : prestation convenue entre un Client et un Prestataire à la suite d\'une commande de formule ou de l\'acceptation d\'un devis.</li><li><strong>Jalon</strong> : étape obligatoire du suivi de commande (devis, acceptation, facture, déclaration de règlement, livraison, validation, commission), confirmée sur la Plateforme par la partie concernée.</li><li><strong>Plateforme</strong> : le site acteursdulivre.fr et les services associés.</li></ul>'],
                 ],
             ],
             [
                 'title' => '3. Description du service',
                 'blocks' => [
                     ['p' => 'La Plateforme permet notamment :'],
-                    ['html' => '<ul><li>de consulter un annuaire de professionnels du livre et des pages métier ;</li><li>de publier une vitrine, un CV, un portfolio et des formules à prix affiché ;</li><li>de commander une prestation packagée ou de publier un appel d\'offres ;</li><li>de candidater, d\'échanger par messagerie, d\'envoyer un devis et de suivre une mission ;</li><li>d\'utiliser des contrats types adaptés au métier (prestation de service, cession de droits, mandat, bon de commande) ;</li><li>de laisser un avis après une mission réellement réalisée via la Plateforme ;</li><li>d\'accéder à un centre d\'aide, à un journal et à un formulaire de contact.</li></ul>'],
-                    ['p' => 'EDITIONS TESSERACT ne choisit pas le prestataire à la place du Client, ne pousse aucun profil contre rémunération publicitaire, et ne prend aucun droit sur les ouvrages.'],
+                    ['html' => '<ul><li>de consulter un annuaire de professionnels du livre et des pages métier ;</li><li>de publier une vitrine, un CV, un portfolio et des formules à prix affiché ;</li><li>de commander une prestation packagée ou de publier un appel d\'offres ;</li><li>de candidater, d\'échanger par messagerie, d\'envoyer un devis et de suivre une mission par jalons (factures, déclarations de règlement, livraison, validation) ;</li><li>de laisser un avis après une mission réellement réalisée via la Plateforme ;</li><li>d\'accéder à un centre d\'aide, à un journal et à un formulaire de contact.</li></ul>'],
+                    ['p' => 'EDITIONS TESSERACT ne choisit pas le prestataire à la place du Client, ne pousse aucun profil contre rémunération publicitaire, et ne prend aucun droit sur les ouvrages. Elle n\'encaisse pas le prix des missions : Client et Prestataire se règlent hors Plateforme.'],
                 ],
             ],
             [
                 'title' => '4. Pré-ouverture',
                 'blocks' => [
-                    ['p' => 'Tant que la bannière « Pré-ouverture » est affichée, l\'inscription est ouverte aux auteurs et professionnels du livre. L\'ouverture aux clients est prévue en octobre 2026. Certaines fonctions (commande payante, versements, avis liés à une mission payée) peuvent être incomplètes, en démonstration ou indisponibles.'],
-                    ['p' => 'Les présentes CGU s\'appliquent dès l\'inscription. Les stipulations relatives aux commandes et aux paiements s\'appliqueront pleinement dès que ces fonctions seront ouvertes.'],
+                    ['p' => 'Tant que la bannière « Pré-ouverture » est affichée, l\'inscription est ouverte aux auteurs et professionnels du livre. L\'ouverture aux clients est prévue en octobre 2026. Certaines fonctions (pièces jointes avancées, médiation outillée) peuvent encore évoluer.'],
+                    ['p' => 'Les présentes CGU s\'appliquent dès l\'inscription. Le suivi à jalons et la facturation de commission s\'appliquent dès qu\'une commande est ouverte, y compris pendant la pré-ouverture.'],
                 ],
             ],
             [
@@ -180,7 +181,7 @@ final class LegalPages
                 'title' => '7. Charte qualité et interdiction d\'IA générative',
                 'blocks' => [
                     ['p' => 'L\'usage de la Plateforme emporte adhésion à la charte qualité, dont les engagements suivants :'],
-                    ['html' => '<ul><li>prix annoncé = prix facturé, hors options acceptées par écrit avant le démarrage ;</li><li>délais tenus ou signalés dès qu\'un retard est prévisible ;</li><li>confidentialité des manuscrits et des briefs : aucun extrait diffusé sans autorisation écrite ; un accord de confidentialité (NDA) peut être signé avant transmission ;</li><li>droits d\'exploitation écrits (cession, durée, supports, territoires) lorsqu\'ils sont pertinents ;</li><li>aucune intelligence artificielle générative pour produire les livrables (textes, illustrations, voix, traductions, maquettes générées) ;</li><li>avis sincères, uniquement après une mission réellement réalisée via la Plateforme.</li></ul>'],
+                    ['html' => '<ul><li>prix annoncé = prix facturé, hors options acceptées par écrit avant le démarrage ;</li><li>délais tenus ou signalés dès qu\'un retard est prévisible ;</li><li>confidentialité des manuscrits et des briefs : aucun extrait diffusé sans autorisation écrite ;</li><li>périmètre et, le cas échéant, droits d\'exploitation précisés dans le devis ;</li><li>aucune intelligence artificielle générative pour produire les livrables (textes, illustrations, voix, traductions, maquettes générées) ;</li><li>avis sincères, uniquement après une mission réellement réalisée via la Plateforme.</li></ul>'],
                     ['p' => 'Les outils d\'aide au métier (correcteurs orthographiques, logiciels de PAO, dictionnaires, gestion de versions) restent autorisés. Sont interdits : la génération automatique de contenu, la sous-traitance cachée, et l\'entraînement de modèles sur les manuscrits ou fichiers confiés.'],
                     ['p' => 'Le Prestataire qui crée un compte s\'engage expressément à ce cadre. Un manquement peut entraîner la suspension ou la clôture du compte, sans préjudice des recours des Clients.'],
                 ],
@@ -197,7 +198,7 @@ final class LegalPages
                 'title' => '9. Propriété intellectuelle des projets',
                 'blocks' => [
                     ['p' => 'Les manuscrits, briefs, fichiers sources et livrables restent la propriété de leurs titulaires. La Plateforme n\'en fait usage que pour l\'affichage nécessaire aux vitrines, à la mise en relation et au suivi de mission.'],
-                    ['p' => 'Sauf clause contraire du contrat conclu entre les parties, une commande de correction, maquette ou impression n\'emporte pas cession des droits d\'auteur sur l\'œuvre. Une commande d\'illustration, de traduction ou de narration s\'accompagne d\'un contrat type précisant l\'étendue de la cession.'],
+                    ['p' => 'Sauf mention contraire dans le devis accepté, une commande de correction, maquette ou impression n\'emporte pas cession des droits d\'auteur sur l\'œuvre. Pour une illustration, une traduction ou une narration, l\'étendue de l\'usage est précisée dans le devis. La Plateforme ne joint pas de contrat type.'],
                     ['p' => 'Aucun contenu déposé sur la Plateforme n\'est utilisé pour entraîner un modèle d\'intelligence artificielle.'],
                 ],
             ],
@@ -249,7 +250,7 @@ final class LegalPages
             [
                 'title' => '1. Objet',
                 'blocks' => [
-                    ['p' => 'Les présentes conditions générales de vente (CGV) régissent le service d\'intermédiation fourni par EDITIONS TESSERACT sur acteursdulivre.fr : mise en relation, outils de commande, contrats types, suivi, avis, facturation de la commission au Prestataire et médiation interne.'],
+                    ['p' => 'Les présentes conditions générales de vente (CGV) régissent le service d\'intermédiation fourni par EDITIONS TESSERACT sur acteursdulivre.fr : mise en relation, outils de commande, suivi à jalons, avis, facturation de la commission au Prestataire et médiation interne. Elles ne régissent pas un encaissement du prix de la mission par EDITIONS TESSERACT : ce prix est réglé hors Plateforme, entre le Client et le Prestataire. La Plateforme ne génère pas de contrat type.'],
                     ['p' => 'Le contrat de réalisation de la mission (correction, illustration, traduction, impression, etc.) est conclu entre le Client et le Prestataire. EDITIONS TESSERACT n\'est pas le vendeur de cette prestation intellectuelle ou industrielle, sauf lorsqu\'elle agirait elle-même comme prestataire, ce qui n\'est pas le cas du fonctionnement actuel de la Plateforme.'],
                     ['p' => 'Les CGV s\'appliquent au Client et au Prestataire. Chaque partie les accepte à l\'inscription, puis à nouveau lors de la conclusion ou de la validation d\'une mission.'],
                     ['html' => '<p>L\'usage du site est également soumis aux <a href="' . e(url('/cgu')) . '">CGU</a>.</p>'],
@@ -266,7 +267,7 @@ final class LegalPages
                 'blocks' => [
                     ['p' => 'La Plateforme n\'impose aucun abonnement. Chacun est libre de créer un compte, de s\'inscrire, de proposer des missions, de publier une vitrine ou des fiches de prestation.'],
                     ['p' => 'Restent gratuits :'],
-                    ['html' => '<ul><li>la création d\'un compte, d\'une vitrine et de formules ;</li><li>la publication d\'une recherche et la réception de devis ;</li><li>la candidature aux appels d\'offres ;</li><li>la messagerie, l\'envoi de devis et l\'usage des contrats types ;</li><li>la première mission réalisée par un Prestataire (aucune commission plateforme) ;</li><li>l\'annulation d\'une mission avant son démarrage effectif.</li></ul>'],
+                    ['html' => '<ul><li>la création d\'un compte, d\'une vitrine et de formules ;</li><li>la publication d\'une recherche et la réception de devis ;</li><li>la candidature aux appels d\'offres ;</li><li>la messagerie, l\'envoi de devis et le suivi à jalons ;</li><li>la première mission réalisée par un Prestataire (aucune commission plateforme) ;</li><li>l\'annulation d\'une mission avant son démarrage effectif.</li></ul>'],
                     ['p' => 'Aucune commission n\'est due du seul fait de candidater, de publier un appel d\'offres ou de mettre une fiche en ligne.'],
                 ],
             ],
@@ -275,8 +276,8 @@ final class LegalPages
                 'blocks' => [
                     ['p' => 'Une mission peut naître de deux façons :'],
                     ['html' => '<ul><li>commande d\'une formule à prix, délai et périmètre affichés, éventuellement complétée d\'options acceptées ;</li><li>acceptation d\'un devis envoyé en réponse à un appel d\'offres ou à un échange.</li></ul>'],
-                    ['p' => 'Le Client décrit le besoin (métier, volume, budget, échéance, fichiers). Le Prestataire accepte ou refuse. L\'acceptation d\'un devis ou d\'une commande vaut contrat entre les parties, assorti du contrat type adapté au métier lorsqu\'il est joint, et emporte acceptation des présentes CGV par les deux parties.'],
-                    ['p' => 'Le Prestataire n\'est jamais tenu d\'accepter une commande. Le Client n\'est jamais tenu d\'accepter un devis.'],
+                    ['p' => 'Le Client décrit le besoin (métier, volume, budget, échéance, fichiers). Une commande ouvre un suivi à jalons. Le Prestataire envoie un devis (montant, délai, acompte éventuel, périmètre). L\'acceptation de ce devis par le Client vaut accord entre les parties et emporte acceptation des présentes CGV par les deux parties. Aucun contrat type n\'est joint par la Plateforme.'],
+                    ['p' => 'Le Prestataire n\'est jamais tenu d\'accepter une commande ni d\'envoyer un devis. Le Client n\'est jamais tenu d\'accepter un devis.'],
                 ],
             ],
             [
@@ -286,34 +287,34 @@ final class LegalPages
                     ['p' => 'La Plateforme se rémunère uniquement sur les missions attribuées et réalisées, par une commission due par le Prestataire :'],
                     ['html' => '<ul><li>0&nbsp;% sur la première mission réalisée par le Prestataire via la Plateforme : elle est entièrement gratuite ;</li><li>8&nbsp;% à partir de la deuxième mission réalisée.</li></ul>'],
                     ['p' => 'Exemple : une formule à 780 € au taux de 8 % donne une commission de 62 €. Sur la première mission, la commission est de 0 €.'],
-                    ['p' => 'La commission rémunère le service d\'intermédiation et d\'outillage. Elle n\'est pas un salaire ni une retenue à la source pour le compte du Prestataire. Elle n\'est due qu\'après confirmation de la mission par le Client, dans les conditions de l\'article 6.'],
+                    ['p' => 'Le Client paie le Prestataire hors Plateforme. La commission est due uniquement par le Prestataire à EDITIONS TESSERACT. Elle rémunère le service d\'intermédiation et d\'outillage. Elle n\'est pas un salaire ni une retenue à la source pour le compte du Prestataire. Elle n\'est due qu\'après confirmation de la mission par le Client, dans les conditions de l\'article 6.'],
                     ['p' => 'Des conditions particulières peuvent être accordées à certains Prestataires. Elles leur sont indiquées dans leur espace et, le cas échéant, par la mention « Membre fondateur » sur leur profil.'],
                 ],
             ],
             [
                 'title' => '6. Confirmation, avis et facture de commission',
                 'blocks' => [
-                    ['p' => 'Lorsque le travail est terminé, le Client confirme sur la Plateforme que la mission est finalisée. Cette confirmation s\'accompagne obligatoirement d\'un avis : le Client note au moins la qualité de la prestation, l\'efficacité et la satisfaction globale, et peut laisser un commentaire.'],
-                    ['p' => 'C\'est à ce moment que EDITIONS TESSERACT facture le Prestataire pour la commission due (0 € sur la première mission, 8 % ensuite). La facture est émise au Prestataire qui a réalisé la mission, pas au Client.'],
-                    ['p' => 'Le Prestataire facture de son côté le Client pour le prix de la mission. Chaque Utilisateur est seul responsable de ses mentions légales de facture, de sa TVA et de ses obligations comptables.'],
+                    ['p' => 'Le suivi impose des jalons successifs. Selon le devis : envoi et acceptation du devis ; le cas échéant, facture d\'acompte, déclaration de règlement par le Client, accusé de réception par le Prestataire ; livraison ; le cas échéant, facture de solde et déclaration de règlement ; puis confirmation et avis du Client.'],
+                    ['p' => 'Lorsque le travail est terminé et que les jalons de règlement convenus sont déclarés, le Client confirme sur la Plateforme que la mission est finalisée. Cette confirmation s\'accompagne obligatoirement d\'un avis : le Client note au moins la qualité de la prestation, l\'efficacité et la satisfaction globale, et peut laisser un commentaire.'],
+                    ['p' => 'C\'est à ce moment que EDITIONS TESSERACT facture le Prestataire pour la commission due (0 € sur la première mission, 8 % ensuite). La facture est émise au Prestataire qui a réalisé la mission, pas au Client. Elle constitue le dernier jalon du Prestataire.'],
+                    ['p' => 'Le Prestataire facture de son côté le Client pour le prix de la mission. Chaque Utilisateur est seul responsable de ses mentions légales de facture, de sa TVA et de ses obligations comptables. Les déclarations de règlement sur la Plateforme valent engagement sur l\'honneur ; elles ne prouvent pas à elles seules l\'encaissement effectif des fonds.'],
                     ['p' => 'L\'absence de réponse du Client après relance peut, lorsque le suivi l\'indique, valoir validation de la livraison. L\'avis reste alors à déposer ; la facture de commission peut être émise dès cette validation.'],
                 ],
             ],
             [
-                'title' => '7. Paiement de la commission et suspension des offres',
+                'title' => '7. Règlement hors Plateforme et paiement de la commission',
                 'blocks' => [
-                    ['p' => 'La facture de commission est payable par le Prestataire sous 15 jours à compter de son émission, sauf délai différent indiqué sur la facture.'],
+                    ['p' => 'EDITIONS TESSERACT n\'encaisse pas le prix de la mission et n\'est pas prestataire de paiement. Le Client et le Prestataire se règlent directement, par le moyen qu\'ils conviennent (virement SEPA, chèque, facturation entreprise à 30 jours, notamment). Aucune donnée de carte bancaire n\'est collectée par la Plateforme.'],
+                    ['p' => 'Chaque jalon de règlement (facture envoyée, acompte ou solde déclaré payé, accusé de réception) doit être confirmé dans le suivi. Ces confirmations n\'emportent aucun transfert d\'argent via la Plateforme.'],
+                    ['p' => 'La facture de commission est payable par le Prestataire sous 15 jours à compter de son émission, sauf délai différent indiqué sur la facture. Le Prestataire déclare ensuite le règlement dans le suivi ; EDITIONS TESSERACT confirme la réception.'],
                     ['p' => 'Tant que cette facture n\'est pas réglée à l\'échéance, le Prestataire ne peut plus proposer de prestation sur la Plateforme : ses fiches ne sont plus visibles dans l\'annuaire et il ne peut pas en publier de nouvelles. Le déblocage est automatique dès le paiement.'],
-                    ['p' => 'Lorsque le circuit de paiement de la Plateforme est ouvert, les moyens suivants sont prévus pour les règlements entre Client et Prestataire, indépendamment de la commission :'],
-                    ['html' => '<ul><li>carte bancaire (Visa, Mastercard) ;</li><li>virement SEPA, notamment pour les commandes au-delà de 1&nbsp;000&nbsp;€ ;</li><li>facturation entreprise : bon de commande et paiement à 30 jours, pour les éditeurs et institutions.</li></ul>'],
-                    ['p' => 'Les données de paiement carte, lorsqu\'elles seront collectées, seront traitées par un prestataire de paiement agréé. EDITIONS TESSERACT n\'a pas vocation à stocker les numéros de carte complets.'],
-                    ['p' => 'En cas de signalement de litige depuis le suivi de commande, le versement du prix de la mission et l\'émission de la commission peuvent être suspendus le temps de l\'examen.'],
+                    ['p' => 'En cas de signalement de litige depuis le suivi de commande, les jalons sont suspendus le temps de l\'examen. EDITIONS TESSERACT ne retient aucun fonds : elle ne peut interrompre qu\'un jalon de suivi, pas un virement déjà effectué entre les parties. L\'émission de la facture de commission peut être différée jusqu\'à la clôture du litige.'],
                 ],
             ],
             [
                 'title' => '8. Exécution, délais et validation',
                 'blocks' => [
-                    ['p' => 'Le Prestataire exécute la mission conformément au brief, au devis et au contrat type. Les échanges et les fichiers passent par la messagerie et le suivi de commande lorsque ces outils sont disponibles.'],
+                    ['p' => 'Le Prestataire exécute la mission conformément au brief et au devis accepté. Les échanges, les fichiers et les confirmations de jalons passent par la messagerie et le suivi de commande.'],
                     ['p' => 'Le Client dispose, sauf délai différent convenu, d\'un temps raisonnable pour valider le livrable ou demander les allers-retours inclus. La validation emporte confirmation de la mission et dépôt de l\'avis prévu à l\'article 6. L\'absence de réponse dans le délai indiqué sur le suivi peut valoir validation, après relance.'],
                     ['p' => 'Un retard prévisible doit être signalé dès qu\'il est connu. Un supplément de prix n\'est dû que s\'il a été accepté par écrit avant le travail supplémentaire.'],
                 ],
@@ -337,14 +338,14 @@ final class LegalPages
             [
                 'title' => '11. Confidentialité des manuscrits',
                 'blocks' => [
-                    ['p' => 'Le Prestataire s\'interdit de divulguer, reproduire ou réutiliser un manuscrit, un brief ou un fichier hors de la mission, y compris dans son portfolio, sans autorisation écrite. Un NDA peut être signé avant toute transmission. Cette obligation survit à la fin de la mission.'],
+                    ['p' => 'Le Prestataire s\'interdit de divulguer, reproduire ou réutiliser un manuscrit, un brief ou un fichier hors de la mission, y compris dans son portfolio, sans autorisation écrite. Cette obligation survit à la fin de la mission. Les parties restent libres de conclure entre elles un accord de confidentialité : la Plateforme n\'en fournit pas.'],
                 ],
             ],
             [
                 'title' => '12. Litiges entre Client et Prestataire',
                 'blocks' => [
                     ['p' => 'En cas d\'écart au brief :'],
-                    ['html' => '<ol><li>signalement depuis le suivi de commande ; le versement peut être suspendu ;</li><li>72 heures d\'échange encadré dans la messagerie, avec un modérateur en lecture si nécessaire ;</li><li>à défaut d\'accord, médiation interne : proposition de remboursement total, partiel ou de versement ;</li><li>chaque partie reste libre de saisir un médiateur de la consommation (si le Client est consommateur) ou la juridiction compétente.</li></ol>'],
+                    ['html' => '<ol><li>signalement depuis le suivi de commande ; les jalons sont alors en pause ;</li><li>72 heures d\'échange encadré dans la messagerie, avec un modérateur en lecture si nécessaire ;</li><li>à défaut d\'accord, médiation interne : proposition d\'accord sur les sommes déjà versées ou encore dues entre les parties, et sur la commission le cas échéant ;</li><li>chaque partie reste libre de saisir un médiateur de la consommation (si le Client est consommateur) ou la juridiction compétente.</li></ol>'],
                     ['html' => '<p>Contact médiation : <a href="mailto:mediation@acteursdulivre.fr">mediation@acteursdulivre.fr</a>.</p>'],
                 ],
             ],
@@ -393,14 +394,14 @@ final class LegalPages
                 'title' => '2. Données collectées',
                 'blocks' => [
                     ['p' => 'Selon l\'usage de la Plateforme, nous pouvons traiter :'],
-                    ['html' => '<ul><li><strong>Compte</strong> : prénom, nom, e-mail, mot de passe (stocké sous forme hachée, facultatif si le compte est ouvert via Google ou Facebook), identifiants techniques de connexion sociale le cas échéant, photo de profil transmise par le prestataire d\'identité, rôle (client, prestataire, administrateur), statut, dates de création et de dernière connexion.</li><li><strong>Profil / vitrine</strong> : intitulé, présentation, ville, disponibilité (mode disponible / occupé et précision éventuelle), niveau, métiers, réalisations, pièces éventuellement transmises pour vérification (justificatif d\'activité, référence).</li><li><strong>Missions et commandes</strong> : briefs, volumes, budgets, fichiers échangés, devis, contrats, jalons, avis (qualité, efficacité, satisfaction globale).</li><li><strong>Acceptations légales</strong> : date, version et contexte d\'acceptation des CGU, CGV et de la politique de confidentialité.</li><li><strong>Messagerie et notifications</strong> : contenu des messages et métadonnées nécessaires à l\'acheminement.</li><li><strong>Contact et newsletter</strong> : nom, e-mail, message, motif le cas échéant.</li><li><strong>Facturation</strong> : factures de commission émises au Prestataire, échéances, statuts de paiement, IBAN partiellement masqué à l\'affichage.</li><li><strong>Traces techniques</strong> : identifiant de session, jeton CSRF, adresse IP et journaux serveur conservés par l\'hébergeur pour la sécurité, dans une durée limitée.</li></ul>'],
+                    ['html' => '<ul><li><strong>Compte</strong> : prénom, nom, e-mail, mot de passe (stocké sous forme hachée, facultatif si le compte est ouvert via Google ou Facebook), identifiants techniques de connexion sociale le cas échéant, photo de profil transmise par le prestataire d\'identité, rôle (client, prestataire, administrateur), statut, dates de création et de dernière connexion.</li><li><strong>Profil / vitrine</strong> : intitulé, présentation, ville, disponibilité (mode disponible / occupé et précision éventuelle), niveau, métiers, réalisations, pièces éventuellement transmises pour vérification (justificatif d\'activité, référence).</li><li><strong>Missions et commandes</strong> : briefs, volumes, budgets, fichiers échangés, devis, jalons (statuts, notes, pièces jointes, déclarations de règlement), avis (qualité, efficacité, satisfaction globale).</li><li><strong>Acceptations légales</strong> : date, version et contexte d\'acceptation des CGU, CGV et de la politique de confidentialité.</li><li><strong>Messagerie et notifications</strong> : contenu des messages et métadonnées nécessaires à l\'acheminement. Un IBAN ou une référence de virement peut y figurer s\'il est saisi par une partie ; la Plateforme ne l\'utilise pas pour encaisser le prix de la mission.</li><li><strong>Contact et newsletter</strong> : nom, e-mail, message, motif le cas échéant.</li><li><strong>Facturation</strong> : factures de commission émises au Prestataire, échéances, statuts de paiement, références de règlement déclarées.</li><li><strong>Traces techniques</strong> : identifiant de session, jeton CSRF, adresse IP et journaux serveur conservés par l\'hébergeur pour la sécurité, dans une durée limitée.</li></ul>'],
                     ['p' => 'Les champs indispensables à l\'inscription sont l\'e-mail, le prénom et le nom, ainsi qu\'un mot de passe ou une connexion Google / Facebook. Les autres données sont fournies pour utiliser les fonctions correspondantes.'],
                 ],
             ],
             [
                 'title' => '3. Finalités et bases légales',
                 'blocks' => [
-                    ['html' => '<ul><li><strong>Fournir le compte et la Plateforme</strong> — exécution du contrat (CGU).</li><li><strong>Mise en relation, missions, messagerie, facturation de commission</strong> — exécution du contrat (CGU / CGV).</li><li><strong>Vérification des profils, modération, lutte contre la fraude</strong> — intérêt légitime et, le cas échéant, obligation légale.</li><li><strong>Répondre aux messages de contact</strong> — intérêt légitime ou mesures précontractuelles.</li><li><strong>Lettre d\'information mensuelle</strong> — consentement (désinscription en un clic).</li><li><strong>Obligations comptables et fiscales</strong> — obligation légale.</li><li><strong>Amélioration de la sécurité</strong> — intérêt légitime.</li></ul>'],
+                    ['html' => '<ul><li><strong>Fournir le compte et la Plateforme</strong> — exécution du contrat (CGU).</li><li><strong>Mise en relation, missions, messagerie, suivi à jalons, facturation de commission</strong> — exécution du contrat (CGU / CGV).</li><li><strong>Vérification des profils, modération, lutte contre la fraude</strong> — intérêt légitime et, le cas échéant, obligation légale.</li><li><strong>Répondre aux messages de contact</strong> — intérêt légitime ou mesures précontractuelles.</li><li><strong>Lettre d\'information mensuelle</strong> — consentement (désinscription en un clic).</li><li><strong>Obligations comptables et fiscales</strong> — obligation légale.</li><li><strong>Amélioration de la sécurité</strong> — intérêt légitime.</li></ul>'],
                     ['p' => 'Aucun profilage publicitaire n\'est réalisé. Aucun manuscrit n\'est utilisé pour entraîner un modèle d\'intelligence artificielle.'],
                 ],
             ],
@@ -408,7 +409,8 @@ final class LegalPages
                 'title' => '4. Destinataires',
                 'blocks' => [
                     ['p' => 'Les données sont accessibles aux personnes habilitées de EDITIONS TESSERACT (administration, modération, médiation, support).'],
-                    ['p' => 'Selon le contexte, elles sont également visibles : du Prestataire ou du Client cocontractant (profil public, messages, fichiers de mission) ; de l\'hébergeur Infomaniak Network SA (Suisse) ; du prestataire d\'envoi d\'e-mails lorsque le SMTP est configuré ; d\'un prestataire de paiement agréé lorsque les règlements en ligne seront ouverts ; de Google Ireland Limited ou Meta Platforms Ireland Limited lorsque vous choisissez de vous connecter via ces services (ils reçoivent alors la confirmation de votre choix et nous transmettent l\'e-mail, le nom et, le cas échéant, la photo de profil).'],
+                    ['p' => 'Selon le contexte, elles sont également visibles : du Prestataire ou du Client cocontractant (profil public, messages, fichiers de mission, jalons) ; de l\'hébergeur Infomaniak Network SA (Suisse) ; du prestataire d\'envoi d\'e-mails lorsque le SMTP est configuré ; de Google Ireland Limited ou Meta Platforms Ireland Limited lorsque vous choisissez de vous connecter via ces services (ils reçoivent alors la confirmation de votre choix et nous transmettent l\'e-mail, le nom et, le cas échéant, la photo de profil).'],
+                    ['p' => 'Aucun prestataire de paiement n\'est aujourd\'hui destinataire de données : la Plateforme n\'encaisse ni le prix des missions ni, à ce jour, la commission par un terminal de paiement en ligne.'],
                     ['p' => 'Les profils publics (vitrine, formules, avis) sont visibles par les visiteurs du site. Les manuscrits et pièces de mission ne sont pas publiés dans l\'annuaire.'],
                     ['p' => 'Aucune vente de fichiers n\'est pratiquée. Une autorité (CNIL, justice) peut être destinataire sur réquisition.'],
                 ],
@@ -463,7 +465,7 @@ final class LegalPages
                 'title' => '1. Ce que nous utilisons aujourd\'hui',
                 'blocks' => [
                     ['p' => 'La Plateforme n\'utilise pas, à ce jour, de cookies publicitaires, de mesure d\'audience tierce ni de bandeau de consentement : seuls des cookies et stockages strictement nécessaires au fonctionnement sont déposés.'],
-                    ['p' => 'Si des traceurs non essentiels étaient ajoutés plus tard (statistiques, lecture vidéo tierce, paiement embarqué), un recueil de consentement serait mis en place avant leur dépôt, hors cookies indispensables.'],
+                    ['p' => 'Si des traceurs non essentiels étaient ajoutés plus tard (statistiques, lecture vidéo tierce), un recueil de consentement serait mis en place avant leur dépôt, hors cookies indispensables.'],
                 ],
             ],
             [

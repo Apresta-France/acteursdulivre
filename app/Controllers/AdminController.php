@@ -571,6 +571,7 @@ final class AdminController
     public function ssoSave(Request $request): void
     {
         Auth::requireAdmin();
+        Setting::set('oauth_enabled', $request->bool('oauth_enabled') ? '1' : '0');
         foreach (['google_client_id', 'google_client_secret', 'facebook_app_id', 'facebook_app_secret'] as $key) {
             Setting::set($key, $request->string($key, ''));
         }

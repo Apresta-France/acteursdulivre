@@ -52,7 +52,7 @@
   <?php if (!empty($isAccueil)): ?>
   <link rel="preload" as="image" href="<?= e(photo(0)) ?>">
   <?php endif; ?>
-  <link rel="stylesheet" href="<?= e(asset('css/app.css')) ?>?v=m39">
+  <link rel="stylesheet" href="<?= e(asset('css/app.css')) ?>?v=m43">
   <link rel="icon" href="<?= e(asset('img/favicon.ico')) ?>?v=3" sizes="any">
   <link rel="icon" type="image/png" href="<?= e(asset('img/favicon-32x32.png')) ?>?v=3" sizes="32x32">
   <link rel="apple-touch-icon" href="<?= e(asset('img/apple-touch-icon.png')) ?>?v=3">
@@ -177,21 +177,21 @@
         </div>
       </header>
 
-      <div class="rail">
-        <?php foreach ($rail ?? [] as $r): ?>
-          <?php
-            $railOn = ($trade ?? '') !== '' && ($r['name'] ?? '') === $trade;
-            $railStyle = $railOn
-                ? 'padding: 16px 0; font-size: 14px; cursor: pointer; white-space: nowrap; color: #15212f; font-weight: 500; box-shadow: inset 0 -2px 0 #D85D3F;'
-                : (string) ($r['style'] ?? '');
-          ?>
-          <a href="<?= e(url($r['href'] ?? '/recherche')) ?>" style="<?= e($railStyle) ?>"><?= e($r['name'] ?? '') ?></a>
-        <?php endforeach; ?>
-        <div class="rail-spacer"></div>
-        <button type="button" class="mega-btn" data-mega-toggle style="<?= e($megaBtnStyle ?? '') ?>">Tous les métiers ▾</button>
+      <div class="rail" data-rail>
+        <div class="rail-list" data-rail-list>
+          <?php foreach ($rail ?? [] as $r): ?>
+            <?php $railOn = ($trade ?? '') !== '' && ($r['name'] ?? '') === $trade; ?>
+            <a href="<?= e(url($r['href'] ?? '/recherche')) ?>"<?= $railOn ? ' class="is-active"' : '' ?>><?= e($r['name'] ?? '') ?></a>
+          <?php endforeach; ?>
+        </div>
+        <button type="button" class="mega-btn" data-mega-toggle aria-expanded="false" aria-controls="header-mega">
+          <span class="mega-btn-full">Tous les métiers</span>
+          <span class="mega-btn-short">Métiers</span>
+          ▾
+        </button>
       </div>
 
-      <div class="mega" hidden>
+      <div class="mega" id="header-mega" hidden>
         <?php foreach ($mega ?? [] as $m): ?>
           <div>
             <div class="mega-group"><?= e($m['group']) ?></div>
@@ -233,7 +233,7 @@
         <div class="footer-news">
           <div>
             <div class="footer-news-title">Le point sur les métiers du livre, une fois par mois</div>
-            <div>Tarifs observés, nouveaux prestataires, contrats types. Pas de publicité, désinscription en un clic.</div>
+            <div>Tarifs observés, nouveaux prestataires, suivi des missions. Pas de publicité, désinscription en un clic.</div>
           </div>
           <form class="footer-news-form" action="<?= e(url('/newsletter')) ?>" method="post">
             <?= csrf_field() ?>
@@ -301,6 +301,6 @@
       </footer>
     </div>
   </div>
-  <script src="<?= e(asset('js/app.js')) ?>?v=m30"></script>
+  <script src="<?= e(asset('js/app.js')) ?>?v=m31"></script>
 </body>
 </html>

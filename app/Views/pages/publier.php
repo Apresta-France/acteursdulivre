@@ -110,7 +110,7 @@ $briefHint = \Adl\Data\Catalog::briefHint($selected);
       </div>
       <div class="side-card side-card-warm">
         <div class="side-title-sm">Ce qui se passe ensuite</div>
-        <p>Votre recherche est visible par les prestataires du métier choisi. Vous recevez en moyenne trois devis en 48 heures. Le paiement n'intervient qu'après accord — il n'est pas demandé ici.</p>
+        <p>Votre recherche est visible par les prestataires du métier choisi. Vous recevez en moyenne trois devis en 48 heures. Quand vous retenez une proposition, un suivi à jalons s’ouvre : le règlement se fait entre vous, hors plateforme.</p>
       </div>
     </aside>
   </div>

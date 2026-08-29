@@ -6,7 +6,7 @@ $criteria = $criteria ?? \Adl\Models\Review::CRITERIA;
   <div class="espace-page-head">
     <div>
       <h1>Valider et noter</h1>
-      <p>Lorsque la mission est terminée, confirmez-la et notez la qualité, l'efficacité et la satisfaction globale. C'est à ce moment que la commission prestataire est facturée.</p>
+      <p>Lorsque vous avez confirmé le règlement du solde dans le suivi, validez la mission et notez la qualité, l’efficacité et la satisfaction. C’est ce jalon qui déclenche la facture de commission du prestataire.</p>
     </div>
   </div>
 
@@ -20,7 +20,7 @@ $criteria = $criteria ?? \Adl\Models\Review::CRITERIA;
   <?php if ($pending === []): ?>
     <div class="search-empty">
       <strong>Aucune mission à valider pour le moment.</strong>
-      <span>Dès qu'une commande sera livrée, vous pourrez confirmer la fin de mission et laisser votre avis ici.</span>
+      <span>Dès que le solde sera déclaré réglé dans le suivi, vous pourrez confirmer la fin de mission et laisser votre avis ici.</span>
       <a class="btn-ghost" href="<?= e(url('/espace/commandes')) ?>">Voir mes commandes</a>
     </div>
   <?php else: ?>

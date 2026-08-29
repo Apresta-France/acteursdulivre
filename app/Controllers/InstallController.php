@@ -56,6 +56,7 @@ final class InstallController
             'MAIL_FROM_ADDRESS' => $request->string('MAIL_FROM_ADDRESS', 'bonjour@acteursdulivre.fr'),
             'MAIL_FROM_NAME' => $request->string('MAIL_FROM_NAME', 'Acteurs du Livre'),
             'SESSION_NAME' => 'adl_session',
+            'OAUTH_ENABLED' => 'false',
             'GOOGLE_CLIENT_ID' => '',
             'GOOGLE_CLIENT_SECRET' => '',
             'FACEBOOK_APP_ID' => '',

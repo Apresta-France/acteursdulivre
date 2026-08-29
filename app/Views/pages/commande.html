@@ -11,7 +11,7 @@
         <div style="display: grid; grid-template-columns: 1fr 400px; gap: 40px; align-items: start;">
           <div>
             <h1 style="font-family: 'Space Grotesk', sans-serif; font-size: 30px; font-weight: 700; color: #022746; margin: 0 0 8px;">Finaliser la commande</h1>
-            <p style="font-size: 15px; color: #66768A; margin: 0 0 28px;">Marion a 24 h pour accepter. Rien n'est débité avant son accord.</p>
+            <p style="font-size: 15px; color: #66768A; margin: 0 0 28px;">Aucun paiement n'est encaissé ici. Le prestataire envoie le devis ; vous vous réglez hors plateforme, jalon par jalon.</p>
 
             <div style="display: flex; flex-direction: column; gap: 20px; max-width: 700px;">
               <div>
@@ -25,7 +25,7 @@
                 <textarea placeholder="Niveau d'intervention souhaité, points de vigilance, calendrier…" style="width: 100%; box-sizing: border-box; height: 110px; border: 1px solid #E1E7ED; border-radius: 9px; padding: 13px 14px; font-size: 15px; outline: none; resize: none; line-height: 1.6;"></textarea>
               </div>
               <div>
-                <label style="display: block; font-size: 14px; font-weight: 500; color: #022746; margin-bottom: 10px;">Moyen de paiement</label>
+                <label style="display: block; font-size: 14px; font-weight: 500; color: #022746; margin-bottom: 10px;">Comment ça se règle</label>
                 <div style="display: flex; flex-direction: column; gap: 10px;">
                   <sc-for list="{{ paiements }}" as="p" hint-placeholder-count="3">
                     <div sc-camel-on-click="{{ p.onClick }}" style="{{ p.row }}">
@@ -40,7 +40,7 @@
               </div>
               <label style="display: flex; gap: 10px; align-items: flex-start; font-size: 14px; color: #4A5A6B; line-height: 1.55;">
                 <span style="width: 15px; height: 15px; min-width: 15px; border: 1.5px solid #C3CEDA; border-radius: 3px; margin-top: 2px; display: block;"></span>
-                J'accepte les conditions de la plateforme et la cession de droits telle que définie dans le contrat type joint à cette commande.
+                J'accepte les CGV. L'acceptation du devis dans le suivi vaudra accord entre nous. Aucun paiement n'est encaissé ici.
               </label>
             </div>
           </div>
@@ -64,11 +64,11 @@
               <div style="display: flex; justify-content: space-between;"><span style="color: #8496A8;">Frais de service</span><span style="color: #14202C;">inclus</span></div>
             </div>
             <div style="display: flex; justify-content: space-between; align-items: baseline; padding-top: 16px;">
-              <span style="font-size: 15px; color: #022746;">Total à régler</span>
+              <span style="font-size: 15px; color: #022746;">Montant du devis</span>
               <span style="font-family: 'Space Grotesk', sans-serif; font-size: 30px; font-weight: 700; color: #022746;">{{ total }} €</span>
             </div>
             <button style="background: #D85D3F; color: #FFF; border: 0; width: 100%; height: 50px; border-radius: 9px; font-size: 16px; font-weight: 500; margin-top: 16px;" style-hover="background: #c04e33;">Confirmer la commande</button>
-            <div style="background: #F7F9FC; border-radius: 10px; padding: 14px; margin-top: 16px; font-size: 13px; color: #4A5A6B; line-height: 1.6;">Vous réglez sur facture après validation de la livraison. En cas de désaccord, un médiateur de la plateforme intervient sous 72 h.</div>
+            <div style="background: #F7F9FC; border-radius: 10px; padding: 14px; margin-top: 16px; font-size: 13px; color: #4A5A6B; line-height: 1.6;">Aucun paiement n'est encaissé ici. Vous vous réglez hors plateforme, jalon par jalon. En cas de désaccord, un médiateur intervient sous 72 h.</div>
           </div>
         </div>
       </div>

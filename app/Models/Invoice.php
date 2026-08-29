@@ -196,7 +196,11 @@ final class Invoice
             'UPDATE invoices SET status = "paid", paid_at = NOW() WHERE id = ? AND status IN ("issued", "overdue")',
             [$id]
         );
-        return self::find($id);
+        $invoice = self::find($id);
+        if ($invoice) {
+            OrderMilestone::closeAfterCommissionPaid($invoice);
+        }
+        return $invoice;
     }
 
     public static function nextNumber(): string

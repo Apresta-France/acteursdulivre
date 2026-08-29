@@ -73,6 +73,8 @@ return static function (Router $router): void {
     $router->get('/espace/suivi/{id}', [AccountController::class, 'suiviShow']);
     $router->post('/espace/suivi/{id}/accepter', [AccountController::class, 'suiviAccept']);
     $router->post('/espace/suivi/{id}/livrer', [AccountController::class, 'suiviDeliver']);
+    $router->post('/espace/suivi/{id}/jalon', [AccountController::class, 'suiviJalon']);
+    $router->post('/espace/suivi/{id}/devis/refuser', [AccountController::class, 'suiviRefuseQuote']);
     $router->post('/espace/suivi/{id}/litige', [AccountController::class, 'suiviDispute']);
     $router->get('/espace/commandes', [AccountController::class, 'commandes']);
     $router->get('/espace/missions', [AccountController::class, 'missions']);

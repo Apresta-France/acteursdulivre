@@ -17,6 +17,7 @@ use Adl\Models\Invoice;
 use Adl\Models\Mission;
 use Adl\Models\Notification;
 use Adl\Models\Order;
+use Adl\Models\OrderMilestone;
 use Adl\Models\PortfolioItem;
 use Adl\Models\Profile;
 use Adl\Models\Review;
@@ -81,6 +82,7 @@ final class AccountController
             'billingBlock' => $billing['block'],
             'billingWarning' => $billing['warning'],
             'isFounder' => User::isFounder($user),
+            'jalonTodos' => self::jalonTodos((int) $user['id']),
         ]);
     }
 
@@ -410,7 +412,7 @@ final class AccountController
             redirect('/espace/commande?prestation=' . rawurlencode((string) $service['slug']));
         }
 
-        flash('saved', 'Commande ouverte. Le prestataire a été prévenu : le règlement de la commission interviendra à la validation de la mission.');
+        flash('saved', 'Commande ouverte. Le prestataire envoie le devis, vous suivez les jalons ici : le règlement se fait entre vous, hors de la plateforme.');
         redirect('/espace/suivi/' . (int) $order['id']);
     }
 
@@ -452,6 +454,8 @@ final class AccountController
         View::page('suivi-detail', [
             'title' => 'Suivi ' . $order['num'],
             'order' => $order,
+            'milestones' => $order['milestones'] ?? [],
+            'action' => OrderMilestone::actionFor($order, (int) $user['id']),
             'isBuyer' => (int) $order['buyer_id'] === (int) $user['id'],
             'isSeller' => (int) $order['seller_id'] === (int) $user['id'],
             'threadHref' => $thread['href'] ?? '/espace/messages',
@@ -462,13 +466,7 @@ final class AccountController
 
     public function suiviAccept(Request $request, string $id): void
     {
-        $user = Auth::requireUser();
-        try {
-            Order::acceptBySeller((int) $id, (int) $user['id']);
-            flash('saved', 'Commande acceptée. Vous pouvez maintenant livrer.');
-        } catch (\Throwable $e) {
-            flash('error', $e->getMessage());
-        }
+        flash('error', 'Le démarrage passe par l’envoi et l’acceptation du devis, dans le suivi de commande.');
         redirect('/espace/suivi/' . (int) $id);
     }
 
@@ -476,8 +474,42 @@ final class AccountController
     {
         $user = Auth::requireUser();
         try {
-            Order::deliverBySeller((int) $id, (int) $user['id']);
-            flash('saved', 'Livraison signalée. Le porteur de projet peut maintenant valider et noter.');
+            OrderMilestone::complete((int) $id, (int) $user['id'], 'deliver');
+            flash('saved', OrderMilestone::flashFor('deliver'));
+        } catch (\Throwable $e) {
+            flash('error', $e->getMessage());
+        }
+        redirect('/espace/suivi/' . (int) $id);
+    }
+
+    public function suiviJalon(Request $request, string $id): void
+    {
+        $user = Auth::requireUser();
+        $code = $request->string('code');
+        try {
+            $file = self::storeMilestoneFile($request, (int) $id, $code);
+            OrderMilestone::complete((int) $id, (int) $user['id'], $code, [
+                'amount' => self::money($request->string('amount')),
+                'deposit_amount' => self::money($request->string('deposit_amount')),
+                'delay' => $request->string('delay'),
+                'note' => $request->string('note'),
+                'file_name' => $file['name'] ?? null,
+                'file_path' => $file['path'] ?? null,
+            ]);
+            self::pingJalonThread((int) $id, (int) $user['id'], $code);
+            flash('saved', OrderMilestone::flashFor($code));
+        } catch (\Throwable $e) {
+            flash('error', $e->getMessage());
+        }
+        redirect('/espace/suivi/' . (int) $id);
+    }
+
+    public function suiviRefuseQuote(Request $request, string $id): void
+    {
+        $user = Auth::requireUser();
+        try {
+            OrderMilestone::refuseQuote((int) $id, (int) $user['id']);
+            flash('saved', 'Devis refusé. La commande est clôturée. Vous pouvez en ouvrir une autre ou écrire au prestataire.');
         } catch (\Throwable $e) {
             flash('error', $e->getMessage());
         }
@@ -1044,7 +1076,7 @@ final class AccountController
             flash('error', $e->getMessage());
             redirect('/espace/avis');
         }
-        flash('saved', 'Mission validée. Merci pour votre avis : la commission prestataire peut maintenant être facturée.');
+        flash('saved', 'Mission validée. Merci pour votre avis : la facture de commission est le dernier jalon du prestataire.');
         redirect('/espace/avis');
     }
 
@@ -1321,6 +1353,63 @@ final class AccountController
             ];
         } catch (\Throwable) {
             return ['block' => null, 'warning' => null];
+        }
+    }
+
+    /** @return list<array<string, mixed>> */
+    private static function jalonTodos(int $userId): array
+    {
+        try {
+            return OrderMilestone::dueActions($userId);
+        } catch (\Throwable) {
+            return [];
+        }
+    }
+
+    /** @return array{name: ?string, path: ?string} */
+    private static function storeMilestoneFile(Request $request, int $orderId, string $code): array
+    {
+        $file = $request->file('document');
+        if (($file['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
+            return ['name' => null, 'path' => null];
+        }
+        $ext = ['pdf', 'jpg', 'jpeg', 'png', 'webp', 'doc', 'docx', 'odt'];
+        $stored = store_upload($file, 'orders/' . $orderId, $ext, 8 * 1024 * 1024);
+        if ($stored === null) {
+            return ['name' => null, 'path' => null];
+        }
+        return [
+            'name' => (string) ($file['name'] ?? 'Document'),
+            'path' => $stored,
+        ];
+    }
+
+    private static function pingJalonThread(int $orderId, int $userId, string $code): void
+    {
+        $order = Order::findForUser($orderId, $userId);
+        if (!$order) {
+            return;
+        }
+        $messages = [
+            'quote' => 'Devis envoyé dans le suivi de commande.',
+            'quote_accept' => 'Devis accepté. Nous continuons les jalons dans le suivi.',
+            'deposit_invoice' => 'Facture d’acompte déposée dans le suivi de commande.',
+            'deposit_paid' => 'J’ai réglé l’acompte hors plateforme : je le confirme dans le suivi.',
+            'deposit_ack' => 'Acompte bien reçu, je démarre la mission.',
+            'deliver' => 'Prestation livrée : voir le suivi de commande.',
+            'final_invoice' => 'Facture de solde déposée dans le suivi de commande.',
+            'final_paid' => 'J’ai réglé le solde hors plateforme : je le confirme dans le suivi.',
+        ];
+        $body = $messages[$code] ?? null;
+        if ($body === null) {
+            return;
+        }
+        try {
+            $thread = Conversation::open((int) $order['buyer_id'], (int) $order['seller_id'], [
+                'order_id' => $orderId,
+            ]);
+            Conversation::send((int) $thread['id'], $userId, $body);
+        } catch (\Throwable) {
         }
     }
 

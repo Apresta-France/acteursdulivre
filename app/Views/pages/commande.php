@@ -7,7 +7,7 @@ $old = is_array($old ?? null) ? $old : [];
   <div class="espace-page-head">
     <div>
       <h1>Confirmer la commande</h1>
-      <p>Aucun paiement en ligne pour le moment. Vous ouvrez la mission : la commission prestataire sera facturée à la validation.</p>
+      <p>Aucun paiement n’est encaissé ici. Vous ouvrez un suivi à jalons (devis, factures, règlements déclarés, validation). La commission prestataire est le dernier jalon, après votre validation.</p>
     </div>
   </div>
 

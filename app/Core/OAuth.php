@@ -11,8 +11,23 @@ final class OAuth
 {
     public const PROVIDERS = ['google', 'facebook'];
 
+    public static function featureEnabled(): bool
+    {
+        try {
+            $fromDb = Setting::get('oauth_enabled');
+            if (is_string($fromDb) && $fromDb !== '') {
+                return in_array(strtolower($fromDb), ['1', 'true', 'yes', 'on'], true);
+            }
+        } catch (\Throwable) {
+        }
+        return Env::bool('OAUTH_ENABLED', false);
+    }
+
     public static function enabled(string $provider): bool
     {
+        if (!self::featureEnabled()) {
+            return false;
+        }
         $cfg = self::config($provider);
         return $cfg !== null && $cfg['client_id'] !== '' && $cfg['client_secret'] !== '';
     }

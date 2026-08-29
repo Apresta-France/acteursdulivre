@@ -115,7 +115,7 @@ final class Sitemap
      */
     private static function staticPages(): array
     {
-        $legalMod = '2026-08-28';
+        $legalMod = '2026-08-29';
         $pages = [
             ['path' => '/', 'priority' => '1.0'],
             ['path' => '/recherche', 'priority' => '0.8'],

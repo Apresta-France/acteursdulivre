@@ -57,7 +57,7 @@ final class Order
         Notification::create(
             $sellerId,
             'Nouvelle commande ' . $order['num'],
-            'Un porteur de projet a ouvert « ' . $order['title'] . ' ». Acceptez-la pour démarrer.',
+            'Un porteur de projet a ouvert « ' . $order['title'] . ' ». Envoyez le devis pour lancer les jalons.',
             '/espace/suivi/' . (int) $order['id'],
             'order_created',
             'order',
@@ -153,21 +153,48 @@ final class Order
 
     public static function find(int $id): ?array
     {
-        $row = Database::fetch(
-            'SELECT o.*,
-                    s.title AS service_title,
-                    m.title AS mission_title,
-                    b.first_name AS buyer_first, b.last_name AS buyer_last,
-                    sl.first_name AS seller_first, sl.last_name AS seller_last
-             FROM orders o
-             LEFT JOIN services s ON s.id = o.service_id
-             LEFT JOIN missions m ON m.id = o.mission_id
-             JOIN users b ON b.id = o.buyer_id
-             JOIN users sl ON sl.id = o.seller_id
-             WHERE o.id = ?',
+        $row = self::fetchRow($id);
+        return $row ? OrderMilestone::hydrateOrder(self::present($row)) : null;
+    }
+
+    public static function findBare(int $id): ?array
+    {
+        $row = self::fetchRow($id);
+        return $row ? self::present($row) : null;
+    }
+
+    public static function touchAccepted(int $id): void
+    {
+        Database::query(
+            'UPDATE orders SET accepted_at = COALESCE(accepted_at, NOW()) WHERE id = ?',
             [$id]
         );
-        return $row ? self::present($row) : null;
+    }
+
+    public static function touchInProgress(int $id): void
+    {
+        Database::query(
+            'UPDATE orders SET status = "in_progress", accepted_at = COALESCE(accepted_at, NOW())
+             WHERE id = ? AND status IN ("pending", "in_progress")',
+            [$id]
+        );
+    }
+
+    public static function touchDelivered(int $id): void
+    {
+        Database::query(
+            'UPDATE orders SET status = "delivered", delivered_at = COALESCE(delivered_at, NOW())
+             WHERE id = ? AND status IN ("pending", "in_progress", "delivered")',
+            [$id]
+        );
+    }
+
+    public static function touchPaid(int $id): void
+    {
+        Database::query(
+            'UPDATE orders SET status = "paid" WHERE id = ? AND status IN ("confirmed", "paid")',
+            [$id]
+        );
     }
 
     public static function completedCountForSeller(int $sellerId): int
@@ -199,10 +226,17 @@ final class Order
                AND o.status IN ("delivered", "in_progress")
                AND o.confirmed_at IS NULL
                AND r.id IS NULL
+               AND (
+                    NOT EXISTS (SELECT 1 FROM order_milestones om WHERE om.order_id = o.id)
+                    OR EXISTS (
+                        SELECT 1 FROM order_milestones om
+                        WHERE om.order_id = o.id AND om.code = "validate" AND om.status = "current"
+                    )
+               )
              ORDER BY o.created_at DESC',
             [$buyerId]
         );
-        return array_map([self::class, 'present'], $rows);
+        return OrderMilestone::hydrateMany(array_map([self::class, 'present'], $rows));
     }
 
     /**
@@ -221,6 +255,9 @@ final class Order
         if (!in_array((string) $order['status'], self::COMPLETABLE, true)) {
             throw new \RuntimeException('La mission doit être livrée avant d\'être validée.');
         }
+        if (!OrderMilestone::canValidate($order)) {
+            throw new \RuntimeException('Confirmez d\'abord le règlement du solde dans le suivi de commande.');
+        }
 
         $quality = Review::score($ratings['quality'] ?? 0);
         $efficiency = Review::score($ratings['efficiency'] ?? 0);
@@ -234,7 +271,7 @@ final class Order
 
         $result = Database::transaction(static function () use ($orderId, $buyerId, $ratings, $ip, $order): array {
             Database::query('SELECT id FROM users WHERE id = ? FOR UPDATE', [(int) $order['seller_id']]);
-            $locked = self::find($orderId);
+            $locked = self::findBare($orderId);
             if (!$locked || (int) $locked['buyer_id'] !== $buyerId) {
                 throw new \RuntimeException('Cette commande est introuvable.');
             }
@@ -243,6 +280,9 @@ final class Order
             }
             if (!in_array((string) $locked['status'], self::COMPLETABLE, true)) {
                 throw new \RuntimeException('La mission doit être livrée avant d\'être validée.');
+            }
+            if (!OrderMilestone::canValidate($locked)) {
+                throw new \RuntimeException('Confirmez d\'abord le règlement du solde dans le suivi de commande.');
             }
 
             $quote = Commission::quoteForSeller((int) $locked['seller_id']);
@@ -267,8 +307,10 @@ final class Order
             LegalAcceptance::record($buyerId, 'cgv', 'order_confirm', $ip);
 
             $review = Review::createForOrder($orderId, $buyerId, (int) $locked['seller_id'], $ratings);
-            $fresh = self::find($orderId) ?? $locked;
+            $fresh = self::findBare($orderId) ?? $locked;
             $invoice = Invoice::issueForOrder($fresh);
+            OrderMilestone::closeAfterValidation($fresh, $invoice, $buyerId);
+            $fresh = self::findBare($orderId) ?? $fresh;
 
             return ['order' => $fresh, 'review' => $review, 'invoice' => $invoice];
         });
@@ -358,7 +400,7 @@ final class Order
              ORDER BY o.created_at DESC',
             [$status]
         );
-        return array_map([self::class, 'present'], $rows);
+        return OrderMilestone::hydrateMany(array_map([self::class, 'present'], $rows));
     }
 
     public static function countByStatus(string $status): int
@@ -411,7 +453,7 @@ final class Order
              LIMIT ' . max(1, $limit)
         );
 
-        return array_map([self::class, 'present'], $rows);
+        return OrderMilestone::hydrateMany(array_map([self::class, 'present'], $rows));
     }
 
     /** @return list<array<string, mixed>> */
@@ -438,7 +480,31 @@ final class Order
             [$userId]
         );
 
-        return array_map([self::class, 'present'], $rows);
+        return OrderMilestone::hydrateMany(array_map([self::class, 'present'], $rows));
+    }
+
+    public static function requireActor(int $id, int $userId, ?string $role = null): array
+    {
+        return self::requireParty($id, $userId, $role);
+    }
+
+    /** @return array<string, mixed>|null */
+    private static function fetchRow(int $id): ?array
+    {
+        return Database::fetch(
+            'SELECT o.*,
+                    s.title AS service_title,
+                    m.title AS mission_title,
+                    b.first_name AS buyer_first, b.last_name AS buyer_last,
+                    sl.first_name AS seller_first, sl.last_name AS seller_last
+             FROM orders o
+             LEFT JOIN services s ON s.id = o.service_id
+             LEFT JOIN missions m ON m.id = o.mission_id
+             JOIN users b ON b.id = o.buyer_id
+             JOIN users sl ON sl.id = o.seller_id
+             WHERE o.id = ?',
+            [$id]
+        );
     }
 
     /** @param array<string, mixed> $row */
@@ -453,6 +519,8 @@ final class Order
         $row['parties'] = $row['by'];
         $row['num'] = (string) ($row['number'] ?? '');
         $row['amount_label'] = format_euros((int) ($row['amount'] ?? 0));
+        $row['deposit_amount'] = (int) ($row['deposit_amount'] ?? 0);
+        $row['deposit_label'] = format_euros($row['deposit_amount']);
         $row['status_label'] = self::STATUSES[$status] ?? $status;
         $row['status_tone'] = match ($status) {
             'paid', 'delivered', 'confirmed' => 'green',

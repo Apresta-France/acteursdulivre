@@ -2,9 +2,6 @@
 use Adl\Core\OAuth;
 
 $oauthProviders = OAuth::enabledProviders();
-if ($oauthProviders === [] && \Adl\Core\Env::bool('APP_DEBUG')) {
-    $oauthProviders = OAuth::PROVIDERS;
-}
 if ($oauthProviders === []) {
     return;
 }

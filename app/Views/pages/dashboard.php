@@ -21,6 +21,15 @@ if ($seeks && $offers) {
 }
 
 $todos = [];
+foreach ($jalonTodos ?? [] as $jalon) {
+    $todos[] = [
+        'icon' => (string) ($jalon['icon'] ?? 'clipboard'),
+        'title' => (string) ($jalon['title'] ?? 'Jalon en cours'),
+        'body' => (string) ($jalon['body'] ?? ''),
+        'href' => (string) ($jalon['href'] ?? '/espace/suivi'),
+        'cta' => (string) ($jalon['cta'] ?? 'Ouvrir'),
+    ];
+}
 if ($seeks && $missionCount === 0) {
     $todos[] = [
         'icon' => 'file-plus',
@@ -177,7 +186,7 @@ if ($offers && $profileCompletion < 80) {
         <a class="dash-card" href="<?= e(url('/espace/commandes')) ?>">
           <span class="dash-ico"><?= icon('bag', 20) ?></span>
           <strong>Mes commandes</strong>
-          <span>Prestations achetées, jalons et factures au même endroit.</span>
+          <span>Suivi à jalons : devis, règlements hors plateforme, livraison, validation.</span>
           <span class="dash-card-cta">Ouvrir les commandes <?= icon('arrow', 14) ?></span>
         </a>
       </div>

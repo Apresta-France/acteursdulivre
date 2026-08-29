@@ -3,9 +3,6 @@
 use Adl\Core\OAuth;
 
 $oauthProviders = OAuth::enabledProviders();
-if ($oauthProviders === [] && \Adl\Core\Env::bool('APP_DEBUG')) {
-    $oauthProviders = OAuth::PROVIDERS;
-}
 ?>
 <div class="espace-page">
   <h1 class="espace-page-title">Paramètres</h1>

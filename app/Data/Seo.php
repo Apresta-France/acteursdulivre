@@ -8,7 +8,7 @@ final class Seo
 {
     public const BRAND = 'Acteurs du Livre';
     public const BRAND_HOST = 'acteursdulivre.fr';
-    public const DEFAULT_DESC = 'Place de marché des métiers du livre : correcteurs, illustrateurs, traducteurs, imprimeurs. Prestations à prix affiché, appels d\'offres. Sans IA générative.';
+    public const DEFAULT_DESC = 'Place de marché des métiers du livre : correcteurs, illustrateurs, traducteurs, imprimeurs. Prestations à prix affiché, suivi à jalons, règlement hors plateforme. Sans IA générative.';
     public const ROBOTS_INDEX = 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1';
     public const ROBOTS_NONE = 'noindex, nofollow';
     public const OG_W = 1200;
@@ -33,7 +33,7 @@ final class Seo
             ],
             'comment' => [
                 'title' => 'Comment ça marche',
-                'description' => 'Cherchez un profil, commandez une prestation à prix affiché ou publiez un appel d\'offres. Première mission offerte, puis 8 % au prestataire.',
+                'description' => 'Cherchez un profil, commandez une prestation ou publiez un appel d\'offres. Suivi à jalons, règlement hors plateforme. Première mission offerte, puis 8 % au prestataire.',
                 'path' => '/comment-ca-marche',
             ],
             'tarifs' => [
@@ -43,12 +43,12 @@ final class Seo
             ],
             'confiance' => [
                 'title' => 'Confiance et sécurité',
-                'description' => 'Profils vérifiés, contrats types, avis liés à une mission réelle et médiation des litiges. Comment acteursdulivre.fr sécurise les échanges.',
+                'description' => 'Profils vérifiés, suivi à jalons sans encaissement, avis liés à une mission réelle et médiation des litiges.',
                 'path' => '/confiance',
             ],
             'apropos' => [
                 'title' => 'À propos d\'Acteurs du Livre',
-                'description' => 'EDITIONS TESSERACT édite acteursdulivre.fr, place de marché des métiers du livre. Mise en relation uniquement : pas d\'édition, pas de droits sur les ouvrages.',
+                'description' => 'EDITIONS TESSERACT édite acteursdulivre.fr, place de marché des métiers du livre. Mise en relation uniquement : pas d\'édition, pas de droits sur les ouvrages, pas d\'encaissement des missions.',
                 'path' => '/a-propos',
             ],
             'journal' => [
@@ -58,7 +58,7 @@ final class Seo
             ],
             'aide' => [
                 'title' => 'Centre d\'aide',
-                'description' => 'Commission, annulation, facturation, avis, litiges : les réponses utiles pour utiliser acteursdulivre.fr.',
+                'description' => 'Jalons, règlement hors plateforme, commission, annulation, facturation, avis, litiges : les réponses utiles pour utiliser acteursdulivre.fr.',
                 'path' => '/aide',
             ],
             'contact' => [
@@ -296,10 +296,10 @@ final class Seo
     public static function homeFaqs(): array
     {
         return [
-            ['q' => 'Quand la commission est-elle facturée ?', 'a' => 'Lorsque le client confirme que la mission est finalisée et note la prestation. La facture est alors émise au prestataire, payable sous 15 jours.'],
+            ['q' => 'Quand la commission est-elle facturée ?', 'a' => 'Lorsque le client confirme que la mission est finalisée et note la prestation. La facture est alors émise au prestataire — dernier jalon — payable sous 15 jours.'],
             ['q' => 'La première mission est-elle payante ?', 'a' => 'Non. La première mission réalisée via la plateforme est gratuite. À partir de la deuxième, la commission est de 8 %.'],
             ['q' => 'L\'IA générative est-elle autorisée ?', 'a' => 'Non. Aucun livrable ne peut être produit par une IA générative : ni texte, ni illustration, ni voix. Les manuscrits confiés ne servent jamais à entraîner un modèle.'],
-            ['q' => 'Qui facture le client final ?', 'a' => 'Le prestataire facture directement son client. La plateforme facture uniquement sa commission au prestataire, à la validation de la mission.'],
+            ['q' => 'Qui facture le client final ?', 'a' => 'Le prestataire facture directement son client, hors plateforme. La plateforme n\'encaisse pas le prix de la mission ; elle facture uniquement sa commission au prestataire, à la validation.'],
             ['q' => 'Faut-il un abonnement ?', 'a' => 'Non. Créer un compte, une vitrine, des fiches ou un appel d\'offres est gratuit. Aucun abonnement.'],
         ];
     }
@@ -310,7 +310,7 @@ final class Seo
         return [
             ['q' => 'Comment trouver un prestataire du livre ?', 'a' => 'Vous pouvez parcourir l\'annuaire, commander une prestation à prix affiché, ou publier une recherche pour recevoir des devis.'],
             ['q' => 'Combien coûte la mise en relation ?', 'a' => 'Gratuit pour le porteur de projet. Côté prestataire, la première mission est offerte, puis 8 % de commission sur les missions suivantes.'],
-            ['q' => 'Comment se passe une mission ?', 'a' => 'Brief, comparaison des devis, contrat type, messagerie, puis validation et notation par le client. La commission prestataire est facturée à cette étape.'],
+            ['q' => 'Comment se passe une mission ?', 'a' => 'Brief, devis accepté dans le suivi (cela vaut accord), jalons de facture et de règlement hors plateforme, livraison, puis validation et notation. Pas de contrat type : la commission prestataire est le dernier jalon.'],
         ];
     }
 
@@ -319,7 +319,7 @@ final class Seo
     {
         return [
             ['q' => 'Quel est le tarif d\'acteursdulivre.fr ?', 'a' => 'Aucun abonnement. La première mission réalisée est gratuite pour le prestataire. Ensuite, 8 % de commission sur le montant de la mission.'],
-            ['q' => 'Qui paie la commission ?', 'a' => 'Le prestataire. Le client paie le prestataire ; la plateforme facture sa commission au prestataire lorsque le client confirme et note.'],
+            ['q' => 'Qui paie la commission ?', 'a' => 'Le prestataire. Le client paie le prestataire hors plateforme ; la plateforme facture sa commission au prestataire lorsque le client confirme et note.'],
             ['q' => 'Que reste-t-il gratuit ?', 'a' => 'Le compte, la vitrine, les fiches, la publication d\'une recherche, les candidatures et la messagerie. La première mission aussi.'],
         ];
     }
@@ -615,6 +615,7 @@ acteursdulivre.fr met en relation des porteurs de projet (auteurs, éditeurs, co
 - Pas d'éditeur des ouvrages des utilisateurs : contrats conclus entre le porteur de projet et le prestataire.
 - Pas d'abonnement. Compte, vitrine, fiches et appels d'offres gratuits.
 - Première mission réalisée offerte ; ensuite 8 % de commission facturés au prestataire lorsque le client confirme et note.
+- Le prix de la mission se règle hors plateforme, entre client et prestataire. La plateforme suit les jalons et n'encaisse rien.
 - Aucune IA générative : ni texte, ni illustration, ni voix. Les manuscrits ne servent pas à entraîner un modèle.
 - Pré-ouverture : inscriptions ouvertes aux auteurs et professionnels. Ouverture clients annoncée pour octobre 2026.
 - Langue : français. Devise : EUR.

@@ -199,7 +199,7 @@ final class Application
             Notification::create(
                 (int) $application['user_id'],
                 'Candidature acceptée',
-                'Votre proposition sur « ' . $mission['title'] . ' » a été retenue. La commande est ouverte.',
+                'Votre proposition sur « ' . $mission['title'] . ' » a été retenue. Envoyez le devis pour lancer les jalons.',
                 '/espace/suivi/' . (int) $order['id'],
                 'application_accepted',
                 'order',

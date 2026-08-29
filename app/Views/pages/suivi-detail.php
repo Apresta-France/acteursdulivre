@@ -1,29 +1,41 @@
 <?php
 $order = $order ?? [];
+$milestones = $milestones ?? [];
+$action = is_array($action ?? null) ? $action : null;
 $isBuyer = !empty($isBuyer);
 $isSeller = !empty($isSeller);
-$steps = [
-    ['pending', 'Ouverte'],
-    ['in_progress', 'En cours'],
-    ['delivered', 'Livrée'],
-    ['confirmed', 'Validée'],
-];
 $status = (string) ($order['status'] ?? 'pending');
-$rank = array_search($status, array_column($steps, 0), true);
-if ($status === 'paid') {
-    $rank = 3;
+$actionUrl = url('/espace/suivi/' . (int) ($order['id'] ?? 0) . '/jalon');
+$quote = null;
+$quoteDone = false;
+foreach ($milestones as $row) {
+    if (($row['code'] ?? '') === 'quote') {
+        $quote = $row;
+        $quoteDone = !empty($row['is_done']);
+        break;
+    }
 }
-if ($status === 'dispute') {
-    $rank = 1;
+$hiddenUntilQuote = ['deposit_invoice', 'deposit_paid', 'deposit_ack', 'final_invoice', 'final_paid'];
+$visibleMilestones = [];
+foreach ($milestones as $step) {
+    if (!empty($step['is_skipped'])) {
+        continue;
+    }
+    if (!$quoteDone && in_array((string) ($step['code'] ?? ''), $hiddenUntilQuote, true)) {
+        continue;
+    }
+    $visibleMilestones[] = $step;
 }
+$form = (string) ($action['form'] ?? '');
+$mine = !empty($action['mine']);
 ?>
-<div class="espace-page">
+<div class="espace-page jalon-page">
   <div class="espace-page-head">
     <div>
       <h1><?= e((string) ($order['title'] ?? 'Commande')) ?></h1>
       <p><?= e((string) ($order['num'] ?? '')) ?> · <?= e((string) ($order['by'] ?? '')) ?> · <?= e((string) ($order['amount_label'] ?? '')) ?></p>
     </div>
-    <a class="btn-navy" href="<?= e(url((string) ($threadHref ?? '/espace/messages'))) ?>">Ouvrir la messagerie</a>
+    <a class="btn-ghost jalon-msg" href="<?= e(url((string) ($threadHref ?? '/espace/messages'))) ?>">Ouvrir la messagerie</a>
   </div>
 
   <?php if (!empty($error)): ?>
@@ -33,66 +45,234 @@ if ($status === 'dispute') {
     <div class="flash flash-ok"><?= e(is_string($saved) ? $saved : 'Enregistré.') ?></div>
   <?php endif; ?>
 
-  <div class="order-steps">
-    <?php foreach ($steps as $i => $step): ?>
-      <div class="order-step<?= $rank !== false && $i <= (int) $rank ? ' is-on' : '' ?>">
-        <span><?= e($step[1]) ?></span>
-      </div>
-    <?php endforeach; ?>
-  </div>
+  <?php if ($status === 'dispute'): ?>
+    <div class="flash flash-error">Litige ouvert<?= !empty($order['dispute_reason']) ? ' : ' . e((string) $order['dispute_reason']) : '' ?>. Les jalons sont en pause le temps de la médiation.</div>
+  <?php elseif ($status === 'cancelled'): ?>
+    <div class="flash flash-warn">Cette commande est clôturée. Aucun jalon n’est plus attendu.</div>
+  <?php endif; ?>
 
   <div class="publish-grid">
     <div>
-      <div class="side-card">
-        <div class="mission-row-title">
-          Statut
-          <span class="status-pill status-<?= e($status) ?>"><?= e((string) ($order['status_label'] ?? '')) ?></span>
-        </div>
-        <?php if (!empty($order['brief'])): ?>
-          <h2>Brief</h2>
-          <p class="profile-text"><?= nl2br(e((string) $order['brief'])) ?></p>
-        <?php endif; ?>
-        <?php if (!empty($order['package_name'])): ?>
-          <p class="mission-row-sub">Formule : <?= e((string) $order['package_name']) ?></p>
-        <?php endif; ?>
-        <?php if (!empty($order['dispute_reason'])): ?>
-          <p class="flash flash-error">Litige : <?= e((string) $order['dispute_reason']) ?></p>
-        <?php endif; ?>
-      </div>
+      <?php if ($action && $status !== 'cancelled' && $status !== 'dispute'): ?>
+        <section class="jalon-action<?= $mine ? ' is-mine' : ' is-wait' ?>">
+          <div class="side-kicker"><?= $mine ? 'À faire maintenant' : 'En attente' ?></div>
+          <h2><?= e((string) $action['title']) ?></h2>
+          <p class="jalon-lead"><?= e((string) ($action['lead'] ?? '')) ?></p>
 
-      <div class="auth-actions" style="margin-top: 18px; flex-wrap: wrap;">
-        <?php if ($isSeller && !empty($order['can_accept'])): ?>
-          <form method="post" action="<?= e(url('/espace/suivi/' . (int) $order['id'] . '/accepter')) ?>">
-            <?= csrf_field() ?>
-            <button class="btn-orange" type="submit">Accepter et démarrer</button>
-          </form>
-        <?php endif; ?>
-        <?php if ($isSeller && !empty($order['can_deliver'])): ?>
-          <form method="post" action="<?= e(url('/espace/suivi/' . (int) $order['id'] . '/livrer')) ?>">
-            <?= csrf_field() ?>
-            <button class="btn-orange" type="submit">Marquer comme livrée</button>
-          </form>
-        <?php endif; ?>
-        <?php if ($isBuyer && !empty($order['can_confirm'])): ?>
-          <a class="btn-orange" href="<?= e(url('/espace/avis')) ?>">Valider et noter</a>
-        <?php endif; ?>
-      </div>
+          <?php if ($form === 'waiting'): ?>
+            <p class="jalon-hint">Tout se confirme ici. Le règlement d’argent se fait entre vous, hors de la plateforme.</p>
+          <?php elseif ($form === 'validate'): ?>
+            <div class="jalon-actions">
+              <a class="btn-orange" href="<?= e(url('/espace/avis')) ?>"><?= e((string) $action['cta']) ?></a>
+            </div>
+          <?php elseif ($form === 'quote'): ?>
+            <form class="jalon-form" method="post" action="<?= e($actionUrl) ?>" enctype="multipart/form-data">
+              <?= csrf_field() ?>
+              <input type="hidden" name="code" value="quote">
+              <div class="jalon-fields">
+                <div>
+                  <label class="field" for="jalon-amount">Montant du devis (€)</label>
+                  <input class="input" id="jalon-amount" name="amount" inputmode="decimal" required value="<?= e((string) ((int) ($order['amount'] ?? 0) ?: '')) ?>" placeholder="780">
+                </div>
+                <div>
+                  <label class="field" for="jalon-deposit">Acompte (€)</label>
+                  <input class="input" id="jalon-deposit" name="deposit_amount" inputmode="decimal" value="<?= e((string) ((int) ($order['deposit_amount'] ?? 0) ?: '')) ?>" placeholder="0 si aucun">
+                  <p class="field-help">Souvent 30 %. Laissez vide s’il n’y a pas d’acompte.</p>
+                </div>
+              </div>
+              <div>
+                <label class="field" for="jalon-delay">Délai</label>
+                <input class="input" id="jalon-delay" name="delay" value="<?= e((string) ($order['quote_delay'] ?? '')) ?>" placeholder="3 semaines">
+              </div>
+              <div>
+                <label class="field" for="jalon-note">Précisions (périmètre, formats, allers-retours)</label>
+                <textarea class="textarea" id="jalon-note" name="note" rows="4" placeholder="Ce qui est inclus, ce qui ne l’est pas…"><?= e((string) ($order['quote_note'] ?? '')) ?></textarea>
+              </div>
+              <div>
+                <label class="field" for="jalon-doc">Devis PDF (facultatif)</label>
+                <input class="input" id="jalon-doc" type="file" name="document" accept=".pdf,.doc,.docx,.odt,image/jpeg,image/png,image/webp">
+              </div>
+              <div class="jalon-actions">
+                <button class="btn-orange" type="submit"><?= e((string) $action['cta']) ?></button>
+              </div>
+            </form>
+          <?php elseif ($form === 'quote_accept'): ?>
+            <div class="jalon-recap">
+              <div class="jalon-recap-row"><span>Montant</span><strong><?= e((string) ($order['amount_label'] ?? '')) ?></strong></div>
+              <div class="jalon-recap-row"><span>Acompte</span><strong><?= (int) ($order['deposit_amount'] ?? 0) > 0 ? e((string) $order['deposit_label']) : 'Aucun' ?></strong></div>
+              <?php if (!empty($order['quote_delay'])): ?>
+                <div class="jalon-recap-row"><span>Délai</span><strong><?= e((string) $order['quote_delay']) ?></strong></div>
+              <?php endif; ?>
+            </div>
+            <?php if (!empty($quote['note'])): ?>
+              <p class="jalon-lead"><?= nl2br(e((string) $quote['note'])) ?></p>
+            <?php endif; ?>
+            <?php if (!empty($quote['file_href'])): ?>
+              <p><a class="file-chip" href="<?= e((string) $quote['file_href']) ?>"><?= e((string) ($quote['file_name'] ?? 'Devis')) ?></a></p>
+            <?php endif; ?>
+            <div class="jalon-actions">
+              <form method="post" action="<?= e($actionUrl) ?>">
+                <?= csrf_field() ?>
+                <input type="hidden" name="code" value="quote_accept">
+                <button class="btn-orange" type="submit"><?= e((string) $action['cta']) ?></button>
+              </form>
+              <form method="post" action="<?= e(url('/espace/suivi/' . (int) $order['id'] . '/devis/refuser')) ?>">
+                <?= csrf_field() ?>
+                <button class="btn-ghost" type="submit">Refuser et clôturer</button>
+              </form>
+            </div>
+          <?php elseif ($form === 'invoice'): ?>
+            <form class="jalon-form" method="post" action="<?= e($actionUrl) ?>" enctype="multipart/form-data">
+              <?= csrf_field() ?>
+              <input type="hidden" name="code" value="<?= e((string) $action['code']) ?>">
+              <p class="jalon-amount">Montant : <strong><?= e((string) ($action['amount_label'] ?? $order['amount_label'] ?? '')) ?></strong></p>
+              <div>
+                <label class="field" for="jalon-note">Message au client</label>
+                <textarea class="textarea" id="jalon-note" name="note" rows="3" placeholder="IBAN, référence, échéance…"></textarea>
+              </div>
+              <div>
+                <label class="field" for="jalon-doc">Facture (PDF ou image)</label>
+                <input class="input" id="jalon-doc" type="file" name="document" accept=".pdf,.doc,.docx,.odt,image/jpeg,image/png,image/webp">
+              </div>
+              <div class="jalon-actions">
+                <button class="btn-orange" type="submit"><?= e((string) $action['cta']) ?></button>
+              </div>
+            </form>
+          <?php elseif ($form === 'confirm_pay'): ?>
+            <p class="jalon-amount">À régler au prestataire : <strong><?= e((string) ($action['amount_label'] ?? '')) ?></strong></p>
+            <form class="jalon-form" method="post" action="<?= e($actionUrl) ?>">
+              <?= csrf_field() ?>
+              <input type="hidden" name="code" value="<?= e((string) $action['code']) ?>">
+              <div>
+                <label class="field" for="jalon-note">Référence du règlement (facultatif)</label>
+                <input class="input" id="jalon-note" name="note" placeholder="Virement du 12 mars, réf. ADL-…">
+              </div>
+              <div class="jalon-actions">
+                <button class="btn-orange" type="submit"><?= e((string) $action['cta']) ?></button>
+              </div>
+            </form>
+          <?php elseif ($form === 'confirm'): ?>
+            <form class="jalon-form" method="post" action="<?= e($actionUrl) ?>">
+              <?= csrf_field() ?>
+              <input type="hidden" name="code" value="<?= e((string) $action['code']) ?>">
+              <div class="jalon-actions">
+                <button class="btn-orange" type="submit"><?= e((string) $action['cta']) ?></button>
+              </div>
+            </form>
+          <?php elseif ($form === 'deliver'): ?>
+            <form class="jalon-form" method="post" action="<?= e($actionUrl) ?>" enctype="multipart/form-data">
+              <?= csrf_field() ?>
+              <input type="hidden" name="code" value="deliver">
+              <div>
+                <label class="field" for="jalon-note">Note de livraison</label>
+                <textarea class="textarea" id="jalon-note" name="note" rows="3" placeholder="Fichiers transmis, points d’attention…"></textarea>
+              </div>
+              <div>
+                <label class="field" for="jalon-doc">Livrable (facultatif)</label>
+                <input class="input" id="jalon-doc" type="file" name="document" accept=".pdf,.doc,.docx,.odt,image/jpeg,image/png,image/webp">
+              </div>
+              <div class="jalon-actions">
+                <button class="btn-orange" type="submit"><?= e((string) $action['cta']) ?></button>
+              </div>
+            </form>
+          <?php elseif ($form === 'commission'): ?>
+            <p class="jalon-amount">Commission : <strong><?= e((string) ($order['commission_label'] ?: $order['amount_label'] ?? '')) ?></strong></p>
+            <form class="jalon-form" method="post" action="<?= e($actionUrl) ?>">
+              <?= csrf_field() ?>
+              <input type="hidden" name="code" value="commission_paid">
+              <div>
+                <label class="field" for="jalon-note">Référence du règlement (facultatif)</label>
+                <input class="input" id="jalon-note" name="note" placeholder="Virement du…">
+              </div>
+              <div class="jalon-actions">
+                <button class="btn-orange" type="submit"><?= e((string) $action['cta']) ?></button>
+                <a class="btn-ghost" href="<?= e(url('/espace/facturation')) ?>">Voir la facture</a>
+              </div>
+            </form>
+          <?php endif; ?>
+        </section>
+      <?php endif; ?>
+
+      <section class="jalon-timeline">
+        <h2 class="espace-section-title">Jalons</h2>
+        <ol class="jalon-list">
+          <?php foreach ($visibleMilestones as $step): ?>
+            <?php
+              $state = 'is-todo';
+              if (!empty($step['is_done'])) {
+                  $state = 'is-done';
+              } elseif (!empty($step['is_current'])) {
+                  $state = 'is-current';
+              }
+            ?>
+            <li class="jalon <?= $state ?>">
+              <span class="jalon-dot" aria-hidden="true"></span>
+              <div class="jalon-body">
+                <div class="jalon-head">
+                  <strong><?= e((string) $step['base_title']) ?></strong>
+                  <span class="jalon-pill"><?= e((string) $step['actor_label']) ?> · <?= e((string) $step['status_label']) ?></span>
+                </div>
+                <?php if (!empty($step['amount_label'])): ?>
+                  <p class="jalon-meta"><?= e((string) $step['amount_label']) ?><?= !empty($step['delay']) ? ' · ' . e((string) $step['delay']) : '' ?></p>
+                <?php endif; ?>
+                <?php if (!empty($step['note'])): ?>
+                  <p class="jalon-meta"><?= nl2br(e((string) $step['note'])) ?></p>
+                <?php endif; ?>
+                <?php if (!empty($step['file_href'])): ?>
+                  <p><a class="file-chip" href="<?= e((string) $step['file_href']) ?>"><?= e((string) ($step['file_name'] ?? 'Document')) ?></a></p>
+                <?php endif; ?>
+                <?php if (!empty($step['when'])): ?>
+                  <p class="jalon-meta"><?= e((string) $step['when']) ?></p>
+                <?php endif; ?>
+              </div>
+            </li>
+          <?php endforeach; ?>
+          <?php if (!$quoteDone): ?>
+            <li class="jalon is-hint">
+              <span class="jalon-dot" aria-hidden="true"></span>
+              <div class="jalon-body">
+                <strong>Acompte et solde</strong>
+                <p class="jalon-meta">Ces étapes s’ajoutent automatiquement si le devis prévoit un acompte ou un reste à payer.</p>
+              </div>
+            </li>
+          <?php endif; ?>
+        </ol>
+      </section>
+
+      <?php if (!empty($order['brief'])): ?>
+        <div class="jalon-brief">
+          <div class="side-kicker">Brief</div>
+          <p><?= nl2br(e((string) $order['brief'])) ?></p>
+          <?php if (!empty($order['package_name'])): ?>
+            <p class="jalon-meta">Formule : <?= e((string) $order['package_name']) ?></p>
+          <?php endif; ?>
+        </div>
+      <?php endif; ?>
 
       <?php if (!empty($order['can_dispute'])): ?>
-        <form class="param-form" method="post" action="<?= e(url('/espace/suivi/' . (int) $order['id'] . '/litige')) ?>" style="margin-top: 28px;">
+        <form class="jalon-dispute" method="post" action="<?= e(url('/espace/suivi/' . (int) $order['id'] . '/litige')) ?>">
           <?= csrf_field() ?>
           <label class="field" for="reason">Signaler un litige</label>
           <textarea class="textarea" id="reason" name="reason" rows="3" required placeholder="Décrivez le désaccord. Un médiateur pourra reprendre le dossier."></textarea>
-          <div class="auth-actions">
+          <div class="jalon-actions">
             <button class="btn-ghost" type="submit">Ouvrir un litige</button>
           </div>
         </form>
       <?php endif; ?>
     </div>
+
     <aside class="publish-side">
-      <div class="side-card">
-        <div class="side-kicker">Paiement</div>
-        <p>Le règlement client se fera hors plateforme pour le moment. La commission prestataire est émise lorsque le porteur valide et note la mission.</p>
+      <div class="jalon-aside">
+        <div class="side-kicker">Règlements</div>
+        <p>Client et prestataire se règlent <strong>entre eux</strong>. La plateforme n’encaisse rien : elle suit les jalons, puis facture sa commission au prestataire à la validation.</p>
+        <div class="jalon-recap">
+          <div class="jalon-recap-row"><span>Mission</span><strong><?= e((string) ($order['amount_label'] ?? '')) ?></strong></div>
+          <div class="jalon-recap-row"><span>Acompte</span><strong><?= (int) ($order['deposit_amount'] ?? 0) > 0 ? e((string) $order['deposit_label']) : '—' ?></strong></div>
+          <div class="jalon-recap-row"><span>Solde</span><strong><?= e((string) ($order['balance_label'] ?? '—')) ?></strong></div>
+          <?php if (!empty($order['commission_label'])): ?>
+            <div class="jalon-recap-row"><span>Commission</span><strong><?= e((string) $order['commission_label']) ?></strong></div>
+          <?php endif; ?>
+        </div>
       </div>
     </aside>
   </div>

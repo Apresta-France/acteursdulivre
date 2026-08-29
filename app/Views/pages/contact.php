@@ -47,7 +47,7 @@
     </div>
     <div style="border: 1px solid #E8ECF1; border-radius: 14px; padding: 22px;">
       <div style="font-family: 'Space Grotesk', sans-serif; font-size: 16px; font-weight: 500; color: #022746; margin-bottom: 10px;">Une question sur une commande ?</div>
-      <p style="font-size: 14px; color: #66768A; line-height: 1.6; margin: 0 0 12px;">Passez par le centre d'aide : les réponses sur les paiements et les délais y sont déjà.</p>
+      <p style="font-size: 14px; color: #66768A; line-height: 1.6; margin: 0 0 12px;">Passez par le centre d'aide : les réponses sur les jalons, la commission et les délais y sont déjà.</p>
       <a class="btn-navy" href="<?= e(url('/aide')) ?>" style="width: 100%; justify-content: center; background: #fff; color: #022746; border: 1px solid #E1E7ED;">Centre d'aide</a>
     </div>
   </div>

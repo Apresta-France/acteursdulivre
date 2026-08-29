@@ -256,7 +256,7 @@ final class Onboarding
                 'body' => $missionCount > 0
                     ? 'Vous avez déjà une recherche. Vous pouvez en publier une autre, ou passer à l’aperçu.'
                     : 'Décrivez le besoin comme vous le feriez à un confrère : métier, ouvrage, ce que vous attendez.',
-                'tip' => 'Plus le brief est précis, plus les devis sont justes. Le paiement n’intervient qu’après accord.',
+                'tip' => 'Plus le brief est précis, plus les devis sont justes. Le règlement se fait ensuite hors plateforme, jalon par jalon.',
             ];
         }
 

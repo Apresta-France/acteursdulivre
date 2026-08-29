@@ -12,8 +12,84 @@
   if (mega && toggle) {
     toggle.addEventListener('click', function () {
       mega.hidden = !mega.hidden;
+      toggle.setAttribute('aria-expanded', mega.hidden ? 'false' : 'true');
     });
   }
+
+  function initRail() {
+    var list = document.querySelector('[data-rail-list]');
+    if (!list) return;
+    var compact = window.matchMedia('(max-width: 640px)');
+
+    function gapSize() {
+      var value = parseFloat(window.getComputedStyle(list).columnGap || window.getComputedStyle(list).gap);
+      return isNaN(value) ? 0 : value;
+    }
+
+    function fit() {
+      var items = Array.prototype.slice.call(list.querySelectorAll('a'));
+      if (!items.length) return;
+      if (compact.matches) {
+        list.classList.remove('is-fitted', 'is-overflow');
+        items.forEach(function (item) { item.hidden = false; });
+        return;
+      }
+
+      items.forEach(function (item) { item.hidden = false; });
+      var available = list.clientWidth;
+      var gap = gapSize();
+      var used = 0;
+      var visible = [];
+
+      items.forEach(function (item) {
+        var need = visible.length === 0 ? item.offsetWidth : used + gap + item.offsetWidth;
+        if (need <= available + 0.5) {
+          used = need;
+          visible.push(item);
+        } else {
+          item.hidden = true;
+        }
+      });
+
+      var active = items.find(function (item) {
+        return item.classList.contains('is-active') && item.hidden;
+      });
+      if (active) {
+        active.hidden = false;
+        var extra = active.offsetWidth + (visible.length ? gap : 0);
+        while (visible.length && used + extra > available + 0.5) {
+          var last = visible.pop();
+          used -= last.offsetWidth + gap;
+          last.hidden = true;
+          if (used < 0) used = 0;
+        }
+      }
+
+      list.classList.toggle('is-overflow', items.some(function (item) { return item.hidden; }));
+      list.classList.add('is-fitted');
+    }
+
+    var scheduled = false;
+    function schedule() {
+      if (scheduled) return;
+      scheduled = true;
+      window.requestAnimationFrame(function () {
+        scheduled = false;
+        fit();
+      });
+    }
+
+    fit();
+    if (typeof ResizeObserver !== 'undefined') {
+      new ResizeObserver(schedule).observe(list);
+    } else {
+      window.addEventListener('resize', schedule);
+    }
+    if (compact.addEventListener) compact.addEventListener('change', schedule);
+    else if (compact.addListener) compact.addListener(schedule);
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(schedule);
+  }
+  initRail();
 
   document.querySelectorAll('[data-accordion]').forEach(function (btn) {
     btn.addEventListener('click', function () {

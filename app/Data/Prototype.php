@@ -103,8 +103,8 @@ final class Prototype
                 ['label' => 'Parcourir les prestations', 'href' => '/prestations'],
                 ['label' => 'Publier une recherche', 'href' => '/espace/publier'],
                 ['label' => 'Mes commandes', 'href' => '/espace/commandes'],
-                ['label' => 'Devis & factures', 'href' => '/confiance'],
-                ['label' => 'Contrats types', 'href' => '/confiance'],
+                ['label' => 'Devis & jalons', 'href' => '/comment-ca-marche'],
+                ['label' => 'Suivi de commande', 'href' => '/espace/suivi'],
             ]],
             ['title' => 'Prestataires', 'links' => [
                 ['label' => 'Créer ma vitrine', 'href' => '/inscription'],
@@ -229,7 +229,7 @@ final class Prototype
                 'Rapport de lecture (cohérence, rythme, répétitions)',
                 'Une passe de vérification après vos arbitrages',
                 'Feuille de style typographique du texte',
-                'Confidentialité : NDA signé sur demande',
+                'Confidentialité : aucun extrait sans autorisation écrite',
             ],
             'faq' => self::faq(),
             'distribution' => self::distribution(),
@@ -300,7 +300,7 @@ final class Prototype
                 ],
                 'ways' => [
                     ['kicker' => 'Annuaire', 'title' => 'Chercher un profil', 'body' => 'Filtrez par métier, spécialité, ville et tarif, puis engagez la discussion.', 'points' => [format_int($pros) . ' profils', 'Avis vérifiés', 'Réponse en 24 h en moyenne'], 'cta' => 'Parcourir l\'annuaire', 'href' => '/recherche'],
-                    ['kicker' => 'Prestations', 'title' => 'Acheter une prestation', 'body' => 'Des offres packagées à prix, délai et périmètre affichés. Vous commandez en deux clics.', 'points' => [format_int($services) . ' prestations', 'Options à la carte', 'Contrat et facture inclus'], 'cta' => 'Voir les prestations', 'href' => '/prestations'],
+                    ['kicker' => 'Prestations', 'title' => 'Acheter une prestation', 'body' => 'Des offres packagées à prix, délai et périmètre affichés. Vous ouvrez un suivi à jalons : le règlement se fait hors plateforme.', 'points' => [format_int($services) . ' prestations', 'Options à la carte', 'Devis, jalons et facture'], 'cta' => 'Voir les prestations', 'href' => '/prestations'],
                     ['kicker' => 'Recherche', 'title' => 'Publier une recherche', 'body' => 'Décrivez le besoin et le budget : les prestataires qualifiés vous envoient leur devis.', 'points' => [format_int($openMissions) . ' recherches ouvertes', 'Gratuit pour tous', '1ʳᵉ mission offerte, puis 8 %'], 'cta' => 'Publier une recherche', 'href' => '/espace/publier'],
                 ],
             ];
@@ -355,7 +355,7 @@ final class Prototype
             'valeurs' => [
                 ['kicker' => 'Neutralité', 'title' => 'Ni éditeur, ni agence', 'body' => 'Nous ne prenons aucun droit sur les livres, nous ne poussons aucun prestataire contre rémunération. Le classement dépend des avis et des délais tenus, pas d\'un budget publicitaire.'],
                 ['kicker' => 'Prix', 'title' => 'Des repères publics', 'body' => 'Les fourchettes observées sur la plateforme sont publiées métier par métier. Un auteur qui débute doit pouvoir savoir ce que coûte une correction.'],
-                ['kicker' => 'Métier', 'title' => 'Le travail payé', 'body' => 'Devis cadrés, contrats types, médiation : trois outils simples pour que le travail livré soit payé, et payé à temps.'],
+                ['kicker' => 'Métier', 'title' => 'Le travail suivi', 'body' => 'Devis cadrés, jalons obligatoires, médiation : le travail livré se confirme étape par étape. Le règlement se fait entre les parties, hors plateforme.'],
             ],
             'equipe' => [
                 ['name' => 'Léa Rousset', 'role' => 'Rédaction & contenus', 'initials' => 'LR', 'avatar' => avatar_style('LR', 44)],
@@ -385,7 +385,7 @@ final class Prototype
             'legalBlocks' => [
                 ['title' => 'Éditeur du site', 'body' => 'acteursdulivre.fr est édité par EDITIONS TESSERACT, SAS au capital de 6 100 €, RCS Lille Métropole 980 005 292, 486 rue Sadi Carnot, 59184 Sainghin-en-Weppes.'],
                 ['title' => 'Hébergement', 'body' => 'Le site est hébergé en Suisse, en Europe, par Infomaniak Network SA, Rue Eugène Marziano 25, 1227 Les Acacias (GE).'],
-                ['title' => 'Objet de la plateforme', 'body' => 'La plateforme met en relation des porteurs de projet et des prestataires des métiers du livre. Elle n\'est ni éditeur, ni employeur, ni agent des prestataires : les contrats sont conclus directement entre les parties, la plateforme n\'intervenant qu\'au titre de l\'intermédiation.'],
+                ['title' => 'Objet de la plateforme', 'body' => 'La plateforme met en relation des porteurs de projet et des prestataires des métiers du livre. Elle n\'encaisse pas le prix des missions et ne génère pas de contrat type. L\'acceptation du devis vaut accord ; la plateforme suit les jalons et facture sa commission au prestataire.'],
                 ['title' => 'Propriété intellectuelle', 'body' => 'Les textes, visuels et manuscrits déposés par les utilisateurs restent leur propriété. Aucune réutilisation n\'est faite au-delà de ce qui est strictement nécessaire à l\'affichage des vitrines et au bon déroulement des missions.'],
             ],
             'notifications' => self::notifications(),
@@ -398,19 +398,19 @@ final class Prototype
                 return $x;
             }, self::services(), array_keys(self::services())),
             'avisCriteres' => self::avisCriteres(),
-            'paramNav' => self::sideNav(['Profil public', 'Compte & sécurité', 'Notifications', 'Paiements & TVA', 'Confidentialité'], 0),
+            'paramNav' => self::sideNav(['Profil public', 'Compte & sécurité', 'Notifications', 'Facturation', 'Confidentialité'], 0),
             'paramTitle' => 'Profil public',
             'toggles' => self::toggles(),
             'soldes' => [
-                ['k' => 'Disponible', 'v' => '718 €', 'note' => 'virement le 5 de chaque mois', 'card' => 'border-radius: 12px; padding: 20px; background: #FFF; border: 1px solid #E8ECF1; color: #022746;'],
-                ['k' => 'À encaisser', 'v' => '1 640 €', 'note' => '3 commandes facturées', 'card' => 'border-radius: 12px; padding: 20px; background: #022746; color: #E4EDF5;'],
-                ['k' => 'Encaissé en 2026', 'v' => '21 340 €', 'note' => 'commission de 1 707 € déduite', 'card' => 'border-radius: 12px; padding: 20px; background: #FFF; border: 1px solid #E8ECF1; color: #022746;'],
+                ['k' => 'Commission due', 'v' => '62 €', 'note' => 'dernier jalon, à régler sous 15 jours', 'card' => 'border-radius: 12px; padding: 20px; background: #FFF; border: 1px solid #E8ECF1; color: #022746;'],
+                ['k' => 'Missions validées', 'v' => '1 640 €', 'note' => 'réglées hors plateforme', 'card' => 'border-radius: 12px; padding: 20px; background: #022746; color: #E4EDF5;'],
+                ['k' => 'Commission 2026', 'v' => '1 707 €', 'note' => 'facturée au prestataire à la validation', 'card' => 'border-radius: 12px; padding: 20px; background: #FFF; border: 1px solid #E8ECF1; color: #022746;'],
             ],
             'operations' => self::operations(),
             'bancaire' => [
                 ['k' => 'Titulaire', 'v' => 'Marion Vasseur'],
                 ['k' => 'IBAN', 'v' => 'FR76 •••• 4412'],
-                ['k' => 'Délai de versement', 'v' => '5 jours ouvrés'],
+                ['k' => 'Règlement', 'v' => 'Hors plateforme, entre les parties'],
             ],
             'vitrineTabs' => self::chips(['Compétences', 'Parcours & CV', 'Portfolio', 'Historique', 'Avis'], 0),
             'competences' => self::competences(),
@@ -440,7 +440,7 @@ final class Prototype
             'portfolioEdit' => self::portfolioEdit(),
             'histStats' => [
                 ['v' => '87', 'k' => 'missions livrées'],
-                ['v' => '21 340 €', 'k' => 'encaissés en 2026'],
+                ['v' => '21 340 €', 'k' => 'de missions en 2026'],
                 ['v' => '4,9', 'k' => 'note moyenne'],
                 ['v' => '98 %', 'k' => 'délais tenus'],
             ],
@@ -507,12 +507,12 @@ final class Prototype
                 ['ext' => 'PDF', 'name' => 'rapport-de-lecture.pdf', 'size' => '740 Ko'],
             ],
             'suiviPaiement' => [
-                ['k' => 'Formule Standard', 'v' => '780 €'],
-                ['k' => 'Options', 'v' => '—'],
-                ['k' => 'Commission (payée par la prestataire)', 'v' => '62 €'],
-                ['k' => 'Total de la commande', 'v' => '780 €'],
+                ['k' => 'Mission', 'v' => '780 €'],
+                ['k' => 'Acompte', 'v' => '234 €'],
+                ['k' => 'Solde (hors plateforme)', 'v' => '546 €'],
+                ['k' => 'Commission prestataire', 'v' => '62 €'],
             ],
-            'suiviDocs' => ['Contrat de prestation signé', 'Facture d\'acompte', 'Conditions de la mission (PDF)'],
+            'suiviDocs' => ['Devis accepté', 'Facture d\'acompte', 'Note de livraison'],
             'commandeTabs' => self::chips(['En cours (3)', 'Livrées (14)', 'En litige (0)', 'Brouillons (2)'], 0),
             'commandes' => self::commandes(),
             'creerSteps' => self::steps(['La prestation', 'Les formules', 'Le visuel', 'Publication'], 0),
@@ -560,13 +560,13 @@ final class Prototype
             ],
             'ways' => [
                 ['kicker' => 'Annuaire', 'title' => 'Chercher un profil', 'body' => 'Filtrez par métier, spécialité, ville et tarif, puis engagez la discussion.', 'points' => ['5 890 profils', 'Avis vérifiés', 'Réponse en 24 h en moyenne'], 'cta' => 'Parcourir l\'annuaire', 'href' => '/recherche'],
-                ['kicker' => 'Prestations', 'title' => 'Acheter une prestation', 'body' => 'Des offres packagées à prix, délai et périmètre affichés. Vous commandez en deux clics.', 'points' => ['2 314 prestations', 'Options à la carte', 'Contrat et facture inclus'], 'cta' => 'Voir les prestations', 'href' => '/prestations/correction-complete-roman'],
+                ['kicker' => 'Prestations', 'title' => 'Acheter une prestation', 'body' => 'Des offres packagées à prix, délai et périmètre affichés. Vous ouvrez un suivi à jalons : le règlement se fait hors plateforme.', 'points' => ['2 314 prestations', 'Options à la carte', 'Devis, jalons et facture'], 'cta' => 'Voir les prestations', 'href' => '/prestations/correction-complete-roman'],
                 ['kicker' => 'Recherche', 'title' => 'Publier une recherche', 'body' => 'Décrivez le besoin et le budget : les prestataires qualifiés vous envoient leur devis.', 'points' => ['148 recherches ouvertes', 'Trois devis en 48 h', 'Gratuit pour tous'], 'cta' => 'Publier une recherche', 'href' => '/espace/publier'],
             ],
             'steps4' => [
                 ['num' => '01', 'title' => 'Décrivez le besoin', 'body' => 'Métier, brief, budget, échéance : un formulaire court.'],
                 ['num' => '02', 'title' => 'Comparez', 'body' => 'Devis, réalisations, avis vérifiés et délais côte à côte.'],
-                ['num' => '03', 'title' => 'Travaillez cadré', 'body' => 'Contrat type adapté au métier, jalons et messagerie intégrée.'],
+                ['num' => '03', 'title' => 'Travaillez cadré', 'body' => 'Jalons obligatoires : devis, factures, règlements déclarés, livraison. Messagerie intégrée.'],
                 ['num' => '04', 'title' => 'Validez et notez', 'body' => 'Le client confirme la mission, note la prestation : la commission prestataire est alors facturée.'],
             ],
             'commentImg' => photo(2),
@@ -581,34 +581,34 @@ final class Prototype
                 'Créer un compte, une vitrine et autant de fiches que nécessaire — aucun abonnement',
                 'Publier une recherche, proposer une mission ou une prestation',
                 'Candidater aux appels d\'offres',
-                'Échanger par messagerie, envoyer des devis et des contrats',
+                'Échanger par messagerie, envoyer des devis et suivre les jalons',
                 'La première mission réalisée : aucune commission',
             ],
             'garanties' => [
                 ['kicker' => 'Profils', 'title' => 'Vérification à l\'entrée', 'body' => 'Justificatif d\'activité, une référence professionnelle contrôlée et un entretien pour les métiers de fabrication. Les faux profils sont retirés sous 24 h.'],
-                ['kicker' => 'Paiement', 'title' => 'Devis, contrat, facture', 'body' => 'Chaque mission passe par un devis chiffré et un contrat type. Le client confirme et note ; la plateforme facture alors sa commission au prestataire, payable sous 15 jours.'],
+                ['kicker' => 'Suivi', 'title' => 'Jalons, pas d\'encaissement', 'body' => 'Client et prestataire se règlent hors plateforme. Le suivi impose les jalons (devis, factures, déclarations, livraison, validation). La commission est facturée au prestataire à la validation, payable sous 15 jours.'],
                 ['kicker' => 'Litiges', 'title' => 'Médiation sous 72 h', 'body' => 'Un médiateur de la plateforme lit les échanges et la livraison, puis propose une répartition. Recours possible devant le médiateur de la consommation.'],
             ],
             'charte' => [
                 ['num' => '01', 'title' => 'Prix annoncé, prix facturé', 'body' => 'Aucun supplément qui n\'ait été accepté par écrit avant le démarrage.'],
                 ['num' => '02', 'title' => 'Délais tenus ou prévenus', 'body' => 'Un retard se signale dès qu\'il est prévisible, pas le jour de la livraison.'],
-                ['num' => '03', 'title' => 'Confidentialité du manuscrit', 'body' => 'Aucun extrait diffusé sans autorisation écrite. NDA disponible en un clic.'],
-                ['num' => '04', 'title' => 'Droits clairs', 'body' => 'Cession, durée, supports et territoires écrits noir sur blanc dans le contrat.'],
+                ['num' => '03', 'title' => 'Confidentialité du manuscrit', 'body' => 'Aucun extrait diffusé sans autorisation écrite, y compris dans un portfolio.'],
+                ['num' => '04', 'title' => 'Périmètre clair', 'body' => 'Ce qui est inclus, les délais et, le cas échéant, l’usage des livrables : c’est écrit dans le devis.'],
                 ['num' => '05', 'title' => 'Aucune IA générative', 'body' => 'Textes, illustrations et voix sont produits par des humains. Pas de génération automatique, pas de sous-traitance cachée, pas d\'entraînement de modèle sur les manuscrits confiés.'],
                 ['num' => '06', 'title' => 'Avis sincères', 'body' => 'Le client note la qualité, l\'efficacité et la satisfaction globale lorsqu\'il confirme que la mission est terminée.'],
             ],
             'litige' => [
-                ['num' => '01', 'title' => 'Signalement', 'body' => 'Depuis le suivi de commande, en décrivant l\'écart au brief. Le règlement est suspendu le temps de l\'examen.'],
+                ['num' => '01', 'title' => 'Signalement', 'body' => 'Depuis le suivi de commande, en décrivant l\'écart au brief. Les jalons sont en pause le temps de l\'examen.'],
                 ['num' => '02', 'title' => 'Échange encadré', 'body' => '72 h pour trouver un accord dans la messagerie, avec un modérateur en lecture.'],
-                ['num' => '03', 'title' => 'Médiation', 'body' => 'À défaut d\'accord, un médiateur propose une répartition : remboursement total, partiel ou versement.'],
+                ['num' => '03', 'title' => 'Médiation', 'body' => 'À défaut d\'accord, un médiateur propose un accord sur les sommes déjà versées ou encore dues entre les parties.'],
                 ['num' => '04', 'title' => 'Recours', 'body' => 'Vous restez libre de saisir le médiateur de la consommation ou la juridiction compétente.'],
             ],
             'contrats' => ['Prestation de service — correction, maquette', 'Cession de droits — illustration, traduction', 'Mandat — presse et communication', 'Bon de commande — impression'],
             'aideCats' => [
                 ['title' => 'Commandes & livraisons', 'desc' => 'Commander, valider, annuler, prolonger un délai.', 'n' => 24],
-                ['title' => 'Paiements & factures', 'desc' => 'Factures, règlements, TVA, relevés de commission.', 'n' => 18],
+                ['title' => 'Paiements & factures', 'desc' => 'Jalons, règlements hors plateforme, TVA, commission.', 'n' => 18],
                 ['title' => 'Profil & vitrine', 'desc' => 'Vérification, badges, visibilité dans l\'annuaire.', 'n' => 15],
-                ['title' => 'Droits & contrats', 'desc' => 'Cessions, confidentialité, mentions obligatoires.', 'n' => 11],
+                ['title' => 'Charte & confidentialité', 'desc' => 'Manuscrits, IA générative, mentions obligatoires.', 'n' => 11],
             ],
             'aideFaq' => self::aideFaq(),
             'commentFaq' => self::faqItems(array_map(
@@ -619,7 +619,7 @@ final class Prototype
                 static fn (array $row): array => [$row['q'], $row['a']],
                 Seo::tarifsFaqs()
             )),
-            'checkoutSteps' => self::steps(['Le brief', 'Le paiement', 'Le suivi'], 1, false),
+            'checkoutSteps' => self::steps(['Le brief', 'Les jalons', 'Le suivi'], 1, false),
             'paiements' => self::paiements(),
             'badges' => ['Profil vérifié', 'Répond en 24 h', '98 % dans les délais', '87 missions livrées', 'Membre depuis 2022'],
             'profilStats' => [
@@ -682,7 +682,7 @@ final class Prototype
             'jalons' => [
                 ['label' => 'Devis accepté', 'when' => '8 sept.', 'dot' => 'width: 10px; height: 10px; min-width: 10px; border-radius: 50%; background: #D85D3F; margin-top: 5px;'],
                 ['label' => 'Première passe livrée', 'when' => '22 sept.', 'dot' => 'width: 10px; height: 10px; min-width: 10px; border-radius: 50%; border: 2px solid #C3CEDA; margin-top: 5px;'],
-                ['label' => 'Validation et versement', 'when' => '29 sept.', 'dot' => 'width: 10px; height: 10px; min-width: 10px; border-radius: 50%; border: 2px solid #C3CEDA; margin-top: 5px;'],
+                ['label' => 'Validation et commission', 'when' => '29 sept.', 'dot' => 'width: 10px; height: 10px; min-width: 10px; border-radius: 50%; border: 2px solid #C3CEDA; margin-top: 5px;'],
             ],
             'kpis' => [
                 ['k' => 'Demandes ce mois', 'v' => '18', 'd' => '+5 vs août'],
@@ -970,7 +970,7 @@ final class Prototype
             ['Livraison accélérée (−5 jours)', 120],
             ['Feuille de style typographique', 60],
             ['Passe supplémentaire sur épreuves', 180],
-            ['NDA signé avant transmission', 0],
+            ['Note de confidentialité dans le devis', 0],
         ];
         $out = [];
         foreach ($items as [$label, $price]) {
@@ -991,7 +991,7 @@ final class Prototype
             ['Sur quels formats travaillez-vous ?', 'Word (.docx), LibreOffice (.odt) et InDesign. En InDesign, je corrige directement dans la maquette et vous livre le fichier plus un PDF annoté.'],
             ['Que se passe-t-il si mon texte dépasse 90 000 signes ?', 'Le tarif est ajusté au prorata, 4,50 € pour 1 000 signes supplémentaires. Envoyez-moi le manuscrit, je vous confirme le montant exact avant la commande.'],
             ['Corrigez-vous le fond du texte ?', 'Le rapport de lecture pointe les incohérences, les longueurs et les répétitions, mais je ne réécris pas sans votre accord. Pour une réécriture, prenez la formule Complète ou une prestation dédiée.'],
-            ['Comment se passe la confidentialité ?', 'Un accord de confidentialité peut être signé avant transmission du manuscrit, en option gratuite. Aucun extrait n\'est publié dans mon portfolio sans votre autorisation écrite.'],
+            ['Comment se passe la confidentialité ?', 'Aucun extrait n\'est publié dans un portfolio sans autorisation écrite. La plateforme n\'impose pas de NDA : le prestataire s\'y engage par la charte, et le devis peut le rappeler.'],
         ];
         return self::faqItems($items);
     }
@@ -999,12 +999,14 @@ final class Prototype
     private static function aideFaq(): array
     {
         $items = [
-            ['Quand la commission est-elle facturée ?', 'Lorsque le client confirme que la mission est finalisée et note la prestation (qualité, efficacité, satisfaction). La facture est alors émise au prestataire, payable sous 15 jours.'],
-            ['Puis-je annuler une commande ?', 'Gratuitement tant que le prestataire n\'a pas démarré. Après démarrage, l\'annulation se négocie dans la messagerie ; à défaut d\'accord, un médiateur tranche.'],
-            ['Qui facture le client final ?', 'Le prestataire facture directement son client. La plateforme facture sa commission au prestataire, à la validation de la mission.'],
+            ['Quand la commission est-elle facturée ?', 'Lorsque le client confirme que la mission est finalisée et note la prestation (qualité, efficacité, satisfaction). La facture est alors émise au prestataire — c\'est son dernier jalon — payable sous 15 jours.'],
+            ['Comment se règlent les missions ?', 'Client et prestataire se règlent entre eux (virement, chèque, facture entreprise…). La plateforme n\'encaisse rien. Chaque étape se confirme dans le suivi : devis, factures, déclarations de règlement, livraison, validation.'],
+            ['Puis-je annuler une commande ?', 'Gratuitement tant que le prestataire n\'a pas démarré (aucun jalon commencé). Après démarrage, l\'annulation se négocie dans la messagerie ; à défaut d\'accord, un médiateur tranche.'],
+            ['Qui facture le client final ?', 'Le prestataire facture directement son client, hors plateforme. La plateforme facture uniquement sa commission au prestataire, à la validation de la mission.'],
             ['La première mission est-elle payante ?', 'Non. La première mission réalisée via la plateforme est entièrement gratuite. À partir de la deuxième, la commission est de 8 %.'],
             ['La plateforme prend-elle une commission sur les appels d\'offres ?', 'Publier et candidater sont gratuits, sans abonnement. La commission de 8 % s\'applique uniquement à partir de la deuxième mission réalisée.'],
             ['L\'IA générative est-elle autorisée sur la plateforme ?', 'Non. Aucun livrable ne peut être produit par une IA générative : ni texte, ni illustration, ni voix. Les prestataires s\'y engagent à l\'inscription, et les manuscrits confiés ne servent jamais à entraîner un modèle.'],
+            ['Y a-t-il un contrat type ?', 'Non. L\'acceptation du devis dans le suivi vaut accord entre les parties. La plateforme ne génère ni contrat type ni NDA.'],
         ];
         return self::faqItems($items);
     }
@@ -1343,16 +1345,16 @@ final class Prototype
     {
         return [
             ['kicker' => 'Pour commencer', 'name' => 'Première mission', 'pct' => '0 %', 'items' => ['Aucun abonnement', 'Compte, vitrine et fiches libres', 'Candidatures et devis gratuits', 'Commission plateforme offerte'], 'card' => 'border-radius: 14px; padding: 26px; background: #022746; color: #E4EDF5; border: 1px solid #022746;', 'kickerColor' => '#E8845F'],
-            ['kicker' => 'Ensuite', 'name' => 'À partir de la 2ᵉ', 'pct' => '8 %', 'items' => ['Uniquement sur les missions réalisées', 'Facturée au prestataire à la validation', 'Avis client obligatoire (qualité, efficacité, satisfaction)', '15 jours pour régler, sinon les offres sont suspendues'], 'card' => 'border-radius: 14px; padding: 26px; background: #FFF; color: #022746; border: 1px solid #E8ECF1;', 'kickerColor' => self::ORANGE],
+            ['kicker' => 'Ensuite', 'name' => 'À partir de la 2ᵉ', 'pct' => '8 %', 'items' => ['Uniquement sur les missions réalisées', 'Le client règle le prestataire hors plateforme', 'Facturée au prestataire à la validation (dernier jalon)', '15 jours pour régler, sinon les offres sont suspendues'], 'card' => 'border-radius: 14px; padding: 26px; background: #FFF; color: #022746; border: 1px solid #E8ECF1;', 'kickerColor' => self::ORANGE],
         ];
     }
 
     private static function paiements(): array
     {
         $items = [
-            ['Carte bancaire', 'Visa, Mastercard — débit au démarrage de la mission'],
-            ['Virement SEPA', 'Sous 2 jours ouvrés, pour les commandes au-delà de 1 000 €'],
-            ['Facturation entreprise', 'Bon de commande, paiement à 30 jours — éditeurs et institutions'],
+            ['Règlement hors plateforme', 'Virement, chèque ou facture — entre vous et le prestataire'],
+            ['Acompte si prévu au devis', 'Déclaré dans le suivi, jamais encaissé ici'],
+            ['Commission prestataire', 'Dernier jalon, après votre validation — 0 % puis 8 %'],
         ];
         $out = [];
         foreach ($items as $i => [$label, $note]) {
@@ -1487,10 +1489,12 @@ final class Prototype
     private static function espaceNav(string $screen, bool $seeks, bool $offers): array
     {
         $item = static function (string $label, string $href, string $key, string $icon = 'dot') use ($screen): array {
+            $aliases = ['suivi' => ['suivi', 'suivi-detail']];
+            $active = $screen === $key || in_array($screen, $aliases[$key] ?? [], true);
             return [
                 'label' => $label,
                 'href' => $href,
-                'active' => $screen === $key,
+                'active' => $active,
                 'icon' => $icon,
             ];
         };
@@ -1508,6 +1512,7 @@ final class Prototype
                     $item('Publier une recherche', '/espace/publier', 'publier', 'file-plus'),
                     $item('Mes recherches', '/espace/missions', 'mesmissions', 'clipboard'),
                     $item('Mes commandes', '/espace/commandes', 'commandes', 'bag'),
+                    $item('Suivi', '/espace/suivi', 'suivi', 'clipboard'),
                     $item('Favoris', '/espace/favoris', 'favoris', 'heart'),
                 ],
             ];
@@ -1522,6 +1527,7 @@ final class Prototype
                     $item('Mes prestations', '/espace/prestations', 'mesprestations', 'grid'),
                     $item('Appels d\'offres', '/missions', '', 'megaphone'),
                     $item('Mes candidatures', '/espace/candidatures', 'candidatures', 'send'),
+                    $item('Suivi', '/espace/suivi', 'suivi', 'clipboard'),
                     $item('Facturation', '/espace/facturation', 'facturation', 'invoice'),
                 ],
             ];
