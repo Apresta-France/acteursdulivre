@@ -265,8 +265,21 @@ img { max-width: 100%; }
   border: 0;
   text-align: left;
   font: inherit;
+  padding: 16px 18px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  font-size: 15px;
+  color: #14202C;
 }
 .faq-q:hover { background: #FBFCFE; }
+.faq-q [data-accordion-sign] {
+  color: #8496A8;
+  font-family: var(--display), monospace;
+  flex-shrink: 0;
+}
 .nav-toggle, .admin-nav-toggle {
   display: none;
   width: 42px;
@@ -2932,6 +2945,8 @@ img.profile-avatar,
 .mk-cta-actions { display: flex; gap: 12px; flex-shrink: 0; flex-wrap: wrap; }
 .mk-faq { display: grid; grid-template-columns: 300px 1fr; gap: 40px; }
 .mk-faq-list { border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+.mk-faq-list > div { border-bottom: 1px solid #F2F5F8; }
+.mk-faq-list > div:last-child { border-bottom: 0; }
 .mk-faq-narrow { max-width: 860px; }
 .mk-faq-a { padding: 0 18px 18px; font-size: 15px; color: #4A5A6B; line-height: 1.65; }
 .mk-faq-list .faq-q { width: 100%; background: none; border: 0; text-align: left; }
