@@ -13,6 +13,7 @@ final class Seo
     public const ROBOTS_NONE = 'noindex, nofollow';
     public const OG_W = 1200;
     public const OG_H = 630;
+    public const OG_ALT = 'Un livre, ça se fait à plusieurs — la place de marché des métiers du livre';
 
     private const PRIVATE_SCREENS = [
         'dashboard', 'publier', 'commande', 'suivi', 'commandes', 'mesmissions',
@@ -223,7 +224,8 @@ final class Seo
         array $extra = []
     ): array {
         $type = $type === 'profile' ? 'website' : $type;
-        $image = $image ?: asset('img/og-default.jpg');
+        $usingDefaultImage = $image === null || $image === '';
+        $image = $image ?: asset('img/og-default.jpg') . '?v=2';
         $url = $url ?? Share::current();
         $fullTitle = self::documentTitle($title);
 
@@ -235,7 +237,7 @@ final class Seo
             'image' => Share::absolute($image),
             'image_width' => (int) ($extra['image_width'] ?? self::OG_W),
             'image_height' => (int) ($extra['image_height'] ?? self::OG_H),
-            'image_alt' => (string) ($extra['image_alt'] ?? $fullTitle),
+            'image_alt' => (string) ($extra['image_alt'] ?? ($usingDefaultImage ? self::OG_ALT : $fullTitle)),
             'robots' => (string) ($extra['robots'] ?? self::ROBOTS_INDEX),
             'json_ld' => $extra['json_ld'] ?? [],
             'published_time' => $extra['published_time'] ?? null,
@@ -258,7 +260,7 @@ final class Seo
 
     public static function defaultImage(): string
     {
-        return Share::absolute(asset('img/og-default.jpg'));
+        return Share::absolute(asset('img/og-default.jpg') . '?v=2');
     }
 
     /**
