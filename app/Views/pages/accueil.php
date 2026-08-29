@@ -32,9 +32,15 @@ $query = (string) ($query ?? '');
       </div>
     </div>
     <div class="mk-mosaic" aria-hidden="true">
-      <div class="mk-mosaic-a">Correction</div>
-      <div class="mk-mosaic-b">Illustration</div>
-      <div class="mk-mosaic-c">Impression</div>
+      <div class="mk-mosaic-a">
+        <img src="<?= e((string) ($homeImg1 ?? photo(0))) ?>" alt="" width="440" height="312" fetchpriority="high" decoding="async">
+      </div>
+      <div class="mk-mosaic-b">
+        <img src="<?= e((string) ($homeImg2 ?? photo(5))) ?>" alt="" width="214" height="150" loading="lazy" decoding="async">
+      </div>
+      <div class="mk-mosaic-c">
+        <img src="<?= e((string) ($homeImg3 ?? photo(4))) ?>" alt="" width="214" height="150" loading="lazy" decoding="async">
+      </div>
     </div>
   </section>
 

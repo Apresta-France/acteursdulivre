@@ -74,8 +74,16 @@ $briefHint = \Adl\Data\Catalog::briefHint($selected);
       </div>
 
       <div>
-        <label class="field" for="search-file">Pièce jointe (optionnel)</label>
-        <input class="input" id="search-file" type="file" name="attachment" accept=".pdf,.doc,.docx,.odt,.txt">
+        <span class="field" id="search-file-label">Pièce jointe (optionnel)</span>
+        <?php
+          $filePickId = 'search-file';
+          $filePickName = 'attachment';
+          $filePickAccept = '.pdf,.doc,.docx,.odt,.txt';
+          $filePickButton = 'Joindre un fichier';
+          $filePickDrop = true;
+          $filePickAttrs = 'aria-labelledby="search-file-label"';
+          require ADL_ROOT . '/app/Views/partials/file-pick.php';
+        ?>
         <p class="field-help">Extrait, sommaire ou cahier des charges — PDF, DOCX, ODT, 20 Mo max.</p>
       </div>
 

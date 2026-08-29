@@ -70,7 +70,8 @@ $messages = $messages ?? [];
             <textarea class="textarea" name="body" rows="3" placeholder="Votre message…"></textarea>
             <label class="dropzone" data-dropzone-zone>
               <input type="file" name="attachment" accept=".pdf,.jpg,.jpeg,.png,.webp,.txt,.doc,.docx,.odt" hidden>
-              <span data-dropzone-label>Joindre un fichier — glissez-déposez ou choisissez depuis votre ordinateur</span>
+              <span class="btn-ghost file-pick-btn">Joindre un fichier</span>
+              <span data-dropzone-label>Glissez-déposez ou choisissez depuis votre ordinateur</span>
             </label>
             <button class="btn-orange" type="submit">Envoyer</button>
           </form>

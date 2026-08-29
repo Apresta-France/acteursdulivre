@@ -580,6 +580,7 @@
       var index = list.querySelectorAll('[data-repeat-row]').length;
       var html = tpl.innerHTML.replace(/__i__/g, String(index));
       list.insertAdjacentHTML('beforeend', html);
+      bindFilePicks(list.lastElementChild);
     });
   });
 
@@ -906,44 +907,53 @@
     updateFichePreview();
   }
 
-  document.querySelectorAll('[data-dropzone]').forEach(function (form) {
-    var zone = form.querySelector('[data-dropzone-zone]');
-    var input = form.querySelector('input[type="file"]');
-    var label = form.querySelector('[data-dropzone-label]');
-    if (!zone || !input || !label) return;
-    var original = label.textContent;
+  function bindFilePick(pick) {
+    if (!pick || pick.dataset.filePickBound) return;
+    pick.dataset.filePickBound = '1';
+    var input = pick.querySelector('[data-file-input], input[type="file"]');
+    var name = pick.querySelector('[data-file-name], [data-dropzone-label]');
+    if (!input || !name) return;
+    var empty = name.textContent;
     function setFile(file) {
       if (!file) {
-        label.textContent = original;
-        zone.classList.remove('has-file');
+        name.textContent = empty;
+        pick.classList.remove('has-file');
         return;
       }
-      label.textContent = file.name;
-      zone.classList.add('has-file');
+      name.textContent = file.name;
+      pick.classList.add('has-file');
     }
-    zone.addEventListener('click', function () { input.click(); });
     input.addEventListener('change', function () {
       setFile(input.files && input.files[0] ? input.files[0] : null);
     });
     ['dragenter', 'dragover'].forEach(function (ev) {
-      zone.addEventListener(ev, function (e) {
+      pick.addEventListener(ev, function (e) {
         e.preventDefault();
-        zone.classList.add('is-over');
+        pick.classList.add('is-over');
       });
     });
     ['dragleave', 'drop'].forEach(function (ev) {
-      zone.addEventListener(ev, function (e) {
+      pick.addEventListener(ev, function (e) {
         e.preventDefault();
-        zone.classList.remove('is-over');
+        pick.classList.remove('is-over');
       });
     });
-    zone.addEventListener('drop', function (e) {
+    pick.addEventListener('drop', function (e) {
       var files = e.dataTransfer && e.dataTransfer.files;
       if (!files || !files[0]) return;
       var transfer = new DataTransfer();
       transfer.items.add(files[0]);
       input.files = transfer.files;
       setFile(files[0]);
+      input.dispatchEvent(new Event('change', { bubbles: true }));
     });
-  });
+  }
+
+  function bindFilePicks(root) {
+    var scope = root || document;
+    scope.querySelectorAll('[data-file-pick], [data-dropzone-zone]').forEach(bindFilePick);
+    if (root && root.matches && root.matches('[data-file-pick], [data-dropzone-zone]')) bindFilePick(root);
+  }
+
+  bindFilePicks(document);
 })();

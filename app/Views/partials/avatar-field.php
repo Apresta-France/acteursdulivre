@@ -14,8 +14,17 @@ $help = (string) ($help ?? 'JPG, PNG ou WebP, 2 Mo maximum.');
     <?php endif; ?>
   </div>
   <div>
-    <label class="field" for="<?= e($inputId) ?>">Photo de profil</label>
-    <input class="input" id="<?= e($inputId) ?>" type="file" name="avatar" accept="image/jpeg,image/png,image/webp" data-avatar-input>
+    <span class="field" id="<?= e($inputId) ?>-label">Photo de profil</span>
+    <?php
+      $filePickId = $inputId;
+      $filePickName = 'avatar';
+      $filePickAccept = 'image/jpeg,image/png,image/webp';
+      $filePickButton = 'Choisir une photo';
+      $filePickEmpty = $avatarSrc !== '' ? 'Photo actuelle — choisir un autre fichier pour la remplacer' : 'ou déposez-la ici';
+      $filePickDrop = true;
+      $filePickAttrs = 'data-avatar-input aria-labelledby="' . e($inputId) . '-label"';
+      require ADL_ROOT . '/app/Views/partials/file-pick.php';
+    ?>
     <p class="field-help"><?= e($help) ?></p>
   </div>
 </div>

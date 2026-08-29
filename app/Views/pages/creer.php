@@ -97,8 +97,16 @@ $coverLabel = \Adl\Data\Catalog::tradeTitle($selected);
       </div>
 
       <div>
-        <label class="field" for="service-image">Visuel (optionnel)</label>
-        <input class="input" id="service-image" type="file" name="image" accept="image/jpeg,image/png,image/webp,image/gif" data-cover-file>
+        <span class="field" id="service-image-label">Visuel (optionnel)</span>
+        <?php
+          $filePickId = 'service-image';
+          $filePickName = 'image';
+          $filePickAccept = 'image/jpeg,image/png,image/webp,image/gif';
+          $filePickButton = 'Choisir un visuel';
+          $filePickDrop = true;
+          $filePickAttrs = 'data-cover-file aria-labelledby="service-image-label"';
+          require ADL_ROOT . '/app/Views/partials/file-pick.php';
+        ?>
         <p class="field-help">JPG, PNG ou WebP, 5 Mo max. Sans visuel, un visuel charté affiche le métier.</p>
         <div class="service-cover-preview">
           <?= service_cover_html($coverLabel) ?>

@@ -277,8 +277,15 @@ if ($rateKind === 'percent') {
               <input class="input" name="portfolio[<?= $i ?>][image_url]" value="<?= e((string) ($item['image_url'] ?? '')) ?>" placeholder="Lien vers un visuel (optionnel)">
             </div>
             <textarea class="textarea" name="portfolio[<?= $i ?>][description]" rows="3" placeholder="Ce que vous avez fait, pour qui, dans quelles contraintes."><?= e((string) ($item['description'] ?? '')) ?></textarea>
-            <label class="field">Visuel (JPG, PNG, WebP — 5 Mo max)</label>
-            <input class="input" type="file" name="portfolio_file[<?= $i ?>]" accept="image/jpeg,image/png,image/webp,image/gif">
+            <span class="field">Visuel (JPG, PNG, WebP — 5 Mo max)</span>
+            <?php
+              $filePickName = 'portfolio_file[' . $i . ']';
+              $filePickAccept = 'image/jpeg,image/png,image/webp,image/gif';
+              $filePickButton = 'Choisir un visuel';
+              $filePickEmpty = !empty($item['image']) ? 'Visuel actuel — choisir un autre fichier pour le remplacer' : null;
+              $filePickDrop = true;
+              require ADL_ROOT . '/app/Views/partials/file-pick.php';
+            ?>
             <?php if (!empty($item['image'])): ?>
               <div class="portfolio-preview" style="background-image:url('<?= e((string) $item['image']) ?>')"></div>
             <?php endif; ?>
@@ -308,8 +315,18 @@ if ($rateKind === 'percent') {
     <p><?= e($verifyLabel) ?><?php if (!empty($p['verification_doc_name'])): ?> · <?= e((string) $p['verification_doc_name']) ?><?php endif; ?></p>
     <form method="post" action="<?= e(url('/espace/vitrine/justificatif')) ?>" enctype="multipart/form-data" class="param-form">
       <?= csrf_field() ?>
-      <label class="field" for="justificatif">KBIS, avis SIREN, attestation URSSAF ou équivalent (PDF, JPG, PNG — 8 Mo)</label>
-      <input class="input" id="justificatif" type="file" name="justificatif" accept=".pdf,image/jpeg,image/png,image/webp" required>
+      <span class="field" id="justificatif-label">KBIS, avis SIREN, attestation URSSAF ou équivalent (PDF, JPG, PNG — 8 Mo)</span>
+      <?php
+        $filePickId = 'justificatif';
+        $filePickName = 'justificatif';
+        $filePickAccept = '.pdf,image/jpeg,image/png,image/webp';
+        $filePickRequired = true;
+        $filePickButton = 'Choisir un justificatif';
+        $filePickEmpty = !empty($p['verification_doc_name']) ? (string) $p['verification_doc_name'] : null;
+        $filePickDrop = true;
+        $filePickAttrs = 'aria-labelledby="justificatif-label"';
+        require ADL_ROOT . '/app/Views/partials/file-pick.php';
+      ?>
       <label class="field" for="verify-note" style="margin-top: 12px;">Note (optionnel)</label>
       <input class="input" id="verify-note" name="note" value="<?= e((string) ($p['verification_note'] ?? '')) ?>" placeholder="Numéro SIRET, forme juridique…">
       <div class="auth-actions" style="margin-top: 14px;">
@@ -371,8 +388,14 @@ if ($rateKind === 'percent') {
       <input class="input" name="portfolio[__i__][image_url]" placeholder="Lien vers un visuel (optionnel)">
     </div>
     <textarea class="textarea" name="portfolio[__i__][description]" rows="3" placeholder="Ce que vous avez fait, pour qui."></textarea>
-    <label class="field">Visuel (JPG, PNG, WebP — 5 Mo max)</label>
-    <input class="input" type="file" name="portfolio_file[__i__]" accept="image/jpeg,image/png,image/webp,image/gif">
+    <span class="field">Visuel (JPG, PNG, WebP — 5 Mo max)</span>
+    <?php
+      $filePickName = 'portfolio_file[__i__]';
+      $filePickAccept = 'image/jpeg,image/png,image/webp,image/gif';
+      $filePickButton = 'Choisir un visuel';
+      $filePickDrop = true;
+      require ADL_ROOT . '/app/Views/partials/file-pick.php';
+    ?>
     <button type="button" class="text-btn" data-repeat-remove>Retirer cette pièce</button>
   </div>
 </template>

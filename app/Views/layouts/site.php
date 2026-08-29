@@ -52,7 +52,7 @@
   <?php if (!empty($isAccueil)): ?>
   <link rel="preload" as="image" href="<?= e(photo(0)) ?>">
   <?php endif; ?>
-  <link rel="stylesheet" href="<?= e(asset('css/app.css')) ?>?v=m44">
+  <link rel="stylesheet" href="<?= e(asset('css/app.css')) ?>?v=m46">
   <link rel="icon" href="<?= e(asset('img/favicon.ico')) ?>?v=3" sizes="any">
   <link rel="icon" type="image/png" href="<?= e(asset('img/favicon-32x32.png')) ?>?v=3" sizes="32x32">
   <link rel="apple-touch-icon" href="<?= e(asset('img/apple-touch-icon.png')) ?>?v=3">
@@ -162,7 +162,7 @@
                 </a>
                 <a href="<?= e(url('/espace/notifications')) ?>" class="header-icon-link" aria-label="<?= $headerUnreadAlerts > 0 ? 'Notifications (' . $headerUnreadAlerts . ')' : 'Notifications' ?>" title="Notifications">
                   <?= icon('bell', 20) ?>
-                  <?php if ($headerUnreadAlerts > 0): ?><span class="badge-soft"><?= $headerUnreadAlerts ?></span><?php endif; ?>
+                  <?php if ($headerUnreadAlerts > 0): ?><span class="badge-orange"><?= $headerUnreadAlerts ?></span><?php endif; ?>
                 </a>
               </div>
             </nav>
@@ -301,6 +301,6 @@
       </footer>
     </div>
   </div>
-  <script src="<?= e(asset('js/app.js')) ?>?v=m32"></script>
+  <script src="<?= e(asset('js/app.js')) ?>?v=m33"></script>
 </body>
 </html>

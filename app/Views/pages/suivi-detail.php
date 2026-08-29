@@ -89,8 +89,16 @@ $mine = !empty($action['mine']);
                 <textarea class="textarea" id="jalon-note" name="note" rows="4" placeholder="Ce qui est inclus, ce qui ne l’est pas…"><?= e((string) ($order['quote_note'] ?? '')) ?></textarea>
               </div>
               <div>
-                <label class="field" for="jalon-doc">Devis PDF (facultatif)</label>
-                <input class="input" id="jalon-doc" type="file" name="document" accept=".pdf,.doc,.docx,.odt,image/jpeg,image/png,image/webp">
+                <span class="field" id="jalon-doc-quote-label">Devis PDF (facultatif)</span>
+                <?php
+                  $filePickId = 'jalon-doc';
+                  $filePickName = 'document';
+                  $filePickAccept = '.pdf,.doc,.docx,.odt,image/jpeg,image/png,image/webp';
+                  $filePickButton = 'Choisir un devis';
+                  $filePickDrop = true;
+                  $filePickAttrs = 'aria-labelledby="jalon-doc-quote-label"';
+                  require ADL_ROOT . '/app/Views/partials/file-pick.php';
+                ?>
               </div>
               <div class="jalon-actions">
                 <button class="btn-orange" type="submit"><?= e((string) $action['cta']) ?></button>
@@ -131,8 +139,16 @@ $mine = !empty($action['mine']);
                 <textarea class="textarea" id="jalon-note" name="note" rows="3" placeholder="IBAN, référence, échéance…"></textarea>
               </div>
               <div>
-                <label class="field" for="jalon-doc">Facture (PDF ou image)</label>
-                <input class="input" id="jalon-doc" type="file" name="document" accept=".pdf,.doc,.docx,.odt,image/jpeg,image/png,image/webp">
+                <span class="field" id="jalon-doc-invoice-label">Facture (PDF ou image)</span>
+                <?php
+                  $filePickId = 'jalon-doc';
+                  $filePickName = 'document';
+                  $filePickAccept = '.pdf,.doc,.docx,.odt,image/jpeg,image/png,image/webp';
+                  $filePickButton = 'Choisir une facture';
+                  $filePickDrop = true;
+                  $filePickAttrs = 'aria-labelledby="jalon-doc-invoice-label"';
+                  require ADL_ROOT . '/app/Views/partials/file-pick.php';
+                ?>
               </div>
               <div class="jalon-actions">
                 <button class="btn-orange" type="submit"><?= e((string) $action['cta']) ?></button>
@@ -168,8 +184,16 @@ $mine = !empty($action['mine']);
                 <textarea class="textarea" id="jalon-note" name="note" rows="3" placeholder="Fichiers transmis, points d’attention…"></textarea>
               </div>
               <div>
-                <label class="field" for="jalon-doc">Livrable (facultatif)</label>
-                <input class="input" id="jalon-doc" type="file" name="document" accept=".pdf,.doc,.docx,.odt,image/jpeg,image/png,image/webp">
+                <span class="field" id="jalon-doc-deliver-label">Livrable (facultatif)</span>
+                <?php
+                  $filePickId = 'jalon-doc';
+                  $filePickName = 'document';
+                  $filePickAccept = '.pdf,.doc,.docx,.odt,image/jpeg,image/png,image/webp';
+                  $filePickButton = 'Choisir un livrable';
+                  $filePickDrop = true;
+                  $filePickAttrs = 'aria-labelledby="jalon-doc-deliver-label"';
+                  require ADL_ROOT . '/app/Views/partials/file-pick.php';
+                ?>
               </div>
               <div class="jalon-actions">
                 <button class="btn-orange" type="submit"><?= e((string) $action['cta']) ?></button>
