@@ -13,23 +13,27 @@ final class OAuth
 
     public static function featureEnabled(): bool
     {
-        try {
-            $fromDb = Setting::get('oauth_enabled');
-            if (is_string($fromDb) && $fromDb !== '') {
-                return in_array(strtolower($fromDb), ['1', 'true', 'yes', 'on'], true);
-            }
-        } catch (\Throwable) {
-        }
-        return Env::bool('OAUTH_ENABLED', false);
+        return self::boolSetting('oauth_enabled', 'OAUTH_ENABLED', false);
+    }
+
+    public static function providerEnabled(string $provider): bool
+    {
+        [$settingKey, $envKey] = self::flagKeys($provider);
+        return self::boolSetting($settingKey, $envKey, true);
+    }
+
+    public static function hasCredentials(string $provider): bool
+    {
+        $cfg = self::config($provider);
+        return $cfg !== null && $cfg['client_id'] !== '' && $cfg['client_secret'] !== '';
     }
 
     public static function enabled(string $provider): bool
     {
-        if (!self::featureEnabled()) {
-            return false;
-        }
-        $cfg = self::config($provider);
-        return $cfg !== null && $cfg['client_id'] !== '' && $cfg['client_secret'] !== '';
+        return in_array($provider, self::PROVIDERS, true)
+            && self::featureEnabled()
+            && self::providerEnabled($provider)
+            && self::hasCredentials($provider);
     }
 
     /** @return list<string> */
@@ -51,6 +55,75 @@ final class OAuth
             'facebook' => 'Facebook',
             default => $provider,
         };
+    }
+
+    /**
+     * @return array{
+     *   feature: bool,
+     *   live_count: int,
+     *   providers: array<string, array{
+     *     id: string,
+     *     label: string,
+     *     enabled: bool,
+     *     client_id: string,
+     *     secret_set: bool,
+     *     live: bool,
+     *     status: string,
+     *     status_label: string,
+     *     missing: list<string>,
+     *     redirect_uri: string
+     *   }>
+     * }
+     */
+    public static function adminSnapshot(): array
+    {
+        $providers = [];
+        foreach (self::PROVIDERS as $provider) {
+            $cfg = self::config($provider) ?? [];
+            $clientId = (string) ($cfg['client_id'] ?? '');
+            $secretSet = ($cfg['client_secret'] ?? '') !== '';
+            $flagged = self::providerEnabled($provider);
+            $missing = [];
+            if ($clientId === '') {
+                $missing[] = $provider === 'facebook' ? 'Identifiant d’application manquant.' : 'Client ID manquant.';
+            }
+            if (!$secretSet) {
+                $missing[] = $provider === 'facebook' ? 'Clé secrète manquante.' : 'Client secret manquant.';
+            }
+
+            if (!$flagged) {
+                $status = 'off';
+                $statusLabel = 'Désactivé';
+            } elseif ($missing !== []) {
+                $status = 'incomplete';
+                $statusLabel = 'Clés manquantes';
+            } elseif (!self::featureEnabled()) {
+                $status = 'ready';
+                $statusLabel = 'Prêt';
+            } else {
+                $status = 'live';
+                $statusLabel = 'Actif';
+            }
+
+            $providers[$provider] = [
+                'id' => $provider,
+                'label' => self::label($provider),
+                'enabled' => $flagged,
+                'client_id' => $clientId,
+                'secret_set' => $secretSet,
+                'live' => self::enabled($provider),
+                'status' => $status,
+                'status_label' => $statusLabel,
+                'missing' => $missing,
+                'redirect_uri' => self::redirectUri($provider),
+            ];
+        }
+
+        return [
+            'feature' => self::featureEnabled(),
+            'live_count' => count(self::enabledProviders()),
+            'providers' => $providers,
+        ];
     }
 
     /** @return array<string, string>|null */
@@ -159,6 +232,35 @@ final class OAuth
     public static function column(string $provider): string
     {
         return $provider === 'facebook' ? 'facebook_id' : 'google_id';
+    }
+
+    /** @return array{0: string, 1: string} */
+    private static function flagKeys(string $provider): array
+    {
+        return $provider === 'facebook'
+            ? ['oauth_facebook_enabled', 'OAUTH_FACEBOOK_ENABLED']
+            : ['oauth_google_enabled', 'OAUTH_GOOGLE_ENABLED'];
+    }
+
+    private static function boolSetting(string $settingKey, string $envKey, bool $default): bool
+    {
+        try {
+            $fromDb = Setting::get($settingKey);
+            if (is_string($fromDb) && $fromDb !== '') {
+                return self::isTruthy($fromDb);
+            }
+        } catch (\Throwable) {
+        }
+        $fromEnv = Env::get($envKey);
+        if (is_string($fromEnv) && $fromEnv !== '') {
+            return self::isTruthy($fromEnv);
+        }
+        return $default;
+    }
+
+    private static function isTruthy(string $value): bool
+    {
+        return in_array(strtolower(trim($value)), ['1', 'true', 'yes', 'on'], true);
     }
 
     private static function cred(string $settingKey, string $envKey): string

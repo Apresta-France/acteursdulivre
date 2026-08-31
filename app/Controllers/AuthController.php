@@ -309,14 +309,14 @@ final class AuthController
         if (Auth::check()) {
             redirect(Onboarding::homePath(Auth::user() ?? []));
         }
-        if (!OAuth::featureEnabled()) {
-            unset($_SESSION['_oauth_pending']);
-            flash('error', 'La connexion Google ou Facebook n\'est pas disponible pour le moment.');
-            redirect('/inscription');
-        }
         $pending = $this->pendingProfile();
         if (!$pending) {
             flash('error', 'Reprenez la connexion Google ou Facebook pour créer votre compte.');
+            redirect('/inscription');
+        }
+        if (!OAuth::enabled((string) ($pending['provider'] ?? ''))) {
+            unset($_SESSION['_oauth_pending']);
+            flash('error', 'La connexion Google ou Facebook n\'est pas disponible pour le moment.');
             redirect('/inscription');
         }
         View::page('inscription-sso', [
@@ -328,14 +328,14 @@ final class AuthController
 
     public function completeSso(Request $request): void
     {
-        if (!OAuth::featureEnabled()) {
-            unset($_SESSION['_oauth_pending']);
-            flash('error', 'La connexion Google ou Facebook n\'est pas disponible pour le moment.');
-            redirect('/inscription');
-        }
         $pending = $this->pendingProfile();
         if (!$pending) {
             flash('error', 'Reprenez la connexion Google ou Facebook pour créer votre compte.');
+            redirect('/inscription');
+        }
+        if (!OAuth::enabled((string) ($pending['provider'] ?? ''))) {
+            unset($_SESSION['_oauth_pending']);
+            flash('error', 'La connexion Google ou Facebook n\'est pas disponible pour le moment.');
             redirect('/inscription');
         }
 

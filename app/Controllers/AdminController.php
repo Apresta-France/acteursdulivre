@@ -6,6 +6,7 @@ namespace Adl\Controllers;
 
 use Adl\Core\Auth;
 use Adl\Core\Mailer;
+use Adl\Core\OAuth;
 use Adl\Core\Request;
 use Adl\Core\View;
 use Adl\Data\AdminCatalog;
@@ -619,11 +620,9 @@ final class AdminController
 
     public function sso(Request $request): void
     {
-        $settings = Setting::all();
         $this->page('sso', 'admin/sso', [
-            'settings' => $settings,
-            'googleSecretSet' => trim((string) ($settings['google_client_secret'] ?? '')) !== '',
-            'facebookSecretSet' => trim((string) ($settings['facebook_app_secret'] ?? '')) !== '',
+            'sso' => OAuth::adminSnapshot(),
+            'warning' => flash('warning'),
         ]);
     }
 
@@ -631,6 +630,8 @@ final class AdminController
     {
         Auth::requireAdmin();
         Setting::set('oauth_enabled', $request->bool('oauth_enabled') ? '1' : '0');
+        Setting::set('oauth_google_enabled', $request->bool('oauth_google_enabled') ? '1' : '0');
+        Setting::set('oauth_facebook_enabled', $request->bool('oauth_facebook_enabled') ? '1' : '0');
         foreach (['google_client_id', 'facebook_app_id'] as $key) {
             Setting::set($key, $request->string($key, ''));
         }
@@ -640,7 +641,23 @@ final class AdminController
                 Setting::set($key, $secret);
             }
         }
+
+        $notes = [];
+        if ($request->bool('oauth_enabled')) {
+            foreach (OAuth::PROVIDERS as $provider) {
+                $flag = $provider === 'facebook' ? 'oauth_facebook_enabled' : 'oauth_google_enabled';
+                if ($request->bool($flag) && !OAuth::hasCredentials($provider)) {
+                    $notes[] = OAuth::label($provider) . ' est activé mais les clés sont incomplètes : le bouton n’apparaîtra pas.';
+                }
+            }
+            if (!$request->bool('oauth_google_enabled') && !$request->bool('oauth_facebook_enabled')) {
+                $notes[] = 'Le SSO est activé, mais ni Google ni Facebook ne le sont. Cochez au moins un fournisseur.';
+            }
+        }
         flash('saved', true);
+        if ($notes !== []) {
+            flash('warning', implode(' ', $notes));
+        }
         redirect('/admin/sso');
     }
 

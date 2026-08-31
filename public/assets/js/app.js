@@ -799,6 +799,18 @@
   });
 
   document.addEventListener('click', function (event) {
+    var copyField = event.target.closest('[data-copy]');
+    if (copyField && !event.target.closest('[data-share]')) {
+      event.preventDefault();
+      var value = copyField.getAttribute('data-copy') || '';
+      if (!value) return;
+      copyText(value).then(function () {
+        showToast('Copié dans le presse-papiers.');
+      }).catch(function () {
+        showToast('Impossible de copier.');
+      });
+      return;
+    }
     var copyBtn = event.target.closest('[data-share-copy]');
     var nativeBtn = event.target.closest('[data-share-native]');
     if (!copyBtn && !nativeBtn) return;
