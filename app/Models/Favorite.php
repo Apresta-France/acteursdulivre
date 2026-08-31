@@ -51,10 +51,16 @@ final class Favorite
             );
             return false;
         }
-        Database::query(
-            'INSERT INTO favorites (user_id, service_id, created_at) VALUES (?, ?, NOW())',
-            [$userId, $serviceId]
-        );
+        try {
+            Database::query(
+                'INSERT INTO favorites (user_id, service_id, created_at) VALUES (?, ?, NOW())',
+                [$userId, $serviceId]
+            );
+        } catch (\PDOException $e) {
+            if (!str_contains($e->getMessage(), 'Duplicate')) {
+                throw $e;
+            }
+        }
         return true;
     }
 }

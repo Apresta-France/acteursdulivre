@@ -33,10 +33,24 @@ if (!$p) {
     <div class="profile-hero-actions">
       <?php if (!empty($p['is_busy'])): ?>
         <p class="profile-avail-note">Planning actuellement chargé. Vous pouvez laisser un message pour une date ultérieure.</p>
-        <a class="btn-orange" href="<?= e(url('/espace/messages?avec=' . (int) ($p['user_id'] ?? 0) . '&sujet=' . rawurlencode('Message'))) ?>">Envoyer un message</a>
+        <form method="post" action="<?= e(url('/espace/messages')) ?>">
+          <?= csrf_field() ?>
+          <input type="hidden" name="avec" value="<?= (int) ($p['user_id'] ?? 0) ?>">
+          <input type="hidden" name="sujet" value="Message">
+          <button class="btn-orange" type="submit">Envoyer un message</button>
+        </form>
       <?php else: ?>
-        <a class="btn-orange" href="<?= e(url('/espace/messages?avec=' . (int) ($p['user_id'] ?? 0) . '&sujet=' . rawurlencode('Demande de devis'))) ?>">Demander un devis</a>
-        <a class="btn-ghost-light" href="<?= e(url('/espace/messages?avec=' . (int) ($p['user_id'] ?? 0))) ?>">Envoyer un message</a>
+        <form method="post" action="<?= e(url('/espace/messages')) ?>">
+          <?= csrf_field() ?>
+          <input type="hidden" name="avec" value="<?= (int) ($p['user_id'] ?? 0) ?>">
+          <input type="hidden" name="sujet" value="Demande de devis">
+          <button class="btn-orange" type="submit">Demander un devis</button>
+        </form>
+        <form method="post" action="<?= e(url('/espace/messages')) ?>">
+          <?= csrf_field() ?>
+          <input type="hidden" name="avec" value="<?= (int) ($p['user_id'] ?? 0) ?>">
+          <button class="btn-ghost-light" type="submit">Envoyer un message</button>
+        </form>
       <?php endif; ?>
       <?php
         $shareUrl = $meta['url'] ?? \Adl\Data\Share::current();

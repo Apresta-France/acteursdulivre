@@ -16,8 +16,6 @@ $orderHref = '/espace/commande?prestation=' . rawurlencode((string) $service['sl
 if ($selectedPackage) {
     $orderHref .= '&formule=' . (int) ($selectedPackage['id'] ?? 0);
 }
-$contactHref = '/espace/messages?avec=' . (int) ($service['user_id'] ?? 0)
-    . '&sujet=' . rawurlencode((string) $service['title']);
 $ctaLabel = 'Commander — ' . format_euros($baseAmount);
 ?>
 <div class="fiche-page">
@@ -129,7 +127,13 @@ $ctaLabel = 'Commander — ' . format_euros($baseAmount);
           </div>
           <?php if ($canOrder): ?>
             <a class="btn-orange" data-order-cta data-order-cta-label href="<?= e(url($orderHref)) ?>"><?= e($ctaLabel) ?></a>
-            <a class="btn-ghost" href="<?= e(url($contactHref)) ?>">Envoyer un message</a>
+            <form method="post" action="<?= e(url('/espace/messages')) ?>">
+              <?= csrf_field() ?>
+              <input type="hidden" name="avec" value="<?= (int) ($service['user_id'] ?? 0) ?>">
+              <input type="hidden" name="sujet" value="<?= e((string) $service['title']) ?>">
+              <input type="hidden" name="prestation" value="<?= (int) ($service['id'] ?? 0) ?>">
+              <button class="btn-ghost" type="submit">Envoyer un message</button>
+            </form>
             <p class="field-help" style="margin: 12px 0 0;">Aucun paiement ici : le prestataire envoie un devis, vous vous réglez hors plateforme, jalon par jalon.</p>
           <?php else: ?>
             <p class="field-help" style="margin: 12px 0 0;">C’est votre prestation. Connectez-vous avec un autre compte pour tester une commande.</p>

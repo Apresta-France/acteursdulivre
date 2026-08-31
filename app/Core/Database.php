@@ -33,6 +33,7 @@ final class Database
                 PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
                 PDO::ATTR_EMULATE_PREPARES => false,
             ]);
+            self::applyTimezone(self::$pdo);
         } catch (PDOException $e) {
             throw new RuntimeException('Connexion à la base impossible : ' . $e->getMessage(), 0, $e);
         }
@@ -102,5 +103,15 @@ final class Database
     public static function reset(): void
     {
         self::$pdo = null;
+    }
+
+    private static function applyTimezone(PDO $pdo): void
+    {
+        try {
+            $name = Env::get('APP_TIMEZONE', 'Europe/Paris');
+            $offset = (new \DateTimeImmutable('now', new \DateTimeZone($name)))->format('P');
+            $pdo->exec('SET time_zone = ' . $pdo->quote($offset));
+        } catch (\Throwable) {
+        }
     }
 }

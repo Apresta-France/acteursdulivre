@@ -148,7 +148,7 @@ final class AccountController
                 }
             }
         } catch (\Throwable $e) {
-            flash('error', $e->getMessage());
+            flash('error', user_error_message($e));
             flash('old', $request->all());
             redirect('/espace/bienvenue?etape=' . rawurlencode($step));
         }
@@ -268,6 +268,11 @@ final class AccountController
             flash('old', $old);
             redirect('/espace/publier');
         }
+        if (!in_array($category, Catalog::trades(), true)) {
+            flash('error', 'Choisissez un métier dans la liste.');
+            flash('old', $old);
+            redirect('/espace/publier');
+        }
 
         $attachmentName = null;
         $attachmentPath = null;
@@ -283,7 +288,7 @@ final class AccountController
                 $attachmentName = (string) ($request->file('attachment')['name'] ?? 'Pièce jointe');
             }
         } catch (\Throwable $e) {
-            flash('error', $e->getMessage());
+            flash('error', user_error_message($e));
             flash('old', $old);
             redirect('/espace/publier');
         }
@@ -394,6 +399,9 @@ final class AccountController
                 break;
             }
         }
+        if (!$selected && ($service['packages'] ?? []) !== []) {
+            $selected = $service['packages'][0];
+        }
         $pickedOptions = Service::pickOptions($service, $request->list('options'));
         $amount = $selected
             ? (int) ($selected['price'] ?? 0)
@@ -404,6 +412,16 @@ final class AccountController
         $brief = $request->string('brief');
 
         try {
+            $existing = Order::findPendingForService((int) $user['id'], (int) $service['id']);
+            if ($existing) {
+                Conversation::open((int) $user['id'], (int) $service['user_id'], [
+                    'subject' => (string) $service['title'],
+                    'order_id' => (int) $existing['id'],
+                    'service_id' => (int) $service['id'],
+                ]);
+                flash('saved', 'Cette commande est déjà ouverte. Le prestataire envoie le devis depuis le suivi.');
+                redirect('/espace/suivi/' . (int) $existing['id']);
+            }
             $order = Order::create([
                 'buyer_id' => (int) $user['id'],
                 'seller_id' => (int) $service['user_id'],
@@ -426,7 +444,7 @@ final class AccountController
                 Conversation::send((int) $thread['id'], (int) $user['id'], $brief, notify: false);
             }
         } catch (\Throwable $e) {
-            flash('error', $e->getMessage());
+            flash('error', user_error_message($e));
             flash('old', $request->all());
             redirect('/espace/commande?prestation=' . rawurlencode((string) $service['slug']));
         }
@@ -499,7 +517,7 @@ final class AccountController
             OrderMilestone::complete((int) $id, (int) $user['id'], 'deliver');
             flash('saved', OrderMilestone::flashFor('deliver'));
         } catch (\Throwable $e) {
-            flash('error', $e->getMessage());
+            flash('error', user_error_message($e));
         }
         redirect('/espace/suivi/' . (int) $id);
     }
@@ -521,7 +539,7 @@ final class AccountController
             self::pingJalonThread((int) $id, (int) $user['id'], $code, $file);
             flash('saved', OrderMilestone::flashFor($code));
         } catch (\Throwable $e) {
-            flash('error', $e->getMessage());
+            flash('error', user_error_message($e));
         }
         redirect('/espace/suivi/' . (int) $id);
     }
@@ -529,11 +547,35 @@ final class AccountController
     public function suiviRefuseQuote(Request $request, string $id): void
     {
         $user = Auth::requireUser();
+        $note = $request->string('note');
         try {
-            OrderMilestone::refuseQuote((int) $id, (int) $user['id']);
-            flash('saved', 'Devis refusé. La commande est clôturée. Vous pouvez en ouvrir une autre ou écrire au prestataire.');
+            OrderMilestone::refuseQuote((int) $id, (int) $user['id'], $note);
+            $ping = Conversation::jalonPings()['quote_refused'] ?? 'Devis refusé. Vous pouvez en proposer un nouveau dans le suivi.';
+            if ($note !== '') {
+                $ping .= "\n\n" . $note;
+            }
+            self::pingOrderThread((int) $id, (int) $user['id'], $ping, false);
+            flash('saved', 'Devis refusé. Le prestataire peut proposer un nouveau devis. Précisez-lui ce qui ne convenait pas dans la messagerie si besoin.');
         } catch (\Throwable $e) {
-            flash('error', $e->getMessage());
+            flash('error', user_error_message($e));
+        }
+        redirect('/espace/suivi/' . (int) $id);
+    }
+
+    public function suiviCancel(Request $request, string $id): void
+    {
+        $user = Auth::requireUser();
+        try {
+            OrderMilestone::cancelByBuyer((int) $id, (int) $user['id']);
+            self::pingOrderThread(
+                (int) $id,
+                (int) $user['id'],
+                Conversation::jalonPings()['order_cancelled'] ?? 'Commande annulée.',
+                false
+            );
+            flash('saved', 'Commande annulée. Le dossier est clôturé.');
+        } catch (\Throwable $e) {
+            flash('error', user_error_message($e));
         }
         redirect('/espace/suivi/' . (int) $id);
     }
@@ -545,9 +587,36 @@ final class AccountController
             Order::openDispute((int) $id, (int) $user['id'], $request->string('reason'));
             flash('saved', 'Litige ouvert. L\'équipe de médiation a été prévenue.');
         } catch (\Throwable $e) {
-            flash('error', $e->getMessage());
+            flash('error', user_error_message($e));
         }
         redirect('/espace/suivi/' . (int) $id);
+    }
+
+    public function suiviFile(Request $request, string $id, string $code): void
+    {
+        $user = Auth::requireUser();
+        $order = Order::findForUser((int) $id, (int) $user['id']);
+        if (!$order && ($user['role'] ?? '') === 'admin') {
+            $order = Order::find((int) $id);
+        }
+        if (!$order) {
+            not_found('Cette commande est introuvable.');
+        }
+        $row = null;
+        foreach ($order['milestones'] ?? [] as $step) {
+            if (($step['code'] ?? '') === $code) {
+                $row = $step;
+                break;
+            }
+        }
+        $path = trim((string) ($row['file_path'] ?? ''));
+        if ($path === '') {
+            not_found('Aucune pièce jointe.');
+        }
+        $name = trim((string) ($row['file_name'] ?? '')) ?: 'document';
+        $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+        $mimes = upload_mime_map();
+        send_any_upload($path, $name, $mimes[$ext][0] ?? 'application/octet-stream');
     }
 
     public function commandes(Request $request): void
@@ -683,7 +752,7 @@ final class AccountController
             try {
                 Invoice::assertCanOffer((int) $user['id']);
             } catch (\Throwable $e) {
-                flash('error', $e->getMessage());
+                flash('error', user_error_message($e));
                 flash('old', $old);
                 redirect('/espace/prestations/creer');
             }
@@ -701,7 +770,7 @@ final class AccountController
                 $imagePath = $stored;
             }
         } catch (\Throwable $e) {
-            flash('error', $e->getMessage());
+            flash('error', user_error_message($e));
             flash('old', $old);
             redirect('/espace/prestations/creer');
         }
@@ -726,7 +795,7 @@ final class AccountController
                 'status' => $draft ? 'draft' : 'published',
             ], $packages, $options);
         } catch (\RuntimeException $e) {
-            flash('error', $e->getMessage());
+            flash('error', user_error_message($e));
             flash('old', $old);
             redirect('/espace/prestations/creer');
         } catch (\Throwable) {
@@ -736,6 +805,9 @@ final class AccountController
         }
 
         flash('saved', $draft ? 'Brouillon enregistré.' : 'Prestation publiée : elle apparaît dans l\'annuaire.');
+        if ($draft && !empty($service['id'])) {
+            redirect('/espace/prestations/' . (int) $service['id'] . '/modifier');
+        }
         redirect(!empty($service['slug']) ? '/prestations/' . $service['slug'] : '/espace/prestations');
     }
 
@@ -833,6 +905,11 @@ final class AccountController
             flash('old', $old);
             redirect('/espace/prestations/' . (int) $id . '/modifier');
         }
+        if ($specialty !== '' && !in_array($specialty, Catalog::specialties(), true)) {
+            flash('error', 'Choisissez une spécialité dans la liste.');
+            flash('old', $old);
+            redirect('/espace/prestations/' . (int) $id . '/modifier');
+        }
 
         $imagePath = $service['image_path'] ?? null;
         try {
@@ -846,7 +923,7 @@ final class AccountController
                 $imagePath = $stored;
             }
         } catch (\Throwable $e) {
-            flash('error', $e->getMessage());
+            flash('error', user_error_message($e));
             flash('old', $old);
             redirect('/espace/prestations/' . (int) $id . '/modifier');
         }
@@ -871,12 +948,15 @@ final class AccountController
                 'status' => $draft ? 'draft' : 'published',
             ], $packages, $options);
         } catch (\Throwable $e) {
-            flash('error', $e->getMessage());
+            flash('error', user_error_message($e));
             flash('old', $old);
             redirect('/espace/prestations/' . (int) $id . '/modifier');
         }
 
         flash('saved', $draft ? 'Brouillon enregistré.' : 'Prestation mise à jour.');
+        if ($draft) {
+            redirect('/espace/prestations/' . (int) $id . '/modifier');
+        }
         redirect(!empty($updated['slug']) ? '/prestations/' . $updated['slug'] : '/espace/prestations');
     }
 
@@ -891,7 +971,7 @@ final class AccountController
         try {
             Service::deleteForUser((int) $id, (int) $user['id']);
         } catch (\RuntimeException $e) {
-            flash('error', $e->getMessage());
+            flash('error', user_error_message($e));
             redirect('/espace/prestations');
         }
 
@@ -904,15 +984,21 @@ final class AccountController
         $user = Auth::requireUser();
         $avec = $request->int('avec');
         if ($avec) {
+            $context = [
+                'subject' => $request->string('sujet'),
+                'service_id' => $request->int('prestation'),
+                'mission_id' => $request->int('mission'),
+            ];
             try {
-                $thread = Conversation::open((int) $user['id'], $avec, [
-                    'subject' => $request->string('sujet'),
-                    'service_id' => $request->int('prestation'),
-                    'mission_id' => $request->int('mission'),
-                ]);
-                redirect('/espace/messages/' . (int) $thread['id']);
+                $thread = Conversation::findBetween((int) $user['id'], $avec, $context);
+                if (!$thread && $request->isPost()) {
+                    $thread = Conversation::open((int) $user['id'], $avec, $context);
+                }
+                if ($thread) {
+                    redirect('/espace/messages/' . (int) $thread['id']);
+                }
             } catch (\Throwable $e) {
-                flash('error', $e->getMessage());
+                flash('error', user_error_message($e));
             }
         }
         try {
@@ -944,9 +1030,53 @@ final class AccountController
             'thread' => $thread,
             'messages' => Conversation::messages((int) $id),
             'quoteHref' => self::quoteManageHref($thread, (int) $user['id']),
+            'alreadyReported' => Conversation::hasOpenReport((int) $id, (int) $user['id']),
             'saved' => flash('saved'),
             'error' => flash('error'),
         ]);
+    }
+
+    public function messageSync(Request $request, string $id): void
+    {
+        $user = Auth::requireUser();
+        $thread = Conversation::findForUser((int) $id, (int) $user['id']);
+        if (!$thread) {
+            json_response(['error' => 'Cette conversation est introuvable.'], 404);
+        }
+        Conversation::markRead((int) $id, (int) $user['id']);
+        $after = max(0, (int) ($request->int('after', 0) ?? 0));
+        $incoming = Conversation::messages((int) $id, $after);
+        $payload = [];
+        foreach ($incoming as $msg) {
+            $body = trim((string) ($msg['body'] ?? ''));
+            $preview = $body !== ''
+                ? $body
+                : (!empty($msg['file_label']) ? 'Pièce jointe : ' . $msg['file_label'] : '');
+            if (mb_strlen($preview) > 70) {
+                $preview = mb_strimwidth($preview, 0, 70, '…');
+            }
+            $payload[] = [
+                'id' => (int) ($msg['id'] ?? 0),
+                'html' => inbox_message_html($msg, (int) $user['id']),
+                'preview' => $preview,
+                'when' => (string) ($msg['when'] ?? ''),
+                'created_at' => (string) ($msg['created_iso'] ?? ''),
+            ];
+        }
+        header('Cache-Control: no-store');
+        json_response(['messages' => $payload]);
+    }
+
+    public function messageReport(Request $request, string $id): void
+    {
+        $user = Auth::requireUser();
+        try {
+            Conversation::report((int) $id, (int) $user['id'], $request->string('reason'), $request->string('body'));
+            flash('saved', 'Signalement reçu. L\'équipe de modération le traitera.');
+        } catch (\Throwable $e) {
+            flash('error', user_error_message($e));
+        }
+        redirect('/espace/messages/' . (int) $id);
     }
 
     public function messageSend(Request $request, string $id): void
@@ -955,7 +1085,7 @@ final class AccountController
         try {
             Conversation::send((int) $id, (int) $user['id'], $request->string('body'), $request->file('attachment'));
         } catch (\Throwable $e) {
-            flash('error', $e->getMessage());
+            flash('error', user_error_message($e));
         }
         redirect('/espace/messages/' . (int) $id);
     }
@@ -988,7 +1118,7 @@ final class AccountController
             );
             flash('saved', 'Candidature envoyée. Le porteur de projet a été prévenu.');
         } catch (\Throwable $e) {
-            flash('error', $e->getMessage());
+            flash('error', user_error_message($e));
             flash('old', $request->all());
             redirect('/missions/' . rawurlencode($slug));
         }
@@ -1003,7 +1133,7 @@ final class AccountController
             flash('saved', 'Candidature acceptée. La commande est ouverte.');
             redirect('/espace/suivi/' . (int) $order['id']);
         } catch (\Throwable $e) {
-            flash('error', $e->getMessage());
+            flash('error', user_error_message($e));
             redirect('/espace/missions');
         }
     }
@@ -1015,7 +1145,7 @@ final class AccountController
             Application::reject((int) $id, (int) $user['id']);
             flash('saved', 'Candidature écartée.');
         } catch (\Throwable $e) {
-            flash('error', $e->getMessage());
+            flash('error', user_error_message($e));
         }
         $back = $request->string('back');
         redirect($back !== '' ? $back : '/espace/missions');
@@ -1028,7 +1158,7 @@ final class AccountController
             $on = Favorite::toggle((int) $user['id'], (int) $id);
             flash('saved', $on ? 'Prestation ajoutée aux favoris.' : 'Prestation retirée des favoris.');
         } catch (\Throwable $e) {
-            flash('error', $e->getMessage());
+            flash('error', user_error_message($e));
         }
         $back = $request->string('back');
         redirect($back !== '' ? $back : '/espace/favoris');
@@ -1122,7 +1252,7 @@ final class AccountController
                 'body' => $request->string('body'),
             ]);
         } catch (\Throwable $e) {
-            flash('error', $e->getMessage());
+            flash('error', user_error_message($e));
             redirect('/espace/avis');
         }
         flash('saved', 'Mission validée. Merci pour votre avis : la facture de commission est le dernier jalon du prestataire.');
@@ -1234,7 +1364,7 @@ final class AccountController
             }
             PortfolioItem::replace((int) $profile['id'], $items);
         } catch (\Throwable $e) {
-            flash('error', $e->getMessage());
+            flash('error', user_error_message($e));
             redirect('/espace/vitrine');
         }
 
@@ -1250,7 +1380,7 @@ final class AccountController
         try {
             Profile::setAvailabilityStatus((int) $user['id'], $status);
         } catch (\Throwable $e) {
-            flash('error', $e->getMessage());
+            flash('error', user_error_message($e));
             redirect('/espace');
         }
 
@@ -1309,7 +1439,7 @@ final class AccountController
         try {
             User::storeAvatar((int) $user['id'], $request->file('avatar'));
         } catch (\Throwable $e) {
-            flash('error', $e->getMessage());
+            flash('error', user_error_message($e));
             redirect('/espace/parametres');
         }
 
@@ -1338,7 +1468,7 @@ final class AccountController
             ]);
             flash('saved', true);
         } catch (\Throwable $e) {
-            flash('error', $e->getMessage());
+            flash('error', user_error_message($e));
         }
         redirect('/espace/parametres');
     }
@@ -1397,7 +1527,7 @@ final class AccountController
             flash('saved', 'Votre compte a été clôturé.');
             redirect('/');
         } catch (\Throwable $e) {
-            flash('error', $e->getMessage());
+            flash('error', user_error_message($e));
             redirect('/espace/parametres');
         }
     }
@@ -1405,9 +1535,6 @@ final class AccountController
     public function parametresPassword(Request $request): void
     {
         $user = Auth::requireUser();
-        if (User::isOauthOnly($user)) {
-            flash('error', 'Ce compte se connecte avec Google ou Facebook. Ajoutez un mot de passe uniquement si vous en créez un nouveau.');
-        }
         $current = $request->string('current_password');
         $password = $request->string('password');
         $confirm = $request->string('password_confirmation');
@@ -1436,7 +1563,7 @@ final class AccountController
             Profile::storeVerificationDoc((int) $user['id'], $request->file('justificatif'), $request->string('note'));
             flash('saved', 'Justificatif envoyé. L\'équipe le vérifiera sous peu.');
         } catch (\Throwable $e) {
-            flash('error', $e->getMessage());
+            flash('error', user_error_message($e));
         }
         redirect('/espace/vitrine');
     }
@@ -1524,13 +1651,13 @@ final class AccountController
             return ['name' => null, 'path' => null];
         }
         $ext = ['pdf', 'jpg', 'jpeg', 'png', 'webp', 'doc', 'docx', 'odt'];
-        $stored = store_upload($file, 'orders/' . $orderId, $ext, 8 * 1024 * 1024);
+        $stored = store_private_upload($file, 'orders/' . $orderId, $ext, 8 * 1024 * 1024);
         if ($stored === null) {
             return ['name' => null, 'path' => null];
         }
         return [
-            'name' => (string) ($file['name'] ?? 'Document'),
-            'path' => $stored,
+            'name' => (string) ($stored['name'] ?? $file['name'] ?? 'Document'),
+            'path' => (string) ($stored['path'] ?? ''),
         ];
     }
 
@@ -1572,6 +1699,21 @@ final class AccountController
                 ? $file
                 : null;
             Conversation::send((int) $thread['id'], $userId, $body, null, $publicUpload);
+        } catch (\Throwable) {
+        }
+    }
+
+    private static function pingOrderThread(int $orderId, int $userId, string $body, bool $notify = false): void
+    {
+        $order = Order::findForUser($orderId, $userId);
+        if (!$order) {
+            return;
+        }
+        try {
+            $thread = Conversation::open((int) $order['buyer_id'], (int) $order['seller_id'], [
+                'order_id' => $orderId,
+            ]);
+            Conversation::send((int) $thread['id'], $userId, $body, null, null, $notify);
         } catch (\Throwable) {
         }
     }
@@ -1710,7 +1852,8 @@ final class AccountController
         }
         $normalized = str_replace(',', '.', $value);
         if (is_numeric($normalized)) {
-            return (int) round((float) $normalized);
+            $amount = (int) round((float) $normalized);
+            return $amount < 0 ? null : $amount;
         }
         $clean = preg_replace('/[^\d]/', '', $value) ?? '';
         return $clean !== '' ? (int) $clean : null;

@@ -20,7 +20,7 @@
         <article class="side-card">
           <div class="mission-row-title">
             <?= e((string) $order['title']) ?>
-            <span class="status-pill status-<?= e((string) $order['status']) ?>"><?= e((string) $order['status_label']) ?></span>
+            <span class="status-pill status-<?= e((string) ($order['status_tone'] ?? $order['status'])) ?>"><?= e((string) $order['status_label']) ?></span>
           </div>
           <div class="mission-row-sub">
             <?= e((string) $order['num']) ?>

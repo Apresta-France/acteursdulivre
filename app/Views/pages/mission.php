@@ -109,7 +109,7 @@ if (!$live) {
         <div class="side-card">
           <div class="side-kicker">Prestataire ?</div>
           <p>Connectez-vous pour envoyer un devis. Aucune commission sur la candidature.</p>
-          <a class="btn-orange" href="<?= e(url('/connexion')) ?>">Se connecter</a>
+          <a class="btn-orange" href="<?= e(url('/connexion?next=' . rawurlencode((string) ($live['href'] ?? '/missions')))) ?>">Se connecter</a>
         </div>
       <?php endif; ?>
       <?php if (!empty($suggestions)): ?>

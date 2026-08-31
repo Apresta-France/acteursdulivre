@@ -73,7 +73,7 @@ final class Profile
             $row['trades'] = self::decode($row['trades_json'] ?? null);
             $row['name'] = User::displayName($row);
             $row['doc_href'] = !empty($row['verification_doc_path'])
-                ? uploaded((string) $row['verification_doc_path'])
+                ? '/admin/verifications/' . (int) $row['user_id'] . '/justificatif'
                 : '';
             $row['status'] = (string) ($row['verification_status'] ?? '') ?: self::VERIFY_PENDING;
             $row['status_label'] = match ($row['status']) {
@@ -115,7 +115,7 @@ final class Profile
     public static function storeVerificationDoc(int $userId, array $file, string $note = ''): void
     {
         $profile = self::ensure($userId);
-        $stored = store_upload($file, 'verifications', ['pdf', 'jpg', 'jpeg', 'png', 'webp'], 8 * 1024 * 1024);
+        $stored = store_private_upload($file, 'verifications', ['pdf', 'jpg', 'jpeg', 'png', 'webp'], 8 * 1024 * 1024);
         if ($stored === null) {
             throw new \RuntimeException('Ajoutez un justificatif (PDF, JPG ou PNG, 8 Mo max).');
         }
@@ -125,8 +125,8 @@ final class Profile
                  verification_status = ?, updated_at = NOW()
              WHERE user_id = ?',
             [
-                $stored,
-                (string) ($file['name'] ?? 'justificatif'),
+                $stored['path'],
+                $stored['name'] !== '' ? $stored['name'] : (string) ($file['name'] ?? 'justificatif'),
                 trim($note) !== '' ? trim($note) : null,
                 self::VERIFY_PENDING,
                 $userId,
@@ -541,7 +541,7 @@ final class Profile
         $row['verification_status'] = (string) ($row['verification_status'] ?? '');
         $row['is_verified'] = $row['verification_status'] === self::VERIFY_VERIFIED;
         $row['verification_doc_href'] = !empty($row['verification_doc_path'])
-            ? uploaded((string) $row['verification_doc_path'])
+            ? '/admin/verifications/' . (int) ($row['user_id'] ?? 0) . '/justificatif'
             : '';
         return $row;
     }

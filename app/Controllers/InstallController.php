@@ -44,7 +44,7 @@ final class InstallController
             'APP_TIMEZONE' => 'Europe/Paris',
             'DB_HOST' => $request->string('DB_HOST', '127.0.0.1'),
             'DB_PORT' => $request->string('DB_PORT', '3306'),
-            'DB_NAME' => $request->string('DB_NAME', 'acteursdulivre'),
+            'DB_NAME' => preg_replace('/[^a-zA-Z0-9_]/', '', $request->string('DB_NAME', 'acteursdulivre')) ?: 'acteursdulivre',
             'DB_USER' => $request->string('DB_USER', 'root'),
             'DB_PASS' => $request->string('DB_PASS', ''),
             'DB_CHARSET' => 'utf8mb4',
@@ -81,13 +81,22 @@ final class InstallController
         try {
             Env::write(ADL_ROOT . '/.env', $values);
             $pdo = Database::connectWithoutDatabase();
-            $dbName = preg_replace('/[^a-zA-Z0-9_]/', '', $values['DB_NAME']) ?: 'acteursdulivre';
+            $dbName = $values['DB_NAME'];
             $pdo->exec('CREATE DATABASE IF NOT EXISTS `' . $dbName . '` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci');
             Database::reset();
             Env::load(ADL_ROOT . '/.env');
             Migrator::migrate();
 
-            if (!User::findByEmail($adminEmail)) {
+            $existingAdmin = User::findByEmail($adminEmail);
+            if ($existingAdmin) {
+                User::setPassword((int) $existingAdmin['id'], $adminPassword);
+                User::update((int) $existingAdmin['id'], [
+                    'first_name' => $adminFirst,
+                    'last_name' => $adminLast,
+                    'role' => 'admin',
+                    'status' => 'active',
+                ]);
+            } else {
                 User::create([
                     'email' => $adminEmail,
                     'password' => $adminPassword,

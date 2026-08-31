@@ -5,7 +5,9 @@
       <h1>Suivi de commande</h1>
       <p>Devis, factures, règlements déclarés hors plateforme, livraison et validation.</p>
     </div>
-    <a class="btn-navy" href="<?= e(url('/espace/commandes')) ?>">Mes commandes</a>
+    <?php if (\Adl\Models\User::seeksServices(\Adl\Core\Auth::user() ?? [])): ?>
+      <a class="btn-navy" href="<?= e(url('/espace/commandes')) ?>">Mes commandes</a>
+    <?php endif; ?>
   </div>
 
   <?php if ($orders === []): ?>
@@ -19,7 +21,7 @@
         <article class="side-card">
           <div class="mission-row-title">
             <?= e((string) $order['title']) ?>
-            <span class="status-pill status-<?= e((string) $order['status']) ?>"><?= e((string) $order['status_label']) ?></span>
+            <span class="status-pill status-<?= e((string) ($order['status_tone'] ?? $order['status'])) ?>"><?= e((string) $order['status_label']) ?></span>
           </div>
           <div class="mission-row-sub">
             <?= e((string) $order['num']) ?> · <?= e((string) $order['by']) ?> · <?= e((string) $order['when']) ?>

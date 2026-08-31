@@ -35,5 +35,13 @@ date_default_timezone_set(Env::get('APP_TIMEZONE', 'Europe/Paris'));
 
 if (session_status() !== PHP_SESSION_ACTIVE && PHP_SAPI !== 'cli' && !$isCron && !$isSeo) {
     session_name(Env::get('SESSION_NAME', 'adl_session'));
+    $secure = !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off';
+    session_set_cookie_params([
+        'lifetime' => 0,
+        'path' => '/',
+        'secure' => $secure,
+        'httponly' => true,
+        'samesite' => 'Lax',
+    ]);
     session_start();
 }

@@ -108,7 +108,15 @@ final class Mailer
     public static function replace(string $content, array $vars): string
     {
         foreach ($vars as $key => $value) {
-            $content = str_replace(['{{ ' . $key . ' }}', '{{' . $key . '}}'], (string) $value, $content);
+            $key = (string) $key;
+            $raw = (string) $value;
+            $safe = str_starts_with($key, 'lien') || str_ends_with($key, '_html')
+                ? $raw
+                : htmlspecialchars($raw, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+            if ($key === 'message') {
+                $safe = nl2br($safe);
+            }
+            $content = str_replace(['{{ ' . $key . ' }}', '{{' . $key . '}}'], $safe, $content);
         }
         return $content;
     }
@@ -128,7 +136,7 @@ final class Mailer
     {
         try {
             $value = Setting::get($key);
-            if ($value !== null && $value !== '') {
+            if ($value !== null) {
                 return $value;
             }
         } catch (\Throwable) {

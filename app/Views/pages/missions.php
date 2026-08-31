@@ -16,7 +16,7 @@ $count = count($missions);
   <form class="chip-row missions-filters" method="get" action="<?= e(url('/missions')) ?>">
     <a class="chip<?= $cat === '' ? ' is-on' : '' ?>" href="<?= e(url('/missions')) ?>">Tous les métiers</a>
     <?php foreach ($trades as $trade): ?>
-      <a class="chip<?= $cat === $trade ? ' is-on' : '' ?>" href="<?= e(url(\Adl\Data\Catalog::tradePath($trade))) ?>"><?= e($trade) ?></a>
+      <a class="chip<?= $cat === $trade ? ' is-on' : '' ?>" href="<?= e(url('/missions?metier=' . rawurlencode($trade))) ?>"><?= e($trade) ?></a>
     <?php endforeach; ?>
   </form>
 

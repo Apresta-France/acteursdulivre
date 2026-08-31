@@ -42,7 +42,12 @@ $online = count(array_filter($services, static fn (array $s): bool => ($s['statu
             <strong><?= e((string) $s['price']) ?></strong>
           </div>
           <div class="auth-actions" style="margin-top: 14px;">
-            <a class="btn-ghost" href="<?= e(url((string) $s['href'])) ?>">Voir la fiche</a>
+            <?php
+              $ficheHref = (($s['status'] ?? '') === 'published')
+                  ? (string) $s['href']
+                  : '/espace/prestations/' . (int) $s['id'] . '/modifier';
+            ?>
+            <a class="btn-ghost" href="<?= e(url($ficheHref)) ?>"><?= (($s['status'] ?? '') === 'published') ? 'Voir la fiche' : 'Ouvrir le brouillon' ?></a>
             <a class="btn-navy" href="<?= e(url('/espace/prestations/' . (int) $s['id'] . '/modifier')) ?>">Modifier</a>
             <form method="post" action="<?= e(url('/espace/prestations/' . (int) $s['id'] . '/supprimer')) ?>" onsubmit="return confirm('Supprimer cette prestation ? Elle disparaîtra de l’annuaire.');">
               <?= csrf_field() ?>

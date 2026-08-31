@@ -74,6 +74,15 @@ final class Auth
         $user = self::user();
         if (!$user) {
             $_SESSION['_intended'] = $_SERVER['REQUEST_URI'] ?? '/espace';
+            $avec = (int) ($_POST['avec'] ?? 0);
+            if ($avec > 0) {
+                $_SESSION['_pending_message'] = [
+                    'avec' => $avec,
+                    'sujet' => trim((string) ($_POST['sujet'] ?? '')),
+                    'prestation' => (int) ($_POST['prestation'] ?? 0),
+                    'mission' => (int) ($_POST['mission'] ?? 0),
+                ];
+            }
             redirect('/connexion');
         }
         return $user;
@@ -151,8 +160,15 @@ final class Auth
             self::clearRememberCookie();
             return null;
         }
-        $_SESSION['user_id'] = (int) $row['user_id'];
-        return (int) $row['user_id'];
+        $userId = (int) $row['user_id'];
+        try {
+            Database::query('DELETE FROM remember_tokens WHERE selector = ?', [$selector]);
+        } catch (\Throwable) {
+        }
+        session_regenerate_id(true);
+        $_SESSION['user_id'] = $userId;
+        self::issueRemember($userId);
+        return $userId;
     }
 
     private static function forgetRemember(): void

@@ -90,9 +90,14 @@ final class Application
         if (!$mission || ($mission['status'] ?? '') !== 'open') {
             throw new \RuntimeException('Cette recherche n\'accepte plus de candidatures.');
         }
+        $owner = User::find((int) ($mission['user_id'] ?? 0));
+        if (!$owner || ($owner['status'] ?? '') !== 'active') {
+            throw new \RuntimeException('Cette recherche n\'accepte plus de candidatures.');
+        }
         if ((int) ($mission['user_id'] ?? 0) === $userId) {
             throw new \RuntimeException('Vous ne pouvez pas candidater à votre propre recherche.');
         }
+        Invoice::assertCanOffer($userId);
         if (self::findForUserOnMission($missionId, $userId)) {
             throw new \RuntimeException('Vous avez déjà candidaté à cette recherche.');
         }
@@ -102,11 +107,18 @@ final class Application
             throw new \RuntimeException('Présentez votre approche en quelques lignes.');
         }
 
-        Database::query(
-            'INSERT INTO applications (mission_id, user_id, price, delay, message, status, created_at)
-             VALUES (?, ?, ?, ?, ?, "sent", NOW())',
-            [$missionId, $userId, $price, $delay !== '' ? $delay : null, $message]
-        );
+        try {
+            Database::query(
+                'INSERT INTO applications (mission_id, user_id, price, delay, message, status, created_at)
+                 VALUES (?, ?, ?, ?, ?, "sent", NOW())',
+                [$missionId, $userId, $price, $delay !== '' && $delay !== null ? $delay : null, $message]
+            );
+        } catch (\PDOException $e) {
+            if (str_contains($e->getMessage(), 'Duplicate')) {
+                throw new \RuntimeException('Vous avez déjà candidaté à cette recherche.');
+            }
+            throw $e;
+        }
 
         $application = self::find((int) Database::lastId()) ?? [];
         $who = User::displayName(User::find($userId) ?? []);
@@ -146,10 +158,13 @@ final class Application
         if (!$application || (int) ($application['owner_id'] ?? 0) !== $ownerId) {
             throw new \RuntimeException('Cette candidature est introuvable.');
         }
-        if (!in_array((string) ($application['status'] ?? ''), ['sent', 'viewed'], true)) {
+        $updated = Database::query(
+            'UPDATE applications SET status = "rejected" WHERE id = ? AND status IN ("sent", "viewed")',
+            [$id]
+        );
+        if ($updated->rowCount() < 1) {
             throw new \RuntimeException('Cette candidature a déjà été traitée.');
         }
-        Database::query('UPDATE applications SET status = "rejected" WHERE id = ?', [$id]);
         Notification::create(
             (int) $application['user_id'],
             'Candidature non retenue',
@@ -180,18 +195,32 @@ final class Application
                 throw new \RuntimeException('Cette candidature a déjà été traitée.');
             }
 
+            $claimed = Database::query(
+                'UPDATE missions SET status = "assigned" WHERE id = ? AND status = "open"',
+                [(int) $application['mission_id']]
+            );
+            if ($claimed->rowCount() < 1) {
+                throw new \RuntimeException('Cette recherche n\'est plus ouverte.');
+            }
+
+            $accepted = Database::query(
+                'UPDATE applications SET status = "accepted" WHERE id = ? AND status IN ("sent", "viewed")',
+                [$id]
+            );
+            if ($accepted->rowCount() < 1) {
+                throw new \RuntimeException('Cette candidature a déjà été traitée.');
+            }
+
             $pending = array_values(array_filter(
                 self::forMission((int) $application['mission_id']),
                 static fn (array $row): bool => (int) $row['id'] !== $id
                     && in_array((string) ($row['status'] ?? ''), ['sent', 'viewed'], true)
             ));
 
-            Database::query('UPDATE applications SET status = "accepted" WHERE id = ?', [$id]);
             Database::query(
                 'UPDATE applications SET status = "rejected" WHERE mission_id = ? AND id != ? AND status IN ("sent", "viewed")',
                 [(int) $application['mission_id'], $id]
             );
-            Mission::setStatus((int) $application['mission_id'], 'assigned');
 
             $order = Order::create([
                 'buyer_id' => $ownerId,

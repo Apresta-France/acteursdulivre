@@ -20,6 +20,10 @@ final class CronController
 
     public function index(Request $request): void
     {
+        if ($this->isHead()) {
+            $this->json(200, ['ok' => true, 'skipped' => true, 'reason' => 'head']);
+            return;
+        }
         if (!$this->authorized($request)) {
             $this->json(403, ['ok' => false, 'error' => 'Jeton cron manquant ou invalide.']);
             return;
@@ -33,6 +37,10 @@ final class CronController
 
     public function run(Request $request, string $task): void
     {
+        if ($this->isHead()) {
+            $this->json(200, ['ok' => true, 'skipped' => true, 'reason' => 'head']);
+            return;
+        }
         if (!$this->authorized($request)) {
             $this->json(403, ['ok' => false, 'error' => 'Jeton cron manquant ou invalide.']);
             return;
@@ -55,9 +63,17 @@ final class CronController
 
     private function authorized(Request $request): bool
     {
-        $expected = trim((string) (Env::get('CRON_TOKEN', '') ?: Env::get('APP_KEY', '')));
+        $expected = trim((string) Env::get('CRON_TOKEN', ''));
         $given = $request->string('token');
+        if ($given === '') {
+            $given = trim((string) ($_SERVER['HTTP_X_CRON_TOKEN'] ?? ''));
+        }
         return $expected !== '' && $given !== '' && hash_equals($expected, $given);
+    }
+
+    private function isHead(): bool
+    {
+        return strtoupper((string) ($_SERVER['REQUEST_METHOD'] ?? '')) === 'HEAD';
     }
 
     /** @return list<array{id: string, label: string, url: string}> */

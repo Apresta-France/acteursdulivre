@@ -71,10 +71,12 @@ return static function (Router $router): void {
     $router->post('/espace/commande', [AccountController::class, 'commandeSave']);
     $router->get('/espace/suivi', [AccountController::class, 'suivi']);
     $router->get('/espace/suivi/{id}', [AccountController::class, 'suiviShow']);
+    $router->get('/espace/suivi/{id}/fichier/{code}', [AccountController::class, 'suiviFile']);
     $router->post('/espace/suivi/{id}/accepter', [AccountController::class, 'suiviAccept']);
     $router->post('/espace/suivi/{id}/livrer', [AccountController::class, 'suiviDeliver']);
     $router->post('/espace/suivi/{id}/jalon', [AccountController::class, 'suiviJalon']);
     $router->post('/espace/suivi/{id}/devis/refuser', [AccountController::class, 'suiviRefuseQuote']);
+    $router->post('/espace/suivi/{id}/annuler', [AccountController::class, 'suiviCancel']);
     $router->post('/espace/suivi/{id}/litige', [AccountController::class, 'suiviDispute']);
     $router->get('/espace/commandes', [AccountController::class, 'commandes']);
     $router->get('/espace/missions', [AccountController::class, 'missions']);
@@ -88,8 +90,11 @@ return static function (Router $router): void {
     $router->post('/espace/prestations/{id}/modifier', [AccountController::class, 'prestationEditSave']);
     $router->post('/espace/prestations/{id}/supprimer', [AccountController::class, 'prestationDelete']);
     $router->get('/espace/messages', [AccountController::class, 'messages']);
+    $router->post('/espace/messages', [AccountController::class, 'messages']);
     $router->get('/espace/messages/{id}', [AccountController::class, 'messageShow']);
+    $router->get('/espace/messages/{id}/sync', [AccountController::class, 'messageSync']);
     $router->post('/espace/messages/{id}', [AccountController::class, 'messageSend']);
+    $router->post('/espace/messages/{id}/signaler', [AccountController::class, 'messageReport']);
     $router->get('/espace/messages/{id}/fichier/{mid}', [AccountController::class, 'messageFile']);
     $router->get('/espace/notifications', [AccountController::class, 'notifications']);
     $router->post('/espace/notifications/lues', [AccountController::class, 'notificationsRead']);
@@ -114,10 +119,13 @@ return static function (Router $router): void {
 
     $router->get('/admin', [AdminController::class, 'dashboard']);
     $router->get('/admin/verifications', [AdminController::class, 'verifications']);
+    $router->get('/admin/verifications/{id}/justificatif', [AdminController::class, 'verificationFile']);
     $router->post('/admin/verifications/{id}', [AdminController::class, 'verificationSave']);
     $router->get('/admin/moderation', [AdminController::class, 'moderation']);
     $router->post('/admin/moderation/{type}/{id}', [AdminController::class, 'moderationSave']);
     $router->post('/admin/signalements/{id}', [AdminController::class, 'reportSave']);
+    $router->get('/admin/conversations/{id}', [AdminController::class, 'conversationShow']);
+    $router->get('/admin/conversations/{id}/fichier/{mid}', [AdminController::class, 'conversationFile']);
     $router->get('/admin/litiges', [AdminController::class, 'litiges']);
     $router->post('/admin/litiges/{id}', [AdminController::class, 'litigeSave']);
     $router->get('/admin/avis', [AdminController::class, 'avis']);

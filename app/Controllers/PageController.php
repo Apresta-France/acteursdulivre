@@ -147,16 +147,17 @@ final class PageController
         } catch (\Throwable) {
             $service = null;
         }
-        if (
-            !$service
-            || ($service['status'] ?? '') !== 'published'
-            || !User::isPublicOfferer((int) ($service['user_id'] ?? 0))
-        ) {
+        $viewer = Auth::user();
+        $isOwner = $service && $viewer && (int) ($viewer['id'] ?? 0) === (int) ($service['user_id'] ?? 0);
+        $admin = $viewer && ($viewer['role'] ?? '') === 'admin';
+        $public = $service
+            && ($service['status'] ?? '') === 'published'
+            && User::isPublicOfferer((int) ($service['user_id'] ?? 0));
+        if (!$service || (!$public && !$isOwner && !$admin)) {
             not_found('Cette prestation n\'est plus disponible.');
         }
 
-        $viewer = Auth::user();
-        $canOrder = !$viewer || (int) ($viewer['id'] ?? 0) !== (int) ($service['user_id'] ?? 0);
+        $canOrder = $public && (!$viewer || (int) ($viewer['id'] ?? 0) !== (int) ($service['user_id'] ?? 0));
         $isFavorite = false;
         if ($viewer) {
             try {
@@ -165,7 +166,10 @@ final class PageController
             }
         }
 
-        $excerpt = trim((string) ($service['excerpt'] ?: $service['by'] . ' · ' . $service['price']));
+        $excerpt = trim(plain_text((string) ($service['excerpt'] ?? '')));
+        if ($excerpt === '') {
+            $excerpt = trim((string) ($service['by'] . ' · ' . $service['price']));
+        }
         View::page('fiche', [
             'title' => $service['title'],
             'slug' => $slug,
@@ -240,12 +244,10 @@ final class PageController
 
     public function missions(Request $request): void
     {
-        $cat = $request->string('cat');
+        $cat = $request->string('metier') ?: $request->string('cat');
         if ($cat !== '') {
-            $trade = Catalog::resolveTrade($cat);
-            if ($trade !== null) {
-                redirect(Catalog::tradePath($trade), 301);
-            }
+            $resolved = Catalog::resolveTrade($cat);
+            $cat = $resolved ?? '';
         }
         $found = Catalog::search('', 'missions', $cat);
         View::page('missions', [
@@ -278,17 +280,17 @@ final class PageController
         if (!$mission) {
             not_found('Cette mission n\'est plus disponible.');
         }
-        if (($mission['status'] ?? '') === 'draft') {
-            $viewer = Auth::user();
-            $owner = $viewer && (int) ($viewer['id'] ?? 0) === (int) ($mission['user_id'] ?? 0);
-            $admin = $viewer && ($viewer['role'] ?? '') === 'admin';
-            if (!$owner && !$admin) {
-                not_found('Cette mission n\'est plus disponible.');
-            }
-        }
-
         $viewer = Auth::user();
         $isOwner = $viewer && (int) ($viewer['id'] ?? 0) === (int) ($mission['user_id'] ?? 0);
+        $admin = $viewer && ($viewer['role'] ?? '') === 'admin';
+        if (($mission['status'] ?? '') === 'draft' && !$isOwner && !$admin) {
+            not_found('Cette mission n\'est plus disponible.');
+        }
+        $ownerAccount = User::find((int) ($mission['user_id'] ?? 0));
+        if ((!$ownerAccount || ($ownerAccount['status'] ?? '') !== 'active') && !$admin && !$isOwner) {
+            not_found('Cette mission n\'est plus disponible.');
+        }
+
         $myApplication = null;
         $applications = [];
         if ($isOwner) {
@@ -314,7 +316,7 @@ final class PageController
             'slug' => $slug,
             'liveMission' => $mission,
             'isOwner' => $isOwner,
-            'canApply' => $viewer && User::offersServices($viewer) && !$isOwner && ($mission['status'] ?? '') === 'open',
+            'canApply' => $viewer && User::offersServices($viewer) && !$isOwner && !$myApplication && ($mission['status'] ?? '') === 'open',
             'myApplication' => $myApplication,
             'applications' => $applications,
             'old' => flash('old') ?: [],
@@ -447,7 +449,7 @@ final class PageController
             Newsletter::subscribe($request->string('email'));
             flash('saved', 'Inscription enregistrée. Merci.');
         } catch (\Throwable $e) {
-            flash('error', $e->getMessage());
+            flash('error', user_error_message($e));
         }
         $back = $request->string('back');
         redirect($back !== '' ? $back : '/');
@@ -457,16 +459,20 @@ final class PageController
     {
         $viewer = Auth::user();
         try {
+            $type = $request->string('type', 'user');
+            if ($type === 'conversation') {
+                throw new \RuntimeException('Signalez cette conversation depuis la messagerie.');
+            }
             Report::create(
                 $viewer ? (int) $viewer['id'] : null,
-                $request->string('type', 'user'),
+                $type,
                 $request->int('id'),
                 $request->string('reason'),
                 $request->string('body')
             );
             flash('saved', 'Signalement reçu. L\'équipe de modération le traitera.');
         } catch (\Throwable $e) {
-            flash('error', $e->getMessage());
+            flash('error', user_error_message($e));
         }
         $back = $request->string('back');
         redirect($back !== '' ? $back : '/aide');
@@ -591,7 +597,7 @@ final class PageController
             Mailer::sendTemplate('contact-interne', Mailer::fromAddress(), [
                 'nom' => $name !== '' ? $name : 'Visiteur',
                 'email' => $email,
-                'message' => nl2br(e($message)),
+                'message' => $message,
             ]);
             Mailer::sendTemplate('contact-accuse', $email, [
                 'nom' => $name !== '' ? $name : 'bonjour',

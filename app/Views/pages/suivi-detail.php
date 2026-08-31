@@ -61,11 +61,22 @@ $mine = !empty($action['mine']);
 
           <?php if ($form === 'waiting'): ?>
             <p class="jalon-hint">Tout se confirme ici. Le règlement d’argent se fait entre vous, hors de la plateforme.</p>
+            <?php if ($isBuyer && !empty($order['can_cancel_order'])): ?>
+              <div class="jalon-actions">
+                <form method="post" action="<?= e(url('/espace/suivi/' . (int) $order['id'] . '/annuler')) ?>">
+                  <?= csrf_field() ?>
+                  <button class="btn-ghost btn-danger" type="submit" onclick="return confirm('Annuler définitivement cette commande ? Cette action est irréversible.');">Annuler la commande</button>
+                </form>
+              </div>
+            <?php endif; ?>
           <?php elseif ($form === 'validate'): ?>
             <div class="jalon-actions">
               <a class="btn-orange" href="<?= e(url('/espace/avis')) ?>"><?= e((string) $action['cta']) ?></a>
             </div>
           <?php elseif ($form === 'quote'): ?>
+            <?php if (!empty($action['revision'])): ?>
+              <p class="jalon-hint">Le client a refusé le devis précédent. Les champs sont préremplis : ajustez votre proposition.</p>
+            <?php endif; ?>
             <form class="jalon-form" method="post" action="<?= e($actionUrl) ?>" enctype="multipart/form-data">
               <?= csrf_field() ?>
               <input type="hidden" name="code" value="quote">
@@ -99,6 +110,9 @@ $mine = !empty($action['mine']);
                   $filePickAttrs = 'aria-labelledby="jalon-doc-quote-label"';
                   require ADL_ROOT . '/app/Views/partials/file-pick.php';
                 ?>
+                <?php if (!empty($quote['file_href'])): ?>
+                  <p class="jalon-meta">Fichier actuel : <a class="file-chip" href="<?= e((string) $quote['file_href']) ?>"><?= e((string) ($quote['file_name'] ?? 'Devis')) ?></a></p>
+                <?php endif; ?>
               </div>
               <div class="jalon-actions">
                 <button class="btn-orange" type="submit"><?= e((string) $action['cta']) ?></button>
@@ -124,9 +138,24 @@ $mine = !empty($action['mine']);
                 <input type="hidden" name="code" value="quote_accept">
                 <button class="btn-orange" type="submit"><?= e((string) $action['cta']) ?></button>
               </form>
-              <form method="post" action="<?= e(url('/espace/suivi/' . (int) $order['id'] . '/devis/refuser')) ?>">
+            </div>
+            <div class="jalon-secondary">
+              <p class="jalon-hint">Refuser le devis laisse la commande ouverte : le prestataire peut en proposer un autre. Annuler clôture définitivement le dossier.</p>
+              <form class="jalon-form" method="post" action="<?= e(url('/espace/suivi/' . (int) $order['id'] . '/devis/refuser')) ?>">
                 <?= csrf_field() ?>
-                <button class="btn-ghost" type="submit">Refuser et clôturer</button>
+                <div>
+                  <label class="field" for="jalon-refuse-note">Message au prestataire (facultatif)</label>
+                  <textarea class="textarea" id="jalon-refuse-note" name="note" rows="3" placeholder="Budget, délai, périmètre… il pourra ajuster sa proposition."></textarea>
+                </div>
+                <div class="jalon-actions">
+                  <button class="btn-ghost" type="submit" onclick="return confirm('Refuser ce devis ? Le prestataire pourra en proposer un autre.');">Refuser le devis</button>
+                </div>
+              </form>
+              <form method="post" action="<?= e(url('/espace/suivi/' . (int) $order['id'] . '/annuler')) ?>">
+                <?= csrf_field() ?>
+                <div class="jalon-actions">
+                  <button class="btn-ghost btn-danger" type="submit" onclick="return confirm('Annuler définitivement cette commande ? Cette action est irréversible.');">Annuler la commande</button>
+                </div>
               </form>
             </div>
           <?php elseif ($form === 'invoice'): ?>

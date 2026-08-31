@@ -235,7 +235,7 @@ final class HourlyCron
             ]);
             $delay = time_ago($row['created_at'] ?? null) ?: 'il y a plus d’un jour';
             $price = isset($row['price']) && $row['price'] !== null && $row['price'] !== ''
-                ? ' pour ' . (int) $row['price'] . ' €'
+                ? ' pour ' . format_euros((int) $row['price'])
                 : '';
             $detail = $who . ' a proposé ses services' . $price . ' sur « ' . $row['mission_title'] . ' » (' . $delay . ').';
 
@@ -334,7 +334,7 @@ final class HourlyCron
                  FROM orders o
                  JOIN users buyer ON buyer.id = o.buyer_id
                  JOIN users seller ON seller.id = o.seller_id
-                 WHERE o.status IN ('pending', 'in_progress', 'accepted', 'active', 'delivered')
+                 WHERE o.status IN ('pending', 'in_progress', 'accepted', 'active')
                    AND o.created_at <= DATE_SUB(NOW(), INTERVAL {$hours} HOUR)"
             );
         } catch (Throwable) {
@@ -344,9 +344,7 @@ final class HourlyCron
         foreach ($orders as $order) {
             $title = 'Commande ' . (string) ($order['number'] ?? ('#' . $order['id']));
             $status = (string) ($order['status'] ?? 'pending');
-            $detailBuyer = $status === 'delivered'
-                ? 'Une livraison attend votre validation sur ' . $title . '.'
-                : $title . ' est toujours en cours. Un point rapide évite les malentendus.';
+            $detailBuyer = $title . ' est toujours en cours. Un point rapide évite les malentendus.';
             $detailSeller = $title . ' est toujours marquée « ' . $status . ' ». Tenez le porteur informé de l’avancement.';
 
             if (($order['buyer_status'] ?? '') === 'active') {
@@ -356,7 +354,7 @@ final class HourlyCron
                     'first_name' => $order['buyer_first'],
                     'last_name' => $order['buyer_last'],
                 ];
-                $link = $status === 'delivered' ? '/espace/suivi' : '/espace/commandes';
+                $link = '/espace/commandes';
                 if (self::dispatch(
                     $buyer,
                     'pending_project',
@@ -367,7 +365,7 @@ final class HourlyCron
                         'detail' => $detailBuyer,
                         'lien' => url($link),
                     ],
-                    $status === 'delivered' ? 'Livraison à valider' : 'Projet en cours',
+                    'Projet en cours',
                     $detailBuyer,
                     $link,
                     'order',
@@ -418,7 +416,12 @@ final class HourlyCron
                  JOIN users u ON u.id = m.user_id
                  WHERE m.status = 'assigned'
                    AND u.status = 'active'
-                   AND m.created_at <= DATE_SUB(NOW(), INTERVAL {$hours} HOUR)"
+                   AND EXISTS (
+                       SELECT 1 FROM orders o
+                       WHERE o.mission_id = m.id
+                         AND o.status IN ('pending', 'in_progress', 'accepted', 'active')
+                         AND COALESCE(o.accepted_at, o.created_at) <= DATE_SUB(NOW(), INTERVAL {$hours} HOUR)
+                   )"
             );
         } catch (Throwable) {
             return;
@@ -522,26 +525,37 @@ final class HourlyCron
                 if ($sellerId < 1) {
                     continue;
                 }
+                $invoiceId = (int) ($invoice['id'] ?? 0);
+                if ($invoiceId < 1) {
+                    continue;
+                }
+                if (!ReminderSend::isDue('invoice_overdue', $sellerId, 7 * 24, 6, 'invoice', $invoiceId)) {
+                    continue;
+                }
                 $seller = User::find($sellerId);
-                if ($seller && !User::wantsEmail($seller, 'jalons')) {
-                    continue;
+                if (!Notification::hasUnread($sellerId, 'invoice_overdue', 'invoice', $invoiceId)) {
+                    Notification::create(
+                        $sellerId,
+                        'Facture échue — prestations suspendues',
+                        'La facture ' . $invoice['number'] . ' n\'a pas été réglée. Vos fiches ne sont plus proposées tant que le paiement n\'est pas reçu.',
+                        '/espace/facturation',
+                        'invoice_overdue',
+                        'invoice',
+                        $invoiceId
+                    );
                 }
-                if (Notification::hasUnread($sellerId, 'invoice_overdue', 'invoice', (int) $invoice['id'])) {
-                    continue;
+                if ($seller && User::wantsEmail($seller, 'jalons')) {
+                    try {
+                        Mailer::sendTemplate('facture-echue', (string) $seller['email'], [
+                            'numero' => (string) ($invoice['number'] ?? ''),
+                            'lien' => url('/espace/facturation'),
+                        ]);
+                    } catch (Throwable $e) {
+                        $errors[] = 'facture-echue ' . (string) ($seller['email'] ?? '') . ' : ' . $e->getMessage();
+                        continue;
+                    }
                 }
-                Notification::create(
-                    $sellerId,
-                    'Facture échue — prestations suspendues',
-                    'La facture ' . $invoice['number'] . ' n\'a pas été réglée. Vos fiches ne sont plus proposées tant que le paiement n\'est pas reçu.',
-                    '/espace/facturation',
-                    'invoice_overdue',
-                    'invoice',
-                    (int) $invoice['id']
-                );
-                Mailer::notify($seller, 'jalons', 'facture-echue', [
-                    'numero' => (string) ($invoice['number'] ?? ''),
-                    'lien' => url('/espace/facturation'),
-                ]);
+                ReminderSend::record('invoice_overdue', $sellerId, 'invoice', $invoiceId);
                 $stats['invoices_overdue']++;
             }
         } catch (Throwable $e) {
@@ -569,8 +583,15 @@ final class HourlyCron
         array &$errors
     ): bool {
         $userId = (int) $user['id'];
+        if ($userId < 1) {
+            return false;
+        }
+        $full = User::find($userId);
+        if ($full) {
+            $user = array_merge($user, $full);
+        }
         $email = trim((string) ($user['email'] ?? ''));
-        if ($userId < 1 || $email === '') {
+        if ($email === '') {
             return false;
         }
 
@@ -580,9 +601,6 @@ final class HourlyCron
             'unanswered_application', 'missing_mission', 'profile_incomplete' => 'missions',
             default => null,
         };
-        if ($channel !== null && !User::wantsEmail($user, $channel)) {
-            return false;
-        }
 
         if (!ReminderSend::isDue($kind, $userId, $cooldownHours, $maxSends, $subjectType, $subjectId)) {
             return false;
@@ -594,6 +612,11 @@ final class HourlyCron
             }
         } catch (Throwable $e) {
             $errors[] = $kind . ' notification #' . $userId . ' : ' . $e->getMessage();
+        }
+
+        if ($channel !== null && !User::wantsEmail($user, $channel)) {
+            ReminderSend::record($kind, $userId, $subjectType, $subjectId);
+            return true;
         }
 
         try {

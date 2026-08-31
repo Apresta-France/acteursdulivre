@@ -12,6 +12,7 @@ use Adl\Data\AdminCatalog;
 use Adl\Data\Catalog;
 use Adl\Models\Article;
 use Adl\Models\Commission;
+use Adl\Models\Conversation;
 use Adl\Models\EmailTemplate;
 use Adl\Models\Invoice;
 use Adl\Models\Mission;
@@ -116,6 +117,20 @@ final class AdminController
         ]);
     }
 
+    public function verificationFile(Request $request, string $id): void
+    {
+        Auth::requireAdmin();
+        $profile = Profile::findByUser((int) $id);
+        $path = trim((string) ($profile['verification_doc_path'] ?? ''));
+        if ($path === '') {
+            not_found('Justificatif introuvable.');
+        }
+        $name = trim((string) ($profile['verification_doc_name'] ?? '')) ?: 'justificatif';
+        $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+        $mimes = upload_mime_map();
+        send_any_upload($path, $name, $mimes[$ext][0] ?? 'application/octet-stream');
+    }
+
     public function verificationSave(Request $request, string $id): void
     {
         Auth::requireAdmin();
@@ -151,7 +166,32 @@ final class AdminController
         } catch (Throwable $e) {
             flash('error', $e->getMessage());
         }
-        redirect('/admin/moderation');
+        $back = $request->string('back');
+        redirect($back !== '' ? $back : '/admin/moderation');
+    }
+
+    public function conversationShow(Request $request, string $id): void
+    {
+        $thread = Conversation::findForAdmin((int) $id);
+        if (!$thread) {
+            not_found('Cette conversation est introuvable.');
+        }
+        $this->page('moderation', 'admin/conversation', [
+            'title' => (string) ($thread['subject'] ?? 'Conversation'),
+            'thread' => $thread,
+            'messages' => $thread['messages'] ?? [],
+        ]);
+    }
+
+    public function conversationFile(Request $request, string $id, string $mid): void
+    {
+        Auth::requireAdmin();
+        try {
+            $file = Conversation::attachmentForAdmin((int) $id, (int) $mid);
+        } catch (Throwable $e) {
+            not_found($e->getMessage());
+        }
+        send_private_file($file['path'], $file['name'], $file['mime']);
     }
 
     public function moderationSave(Request $request, string $type, string $id): void
@@ -579,8 +619,11 @@ final class AdminController
 
     public function sso(Request $request): void
     {
+        $settings = Setting::all();
         $this->page('sso', 'admin/sso', [
-            'settings' => Setting::all(),
+            'settings' => $settings,
+            'googleSecretSet' => trim((string) ($settings['google_client_secret'] ?? '')) !== '',
+            'facebookSecretSet' => trim((string) ($settings['facebook_app_secret'] ?? '')) !== '',
         ]);
     }
 
@@ -588,8 +631,14 @@ final class AdminController
     {
         Auth::requireAdmin();
         Setting::set('oauth_enabled', $request->bool('oauth_enabled') ? '1' : '0');
-        foreach (['google_client_id', 'google_client_secret', 'facebook_app_id', 'facebook_app_secret'] as $key) {
+        foreach (['google_client_id', 'facebook_app_id'] as $key) {
             Setting::set($key, $request->string($key, ''));
+        }
+        foreach (['google_client_secret', 'facebook_app_secret'] as $key) {
+            $secret = $request->string($key, '');
+            if ($secret !== '') {
+                Setting::set($key, $secret);
+            }
         }
         flash('saved', true);
         redirect('/admin/sso');

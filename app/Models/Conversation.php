@@ -63,6 +63,16 @@ final class Conversation
 
     /**
      * @param array{order_id?: ?int, mission_id?: ?int, service_id?: ?int, subject?: string} $context
+     * @return array<string, mixed>|null
+     */
+    public static function findBetween(int $fromId, int $toId, array $context = []): ?array
+    {
+        $existing = self::findPair($fromId, $toId, $context);
+        return $existing ? self::hydrateForUser($existing, $fromId) : null;
+    }
+
+    /**
+     * @param array{order_id?: ?int, mission_id?: ?int, service_id?: ?int, subject?: string} $context
      * @return array<string, mixed>
      */
     public static function open(int $fromId, int $toId, array $context = []): array
@@ -74,30 +84,40 @@ final class Conversation
             throw new RuntimeException('Ce destinataire est introuvable.');
         }
 
-        $existing = self::findPair($fromId, $toId, $context);
-        if ($existing) {
-            return self::hydrateForUser($existing, $fromId);
-        }
+        return Database::transaction(static function () use ($fromId, $toId, $context): array {
+            $existing = self::findPair($fromId, $toId, $context);
+            if ($existing) {
+                return self::hydrateForUser($existing, $fromId);
+            }
 
-        $subject = trim((string) ($context['subject'] ?? ''));
-        Database::query(
-            'INSERT INTO conversations (subject, order_id, mission_id, service_id, created_at, updated_at)
-             VALUES (?, ?, ?, ?, NOW(), NOW())',
-            [
-                $subject !== '' ? $subject : null,
-                $context['order_id'] ?? null,
-                $context['mission_id'] ?? null,
-                $context['service_id'] ?? null,
-            ]
-        );
-        $id = (int) Database::lastId();
-        Database::query(
-            'INSERT INTO conversation_participants (conversation_id, user_id) VALUES (?, ?), (?, ?)',
-            [$id, $fromId, $id, $toId]
-        );
+            $subject = trim((string) ($context['subject'] ?? ''));
+            try {
+                Database::query(
+                    'INSERT INTO conversations (subject, order_id, mission_id, service_id, created_at, updated_at)
+                     VALUES (?, ?, ?, ?, NOW(), NOW())',
+                    [
+                        $subject !== '' ? $subject : null,
+                        $context['order_id'] ?? null,
+                        $context['mission_id'] ?? null,
+                        $context['service_id'] ?? null,
+                    ]
+                );
+            } catch (\PDOException $e) {
+                $again = self::findPair($fromId, $toId, $context);
+                if ($again) {
+                    return self::hydrateForUser($again, $fromId);
+                }
+                throw $e;
+            }
+            $id = (int) Database::lastId();
+            Database::query(
+                'INSERT INTO conversation_participants (conversation_id, user_id) VALUES (?, ?), (?, ?)',
+                [$id, $fromId, $id, $toId]
+            );
 
-        $row = Database::fetch('SELECT * FROM conversations WHERE id = ?', [$id]);
-        return self::hydrateForUser($row ?? ['id' => $id], $fromId);
+            $row = Database::fetch('SELECT * FROM conversations WHERE id = ?', [$id]);
+            return self::hydrateForUser($row ?? ['id' => $id], $fromId);
+        });
     }
 
     /**
@@ -131,7 +151,7 @@ final class Conversation
             );
         } elseif (is_array($publicUpload) && trim((string) ($publicUpload['path'] ?? '')) !== '') {
             try {
-                $attachment = copy_public_upload_to_private(
+                $attachment = copy_any_upload_to_private(
                     (string) $publicUpload['path'],
                     'messages/' . $conversationId,
                     (string) ($publicUpload['name'] ?? 'fichier')
@@ -261,6 +281,142 @@ final class Conversation
         Notification::markSubjectRead($userId, 'message', 'conversation', $conversationId);
     }
 
+    public static function hasOpenReport(int $conversationId, int $reporterId): bool
+    {
+        return Report::hasOpen($reporterId, 'conversation', $conversationId);
+    }
+
+    public static function report(int $conversationId, int $reporterId, string $reason, string $body): int
+    {
+        if (!self::findForUser($conversationId, $reporterId)) {
+            throw new RuntimeException('Cette conversation est introuvable.');
+        }
+        if (self::hasOpenReport($conversationId, $reporterId)) {
+            throw new RuntimeException('Vous avez déjà signalé cette conversation. L\'équipe la traite.');
+        }
+
+        return Report::create($reporterId, 'conversation', $conversationId, $reason, $body);
+    }
+
+    /** @return array<string, mixed>|null */
+    public static function findForAdmin(int $id): ?array
+    {
+        $row = Database::fetch('SELECT * FROM conversations WHERE id = ?', [$id]);
+        if (!$row) {
+            return null;
+        }
+
+        $presented = self::present($row);
+        $participants = Database::fetchAll(
+            'SELECT u.id, u.first_name, u.last_name, u.email, u.avatar_url
+             FROM conversation_participants p
+             JOIN users u ON u.id = p.user_id
+             WHERE p.conversation_id = ?
+             ORDER BY u.id',
+            [$id]
+        );
+        $presented['participants'] = array_map(static function (array $user): array {
+            return [
+                'id' => (int) $user['id'],
+                'name' => User::displayName($user),
+                'email' => (string) ($user['email'] ?? ''),
+                'initials' => User::initials($user),
+                'avatar_url' => $user['avatar_url'] ?? '',
+                'href' => '/admin/utilisateurs/' . (int) $user['id'],
+            ];
+        }, $participants);
+
+        $messages = self::messages($id);
+        foreach ($messages as &$message) {
+            if (!empty($message['has_file'])) {
+                $message['file_href'] = '/admin/conversations/' . $id . '/fichier/' . (int) $message['id'];
+            }
+        }
+        unset($message);
+        $presented['messages'] = $messages;
+        $presented['context'] = self::adminContext($row);
+        $presented['reports'] = Report::forTarget('conversation', $id);
+
+        return $presented;
+    }
+
+    /** @return array{path: string, name: string, mime: string} */
+    public static function attachmentForAdmin(int $conversationId, int $messageId): array
+    {
+        if (!self::find($conversationId)) {
+            throw new RuntimeException('Cette conversation est introuvable.');
+        }
+        $row = Database::fetch(
+            'SELECT attachment_path, attachment_name FROM messages
+             WHERE id = ? AND conversation_id = ?',
+            [$messageId, $conversationId]
+        );
+        $path = trim((string) ($row['attachment_path'] ?? ''));
+        if ($path === '') {
+            throw new RuntimeException('Aucune pièce jointe.');
+        }
+        $name = trim((string) ($row['attachment_name'] ?? '')) ?: 'piece-jointe';
+        $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+        $mimes = upload_mime_map();
+
+        return [
+            'path' => $path,
+            'name' => $name,
+            'mime' => $mimes[$ext][0] ?? 'application/octet-stream',
+        ];
+    }
+
+    /**
+     * @param array<string, mixed> $row
+     * @return list<array{label: string, href: string}>
+     */
+    private static function adminContext(array $row): array
+    {
+        $links = [];
+        $orderId = (int) ($row['order_id'] ?? 0);
+        if ($orderId > 0) {
+            try {
+                $order = Order::find($orderId);
+            } catch (\Throwable) {
+                $order = null;
+            }
+            $links[] = [
+                'label' => 'Commande ' . (string) ($order['num'] ?? $orderId),
+                'href' => '/espace/suivi/' . $orderId,
+            ];
+        }
+        $missionId = (int) ($row['mission_id'] ?? 0);
+        if ($missionId > 0) {
+            try {
+                $mission = Mission::find($missionId);
+            } catch (\Throwable) {
+                $mission = null;
+            }
+            if ($mission) {
+                $links[] = [
+                    'label' => (string) ($mission['title'] ?? 'Mission'),
+                    'href' => (string) ($mission['href'] ?? '/admin/missions'),
+                ];
+            }
+        }
+        $serviceId = (int) ($row['service_id'] ?? 0);
+        if ($serviceId > 0) {
+            try {
+                $service = Service::find($serviceId);
+            } catch (\Throwable) {
+                $service = null;
+            }
+            if ($service) {
+                $links[] = [
+                    'label' => (string) ($service['title'] ?? 'Prestation'),
+                    'href' => (string) ($service['href'] ?? '/admin/prestations'),
+                ];
+            }
+        }
+
+        return $links;
+    }
+
     private static function unreadFromSender(int $conversationId, int $recipientId, int $senderId): int
     {
         $row = Database::fetch(
@@ -282,6 +438,8 @@ final class Conversation
         return [
             'quote' => 'Devis envoyé dans le suivi de commande.',
             'quote_accept' => 'Devis accepté. Nous continuons les jalons dans le suivi.',
+            'quote_refused' => 'Devis refusé. Vous pouvez en proposer un nouveau dans le suivi.',
+            'order_cancelled' => 'Commande annulée.',
             'deposit_invoice' => 'Facture d’acompte déposée dans le suivi de commande.',
             'deposit_paid' => 'J’ai réglé l’acompte hors plateforme : je le confirme dans le suivi.',
             'deposit_ack' => 'Acompte bien reçu, je démarre la mission.',
@@ -305,24 +463,28 @@ final class Conversation
     }
 
     /** @return list<array<string, mixed>> */
-    public static function messages(int $conversationId): array
+    public static function messages(int $conversationId, int $afterId = 0): array
     {
         $orderId = (int) (Database::fetch(
             'SELECT order_id FROM conversations WHERE id = ?',
             [$conversationId]
         )['order_id'] ?? 0);
-        $rows = Database::fetchAll(
-            'SELECT m.*, u.first_name, u.last_name, u.avatar_url
+        $sql = 'SELECT m.*, u.first_name, u.last_name, u.avatar_url
              FROM messages m
              JOIN users u ON u.id = m.user_id
-             WHERE m.conversation_id = ?
-             ORDER BY m.id ASC',
-            [$conversationId]
-        );
+             WHERE m.conversation_id = ?';
+        $params = [$conversationId];
+        if ($afterId > 0) {
+            $sql .= ' AND m.id > ?';
+            $params[] = $afterId;
+        }
+        $sql .= ' ORDER BY m.id ASC';
+        $rows = Database::fetchAll($sql, $params);
         return array_map(static function (array $row) use ($orderId): array {
             $row['who'] = User::displayName($row);
             $row['initials'] = User::initials($row);
-            $row['when'] = time_ago($row['created_at'] ?? null);
+            $row['when'] = format_message_when($row['created_at'] ?? null);
+            $row['created_iso'] = datetime_iso($row['created_at'] ?? null);
             $row['has_file'] = trim((string) ($row['attachment_path'] ?? '')) !== '';
             $row['file_href'] = $row['has_file']
                 ? '/espace/messages/' . (int) $row['conversation_id'] . '/fichier/' . (int) $row['id']
@@ -357,6 +519,8 @@ final class Conversation
         } elseif ($serviceId > 0) {
             $sql .= ' AND c.service_id = ?';
             $params[] = $serviceId;
+        } else {
+            $sql .= ' AND c.order_id IS NULL AND c.mission_id IS NULL AND c.service_id IS NULL';
         }
         $sql .= ' ORDER BY c.id DESC LIMIT 1';
 
@@ -402,7 +566,9 @@ final class Conversation
             $preview = 'Pièce jointe : ' . $last['attachment_name'];
         }
         $presented['preview'] = $preview !== '' ? $preview : 'Aucun message pour le moment.';
-        $presented['when'] = time_ago($last['created_at'] ?? $row['updated_at'] ?? $row['created_at'] ?? null);
+        $stamp = $last['created_at'] ?? $row['updated_at'] ?? $row['created_at'] ?? null;
+        $presented['when'] = time_ago($stamp);
+        $presented['created_iso'] = datetime_iso($stamp);
         $presented['unread'] = $unread;
         $presented['href'] = '/espace/messages/' . (int) $row['id'];
         return $presented;

@@ -266,6 +266,19 @@ final class User
         }
 
         self::update($id, $data);
+        if ($status !== 'active') {
+            try {
+                Database::query(
+                    'UPDATE missions SET status = "closed" WHERE user_id = ? AND status IN ("open", "draft")',
+                    [$id]
+                );
+                Database::query(
+                    'UPDATE services SET status = "draft" WHERE user_id = ? AND status = "published"',
+                    [$id]
+                );
+            } catch (\Throwable) {
+            }
+        }
         if ($role === 'admin' || $role === 'prestataire') {
             self::ensureProfile($id);
         }
@@ -466,6 +479,20 @@ final class User
     public static function closeAccount(int $id): void
     {
         self::assertCanClose($id);
+        try {
+            Database::query(
+                'UPDATE missions SET status = "closed" WHERE user_id = ? AND status IN ("open", "draft", "assigned")',
+                [$id]
+            );
+        } catch (\Throwable) {
+        }
+        try {
+            Database::query(
+                'UPDATE services SET status = "draft" WHERE user_id = ? AND status = "published"',
+                [$id]
+            );
+        } catch (\Throwable) {
+        }
         $token = bin2hex(random_bytes(6));
         self::update($id, [
             'first_name' => 'Compte',

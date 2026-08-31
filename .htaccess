@@ -1,5 +1,12 @@
 RewriteEngine On
 
+<FilesMatch "(^\.env|^\.git|composer\.(json|lock)$)">
+  Require all denied
+</FilesMatch>
+<FilesMatch "^\.">
+  Require all denied
+</FilesMatch>
+
 <IfModule mod_headers.c>
   <FilesMatch "\.(css|js|woff2|png|jpe?g|gif|ico|svg|webp)$">
     Header set Cache-Control "public, max-age=2592000, immutable"

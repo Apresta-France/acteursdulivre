@@ -34,25 +34,41 @@ final class Order
         }
         Invoice::assertCanOffer($sellerId);
 
-        $number = self::nextNumber();
         $optionsJson = self::encodeOptions($data['options'] ?? []);
-        Database::query(
-            'INSERT INTO orders (number, buyer_id, seller_id, service_id, mission_id, amount, status, brief, package_name, options_json, created_at)
-             VALUES (?, ?, ?, ?, ?, ?, "pending", ?, ?, ?, NOW())',
-            [
-                $number,
-                $buyerId,
-                $sellerId,
-                $data['service_id'] ?? null,
-                $data['mission_id'] ?? null,
-                (int) ($data['amount'] ?? 0),
-                trim((string) ($data['brief'] ?? '')) ?: null,
-                trim((string) ($data['package_name'] ?? '')) ?: null,
-                $optionsJson,
-            ]
-        );
+        $params = [
+            $buyerId,
+            $sellerId,
+            $data['service_id'] ?? null,
+            $data['mission_id'] ?? null,
+            (int) ($data['amount'] ?? 0),
+            trim((string) ($data['brief'] ?? '')) ?: null,
+            trim((string) ($data['package_name'] ?? '')) ?: null,
+            $optionsJson,
+        ];
+        $lastError = null;
+        $orderId = 0;
+        for ($attempt = 0; $attempt < 3; $attempt++) {
+            try {
+                Database::query(
+                    'INSERT INTO orders (number, buyer_id, seller_id, service_id, mission_id, amount, status, brief, package_name, options_json, created_at)
+                     VALUES (?, ?, ?, ?, ?, ?, "pending", ?, ?, ?, NOW())',
+                    [self::nextNumber(), ...$params]
+                );
+                $orderId = (int) Database::lastId();
+                $lastError = null;
+                break;
+            } catch (\PDOException $e) {
+                $lastError = $e;
+                if (!str_contains($e->getMessage(), 'Duplicate')) {
+                    throw $e;
+                }
+            }
+        }
+        if ($lastError !== null || $orderId < 1) {
+            throw new \RuntimeException('La commande n\'a pas pu être créée.');
+        }
 
-        $order = self::find((int) Database::lastId());
+        $order = self::find($orderId);
         if (!$order) {
             throw new \RuntimeException('La commande n\'a pas pu être créée.');
         }
@@ -161,6 +177,20 @@ final class Order
             'lien' => url('/espace/suivi/' . $id),
         ]);
         return self::find($id) ?? $order;
+    }
+
+    public static function findPendingForService(int $buyerId, int $serviceId): ?array
+    {
+        if ($buyerId < 1 || $serviceId < 1) {
+            return null;
+        }
+        $row = Database::fetch(
+            'SELECT id FROM orders
+             WHERE buyer_id = ? AND service_id = ? AND status = "pending"
+             ORDER BY id DESC LIMIT 1',
+            [$buyerId, $serviceId]
+        );
+        return $row ? self::find((int) $row['id']) : null;
     }
 
     public static function findForUser(int $id, int $userId): ?array
@@ -404,7 +434,10 @@ final class Order
         }
 
         if ($status === 'in_progress' && $current === 'dispute') {
-            $restore = !empty($order['delivered_at']) ? 'delivered' : 'in_progress';
+            $restore = 'pending';
+            if (!empty($order['accepted_at']) || !empty($order['delivered_at'])) {
+                $restore = !empty($order['delivered_at']) ? 'delivered' : 'in_progress';
+            }
             if (!empty($order['confirmed_at'])) {
                 $restore = 'confirmed';
             }
@@ -413,7 +446,7 @@ final class Order
             return;
         }
 
-        Database::query('UPDATE orders SET status = ? WHERE id = ?', [$status, $id]);
+        throw new \RuntimeException('Ce statut doit passer par le suivi à jalons, pas par un changement manuel.');
     }
 
     public static function setDisputeNote(int $id, string $note): void
@@ -691,10 +724,14 @@ final class Order
     {
         $year = date('Y');
         $row = Database::fetch(
-            'SELECT COUNT(*) AS n FROM orders WHERE number LIKE ?',
+            'SELECT number FROM orders WHERE number LIKE ? ORDER BY id DESC LIMIT 1',
             ['ADL-' . $year . '-%']
         );
-        return sprintf('ADL-%s-%04d', $year, ((int) ($row['n'] ?? 0)) + 1);
+        $next = 1;
+        if ($row && preg_match('/ADL-\d{4}-(\d+)/', (string) $row['number'], $m)) {
+            $next = (int) $m[1] + 1;
+        }
+        return sprintf('ADL-%s-%04d', $year, $next);
     }
 
     /** @return array<string, mixed> */

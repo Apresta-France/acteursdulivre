@@ -58,6 +58,7 @@ final class Mission
              FROM missions m
              JOIN users u ON u.id = m.user_id
              WHERE m.status = "open"
+               AND u.status = "active"
              ORDER BY m.created_at DESC'
         );
         return array_map([self::class, 'present'], $rows);
@@ -65,7 +66,11 @@ final class Mission
 
     public static function countOpen(): int
     {
-        $row = Database::fetch('SELECT COUNT(*) AS n FROM missions WHERE status = "open"');
+        $row = Database::fetch(
+            'SELECT COUNT(*) AS n FROM missions m
+             JOIN users u ON u.id = m.user_id
+             WHERE m.status = "open" AND u.status = "active"'
+        );
         return (int) ($row['n'] ?? 0);
     }
 

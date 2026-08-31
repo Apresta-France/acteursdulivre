@@ -54,7 +54,7 @@ $litige = $litige ?? [];
       <p>Pas de contrat type, pas d'encaissement. L'acceptation du devis dans le suivi vaut accord. Ensuite, chaque étape se confirme ici.</p>
       <ol class="mk-ol">
         <li>Le prestataire envoie le devis</li>
-        <li>Le client l'accepte — ou le refuse</li>
+        <li>Le client l'accepte, le refuse (nouveau devis possible) ou annule</li>
         <li>Facture d'acompte, règlement déclaré, accusé — si le devis le prévoit</li>
         <li>Livraison, puis facture et solde le cas échéant</li>
         <li>Le client valide et note : la commission est le dernier jalon prestataire</li>

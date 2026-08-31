@@ -64,7 +64,11 @@ final class SmtpTransport
             $this->write($fp, $this->dotStuff($payload));
             $this->write($fp, ".\r\n");
             $this->expect($fp, [250]);
-            $this->cmd($fp, 'QUIT', [221, 250]);
+            try {
+                $this->cmd($fp, 'QUIT', [221, 250]);
+            } catch (RuntimeException) {
+                // le message est déjà accepté ; un QUIT qui coupe ne doit pas relancer l'envoi
+            }
         } finally {
             fclose($fp);
         }

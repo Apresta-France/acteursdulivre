@@ -3,12 +3,13 @@ $threads = $threads ?? [];
 $thread = $thread ?? null;
 $messages = $messages ?? [];
 $quoteHref = trim((string) ($quoteHref ?? ''));
+$alreadyReported = !empty($alreadyReported);
 ?>
 <div class="espace-page">
   <div class="espace-page-head">
     <div>
       <h1>Messagerie</h1>
-      <p>Les échanges autour des recherches, des devis et des commandes. Vous pouvez joindre un fichier (PDF, image, Word, 8&nbsp;Mo max.).</p>
+      <p>Les échanges autour des recherches, des devis et des commandes. Vous pouvez joindre un fichier (PDF, image, Word, 8&nbsp;Mo max.) et signaler une conversation qui sort du cadre.</p>
     </div>
   </div>
 
@@ -32,9 +33,9 @@ $quoteHref = trim((string) ($quoteHref ?? ''));
             <?= avatar_html($item['other'] ?? [], 36) ?>
             <span>
               <strong><?= e((string) ($item['other']['name'] ?? $item['subject'])) ?></strong>
-              <em><?= e(mb_strimwidth((string) ($item['preview'] ?? ''), 0, 70, '…')) ?></em>
+              <em data-inbox-preview><?= e(mb_strimwidth((string) ($item['preview'] ?? ''), 0, 70, '…')) ?></em>
             </span>
-            <small><?= e((string) ($item['when'] ?? '')) ?></small>
+            <small<?= !empty($item['created_iso']) ? ' data-time-ago="' . e((string) $item['created_iso']) . '"' : '' ?>><?= e((string) ($item['when'] ?? '')) ?></small>
           </a>
         <?php endforeach; ?>
       </aside>
@@ -45,32 +46,49 @@ $quoteHref = trim((string) ($quoteHref ?? ''));
           </div>
         <?php else: ?>
           <div class="inbox-thread-head">
-            <?= avatar_html($thread['other'] ?? [], 40) ?>
-            <div>
-              <strong><?= e((string) ($thread['other']['name'] ?? 'Conversation')) ?></strong>
-              <em><?= e((string) ($thread['subject'] ?? '')) ?></em>
+            <div class="inbox-thread-who">
+              <?= avatar_html($thread['other'] ?? [], 40) ?>
+              <div>
+                <strong><?= e((string) ($thread['other']['name'] ?? 'Conversation')) ?></strong>
+                <em><?= e((string) ($thread['subject'] ?? '')) ?></em>
+              </div>
             </div>
+            <?php if ($alreadyReported): ?>
+              <p class="inbox-report-done">Signalement envoyé</p>
+            <?php else: ?>
+              <details class="inbox-report">
+                <summary>Signaler</summary>
+                <form method="post" action="<?= e(url('/espace/messages/' . (int) $thread['id'] . '/signaler')) ?>">
+                  <?= csrf_field() ?>
+                  <p>Signalez un contournement, des propos abusifs ou une usurpation. L'équipe lit la conversation.</p>
+                  <label class="field" for="inbox-report-reason">Motif</label>
+                  <select class="input" id="inbox-report-reason" name="reason" required>
+                    <?php foreach (\Adl\Models\Report::reasonsFor('conversation') as $value => $label): ?>
+                      <option value="<?= e($value) ?>"><?= e($label) ?></option>
+                    <?php endforeach; ?>
+                  </select>
+                  <label class="field" for="inbox-report-body">Précision</label>
+                  <textarea class="textarea" id="inbox-report-body" name="body" rows="3" placeholder="Faits observés, extraits concernés…"></textarea>
+                  <button class="btn-ghost" type="submit">Envoyer le signalement</button>
+                </form>
+              </details>
+            <?php endif; ?>
           </div>
-          <div class="inbox-messages">
+          <?php
+            $inboxUserId = (int) (\Adl\Core\Auth::id() ?? 0);
+            $inboxLastId = 0;
+            foreach ($messages as $msg) {
+                $inboxLastId = max($inboxLastId, (int) ($msg['id'] ?? 0));
+            }
+          ?>
+          <div
+            class="inbox-messages"
+            data-inbox-thread
+            data-sync="<?= e(url('/espace/messages/' . (int) $thread['id'] . '/sync')) ?>"
+            data-last-id="<?= $inboxLastId ?>"
+          >
             <?php foreach ($messages as $msg): ?>
-              <article class="msg<?= (int) ($msg['user_id'] ?? 0) === (int) (\Adl\Core\Auth::id() ?? 0) ? ' is-mine' : '' ?>">
-                <div class="msg-meta"><?= e((string) $msg['who']) ?> · <?= e((string) $msg['when']) ?></div>
-                <?php
-                  $body = trim((string) ($msg['body'] ?? ''));
-                  $href = trim((string) ($msg['href'] ?? ''));
-                ?>
-                <?php if ($body !== '' && $href !== ''): ?>
-                  <a class="msg-bubble is-link" href="<?= e(url($href)) ?>" title="Ouvrir le suivi de commande"><?= nl2br(e($body)) ?></a>
-                <?php elseif ($body !== ''): ?>
-                  <p><?= nl2br(e($body)) ?></p>
-                <?php endif; ?>
-                <?php if (!empty($msg['has_file'])): ?>
-                  <a class="msg-file" href="<?= e(url((string) $msg['file_href'])) ?>" title="Télécharger">
-                    <?= icon('download', 16) ?>
-                    <?= e((string) $msg['file_label']) ?><?= !empty($msg['file_size']) ? ' · ' . e((string) $msg['file_size']) : '' ?>
-                  </a>
-                <?php endif; ?>
-              </article>
+              <?= inbox_message_html($msg, $inboxUserId) ?>
             <?php endforeach; ?>
           </div>
           <form class="inbox-compose" method="post" action="<?= e(url('/espace/messages/' . (int) $thread['id'])) ?>" enctype="multipart/form-data" data-dropzone>

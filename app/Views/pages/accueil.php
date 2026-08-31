@@ -31,18 +31,40 @@ $query = (string) ($query ?? '');
         <?php endforeach; ?>
       </div>
     </div>
-    <div class="mk-mosaic" aria-hidden="true">
-      <div class="mk-mosaic-a">
-        <img src="<?= e((string) ($homeImg1 ?? photo(0))) ?>" alt="" width="440" height="312" fetchpriority="high" decoding="async">
+    <div class="mk-hero-visual">
+      <div class="mk-mosaic" aria-hidden="true">
+        <div class="mk-mosaic-a">
+          <img src="<?= e((string) ($homeImg1 ?? photo(0))) ?>" alt="" width="440" height="312" fetchpriority="high" decoding="async">
+        </div>
+        <div class="mk-mosaic-b">
+          <img src="<?= e((string) ($homeImg2 ?? photo(5))) ?>" alt="" width="214" height="150" loading="lazy" decoding="async">
+        </div>
+        <div class="mk-mosaic-c">
+          <img src="<?= e((string) ($homeImg3 ?? photo(4))) ?>" alt="" width="214" height="150" loading="lazy" decoding="async">
+        </div>
       </div>
-      <div class="mk-mosaic-b">
-        <img src="<?= e((string) ($homeImg2 ?? photo(5))) ?>" alt="" width="214" height="150" loading="lazy" decoding="async">
-      </div>
-      <div class="mk-mosaic-c">
-        <img src="<?= e((string) ($homeImg3 ?? photo(4))) ?>" alt="" width="214" height="150" loading="lazy" decoding="async">
-      </div>
+      <a class="mk-hero-play" href="https://youtu.be/3ceBiEN9RJ8" data-video-open aria-haspopup="dialog" aria-controls="home-video" aria-label="Lire la vidéo de présentation">
+        <span class="mk-hero-play-btn" aria-hidden="true"><?= icon('play', 28) ?></span>
+        <span class="mk-hero-play-label">Lecture</span>
+      </a>
     </div>
   </section>
+
+  <dialog
+    class="mk-video-modal"
+    id="home-video"
+    aria-labelledby="home-video-title"
+    data-video-src="https://www.youtube-nocookie.com/embed/3ceBiEN9RJ8?autoplay=1&amp;rel=0"
+    data-video-title="Vidéo de présentation — Acteurs du livre"
+  >
+    <div class="mk-video-modal-inner">
+      <div class="mk-video-modal-bar">
+        <h2 id="home-video-title">Vidéo de présentation</h2>
+        <button type="button" class="mk-video-modal-close" data-video-close aria-label="Fermer">×</button>
+      </div>
+      <div class="mk-video-frame" data-video-frame></div>
+    </div>
+  </dialog>
 
   <?php if ($homeStats !== []): ?>
     <section class="mk-stats">

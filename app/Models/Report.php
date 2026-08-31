@@ -9,7 +9,7 @@ use RuntimeException;
 
 final class Report
 {
-    public const TYPES = ['user', 'service', 'mission', 'order', 'review'];
+    public const TYPES = ['user', 'service', 'mission', 'order', 'review', 'conversation'];
 
     public const REASONS = [
         'ia' => 'Contenu généré par IA',
@@ -18,6 +18,9 @@ final class Report
         'usurpation' => 'Usurpation ou fausse identité',
         'autre' => 'Autre signalement',
     ];
+
+    /** @var list<string> */
+    public const CONVERSATION_REASON_KEYS = ['hors_plateforme', 'abus', 'usurpation', 'autre'];
 
     public const STATUSES = [
         'open' => 'Ouvert',
@@ -80,16 +83,55 @@ final class Report
         return (int) ($row['n'] ?? 0);
     }
 
+    public static function hasOpen(int $reporterId, string $type, int $targetId): bool
+    {
+        $row = Database::fetch(
+            'SELECT id FROM reports
+             WHERE reporter_id = ? AND target_type = ? AND target_id = ? AND status = "open"
+             LIMIT 1',
+            [$reporterId, $type, $targetId]
+        );
+        return $row !== null;
+    }
+
+    /** @return array<string, string> */
+    public static function reasonsFor(string $type): array
+    {
+        if ($type === 'conversation') {
+            return array_intersect_key(self::REASONS, array_flip(self::CONVERSATION_REASON_KEYS));
+        }
+
+        return self::REASONS;
+    }
+
     /** @return list<array<string, mixed>> */
-    private static function list(?string $status): array
+    public static function forTarget(string $type, int $targetId): array
+    {
+        return self::list(null, $type, $targetId);
+    }
+
+    /** @return list<array<string, mixed>> */
+    private static function list(?string $status, ?string $type = null, ?int $targetId = null): array
     {
         $sql = 'SELECT r.*, u.first_name, u.last_name, u.email
                 FROM reports r
                 LEFT JOIN users u ON u.id = r.reporter_id';
+        $where = [];
         $params = [];
         if ($status !== null) {
-            $sql .= ' WHERE r.status = ?';
+            $where[] = 'r.status = ?';
             $params[] = $status;
+        }
+        if ($type !== null) {
+            $where[] = 'r.target_type = ?';
+            $params[] = $type;
+        }
+        if ($targetId !== null) {
+            $where[] = 'r.target_id = ?';
+            $params[] = $targetId;
+        }
+        if ($where !== []) {
+            $sql .= ' WHERE ' . implode(' AND ', $where);
         }
         $sql .= ' ORDER BY r.created_at DESC, r.id DESC';
         $rows = Database::fetchAll($sql, $params);
@@ -104,6 +146,7 @@ final class Report
                 'mission' => 'Mission',
                 'order' => 'Commande',
                 'review' => 'Avis',
+                'conversation' => 'Conversation',
                 default => (string) ($row['target_type'] ?? ''),
             };
             $row['when'] = time_ago($row['created_at'] ?? null);
@@ -112,6 +155,7 @@ final class Report
                 'mission' => self::missionHref((int) ($row['target_id'] ?? 0)),
                 'user' => '/admin/utilisateurs/' . (int) ($row['target_id'] ?? 0),
                 'order' => '/admin/finances',
+                'conversation' => '/admin/conversations/' . (int) ($row['target_id'] ?? 0),
                 default => '/admin/moderation',
             };
             return $row;

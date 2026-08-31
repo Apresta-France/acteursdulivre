@@ -10,6 +10,7 @@ use Adl\Core\OAuth;
 use Adl\Core\Request;
 use Adl\Core\View;
 use Adl\Data\Onboarding;
+use Adl\Models\Conversation;
 use Adl\Models\LegalAcceptance;
 use Adl\Models\User;
 use Throwable;
@@ -20,6 +21,10 @@ final class AuthController
     {
         if (Auth::check()) {
             redirect(Onboarding::homePath(Auth::user() ?? []));
+        }
+        $next = safe_internal_path($request->string('next'));
+        if ($next !== null) {
+            $_SESSION['_intended'] = $next;
         }
         View::page('connexion', [
             'title' => 'Connexion',
@@ -46,11 +51,14 @@ final class AuthController
             redirect('/connexion');
         }
 
-        $intended = $_SESSION['_intended'] ?? '/espace';
+        $intended = safe_internal_path($_SESSION['_intended'] ?? null) ?? '/espace';
         unset($_SESSION['_intended'], $_SESSION['_old']);
         $user = Auth::user();
-        if ($user && Onboarding::isPending($user) && in_array($intended, ['/espace', '/', ''], true)) {
-            $intended = '/espace/bienvenue';
+        if ($user) {
+            self::consumePendingMessage($user);
+            if (Onboarding::isPending($user) && in_array($intended, ['/espace', '/', ''], true)) {
+                $intended = '/espace/bienvenue';
+            }
         }
         redirect($intended);
     }
@@ -389,8 +397,11 @@ final class AuthController
             redirect('/connexion');
         }
         Auth::login($user);
-        $intended = $_SESSION['_oauth_return'] ?? $_SESSION['_intended'] ?? '/espace';
+        $intended = safe_internal_path($_SESSION['_oauth_return'] ?? null)
+            ?? safe_internal_path($_SESSION['_intended'] ?? null)
+            ?? '/espace';
         unset($_SESSION['_oauth_return'], $_SESSION['_intended'], $_SESSION['_old']);
+        self::consumePendingMessage($user);
         if (Onboarding::isPending($user) && in_array($intended, ['/espace', '/', ''], true)) {
             $intended = '/espace/bienvenue';
         }
@@ -413,6 +424,25 @@ final class AuthController
         unset($_SESSION['_oauth_return']);
         flash('saved', true);
         redirect('/espace/parametres');
+    }
+
+    /** @param array<string, mixed> $user */
+    private static function consumePendingMessage(array $user): void
+    {
+        $pending = $_SESSION['_pending_message'] ?? null;
+        unset($_SESSION['_pending_message']);
+        if (!is_array($pending) || (int) ($pending['avec'] ?? 0) < 1) {
+            return;
+        }
+        try {
+            $thread = Conversation::open((int) $user['id'], (int) $pending['avec'], [
+                'subject' => (string) ($pending['sujet'] ?? ''),
+                'service_id' => ((int) ($pending['prestation'] ?? 0)) ?: null,
+                'mission_id' => ((int) ($pending['mission'] ?? 0)) ?: null,
+            ]);
+            redirect('/espace/messages/' . (int) $thread['id']);
+        } catch (Throwable) {
+        }
     }
 
     private static function persistSignupAcceptances(int $userId, bool $offers): void

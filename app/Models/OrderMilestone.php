@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Adl\Models;
 
 use Adl\Core\Database;
+use Adl\Core\Mailer;
 use RuntimeException;
 
 final class OrderMilestone
@@ -54,7 +55,7 @@ final class OrderMilestone
             'done' => 'Devis accepté',
             'buyer_cta' => 'Accepter le devis',
             'seller_wait' => 'En attente de l’acceptation du devis',
-            'lead_buyer' => 'Vérifiez le montant et l’acompte. En acceptant, vous vous engagez à régler le prestataire directement.',
+            'lead_buyer' => 'Vérifiez le montant et l’acompte. En acceptant, vous vous engagez à régler le prestataire directement. Sinon, refusez ce devis pour en recevoir un autre, ou annulez la commande.',
             'lead_seller' => 'Le porteur de projet examine votre devis.',
             'form' => 'quote_accept',
         ],
@@ -216,6 +217,7 @@ final class OrderMilestone
 
         $order['milestones'] = $milestones;
         $order['current_milestone'] = $current;
+        $order['can_cancel_order'] = ($order['status'] ?? '') === 'pending' && !self::isDone($milestones, 'quote_accept');
         $order['can_accept'] = false;
         $order['can_deliver'] = $current && ($current['code'] ?? '') === 'deliver';
         $order['can_validate'] = self::isCurrent($milestones, 'validate');
@@ -280,12 +282,15 @@ final class OrderMilestone
                 continue;
             }
             $actor = (string) ($row['actor'] ?? '');
-            $cta = $actor === self::ACTOR_BUYER
-                ? (string) ($def['buyer_cta'] ?? $def['title'])
-                : (string) ($def['seller_cta'] ?? $def['title']);
+            $revision = self::isQuoteRevision($row);
+            $cta = $revision
+                ? 'Renvoyer le devis'
+                : ($actor === self::ACTOR_BUYER
+                    ? (string) ($def['buyer_cta'] ?? $def['title'])
+                    : (string) ($def['seller_cta'] ?? $def['title']));
             $out[] = [
                 'code' => $row['code'],
-                'title' => $def['title'],
+                'title' => $revision ? 'Renvoyer le devis' : $def['title'],
                 'cta' => $cta,
                 'body' => (string) ($row['number'] ?? '') . ' · ' . (string) ($row['service_title'] ?: $row['mission_title'] ?: 'Commande'),
                 'href' => '/espace/suivi/' . (int) $row['order_id'],
@@ -382,17 +387,63 @@ final class OrderMilestone
         });
     }
 
-    public static function refuseQuote(int $orderId, int $buyerId): array
+    public static function refuseQuote(int $orderId, int $buyerId, string $note = ''): array
     {
-        return Database::transaction(static function () use ($orderId, $buyerId): array {
+        $note = trim($note);
+        if (mb_strlen($note) > 2000) {
+            throw new RuntimeException('Le message est trop long.');
+        }
+
+        $fresh = Database::transaction(static function () use ($orderId, $buyerId, $note): array {
             self::seed($orderId);
             $order = Order::requireActor($orderId, $buyerId, 'buyer');
             $milestone = self::requireRow($orderId, 'quote_accept');
             if (($milestone['status'] ?? '') !== self::STATUS_CURRENT) {
                 throw new RuntimeException('Le devis ne peut plus être refusé.');
             }
-            if (in_array((string) ($order['status'] ?? ''), ['cancelled', 'confirmed', 'paid'], true)) {
+            if (in_array((string) ($order['status'] ?? ''), ['cancelled', 'confirmed', 'paid', 'dispute'], true)) {
                 throw new RuntimeException('Cette commande ne peut plus être clôturée ainsi.');
+            }
+
+            self::reopenQuote($orderId);
+
+            $body = 'Le porteur de projet a refusé le devis de « ' . $order['title'] . ' ». Vous pouvez en proposer un autre.';
+            if ($note !== '') {
+                $body .= ' Message : ' . $note;
+            }
+            Notification::create(
+                (int) $order['seller_id'],
+                'Devis refusé ' . $order['num'],
+                $body,
+                '/espace/suivi/' . $orderId,
+                'quote_refused',
+                'order',
+                $orderId
+            );
+
+            return Order::find($orderId) ?? $order;
+        });
+
+        self::emailSeller($fresh, 'devis-refuse', [
+            'message_html' => $note !== ''
+                ? '<p>Message du porteur de projet :</p><p>' . nl2br(e($note)) . '</p>'
+                : '',
+        ]);
+
+        return $fresh;
+    }
+
+    public static function cancelByBuyer(int $orderId, int $buyerId): array
+    {
+        $fresh = Database::transaction(static function () use ($orderId, $buyerId): array {
+            self::seed($orderId);
+            $order = Order::requireActor($orderId, $buyerId, 'buyer');
+            $quoteAccept = self::requireRow($orderId, 'quote_accept');
+            if (($quoteAccept['status'] ?? '') === self::STATUS_DONE) {
+                throw new RuntimeException('Le devis a déjà été accepté. Convenez d’une annulation avec le prestataire ou ouvrez un litige.');
+            }
+            if (($order['status'] ?? '') !== 'pending') {
+                throw new RuntimeException('Cette commande ne peut plus être annulée ainsi.');
             }
 
             Order::setStatus($orderId, 'cancelled');
@@ -405,16 +456,20 @@ final class OrderMilestone
 
             Notification::create(
                 (int) $order['seller_id'],
-                'Devis refusé ' . $order['num'],
-                'Le porteur de projet a refusé le devis de « ' . $order['title'] . ' ». La commande est clôturée.',
+                'Commande annulée ' . $order['num'],
+                'Le porteur de projet a annulé « ' . $order['title'] . ' ». La commande est clôturée.',
                 '/espace/suivi/' . $orderId,
-                'quote_refused',
+                'order_cancelled',
                 'order',
                 $orderId
             );
 
             return Order::find($orderId) ?? $order;
         });
+
+        self::emailSeller($fresh, 'commande-annulee');
+
+        return $fresh;
     }
 
     /**
@@ -547,7 +602,13 @@ final class OrderMilestone
         $mine = ($def['actor'] === self::ACTOR_SELLER && $isSeller)
             || ($def['actor'] === self::ACTOR_BUYER && $isBuyer);
 
+        $revision = self::isQuoteRevision($current);
         $lead = $isSeller ? ($def['lead_seller'] ?? '') : ($def['lead_buyer'] ?? '');
+        if ($revision) {
+            $lead = $isSeller
+                ? 'Le porteur de projet a refusé le devis. Ajustez le prix, le délai ou le périmètre, puis renvoyez une proposition.'
+                : 'Le prestataire prépare un nouveau devis. Vous pouvez aussi annuler la commande si vous ne souhaitez plus continuer.';
+        }
         $declared = ($current['status'] ?? '') === self::STATUS_DECLARED;
 
         if ($code === 'commission_paid' && $declared && $isSeller) {
@@ -562,9 +623,11 @@ final class OrderMilestone
         }
 
         if (!$mine) {
-            $wait = $isSeller
-                ? (string) ($def['seller_wait'] ?? $def['buyer_wait'] ?? 'En attente de l’autre partie')
-                : (string) ($def['buyer_wait'] ?? $def['seller_wait'] ?? 'En attente de l’autre partie');
+            $wait = $revision
+                ? 'En attente d’un nouveau devis'
+                : ($isSeller
+                    ? (string) ($def['seller_wait'] ?? $def['buyer_wait'] ?? 'En attente de l’autre partie')
+                    : (string) ($def['buyer_wait'] ?? $def['seller_wait'] ?? 'En attente de l’autre partie'));
             return [
                 'code' => $code,
                 'title' => $wait,
@@ -572,20 +635,24 @@ final class OrderMilestone
                 'form' => 'waiting',
                 'mine' => false,
                 'cta' => '',
+                'revision' => $revision,
             ];
         }
 
-        $cta = $def['actor'] === self::ACTOR_BUYER
-            ? (string) ($def['buyer_cta'] ?? $def['title'])
-            : (string) ($def['seller_cta'] ?? $def['title']);
+        $cta = $revision
+            ? 'Renvoyer le devis'
+            : ($def['actor'] === self::ACTOR_BUYER
+                ? (string) ($def['buyer_cta'] ?? $def['title'])
+                : (string) ($def['seller_cta'] ?? $def['title']));
 
         return [
             'code' => $code,
-            'title' => $def['title'],
+            'title' => $revision ? 'Renvoyer le devis' : $def['title'],
             'lead' => $lead,
             'form' => $def['form'],
             'mine' => true,
             'cta' => $cta,
+            'revision' => $revision,
             'amount' => $code === 'deposit_invoice' || $code === 'deposit_paid'
                 ? (int) ($order['deposit_amount'] ?? 0)
                 : ($code === 'final_invoice' || $code === 'final_paid'
@@ -629,7 +696,9 @@ final class OrderMilestone
             ? format_euros((int) $row['amount'])
             : '';
         $row['when'] = !empty($row['completed_at']) ? time_ago((string) $row['completed_at']) : '';
-        $row['file_href'] = !empty($row['file_path']) ? uploaded((string) $row['file_path']) : '';
+        $row['file_href'] = !empty($row['file_path'])
+            ? url('/espace/suivi/' . (int) ($row['order_id'] ?? 0) . '/fichier/' . rawurlencode($code))
+            : '';
         return $row;
     }
 
@@ -642,6 +711,61 @@ final class OrderMilestone
             }
         }
         return false;
+    }
+
+    /** @param list<array<string, mixed>> $milestones */
+    private static function isDone(array $milestones, string $code): bool
+    {
+        foreach ($milestones as $row) {
+            if (($row['code'] ?? '') === $code && !empty($row['is_done'])) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** @param array<string, mixed> $milestone */
+    private static function isQuoteRevision(array $milestone): bool
+    {
+        return ($milestone['code'] ?? '') === 'quote' && !empty($milestone['completed_at']);
+    }
+
+    private static function reopenQuote(int $orderId): void
+    {
+        Database::query(
+            'UPDATE order_milestones
+             SET status = ?, completed_by = NULL
+             WHERE order_id = ? AND code = ?',
+            [self::STATUS_PENDING, $orderId, 'quote']
+        );
+        Database::query(
+            'UPDATE order_milestones
+             SET status = ?, completed_at = NULL, completed_by = NULL
+             WHERE order_id = ? AND code = ?',
+            [self::STATUS_PENDING, $orderId, 'quote_accept']
+        );
+        foreach (array_merge(self::DEPOSIT_CODES, self::FINAL_PAY_CODES) as $code) {
+            Database::query(
+                'UPDATE order_milestones
+                 SET status = ?
+                 WHERE order_id = ? AND code = ? AND status = ?',
+                [self::STATUS_PENDING, $orderId, $code, self::STATUS_SKIPPED]
+            );
+        }
+        self::refreshCurrent($orderId);
+    }
+
+    /**
+     * @param array<string, mixed> $order
+     * @param array<string, string> $vars
+     */
+    private static function emailSeller(array $order, string $slug, array $vars = []): void
+    {
+        Mailer::notify(User::find((int) ($order['seller_id'] ?? 0)), 'transactional', $slug, array_merge([
+            'numero' => (string) ($order['num'] ?? ''),
+            'titre' => (string) ($order['title'] ?? ''),
+            'lien' => url('/espace/suivi/' . (int) ($order['id'] ?? 0)),
+        ], $vars));
     }
 
     /**
@@ -680,6 +804,11 @@ final class OrderMilestone
             $deposit = max(0, $deposit ?? 0);
             if ($deposit > $amount) {
                 throw new RuntimeException('L’acompte ne peut pas dépasser le montant du devis.');
+            }
+            if ($fileName === null && $filePath === null) {
+                $existing = self::requireRow((int) ($order['id'] ?? 0), 'quote');
+                $fileName = trim((string) ($existing['file_name'] ?? '')) ?: null;
+                $filePath = trim((string) ($existing['file_path'] ?? '')) ?: null;
             }
             return [
                 'amount' => $amount,

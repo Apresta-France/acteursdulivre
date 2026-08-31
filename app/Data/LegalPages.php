@@ -206,7 +206,7 @@ final class LegalPages
                 'title' => '10. Messagerie, avis et signalement',
                 'blocks' => [
                     ['p' => 'La messagerie est réservée aux échanges liés à une recherche, un devis ou une mission. Les avis sont déposés par le Client au moment où il confirme que la mission est finalisée : il note la qualité de la prestation, l\'efficacité et la satisfaction globale. Un avis peut être signalé ; la modération peut le masquer s\'il est hors sujet, injurieux ou manifestement de complaisance.'],
-                    ['html' => '<p>Tout abus, faux profil ou manquement à la charte peut être signalé via la <a href="' . e(url('/contact')) . '">page Contact</a> ou, pour une commande en cours, depuis le suivi de mission.</p>'],
+                    ['html' => '<p>Tout abus, faux profil ou manquement à la charte peut être signalé depuis le profil concerné, depuis la messagerie, via la <a href="' . e(url('/contact')) . '">page Contact</a> ou, pour une commande en cours, depuis le suivi de mission.</p>'],
                 ],
             ],
             [

@@ -60,6 +60,18 @@ function flash(string $key, mixed $value = null): mixed
     return $out;
 }
 
+function user_error_message(\Throwable $e, string $fallback = 'Une erreur est survenue. Réessayez dans un instant.'): string
+{
+    if ($e instanceof \PDOException) {
+        return $fallback;
+    }
+    if ($e instanceof \RuntimeException) {
+        $message = trim($e->getMessage());
+        return $message !== '' ? $message : $fallback;
+    }
+    return $fallback;
+}
+
 function csrf_field(): string
 {
     return '<input type="hidden" name="_token" value="' . e(Csrf::token()) . '">';
@@ -131,30 +143,29 @@ function service_cover_label(string $category): string
     return $category !== '' ? $category : 'Prestation';
 }
 
+function service_cover_image_url(): string
+{
+    $webp = ADL_ROOT . '/public/assets/img/service-cover-default.webp';
+    if (is_file($webp)) {
+        return asset('img/service-cover-default.webp');
+    }
+    return asset('img/service-cover-default.jpg');
+}
+
 function service_cover_html(string $category, string $extraClass = ''): string
 {
     $label = service_cover_label($category);
     $class = trim('service-cover ' . $extraClass);
     return '<div class="' . e($class) . '" role="img" aria-label="' . e('Visuel ' . $label) . '">'
+        . '<span class="service-cover-photo" aria-hidden="true"></span>'
         . '<span class="service-cover-kicker">acteursdulivre.fr</span>'
         . '<span class="service-cover-type">' . e($label) . '</span>'
         . '</div>';
 }
 
-function service_brand_cover_url(string $category): string
+function service_brand_cover_url(string $category = ''): string
 {
-    $label = service_cover_label($category);
-    $safe = htmlspecialchars($label, ENT_XML1 | ENT_QUOTES, 'UTF-8');
-    $svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 480" width="800" height="480">'
-        . '<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">'
-        . '<stop offset="0%" stop-color="#1c2b3c"/><stop offset="100%" stop-color="#15212f"/></linearGradient></defs>'
-        . '<rect width="800" height="480" fill="url(#g)"/>'
-        . '<text x="770" y="220" text-anchor="end" fill="rgba(255,255,255,.08)" font-family="Georgia, serif" font-size="280" font-style="italic">a</text>'
-        . '<text x="630" y="100" fill="#eb963b" font-family="Georgia, serif" font-size="90">’</text>'
-        . '<text x="48" y="400" fill="#efdfce" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="18" letter-spacing="3">ACTEURSDULIVRE.FR</text>'
-        . '<text x="48" y="358" fill="#ffffff" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="52" font-weight="700">' . $safe . '</text>'
-        . '</svg>';
-    return 'data:image/svg+xml;charset=UTF-8,' . rawurlencode($svg);
+    return service_cover_image_url();
 }
 
 /** @param array<string, mixed> $item */
@@ -176,12 +187,20 @@ function search_card_media(array $item): string
 
 function redirect(string $path, int $code = 302): never
 {
-    $path = str_replace(["\r", "\n"], '', $path);
-    if ($path === '' || $path[0] !== '/' || str_starts_with($path, '//')) {
-        $path = '/espace';
-    }
-    header('Location: ' . url($path), true, $code);
+    header('Location: ' . url(safe_internal_path($path) ?? '/espace'), true, $code);
     exit;
+}
+
+function safe_internal_path(?string $path): ?string
+{
+    $path = str_replace(["\r", "\n"], '', trim((string) $path));
+    if ($path === '' || $path[0] !== '/' || str_starts_with($path, '//')) {
+        return null;
+    }
+    if (str_contains($path, 'avec=')) {
+        return null;
+    }
+    return $path;
 }
 
 function ascii_fold(string $text): string
@@ -450,14 +469,50 @@ function copy_public_upload_to_private(string $publicRelative, string $subdir, s
 
 function send_private_file(string $relative, string $downloadName, string $mime = 'application/octet-stream'): never
 {
-    $relative = str_replace(['\\', "\0"], '/', $relative);
-    if (str_contains($relative, '..')) {
-        not_found('Fichier introuvable.');
+    send_stored_upload($relative, $downloadName, $mime, true);
+}
+
+/** @return array{path: string, name: string, size: int} */
+function copy_any_upload_to_private(string $relative, string $subdir, string $originalName): array
+{
+    $src = resolve_upload_path($relative, false);
+    if ($src === null) {
+        throw new RuntimeException('Le fichier n\'a pas pu être enregistré.');
     }
-    $full = ADL_ROOT . '/storage/uploads/' . ltrim($relative, '/');
-    $root = realpath(ADL_ROOT . '/storage/uploads');
-    $real = realpath($full);
-    if ($root === false || $real === false || !str_starts_with($real, $root) || !is_file($real)) {
+
+    $ext = strtolower(pathinfo($src, PATHINFO_EXTENSION));
+    $allowed = ['pdf', 'jpg', 'jpeg', 'png', 'webp', 'txt', 'doc', 'docx', 'odt'];
+    if ($ext === '' || !in_array($ext, $allowed, true)) {
+        throw new RuntimeException('Format de fichier non accepté.');
+    }
+
+    $dir = ADL_ROOT . '/storage/uploads/' . trim($subdir, '/');
+    if (!is_dir($dir) && !mkdir($dir, 0775, true) && !is_dir($dir)) {
+        throw new RuntimeException('Impossible de créer le dossier d\'upload.');
+    }
+
+    $name = upload_safe_name($originalName) ?: ('fichier.' . $ext);
+    $stored = bin2hex(random_bytes(16)) . '.' . $ext;
+    if (!copy($src, $dir . '/' . $stored)) {
+        throw new RuntimeException('Le fichier n\'a pas pu être enregistré.');
+    }
+
+    return [
+        'path' => trim($subdir, '/') . '/' . $stored,
+        'name' => $name,
+        'size' => (int) filesize($dir . '/' . $stored),
+    ];
+}
+
+function send_any_upload(string $relative, string $downloadName, string $mime = 'application/octet-stream'): never
+{
+    send_stored_upload($relative, $downloadName, $mime, false);
+}
+
+function send_stored_upload(string $relative, string $downloadName, string $mime, bool $privateOnly): never
+{
+    $real = resolve_upload_path($relative, $privateOnly);
+    if ($real === null) {
         not_found('Fichier introuvable.');
     }
 
@@ -469,6 +524,36 @@ function send_private_file(string $relative, string $downloadName, string $mime 
     header('Cache-Control: private, no-store');
     readfile($real);
     exit;
+}
+
+function resolve_upload_path(string $relative, bool $privateOnly = false): ?string
+{
+    $relative = str_replace(['\\', "\0"], '/', $relative);
+    if ($relative === '' || str_contains($relative, '..')) {
+        return null;
+    }
+
+    $candidates = [
+        [ADL_ROOT . '/storage/uploads/' . ltrim($relative, '/'), ADL_ROOT . '/storage/uploads'],
+    ];
+    if (!$privateOnly) {
+        $candidates[] = [ADL_ROOT . '/public/uploads/' . ltrim($relative, '/'), ADL_ROOT . '/public/uploads'];
+    }
+
+    foreach ($candidates as [$full, $rootDir]) {
+        $root = realpath($rootDir);
+        $real = realpath($full);
+        if ($root === false || $real === false || !is_file($real)) {
+            continue;
+        }
+        $rootNorm = strtolower(str_replace('\\', '/', $root));
+        $realNorm = strtolower(str_replace('\\', '/', $real));
+        if (str_starts_with($realNorm, $rootNorm)) {
+            return $real;
+        }
+    }
+
+    return null;
 }
 
 function admin_date(?string $datetime, string $empty = '—'): string
@@ -493,28 +578,99 @@ function format_deadline(?string $date): string
     return date('j', $ts) . ' ' . $months[(int) date('n', $ts) - 1];
 }
 
+function app_datetime(?string $datetime): ?\DateTimeImmutable
+{
+    if ($datetime === null || trim($datetime) === '') {
+        return null;
+    }
+    try {
+        $tz = new \DateTimeZone(date_default_timezone_get() ?: 'Europe/Paris');
+        return new \DateTimeImmutable($datetime, $tz);
+    } catch (\Throwable) {
+        return null;
+    }
+}
+
+function datetime_iso(?string $datetime): string
+{
+    $dt = app_datetime($datetime);
+    return $dt ? $dt->format(\DateTimeInterface::ATOM) : '';
+}
+
+function format_message_when(?string $datetime): string
+{
+    $dt = app_datetime($datetime);
+    if (!$dt) {
+        return '';
+    }
+    $now = new \DateTimeImmutable('now', $dt->getTimezone());
+    $time = $dt->format('H:i');
+    if ($dt->format('Y-m-d') === $now->format('Y-m-d')) {
+        return $time;
+    }
+    if ($dt->format('Y-m-d') === $now->modify('-1 day')->format('Y-m-d')) {
+        return 'hier ' . $time;
+    }
+    if ($dt->format('Y') === $now->format('Y')) {
+        return format_deadline($dt->format('Y-m-d')) . ', ' . $time;
+    }
+    return $dt->format('d/m/Y') . ' ' . $time;
+}
+
 function time_ago(?string $datetime): string
 {
-    if ($datetime === null || $datetime === '') {
+    $dt = app_datetime($datetime);
+    if (!$dt) {
         return '';
     }
-    $ts = strtotime($datetime);
-    if ($ts === false) {
-        return '';
+    $diff = time() - $dt->getTimestamp();
+    if ($diff < 0) {
+        $diff = 0;
     }
-    $diff = time() - $ts;
-    if ($diff < 3600) {
+    if ($diff < 45) {
         return 'à l\'instant';
     }
+    if ($diff < 3600) {
+        return 'il y a ' . max(1, (int) floor($diff / 60)) . ' min';
+    }
     if ($diff < 86400) {
-        $h = (int) floor($diff / 3600);
-        return 'il y a ' . $h . ' h';
+        return 'il y a ' . (int) floor($diff / 3600) . ' h';
     }
     if ($diff < 86400 * 7) {
-        $d = (int) floor($diff / 86400);
-        return 'il y a ' . $d . ' j';
+        return 'il y a ' . (int) floor($diff / 86400) . ' j';
     }
-    return format_deadline(date('Y-m-d', $ts));
+    return format_deadline($dt->format('Y-m-d'));
+}
+
+/** @param array<string, mixed> $msg */
+function inbox_message_html(array $msg, int $currentUserId): string
+{
+    $mine = (int) ($msg['user_id'] ?? 0) === $currentUserId && $currentUserId > 0;
+    $iso = (string) ($msg['created_iso'] ?? datetime_iso($msg['created_at'] ?? null));
+    $html = '<article class="msg' . ($mine ? ' is-mine' : '') . '" data-msg-id="' . (int) ($msg['id'] ?? 0) . '"';
+    if ($iso !== '') {
+        $html .= ' data-created="' . e($iso) . '"';
+    }
+    $html .= '>';
+    $html .= '<div class="msg-meta">' . e((string) ($msg['who'] ?? '')) . ' · ';
+    $html .= '<time datetime="' . e($iso) . '">' . e((string) ($msg['when'] ?? '')) . '</time></div>';
+    $body = trim((string) ($msg['body'] ?? ''));
+    $href = trim((string) ($msg['href'] ?? ''));
+    if ($body !== '' && $href !== '') {
+        $html .= '<a class="msg-bubble is-link" href="' . e(url($href)) . '" title="Ouvrir le suivi de commande">' . nl2br(e($body)) . '</a>';
+    } elseif ($body !== '') {
+        $html .= '<p>' . nl2br(e($body)) . '</p>';
+    }
+    if (!empty($msg['has_file'])) {
+        $html .= '<a class="msg-file" href="' . e(url((string) ($msg['file_href'] ?? ''))) . '" title="Télécharger">';
+        $html .= icon('download', 16) . ' ';
+        $html .= e((string) ($msg['file_label'] ?? ''));
+        if (!empty($msg['file_size'])) {
+            $html .= ' · ' . e((string) $msg['file_size']);
+        }
+        $html .= '</a>';
+    }
+    return $html . '</article>';
 }
 
 function icon(string $name, int $size = 20): string
@@ -556,6 +712,7 @@ function icon(string $name, int $size = 20): string
         'share-copy' => '<path d="M8 4h9.2A1.8 1.8 0 0 1 19 5.8V16h-1.8V6.6H8V4zm-3 3.4h9.2A1.8 1.8 0 0 1 16 9.2v9A1.8 1.8 0 0 1 14.2 20H5.8A1.8 1.8 0 0 1 4 18.2v-9A1.8 1.8 0 0 1 5.8 7.4zM6 9.2v9h8.2v-9H6z"/>',
         'download' => '<path d="M11 3h2v10.2l3.4-3.4 1.4 1.4L12 17.4 6.2 11.2l1.4-1.4L11 13.2V3zM4 19h16v2H4v-2z"/>',
         'dot' => '<circle cx="12" cy="12" r="3.4"/>',
+        'play' => '<path d="M8 5.4v13.2L19.2 12 8 5.4z"/>',
     ];
 
     $inner = $paths[$name] ?? $paths['dot'];

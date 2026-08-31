@@ -24,13 +24,25 @@ $s = $settings ?? [];
     <p style="margin:0 0 6px;font-size:13px;color:#66768A;">Console Google Cloud → API et services → Identifiants → ID client OAuth (application Web). URI de redirection autorisée :</p>
     <code style="display:block;background:#F4F6F9;padding:10px 12px;border-radius:8px;font-size:13px;word-break:break-all;"><?= e(OAuth::redirectUri('google')) ?></code>
     <div><label class="field">Client ID</label><input class="input" name="google_client_id" value="<?= e($s['google_client_id'] ?? '') ?>" autocomplete="off"></div>
-    <div><label class="field">Client secret</label><input class="input" type="password" name="google_client_secret" value="<?= e($s['google_client_secret'] ?? '') ?>" autocomplete="new-password"></div>
+    <div>
+      <label class="field">Client secret</label>
+      <input class="input" type="password" name="google_client_secret" value="" placeholder="<?= !empty($googleSecretSet) ? 'Laisser vide pour conserver le secret actuel' : '' ?>" autocomplete="new-password">
+      <?php if (!empty($googleSecretSet)): ?>
+        <p style="color:#8496A8;font-size:13px;margin:6px 0 0;">Un secret Google est déjà enregistré.</p>
+      <?php endif; ?>
+    </div>
 
     <h2 style="margin:18px 0 4px;font-size:18px;color:#022746;">Facebook</h2>
     <p style="margin:0 0 6px;font-size:13px;color:#66768A;">Meta for Developers → votre application → Connexion Facebook → Paramètres. URI de redirection OAuth valide :</p>
     <code style="display:block;background:#F4F6F9;padding:10px 12px;border-radius:8px;font-size:13px;word-break:break-all;"><?= e(OAuth::redirectUri('facebook')) ?></code>
     <div><label class="field">Identifiant de l’application</label><input class="input" name="facebook_app_id" value="<?= e($s['facebook_app_id'] ?? '') ?>" autocomplete="off"></div>
-    <div><label class="field">Clé secrète</label><input class="input" type="password" name="facebook_app_secret" value="<?= e($s['facebook_app_secret'] ?? '') ?>" autocomplete="new-password"></div>
+    <div>
+      <label class="field">Clé secrète</label>
+      <input class="input" type="password" name="facebook_app_secret" value="" placeholder="<?= !empty($facebookSecretSet) ? 'Laisser vide pour conserver le secret actuel' : '' ?>" autocomplete="new-password">
+      <?php if (!empty($facebookSecretSet)): ?>
+        <p style="color:#8496A8;font-size:13px;margin:6px 0 0;">Un secret Facebook est déjà enregistré.</p>
+      <?php endif; ?>
+    </div>
 
     <button class="btn-orange" type="submit">Enregistrer</button>
   </form>
