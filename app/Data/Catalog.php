@@ -99,6 +99,50 @@ final class Catalog
     public const BUDGET_MIN = 200;
     public const BUDGET_MAX = 4000;
 
+    /** @var list<string> */
+    public const HOME_QUICK_PREFERRED = [
+        'Correction de roman',
+        'Bêta-lecture',
+        'Couverture illustrée',
+        'Impression 300 ex.',
+        'Traduction EN→FR',
+    ];
+
+    /** @var array<string, true> */
+    private const SEARCH_STOP = [
+        'de' => true, 'du' => true, 'des' => true, 'le' => true, 'la' => true, 'les' => true,
+        'un' => true, 'une' => true, 'et' => true, 'ou' => true, 'pour' => true, 'd' => true,
+        'l' => true, 'au' => true, 'aux' => true, 'a' => true, 'en' => true, 'ex' => true,
+        'the' => true, 'of' => true,
+    ];
+
+    /** @var array<string, list<string>> */
+    private const SEARCH_SYNONYMS = [
+        'couverture' => ['illustration'],
+        'illustre' => ['illustration'],
+        'illustree' => ['illustration'],
+        'illustrateur' => ['illustration'],
+        'illustratrice' => ['illustration'],
+        'correcteur' => ['correction'],
+        'correctrice' => ['correction'],
+        'relecture' => ['correction'],
+        'orthotypo' => ['correction'],
+        'imprimeur' => ['impression'],
+        'imprimerie' => ['impression'],
+        'tirage' => ['impression'],
+        'exemplaire' => ['impression'],
+        'exemplaires' => ['impression'],
+        'offset' => ['impression'],
+        'traducteur' => ['traduction'],
+        'traductrice' => ['traduction'],
+        'anglais' => ['traduction'],
+        'francais' => ['traduction'],
+        'beta' => ['beta lecture'],
+        'maquettiste' => ['maquette'],
+        'auteur' => ['ecriture'],
+        'ecrivain' => ['ecriture'],
+    ];
+
     public const TRADE_TITLES = [
         'Écriture' => 'Écriture & prête-plume',
         'Correction' => 'Correction & relecture',
@@ -204,6 +248,7 @@ final class Catalog
             'Illustrateur' => 'Illustration',
             'Illustrateurs' => 'Illustration',
             'Illustration & couverture' => 'Illustration',
+            'Couverture' => 'Illustration',
             'Traducteur' => 'Traduction',
             'Traducteurs' => 'Traduction',
             'Traduction littéraire' => 'Traduction',
@@ -219,6 +264,9 @@ final class Catalog
             'Imprimeurs' => 'Impression',
             'Impression offset' => 'Impression',
             'Impression numérique' => 'Impression',
+            'Tirage' => 'Impression',
+            'Exemplaire' => 'Impression',
+            'Exemplaires' => 'Impression',
             'Iconographe' => 'Iconographie',
             'Iconographes' => 'Iconographie',
             'Recherche iconographique' => 'Iconographie',
@@ -706,6 +754,17 @@ final class Catalog
         ];
     }
 
+    /**
+     * Suggestions d'accueil : formulations réellement cherchées.
+     * On garde les exemples du hero, et on complète avec des requêtes du catalogue.
+     *
+     * @return list<string>
+     */
+    public static function homeQuick(int $limit = 5): array
+    {
+        return array_slice(self::HOME_QUICK_PREFERRED, 0, $limit);
+    }
+
     /** @return list<array{v: string, k: string}> */
     public static function missionsBandStats(): array
     {
@@ -1058,14 +1117,98 @@ final class Catalog
         return 'nouveau';
     }
 
+    /**
+     * @return array{needle: string, needle_flat: string, words: list<string>, trades: list<string>}
+     */
+    private static function searchIntent(string $q): array
+    {
+        static $cache = [];
+        if (!isset($cache[$q])) {
+            $needle = search_norm($q);
+            $cache[$q] = [
+                'needle' => $needle,
+                'needle_flat' => trim((string) preg_replace('/[^a-z0-9]+/', ' ', $needle)),
+                'words' => self::searchTokens($q),
+                'trades' => self::queryTrades($q),
+            ];
+        }
+        return $cache[$q];
+    }
+
+    /** @return list<string> */
+    private static function searchTokens(string $q): array
+    {
+        $norm = trim((string) preg_replace('/[^a-z0-9]+/', ' ', search_norm($q)));
+        $tokens = [];
+        foreach (preg_split('/\s+/', $norm) ?: [] as $part) {
+            if ($part === '' || isset(self::SEARCH_STOP[$part])) {
+                continue;
+            }
+            $tokens[$part] = true;
+            foreach (self::SEARCH_SYNONYMS[$part] ?? [] as $extra) {
+                $bits = trim((string) preg_replace('/[^a-z0-9]+/', ' ', search_norm($extra)));
+                foreach (preg_split('/\s+/', $bits) ?: [] as $bit) {
+                    if ($bit !== '' && !isset(self::SEARCH_STOP[$bit])) {
+                        $tokens[$bit] = true;
+                    }
+                }
+            }
+        }
+        return array_map('strval', array_keys($tokens));
+    }
+
+    /** @return list<string> */
+    private static function queryTrades(string $q): array
+    {
+        $q = trim($q);
+        if ($q === '') {
+            return [];
+        }
+        $found = [];
+        $direct = self::resolveTrade($q);
+        if ($direct !== null) {
+            $found[$direct] = true;
+        }
+        $qNorm = search_norm($q);
+        $labels = self::tradeAliases();
+        foreach (self::TRADE_TITLES as $trade => $title) {
+            $labels[$trade] = $trade;
+            $labels[$title] = $trade;
+            $labels[self::TRADE_LABELS[$trade] ?? $trade] = $trade;
+        }
+        foreach ($labels as $label => $trade) {
+            $norm = search_norm((string) $label);
+            if ($norm !== '' && mb_strlen($norm) >= 4 && str_contains($qNorm, $norm)) {
+                $found[$trade] = true;
+            }
+        }
+        foreach (self::searchTokens($q) as $token) {
+            $trade = self::resolveTrade((string) $token);
+            if ($trade !== null) {
+                $found[$trade] = true;
+            }
+        }
+        return array_keys($found);
+    }
+
+    private static function tokenInText(string $text, string $word): bool
+    {
+        if ($word === '') {
+            return false;
+        }
+        if (mb_strlen($word) <= 2) {
+            return (bool) preg_match('/\b' . preg_quote($word, '/') . '\b/', $text);
+        }
+        return str_contains($text, $word);
+    }
+
     /** @param array<string, mixed> $item */
     private static function score(string $q, array $item): int
     {
         if ($q === '') {
             return 1;
         }
-        $needle = search_norm($q);
-        $words = preg_split('/\s+/', $needle) ?: [];
+        $intent = self::searchIntent($q);
         $hay = [
             8 => search_norm((string) ($item['title'] ?? '')),
             5 => search_norm((string) ($item['cat'] ?? '')),
@@ -1075,18 +1218,22 @@ final class Catalog
 
         $score = 0;
         foreach ($hay as $weight => $text) {
-            if ($text === $needle) {
+            $textFlat = trim((string) preg_replace('/[^a-z0-9]+/', ' ', $text));
+            if ($textFlat === $intent['needle_flat'] || $text === $intent['needle']) {
                 $score += $weight * 6;
                 continue;
             }
-            if (str_contains($text, $needle)) {
+            if ($intent['needle_flat'] !== '' && (str_contains($textFlat, $intent['needle_flat']) || str_contains($text, $intent['needle']))) {
                 $score += $weight * 3;
             }
-            foreach ($words as $word) {
-                if (mb_strlen($word) >= 2 && str_contains($text, $word)) {
+            foreach ($intent['words'] as $word) {
+                if (self::tokenInText($textFlat !== '' ? $textFlat : $text, $word) || self::tokenInText($text, $word)) {
                     $score += $weight;
                 }
             }
+        }
+        if ($intent['trades'] !== [] && self::itemHasTrade($item, $intent['trades'])) {
+            $score += 24;
         }
         return $score;
     }

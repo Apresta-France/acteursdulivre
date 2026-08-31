@@ -166,7 +166,7 @@ $noTrades = $trades === [];
       <div class="form-notice">
         <div>
           <strong>Contenus sans IA générative</strong>
-          <p>Les visuels et les textes déposés ici doivent être de votre main. Une image ou une description générée par IA entraîne le retrait de la prestation.</p>
+          <p>Les visuels et les textes déposés ici doivent être de votre main. Une image ou une description générée par IA entraîne le retrait de la prestation. <a href="<?= e(url('/regles-ia')) ?>">Lire nos règles IA</a>.</p>
         </div>
       </div>
 

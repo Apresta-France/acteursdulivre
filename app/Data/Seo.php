@@ -298,7 +298,7 @@ final class Seo
         return [
             ['q' => 'Quand la commission est-elle facturée ?', 'a' => 'Lorsque le client confirme que la mission est finalisée et note la prestation. La facture est alors émise au prestataire — dernier jalon — payable sous 15 jours.'],
             ['q' => 'La première mission est-elle payante ?', 'a' => 'Non. La première mission réalisée via la plateforme est gratuite. À partir de la deuxième, la commission est de 8 %.'],
-            ['q' => 'L\'IA générative est-elle autorisée ?', 'a' => 'Non. Aucun livrable ne peut être produit par une IA générative : ni texte, ni illustration, ni voix. Les manuscrits confiés ne servent jamais à entraîner un modèle.'],
+            ['q' => 'L\'IA générative est-elle autorisée ?', 'a' => 'Non, pour les missions entre acteurs du livre : aucun livrable ne peut être produit par une IA générative. Le moratoire ne s\'applique pas à la fabrication de la plateforme. Le détail figure dans les règles IA.'],
             ['q' => 'Qui facture le client final ?', 'a' => 'Le prestataire facture directement son client, hors plateforme. La plateforme n\'encaisse pas le prix de la mission ; elle facture uniquement sa commission au prestataire, à la validation.'],
             ['q' => 'Faut-il un abonnement ?', 'a' => 'Non. Créer un compte, une vitrine, des fiches ou un appel d\'offres est gratuit. Aucun abonnement.'],
         ];
@@ -445,6 +445,9 @@ final class Seo
     {
         $url = Share::absolute((string) ($article['href'] ?? '/journal'));
         $published = (string) ($article['published_at'] ?? '');
+        $imageUrl = trim((string) ($article['img'] ?? ''));
+        $imageUrl = $imageUrl !== '' ? Share::absolute($imageUrl) : self::defaultImage();
+        $words = (int) ($article['word_count'] ?? str_word_count(strip_tags((string) ($article['body'] ?? ''))));
         $body = [
             '@type' => 'Article',
             '@id' => $url . '#article',
@@ -453,14 +456,28 @@ final class Seo
             'url' => $url,
             'inLanguage' => 'fr-FR',
             'isAccessibleForFree' => true,
+            'articleSection' => (string) ($article['cat'] ?? $article['category'] ?? 'Journal'),
+            'wordCount' => max(1, $words),
+            'keywords' => (string) ($article['keywords'] ?? 'autoédition, fabrication livre, coût impression, correction, maquette, couverture'),
             'author' => [
                 '@type' => 'Organization',
                 'name' => self::BRAND,
                 'url' => Share::absolute('/'),
             ],
             'publisher' => ['@id' => Share::absolute('/') . '#organization'],
-            'mainEntityOfPage' => $url,
-            'image' => self::defaultImage(),
+            'mainEntityOfPage' => [
+                '@type' => 'WebPage',
+                '@id' => $url,
+            ],
+            'image' => [
+                '@type' => 'ImageObject',
+                'url' => $imageUrl,
+                'caption' => (string) ($article['image_alt'] ?? $article['title'] ?? ''),
+            ],
+            'speakable' => [
+                '@type' => 'SpeakableSpecification',
+                'cssSelector' => ['.article-chapo', '.article-body h2', '#essentiel + ul'],
+            ],
         ];
         if ($published !== '') {
             $iso = date('c', strtotime($published) ?: time());
@@ -630,7 +647,7 @@ acteursdulivre.fr met en relation des porteurs de projet (auteurs, éditeurs, co
 - Pas d'abonnement. Compte, vitrine, fiches et appels d'offres gratuits.
 - Première mission réalisée offerte ; ensuite 8 % de commission facturés au prestataire lorsque le client confirme et note.
 - Le prix de la mission se règle hors plateforme, entre client et prestataire. La plateforme suit les jalons et n'encaisse rien.
-- Aucune IA générative : ni texte, ni illustration, ni voix. Les manuscrits ne servent pas à entraîner un modèle.
+- Moratoire IA générative pour les prestations livrées aux acteurs du livre : ni texte, ni illustration, ni voix. Les manuscrits ne servent pas à entraîner un modèle. La fabrication de la plateforme elle-même n'est pas couverte par ce moratoire ; le détail est public.
 - Pré-ouverture : inscriptions ouvertes aux auteurs et professionnels. Ouverture clients annoncée pour octobre 2026.
 - Langue : français. Devise : EUR.
 
@@ -639,13 +656,14 @@ acteursdulivre.fr met en relation des porteurs de projet (auteurs, éditeurs, co
 - Comment ça marche : {$home}comment-ca-marche
 - Tarifs : {$home}tarifs
 - Confiance : {$home}confiance
+- Règles IA : {$home}regles-ia
 - À propos : {$home}a-propos
 - Annuaire : {$home}recherche
 - Prestataires : {$home}prestataires
 - Prestations : {$home}prestations
 - Appels d'offres : {$home}missions
 - Métiers : {$home}metiers/correction
-- Journal : {$home}journal
+- Journal (30 articles — métiers, tarifs, contrats, diffusion) : {$home}journal
 - Contact : {$home}contact
 - Mentions légales : {$home}mentions-legales
 

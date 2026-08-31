@@ -110,22 +110,48 @@ final class PageController
             redirect(Catalog::tradePath($trade), 301);
         }
 
-        $providers = Catalog::search('', 'prestataires', $trade);
-        $services = Catalog::search('', 'prestations', $trade);
-        $missions = Catalog::search('', 'missions', $trade);
+        $preview = 6;
+        $providers = Catalog::search('', 'prestataires', $trade, $preview);
+        $services = Catalog::search('', 'prestations', $trade, $preview);
+        $missions = Catalog::search('', 'missions', $trade, $preview);
         $label = Catalog::TRADE_LABELS[$trade] ?? $trade;
         $geo = Seo::tradeCopy($trade);
         $path = Catalog::tradePath($trade);
+        $specs = [];
+        foreach ($services['facets']['spec'] ?? [] as $spec) {
+            if ((int) ($spec['n'] ?? 0) > 0) {
+                $specs[] = $spec;
+            }
+        }
+        $otherTrades = [];
+        foreach (Catalog::trades() as $other) {
+            if ($other === $trade) {
+                continue;
+            }
+            $otherTrades[] = [
+                'label' => Catalog::TRADE_LABELS[$other] ?? $other,
+                'href' => Catalog::tradePath($other),
+            ];
+        }
 
         View::page('metier', [
             'title' => $geo['h1'],
             'slug' => $slug,
             'trade' => $trade,
             'tradeLabel' => $label,
+            'tradeTitle' => Catalog::tradeTitle($trade),
             'tradeGeo' => $geo,
             'providers' => $providers['results'],
             'services' => $services['results'],
             'missions' => $missions['results'],
+            'providerCount' => (int) ($providers['count'] ?? 0),
+            'serviceCount' => (int) ($services['count'] ?? 0),
+            'missionCount' => (int) ($missions['count'] ?? 0),
+            'tradeSpecs' => $specs,
+            'volumeHint' => Catalog::volumeHint($trade),
+            'briefHint' => Catalog::briefHint($trade),
+            'otherTrades' => $otherTrades,
+            'heroImg' => photo(abs(crc32($canonicalSlug)) % 6),
             'meta' => Seo::build(
                 $geo['h1'],
                 $geo['description'],
@@ -430,6 +456,20 @@ final class PageController
 
         $published = (string) ($article['published_at'] ?? '');
         $iso = $published !== '' ? date('c', strtotime($published) ?: time()) : null;
+        $cover = !empty($article['has_cover']) ? (string) $article['img'] : null;
+        $jsonLd = [
+            Seo::organization(),
+            Seo::website(),
+            Seo::breadcrumb([
+                ['name' => 'Acteurs du Livre', 'url' => '/'],
+                ['name' => 'Le journal', 'url' => '/journal'],
+                ['name' => (string) $article['title'], 'url' => (string) $article['href']],
+            ]),
+            Seo::article($article),
+        ];
+        if (!empty($article['faqs']) && is_array($article['faqs'])) {
+            $jsonLd[] = Seo::faqPage($article['faqs']);
+        }
         View::page('article', [
             'title' => $article['title'],
             'slug' => $slug,
@@ -439,20 +479,13 @@ final class PageController
                 (string) ($article['excerpt'] ?: $article['chapo'] ?: $article['title']),
                 Share::absolute((string) $article['href']),
                 'article',
-                null,
+                $cover,
                 [
                     'published_time' => $iso,
                     'modified_time' => $iso,
-                    'json_ld' => [
-                        Seo::organization(),
-                        Seo::website(),
-                        Seo::breadcrumb([
-                            ['name' => 'Acteurs du Livre', 'url' => '/'],
-                            ['name' => 'Le journal', 'url' => '/journal'],
-                            ['name' => (string) $article['title'], 'url' => (string) $article['href']],
-                        ]),
-                        Seo::article($article),
-                    ],
+                    'section' => (string) ($article['cat'] ?? ''),
+                    'image_alt' => (string) ($article['image_alt'] ?? $article['title']),
+                    'json_ld' => $jsonLd,
                 ]
             ),
         ]);

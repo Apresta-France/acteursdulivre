@@ -445,6 +445,9 @@ final class AdminController
             'category' => 'Journal',
             'excerpt' => '',
             'body' => '',
+            'image_path' => '',
+            'image_alt' => '',
+            'img' => '',
             'published' => false,
         ] : Article::find((int) $id);
         if (!$article) {
@@ -461,14 +464,20 @@ final class AdminController
     {
         Auth::requireAdmin();
         try {
-            $savedId = Article::save($id === 'nouveau' ? null : (int) $id, [
+            $payload = [
                 'title' => $request->string('title'),
                 'slug' => $request->string('slug'),
                 'category' => $request->string('category'),
                 'excerpt' => $request->string('excerpt'),
+                'image_alt' => $request->string('image_alt'),
                 'body' => $request->input('body', ''),
                 'published' => $request->bool('published'),
-            ]);
+            ];
+            $file = $request->file('image');
+            if (($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE) {
+                $payload['image_path'] = store_upload($file, 'journal', ['jpg', 'jpeg', 'png', 'webp'], 5 * 1024 * 1024);
+            }
+            $savedId = Article::save($id === 'nouveau' ? null : (int) $id, $payload);
             flash('saved', 'Article enregistré.');
             redirect('/admin/journal/' . $savedId);
         } catch (Throwable $e) {

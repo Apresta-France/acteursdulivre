@@ -21,26 +21,33 @@ $query = (string) ($query ?? '');
       <p class="mk-kicker">La place de marché des métiers du livre</p>
       <h1>Un livre, ça se fait à plusieurs.</h1>
       <p class="mk-lead">Dix-huit métiers, de l'écriture au salon : trouvez les bonnes personnes, comparez des prestations à prix affichés, ou publiez votre recherche.</p>
-      <form class="mk-search" method="get" action="<?= e(url('/recherche')) ?>">
-        <input name="q" value="<?= e($query) ?>" placeholder="De quoi votre livre a-t-il besoin ?" aria-label="Recherche">
+      <form class="mk-search" method="get" action="<?= e(url('/recherche')) ?>" role="search" data-live-search data-api="<?= e(url('/api/recherche')) ?>" autocomplete="off">
+        <input name="q" value="<?= e($query) ?>" placeholder="De quoi votre livre a-t-il besoin ?" aria-label="Recherche" data-live-input autocomplete="off">
         <button class="btn-orange" type="submit">Chercher</button>
+        <div class="search-suggest" data-live-panel hidden></div>
       </form>
       <div class="mk-chips">
         <?php foreach ($homeQuick as $q): ?>
-          <a href="<?= e(url('/recherche?q=' . rawurlencode((string) $q))) ?>"><?= e((string) $q) ?></a>
+          <a href="<?= e(url('/recherche') . '?q=' . rawurlencode((string) $q)) ?>"><?= e((string) $q) ?></a>
         <?php endforeach; ?>
       </div>
     </div>
     <div class="mk-hero-visual">
-      <div class="mk-mosaic" aria-hidden="true">
+      <?php
+        $heroImgs = is_array($homeHeroImgs ?? null) && count($homeHeroImgs) >= 3
+          ? array_values($homeHeroImgs)
+          : home_hero_photos();
+        $heroSrcs = json_encode($heroImgs, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+      ?>
+      <div class="mk-mosaic" aria-hidden="true" data-hero-mosaic data-hero-srcs="<?= e((string) $heroSrcs) ?>">
         <div class="mk-mosaic-a">
-          <img src="<?= e((string) ($homeImg1 ?? photo(0))) ?>" alt="" width="440" height="312" fetchpriority="high" decoding="async">
+          <img src="<?= e((string) ($heroImgs[0] ?? '')) ?>" alt="" width="214" height="312" fetchpriority="high" decoding="async">
         </div>
         <div class="mk-mosaic-b">
-          <img src="<?= e((string) ($homeImg2 ?? photo(5))) ?>" alt="" width="214" height="150" loading="lazy" decoding="async">
+          <img src="<?= e((string) ($heroImgs[1] ?? '')) ?>" alt="" width="214" height="150" decoding="async">
         </div>
         <div class="mk-mosaic-c">
-          <img src="<?= e((string) ($homeImg3 ?? photo(4))) ?>" alt="" width="214" height="150" loading="lazy" decoding="async">
+          <img src="<?= e((string) ($heroImgs[2] ?? '')) ?>" alt="" width="214" height="150" decoding="async">
         </div>
       </div>
       <a class="mk-hero-play" href="https://youtu.be/3ceBiEN9RJ8" data-video-open aria-haspopup="dialog" aria-controls="home-video" aria-label="Lire la vidéo de présentation">
@@ -95,7 +102,7 @@ $query = (string) ($query ?? '');
     </div>
   </section>
 
-  <section class="mk-block mk-fog">
+  <section class="mk-block mk-wash-beige">
     <div class="mk-head">
       <div>
         <h2>Prestations mises en avant</h2>
@@ -127,7 +134,7 @@ $query = (string) ($query ?? '');
   </section>
 
   <?php if ($homeEntry !== []): ?>
-    <section class="mk-block mk-fog">
+    <section class="mk-block">
       <div class="mk-head">
         <div>
           <h2>Formats d'entrée</h2>
@@ -159,7 +166,7 @@ $query = (string) ($query ?? '');
     </section>
   <?php endif; ?>
 
-  <section class="mk-block">
+  <section class="mk-block mk-wash-peach">
     <h2>Trois façons de travailler ensemble</h2>
     <p class="mk-sub">Choisissez celle qui correspond à votre projet.</p>
     <div class="mk-cards-3">
@@ -210,7 +217,7 @@ $query = (string) ($query ?? '');
     </div>
   </section>
 
-  <section class="mk-block mk-cards-3">
+  <section class="mk-block mk-cards-3 mk-wash-cool">
     <?php foreach ($garanties as $g): ?>
       <div>
         <div class="mk-kicker"><?= e((string) $g['kicker']) ?></div>
@@ -225,17 +232,17 @@ $query = (string) ($query ?? '');
     <div>
       <div class="mk-kicker">Engagement de la plateforme</div>
       <h2>Ici, l'intelligence artificielle générative est interdite.</h2>
-      <p>Aucun texte, aucune illustration, aucune voix livrée sur cette plateforme ne peut être produit par une IA générative. Les prestataires s'y engagent à l'inscription ; les manuscrits confiés ne sont jamais utilisés pour entraîner un modèle.</p>
+      <p>Aucun texte, aucune illustration, aucune voix livrée sur cette plateforme ne peut être produit par une IA générative. Les prestataires s'y engagent à l'inscription ; les manuscrits confiés ne sont jamais utilisés pour entraîner un modèle. Ce moratoire vise les missions entre acteurs du livre — pas la fabrication de ce site.</p>
     </div>
     <div class="mk-ia-box">
       <?php foreach ($iaPoints as $p): ?>
         <div><span>✕</span><?= e((string) $p) ?></div>
       <?php endforeach; ?>
-      <a href="<?= e(url('/confiance')) ?>">Lire la charte qualité →</a>
+      <a href="<?= e(url('/regles-ia')) ?>">Lire nos règles IA →</a>
     </div>
   </section>
 
-  <section class="mk-block mk-fog mk-mega">
+  <section class="mk-block mk-wash-cool mk-mega">
     <?php foreach ($mega as $m): ?>
       <div>
         <div class="mk-kicker"><?= e((string) $m['group']) ?></div>
@@ -247,7 +254,7 @@ $query = (string) ($query ?? '');
   </section>
 
   <?php if ($homeTemoins !== []): ?>
-    <section class="mk-block">
+    <section class="mk-block mk-wash-beige">
       <h2>Ils ont fabriqué leur livre ici</h2>
       <div class="mk-cards-3">
         <?php foreach ($homeTemoins as $t): ?>
@@ -300,7 +307,7 @@ $query = (string) ($query ?? '');
     </div>
   </section>
 
-  <section class="mk-faq">
+  <section class="mk-faq mk-wash-cool">
     <div>
       <h2>Questions fréquentes</h2>
       <p>Tout le détail dans le centre d'aide.</p>

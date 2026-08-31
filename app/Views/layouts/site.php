@@ -48,11 +48,17 @@
   <?php if (!empty($meta['modified_time'])): ?>
   <meta property="article:modified_time" content="<?= e((string) $meta['modified_time']) ?>">
   <?php endif; ?>
+  <?php if (!empty($meta['section'])): ?>
+  <meta property="article:section" content="<?= e((string) $meta['section']) ?>">
+  <?php endif; ?>
   <link rel="preload" href="<?= e(asset('fonts/space-grotesk-700.woff2')) ?>" as="font" type="font/woff2" crossorigin>
   <?php if (!empty($isAccueil)): ?>
-  <link rel="preload" as="image" href="<?= e(photo(0)) ?>">
+  <link rel="preload" as="image" href="<?= e((string) ($homeImg1 ?? photo_asset('hero-write'))) ?>" type="image/webp">
   <?php endif; ?>
-  <link rel="stylesheet" href="<?= e(asset('css/app.css')) ?>?v=m65">
+  <?php if (!empty($isArticle) && !empty($article['img'])): ?>
+  <link rel="preload" as="image" href="<?= e((string) $article['img']) ?>">
+  <?php endif; ?>
+  <link rel="stylesheet" href="<?= e(asset('css/app.css')) ?>?v=m74">
   <link rel="icon" href="<?= e(asset('img/favicon.ico')) ?>?v=3" sizes="any">
   <link rel="icon" type="image/png" href="<?= e(asset('img/favicon-32x32.png')) ?>?v=3" sizes="32x32">
   <link rel="apple-touch-icon" href="<?= e(asset('img/apple-touch-icon.png')) ?>?v=3">
@@ -69,8 +75,8 @@
     <div class="site-canvas">
       <div class="preopen">
         <span class="preopen-badge">Pré-ouverture</span>
-        <span class="preopen-text">La plateforme accueille dès maintenant les <strong>auteurs et les professionnels du livre</strong> — ouverture aux clients en octobre 2026. Sans IA générative, jamais.</span>
-        <span class="preopen-short">Inscriptions ouvertes — clients en octobre 2026. Sans IA générative.</span>
+        <span class="preopen-text">La plateforme accueille dès maintenant les <strong>auteurs et les professionnels du livre</strong> — ouverture aux clients en octobre 2026. Sans IA générative sur les missions, jamais.</span>
+        <span class="preopen-short">Inscriptions ouvertes — clients en octobre 2026. Sans IA générative sur les missions.</span>
         <a href="<?= e(url('/inscription')) ?>">Réserver ma place</a>
       </div>
       <div class="topbar">
@@ -311,12 +317,13 @@
             <a href="<?= e(url('/cgv')) ?>">CGV</a>
             <a href="<?= e(url('/confidentialite')) ?>">Confidentialité</a>
             <a href="<?= e(url('/cookies')) ?>">Cookies</a>
+            <a href="<?= e(url('/regles-ia')) ?>">Règles IA</a>
             <span>Français · EUR</span>
           </div>
         </div>
       </footer>
     </div>
   </div>
-  <script src="<?= e(asset('js/app.js')) ?>?v=m42"></script>
+  <script src="<?= e(asset('js/app.js')) ?>?v=m44"></script>
 </body>
 </html>

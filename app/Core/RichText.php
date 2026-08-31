@@ -23,8 +23,19 @@ final class RichText
         'ul' => [],
         'ol' => [],
         'li' => [],
-        'h3' => [],
-        'h4' => [],
+        'h2' => ['id'],
+        'h3' => ['id'],
+        'h4' => ['id'],
+        'blockquote' => [],
+        'figure' => [],
+        'figcaption' => [],
+        'table' => [],
+        'caption' => [],
+        'thead' => [],
+        'tbody' => [],
+        'tr' => [],
+        'th' => ['scope'],
+        'td' => [],
         'a' => ['href', 'title', 'rel', 'target'],
     ];
 
@@ -181,14 +192,32 @@ final class RichText
                     $el->removeAttribute('href');
                     $el->removeAttribute('rel');
                     $el->removeAttribute('target');
-                } else {
+                } elseif (preg_match('#^https?://#i', $href) === 1) {
                     $el->setAttribute('href', $href);
                     $el->setAttribute('rel', 'noopener noreferrer');
                     $el->setAttribute('target', '_blank');
+                } else {
+                    $el->setAttribute('href', $href);
+                    $el->removeAttribute('rel');
+                    $el->removeAttribute('target');
                 }
             }
             if ($lname === 'title') {
                 $el->setAttribute('title', strip_tags($el->getAttribute('title')));
+            }
+            if ($lname === 'id') {
+                $id = trim($el->getAttribute('id'));
+                if (preg_match('/^[A-Za-z][A-Za-z0-9_-]{0,79}$/', $id) !== 1) {
+                    $el->removeAttribute('id');
+                }
+            }
+            if ($lname === 'scope') {
+                $scope = strtolower(trim($el->getAttribute('scope')));
+                if (!in_array($scope, ['col', 'row', 'colgroup', 'rowgroup'], true)) {
+                    $el->removeAttribute('scope');
+                } else {
+                    $el->setAttribute('scope', $scope);
+                }
             }
         }
     }
@@ -202,6 +231,9 @@ final class RichText
             return false;
         }
         if (preg_match('#^mailto:[^\s]+$#i', $href) === 1) {
+            return true;
+        }
+        if (function_exists('safe_internal_path') && safe_internal_path($href) !== null) {
             return true;
         }
 

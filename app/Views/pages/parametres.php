@@ -63,6 +63,7 @@ $oauthProviders = OAuth::enabledProviders();
           <input type="checkbox" name="charte_ia" value="1">
           Je m'engage à ne fournir aucun livrable produit par une IA générative.
         </label>
+        <a class="ia-box-cta" href="<?= e(url('/regles-ia')) ?>">Lire nos règles d'intelligence artificielle →</a>
       </div>
     <?php endif; ?>
 

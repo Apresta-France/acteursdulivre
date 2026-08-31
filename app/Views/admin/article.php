@@ -9,7 +9,7 @@ $action = $id ? '/admin/journal/' . $id : '/admin/journal/nouveau';
   <?php if (!empty($saved)): ?><div class="flash flash-ok"><?= e(is_string($saved) ? $saved : 'Enregistré.') ?></div><?php endif; ?>
   <?php if (!empty($error)): ?><div class="flash flash-error"><?= e((string) $error) ?></div><?php endif; ?>
 
-  <form class="admin-form" method="post" action="<?= e(url($action)) ?>">
+  <form class="admin-form" method="post" action="<?= e(url($action)) ?>" enctype="multipart/form-data">
     <?= csrf_field() ?>
     <div>
       <label class="field" for="title">Titre</label>
@@ -28,7 +28,18 @@ $action = $id ? '/admin/journal/' . $id : '/admin/journal/nouveau';
       <textarea class="textarea" id="excerpt" name="excerpt" rows="3"><?= e((string) ($article['excerpt'] ?? '')) ?></textarea>
     </div>
     <div>
-      <label class="field" for="body">Corps (HTML possible)</label>
+      <label class="field" for="image">Image de l’article</label>
+      <?php if (!empty($article['img'])): ?>
+        <p><img src="<?= e((string) $article['img']) ?>" alt="" style="max-width: 320px; border-radius: 10px;"></p>
+      <?php endif; ?>
+      <input class="input" id="image" name="image" type="file" accept="image/jpeg,image/png,image/webp">
+    </div>
+    <div>
+      <label class="field" for="image_alt">Texte alternatif de l’image</label>
+      <input class="input" id="image_alt" name="image_alt" value="<?= e((string) ($article['image_alt'] ?? '')) ?>">
+    </div>
+    <div>
+      <label class="field" for="body">Corps (HTML : h2, tableaux, listes, liens internes)</label>
       <textarea class="textarea" id="body" name="body" rows="16"><?= e((string) ($article['body'] ?? '')) ?></textarea>
     </div>
     <label class="admin-tax-check">

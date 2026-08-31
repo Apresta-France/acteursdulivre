@@ -114,17 +114,25 @@ function avatar_html(?array $person, int $size = 34, string $class = 'avatar'): 
     return '<span class="' . e($class) . '" style="' . e(avatar_style($initials, $size)) . '">' . e($initials) . '</span>';
 }
 
+function photo_asset(string $stem): string
+{
+    $dir = ADL_ROOT . '/public/assets/img/photos/';
+    if (is_file($dir . $stem . '.webp')) {
+        return asset('img/photos/' . $stem . '.webp');
+    }
+    if (is_file($dir . $stem . '.jpg')) {
+        return asset('img/photos/' . $stem . '.jpg');
+    }
+    return asset('img/photos/' . $stem . '.jpg');
+}
+
 function photo(int $index = 0): string
 {
     $photos = ['books', 'flowers', 'leather', 'console', 'desk', 'library'];
     $stem = $photos[$index] ?? $photos[0];
-    $webp = ADL_ROOT . '/public/assets/img/photos/' . $stem . '.webp';
-    if (is_file($webp)) {
-        return asset('img/photos/' . $stem . '.webp');
-    }
-    $local = ADL_ROOT . '/public/assets/img/photos/' . $stem . '.jpg';
-    if (is_file($local)) {
-        return asset('img/photos/' . $stem . '.jpg');
+    $dir = ADL_ROOT . '/public/assets/img/photos/';
+    if (is_file($dir . $stem . '.webp') || is_file($dir . $stem . '.jpg')) {
+        return photo_asset($stem);
     }
     $remote = [
         'Old books (Unsplash).jpg',
@@ -136,6 +144,25 @@ function photo(int $index = 0): string
     ];
     $file = $remote[$index] ?? $remote[0];
     return 'https://commons.wikimedia.org/wiki/Special:FilePath/' . rawurlencode($file) . '?width=800';
+}
+
+/**
+ * Photos du héros d'accueil — CC0 (Unsplash avant juin 2017, Wikimedia Commons) :
+ * hero-write : « Writing the Moment » — rawpixel.com
+ * hero-paint : « A notebook with paint brushes » — Tim Arterbury
+ * hero-shop  : librairie parisienne aux ampoules — Unsplash / Commons
+ *
+ * @return list<string>
+ */
+function home_hero_photos(): array
+{
+    $urls = [
+        photo_asset('hero-write') . '?v=2',
+        photo_asset('hero-paint') . '?v=2',
+        photo_asset('hero-shop') . '?v=2',
+    ];
+    shuffle($urls);
+    return array_values($urls);
 }
 
 function service_cover_label(string $category): string
@@ -268,6 +295,19 @@ function unique_slug(string $base, callable $taken): string
 function uploaded(string $path): string
 {
     return url('public/uploads/' . ltrim($path, '/'));
+}
+
+function article_image_url(string $path): string
+{
+    $path = trim(str_replace(['\\', "\0"], '/', $path));
+    if ($path === '' || str_contains($path, '..')) {
+        return '';
+    }
+    if (str_starts_with($path, 'img/')) {
+        return asset($path);
+    }
+
+    return uploaded($path);
 }
 
 function json_response(array $payload, int $code = 200): never

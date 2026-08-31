@@ -32,6 +32,7 @@ $litige = $litige ?? [];
         </div>
       <?php endforeach; ?>
     </div>
+    <p class="mk-sub" style="margin-top: 22px;"><a href="<?= e(url('/regles-ia')) ?>">Lire le détail de nos règles d'intelligence artificielle →</a></p>
   </section>
 
   <section class="mk-split mk-fog-pad">

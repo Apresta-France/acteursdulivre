@@ -125,6 +125,7 @@ final class Prototype
                 ['label' => 'À propos', 'href' => '/a-propos'],
                 ['label' => 'Le journal', 'href' => '/journal'],
                 ['label' => 'Charte qualité', 'href' => '/confiance'],
+                ['label' => 'Règles IA', 'href' => '/regles-ia'],
                 ['label' => 'Tarifs', 'href' => '/tarifs'],
             ]],
             ['title' => 'Aide', 'links' => [
@@ -174,12 +175,14 @@ final class Prototype
         $navy = self::NAVY;
         $orange = self::ORANGE;
         $services = self::services();
+        $heroImgs = home_hero_photos();
 
         $base = [
-            'homeQuick' => ['Correction de roman', 'Bêta-lecture', 'Couverture illustrée', 'Impression 300 ex.', 'Traduction EN→FR'],
-            'homeImg1' => photo(0),
-            'homeImg2' => photo(5),
-            'homeImg3' => photo(4),
+            'homeQuick' => Catalog::HOME_QUICK_PREFERRED,
+            'homeHeroImgs' => $heroImgs,
+            'homeImg1' => $heroImgs[0],
+            'homeImg2' => $heroImgs[1],
+            'homeImg3' => $heroImgs[2],
             'homeStats' => Catalog::homeStats(),
             'homeMetiers' => self::homeMetiers(),
             'homeFeatured' => array_map(static function (array $x, int $i): array {
@@ -268,6 +271,7 @@ final class Prototype
             unset($article);
 
             return [
+                'homeQuick' => Catalog::homeQuick(),
                 'homeStats' => $stats,
                 'homeMetiers' => Catalog::tradeCards(),
                 'homeFeatured' => $featured,
@@ -591,7 +595,7 @@ final class Prototype
                 ['num' => '02', 'title' => 'Délais tenus ou prévenus', 'body' => 'Un retard se signale dès qu\'il est prévisible, pas le jour de la livraison.'],
                 ['num' => '03', 'title' => 'Confidentialité du manuscrit', 'body' => 'Aucun extrait diffusé sans autorisation écrite, y compris dans un portfolio.'],
                 ['num' => '04', 'title' => 'Périmètre clair', 'body' => 'Ce qui est inclus, les délais et, le cas échéant, l’usage des livrables : c’est écrit dans le devis.'],
-                ['num' => '05', 'title' => 'Aucune IA générative', 'body' => 'Textes, illustrations et voix sont produits par des humains. Pas de génération automatique, pas de sous-traitance cachée, pas d\'entraînement de modèle sur les manuscrits confiés.'],
+                ['num' => '05', 'title' => 'Aucune IA générative', 'body' => 'Textes, illustrations et voix livrés aux acteurs du livre sont produits par des humains. Pas de génération automatique, pas de sous-traitance cachée, pas d\'entraînement de modèle sur les manuscrits confiés.'],
                 ['num' => '06', 'title' => 'Avis sincères', 'body' => 'Le client note la qualité, l\'efficacité et la satisfaction globale lorsqu\'il confirme que la mission est terminée.'],
             ],
             'litige' => [
@@ -1002,7 +1006,7 @@ final class Prototype
             ['Qui facture le client final ?', 'Le prestataire facture directement son client, hors plateforme. La plateforme facture uniquement sa commission au prestataire, à la validation de la mission.'],
             ['La première mission est-elle payante ?', 'Non. La première mission réalisée via la plateforme est entièrement gratuite. À partir de la deuxième, la commission est de 8 %.'],
             ['La plateforme prend-elle une commission sur les appels d\'offres ?', 'Publier et candidater sont gratuits, sans abonnement. La commission de 8 % s\'applique uniquement à partir de la deuxième mission réalisée.'],
-            ['L\'IA générative est-elle autorisée sur la plateforme ?', 'Non. Aucun livrable ne peut être produit par une IA générative : ni texte, ni illustration, ni voix. Les prestataires s\'y engagent à l\'inscription, et les manuscrits confiés ne servent jamais à entraîner un modèle.'],
+            ['L\'IA générative est-elle autorisée sur la plateforme ?', 'Non, pour les missions entre acteurs du livre : aucun livrable ne peut être produit par une IA générative. Le moratoire ne s\'applique pas à la fabrication de la plateforme. Le détail figure dans les règles IA.'],
             ['Y a-t-il un contrat type ?', 'Non. L\'acceptation du devis dans le suivi vaut accord entre les parties. La plateforme ne génère ni contrat type ni NDA.'],
         ];
         return self::faqItems($items);

@@ -6,8 +6,8 @@ namespace Adl\Data;
 
 final class LegalPages
 {
-    public const UPDATED = '29 août 2026';
-    public const VERSION = '1.4';
+    public const UPDATED = '31 août 2026';
+    public const VERSION = '1.5';
 
     public static function slugs(): array
     {
@@ -17,6 +17,7 @@ final class LegalPages
             'cgv' => ['label' => 'CGV', 'href' => '/cgv', 'title' => 'Conditions générales de vente'],
             'confidentialite' => ['label' => 'Confidentialité', 'href' => '/confidentialite', 'title' => 'Politique de confidentialité'],
             'cookies' => ['label' => 'Cookies', 'href' => '/cookies', 'title' => 'Politique cookies'],
+            'ia' => ['label' => 'Règles IA', 'href' => '/regles-ia', 'title' => 'Règles d\'intelligence artificielle'],
         ];
     }
 
@@ -27,6 +28,7 @@ final class LegalPages
             '/cgv' => 'cgv',
             '/confidentialite' => 'confidentialite',
             '/cookies' => 'cookies',
+            '/regles-ia' => 'ia',
             default => 'mentions',
         };
     }
@@ -53,6 +55,7 @@ final class LegalPages
             'cgv' => self::cgv(),
             'confidentialite' => self::confidentialite(),
             'cookies' => self::cookies(),
+            'ia' => self::ia(),
             default => self::mentions(),
         };
 
@@ -183,6 +186,7 @@ final class LegalPages
                     ['p' => 'L\'usage de la Plateforme emporte adhésion à la charte qualité, dont les engagements suivants :'],
                     ['html' => '<ul><li>prix annoncé = prix facturé, hors options acceptées par écrit avant le démarrage ;</li><li>délais tenus ou signalés dès qu\'un retard est prévisible ;</li><li>confidentialité des manuscrits et des briefs : aucun extrait diffusé sans autorisation écrite ;</li><li>périmètre et, le cas échéant, droits d\'exploitation précisés dans le devis ;</li><li>aucune intelligence artificielle générative pour produire les livrables (textes, illustrations, voix, traductions, maquettes générées) ;</li><li>avis sincères, uniquement après une mission réellement réalisée via la Plateforme.</li></ul>'],
                     ['p' => 'Les outils d\'aide au métier (correcteurs orthographiques, logiciels de PAO, dictionnaires, gestion de versions) restent autorisés. Sont interdits : la génération automatique de contenu, la sous-traitance cachée, et l\'entraînement de modèles sur les manuscrits ou fichiers confiés.'],
+                    ['html' => '<p>Le périmètre du moratoire — ce qu\'il couvre pour les prestataires et les clients, et ce qu\'il ne couvre pas, notamment la réalisation de la Plateforme — est précisé dans les <a href="' . e(url('/regles-ia')) . '">règles d\'intelligence artificielle</a>.</p>'],
                     ['p' => 'Le Prestataire qui crée un compte s\'engage expressément à ce cadre. Un manquement peut entraîner la suspension ou la clôture du compte, sans préjudice des recours des Clients.'],
                 ],
             ],
@@ -486,6 +490,81 @@ final class LegalPages
                 'blocks' => [
                     ['p' => 'Vous pouvez supprimer les cookies du site via les paramètres de votre navigateur. La suppression du cookie de session vous déconnecte.'],
                     ['html' => '<p>Pour en savoir plus sur les données personnelles : <a href="' . e(url('/confidentialite')) . '">politique de confidentialité</a>. Contact : <a href="mailto:bonjour@acteursdulivre.fr">bonjour@acteursdulivre.fr</a>.</p>'],
+                ],
+            ],
+        ];
+    }
+
+    private static function ia(): array
+    {
+        return [
+            [
+                'title' => '1. Objet',
+                'blocks' => [
+                    ['p' => 'Ce document rassemble les règles d\'intelligence artificielle d\'acteursdulivre.fr. Il existe pour éviter toute ambiguïté : le moratoire est réel, son périmètre est précis, et l\'éditeur de la Plateforme dit ici ce qu\'il fait lui-même.'],
+                    ['p' => 'Deux objets sont distingués, et ne doivent pas être confondus :'],
+                    ['html' => '<ul><li>les prestations, commandes et échanges entre les acteurs du livre sur la place de marché ;</li><li>la conception, le développement, la maintenance et l\'animation éditoriale de la Plateforme par EDITIONS TESSERACT.</li></ul>'],
+                ],
+            ],
+            [
+                'title' => '2. Le moratoire applicable aux acteurs du livre',
+                'blocks' => [
+                    ['p' => 'EDITIONS TESSERACT applique un moratoire sur l\'intelligence artificielle générative pour les prestataires et pour leurs clients, dès lors qu\'il s\'agit du travail du livre réalisé, commandé ou livré via la Plateforme.'],
+                    ['p' => 'Aucun texte, aucune illustration, aucune voix, aucune traduction ni aucune maquette livrée entre un prestataire et un client ne peut être produit par une IA générative. Les manuscrits, briefs et fichiers confiés ne sont jamais utilisés pour entraîner un modèle.'],
+                    ['p' => 'Ce moratoire est une condition d\'usage de la place de marché. Le prestataire qui propose ses services s\'y engage à l\'inscription. Le client qui commande s\'y tient également : il ne demande pas, n\'impose pas et ne présente pas comme humain un livrable généré par IA.'],
+                ],
+            ],
+            [
+                'title' => '3. Ce que le moratoire ne couvre pas',
+                'blocks' => [
+                    ['p' => 'Le moratoire ne s\'applique pas à la réalisation de cette Plateforme. Coder le site, le concevoir, le maintenir, rédiger certains textes de présentation ou produire des visuels de communication de acteursdulivre.fr n\'est pas une prestation livrée à un auteur, un éditeur ou un autre acteur du livre.'],
+                    ['p' => 'Utiliser des outils d\'intelligence artificielle dans ce cadre n\'est donc pas une entorse au moratoire : c\'est un autre objet. La demande adressée aux professionnels du livre — ne pas livrer, ni faire livrer, un travail généré par IA — reste entière.'],
+                    ['p' => 'Cette distinction est volontaire et publique. Elle n\'autorise aucun prestataire à livrer un travail généré par IA, ni aucun client à l\'exiger, au motif que la Plateforme elle-même aurait été réalisée avec de tels outils.'],
+                ],
+            ],
+            [
+                'title' => '4. Transparence de l\'éditeur',
+                'blocks' => [
+                    ['p' => 'EDITIONS TESSERACT indique sans ambiguïté :'],
+                    ['html' => '<ul><li>que la Plateforme est conçue et développée avec l\'aide d\'outils d\'intelligence artificielle ;</li><li>que certains contenus publiés par l\'éditeur du site — textes d\'interface, pages d\'information, éventuellement des contenus de communication — peuvent avoir été rédigés ou assistés par ces outils ;</li><li>que ces usages restent internes à la fabrication et à l\'exploitation du service ;</li><li>qu\'ils ne portent pas sur les manuscrits, briefs, livrables ou missions des utilisateurs.</li></ul>'],
+                    ['p' => 'Les contenus déposés par les utilisateurs (vitrine, prestations, appels d\'offres, messages, fichiers, avis) restent soumis au moratoire.'],
+                ],
+            ],
+            [
+                'title' => '5. Règles applicables aux prestataires',
+                'blocks' => [
+                    ['p' => 'Le prestataire qui propose ses services s\'engage notamment à :'],
+                    ['html' => '<ul><li>ne fournir aucun livrable produit par une IA générative (texte, illustration, voix, traduction, maquette générée) ;</li><li>ne pas sous-traiter secrètement une partie de la mission à un outil génératif ;</li><li>ne pas utiliser une traduction automatique post-éditée sans accord écrit préalable du client ;</li><li>ne pas entraîner, ni laisser entraîner, un modèle sur un manuscrit, un brief ou un fichier confié ;</li><li>déposer sur sa vitrine et ses fiches uniquement des textes et visuels de sa main.</li></ul>'],
+                    ['p' => 'Un manquement peut entraîner le remboursement de la mission, le retrait du profil, la suspension ou la clôture du compte, sans préjudice des recours du client.'],
+                ],
+            ],
+            [
+                'title' => '6. Règles applicables aux clients',
+                'blocks' => [
+                    ['p' => 'Le client qui cherche un prestataire ou commande une mission s\'engage notamment à :'],
+                    ['html' => '<ul><li>ne pas exiger un livrable produit par une IA générative ;</li><li>ne pas imposer l\'usage d\'un outil génératif comme condition de la mission ;</li><li>ne pas présenter comme humain un travail qu\'il sait généré par IA ;</li><li>signaler un manquement s\'il a des raisons de croire qu\'un livrable enfreint le moratoire.</li></ul>'],
+                    ['html' => '<p>Un signalement peut être déposé depuis le profil concerné, la messagerie, le suivi de mission ou la <a href="' . e(url('/contact')) . '">page Contact</a>.</p>'],
+                ],
+            ],
+            [
+                'title' => '7. Outils autorisés et outils interdits',
+                'blocks' => [
+                    ['p' => 'Restent autorisés les outils d\'aide au métier qui n\'engendrent pas le contenu livré : correcteurs orthographiques, dictionnaires, logiciels de PAO, mémoires de traduction, gestion de versions, outils de suivi de projet.'],
+                    ['p' => 'Sont interdits : la génération automatique de contenu, les modèles d\'image ou de voix utilisés pour un livrable, la post-édition d\'une traduction automatique sans accord écrit, et tout usage qui reviendrait à faire produire la mission par une machine tout en la présentant comme un travail humain.'],
+                ],
+            ],
+            [
+                'title' => '8. Manuscrits et entraînement de modèles',
+                'blocks' => [
+                    ['p' => 'Aucun contenu déposé sur la Plateforme — manuscrit, brief, fichier source, message, livrable — n\'est utilisé par EDITIONS TESSERACT pour entraîner un modèle d\'intelligence artificielle.'],
+                    ['p' => 'Le prestataire s\'interdit le même usage pour son propre compte. La confidentialité des manuscrits prévue par la charte qualité s\'applique indépendamment de toute question d\'IA.'],
+                ],
+            ],
+            [
+                'title' => '9. Documents liés',
+                'blocks' => [
+                    ['html' => '<p>Ces règles précisent le périmètre du moratoire. Elles s\'articulent avec la <a href="' . e(url('/cgu')) . '">charte qualité et l\'interdiction d\'IA générative des CGU</a> (article 7), la <a href="' . e(url('/confiance')) . '">page Confiance</a> et la <a href="' . e(url('/confidentialite')) . '">politique de confidentialité</a>.</p>'],
+                    ['html' => '<p>Question ou signalement : <a href="' . e(url('/contact')) . '">nous écrire</a> ou <a href="mailto:bonjour@acteursdulivre.fr">bonjour@acteursdulivre.fr</a>.</p>'],
                 ],
             ],
         ];
