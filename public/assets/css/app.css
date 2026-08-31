@@ -679,11 +679,16 @@ select.input {
 .admin-count {
   font-family: var(--display);
   font-size: 11px;
+  font-weight: 700;
   background: var(--orange);
   color: #fff;
-  padding: 2px 7px;
+  padding: 1px 7px;
+  min-width: 1.45em;
   border-radius: 999px;
   margin-left: auto;
+  text-align: center;
+  line-height: 1.45;
+  flex-shrink: 0;
 }
 .admin-user {
   margin-top: auto;
@@ -3016,10 +3021,24 @@ img.profile-avatar,
 .inbox-thread-head em { display: block; font-style: normal; font-size: 13px; color: var(--muted-2); }
 .inbox-messages { flex: 1; padding: 18px; display: flex; flex-direction: column; gap: 12px; }
 .msg { max-width: 78%; }
-.msg p { margin: 0; background: var(--fog); border-radius: 12px; padding: 10px 12px; line-height: 1.55; }
+.msg p,
+.msg .msg-bubble {
+  margin: 0;
+  background: var(--fog);
+  border-radius: 12px;
+  padding: 10px 12px;
+  line-height: 1.55;
+  display: block;
+}
 .msg-meta { font-size: 12px; color: #8496A8; margin-bottom: 4px; }
 .msg.is-mine { align-self: flex-end; }
-.msg.is-mine p { background: #FDF3F0; }
+.msg.is-mine p,
+.msg.is-mine .msg-bubble { background: #FDF3F0; }
+.msg .msg-bubble.is-link { color: var(--orange); }
+.msg .msg-bubble.is-link:hover {
+  color: var(--navy);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--orange) 50%, transparent);
+}
 .inbox-compose { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; padding: 14px 18px; border-top: 1px solid var(--line); }
 .inbox-compose .textarea { flex: 1 1 100%; }
 .inbox-compose-actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }

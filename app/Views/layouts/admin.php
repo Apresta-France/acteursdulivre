@@ -6,7 +6,7 @@
   <meta name="robots" content="noindex, nofollow">
   <title><?= e(($title ?? 'Administration') . ' — Acteurs du Livre') ?></title>
   <link rel="preload" href="<?= e(asset('fonts/space-grotesk-700.woff2')) ?>" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="<?= e(asset('css/app.css')) ?>?v=m38">
+  <link rel="stylesheet" href="<?= e(asset('css/app.css')) ?>?v=m39">
   <link rel="icon" href="<?= e(asset('img/favicon.ico')) ?>?v=3" sizes="any">
   <link rel="icon" type="image/png" href="<?= e(asset('img/favicon-32x32.png')) ?>?v=3" sizes="32x32">
   <link rel="apple-touch-icon" href="<?= e(asset('img/apple-touch-icon.png')) ?>?v=3">
@@ -31,7 +31,7 @@
             <a href="<?= e(url($n['href'])) ?>" class="admin-link<?= !empty($n['active']) ? ' is-active' : '' ?>">
               <span><?= e($n['label']) ?></span>
               <?php if (!empty($n['badge'])): ?>
-                <span class="admin-count"><?= e($n['badge']) ?></span>
+                <span class="admin-count" aria-label="<?= e($n['badge']) ?> en attente"><?= e($n['badge']) ?></span>
               <?php endif; ?>
             </a>
           </div>

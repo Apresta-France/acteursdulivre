@@ -6,14 +6,17 @@ namespace Adl\Data;
 
 use Adl\Core\Auth;
 use Adl\Models\Article;
+use Adl\Models\Invoice;
 use Adl\Models\Mission;
 use Adl\Models\Order;
 use Adl\Models\Profile;
+use Adl\Models\Report;
 use Adl\Models\Service;
 use Adl\Models\Setting;
 use Adl\Models\User;
 use DateTimeImmutable;
 use DateTimeZone;
+use Throwable;
 
 final class AdminCatalog
 {
@@ -38,16 +41,17 @@ final class AdminCatalog
 
     private static function shared(?array $user, string $screen, string $query): array
     {
+        $badges = self::navBadges();
         $items = [
             ['dash', 'Tableau de bord', '', 'Pilotage', '/admin'],
-            ['verif', 'Vérifications', '', '', '/admin/verifications'],
-            ['moderation', 'Modération', '', '', '/admin/moderation'],
-            ['litiges', 'Litiges', '', '', '/admin/litiges'],
-            ['avis', 'Avis', '', '', '/admin/avis'],
+            ['verif', 'Vérifications', $badges['verif'], '', '/admin/verifications'],
+            ['moderation', 'Modération', $badges['moderation'], '', '/admin/moderation'],
+            ['litiges', 'Litiges', $badges['litiges'], '', '/admin/litiges'],
+            ['avis', 'Avis', $badges['avis'], '', '/admin/avis'],
             ['users', 'Utilisateurs', '', 'Données', '/admin/utilisateurs'],
             ['catalogue', 'Prestations', '', '', '/admin/prestations'],
             ['missions', 'Appels d\'offres', '', '', '/admin/missions'],
-            ['finances', 'Commandes & finances', '', '', '/admin/finances'],
+            ['finances', 'Commandes & finances', $badges['finances'], '', '/admin/finances'],
             ['preouverture', 'Pré-ouverture', '', 'Plateforme', '/admin/pre-ouverture'],
             ['cms', 'Journal & pages', '', '', '/admin/journal'],
             ['reglages', 'Réglages', '', '', '/admin/reglages'],
@@ -77,6 +81,29 @@ final class AdminCatalog
             'adminRole' => ($user['role'] ?? '') === 'admin' ? 'Administration · accès complet' : 'Modération',
             'adminCountdown' => 'Pré-ouverture · ouverture clients en octobre 2026',
         ];
+    }
+
+    /** @return array<string, string> */
+    private static function navBadges(): array
+    {
+        return [
+            'verif' => self::badgeCount(static fn (): int => Profile::countPendingVerification()),
+            'moderation' => self::badgeCount(static fn (): int => Report::countOpen()),
+            'litiges' => self::badgeCount(static fn (): int => Order::countByStatus('dispute')),
+            'avis' => self::badgeCount(static fn (): int => Report::countOpenForType('review')),
+            'finances' => self::badgeCount(static fn (): int => Invoice::countOverdue()),
+        ];
+    }
+
+    private static function badgeCount(callable $count): string
+    {
+        try {
+            $n = (int) $count();
+        } catch (Throwable) {
+            return '';
+        }
+
+        return $n > 0 ? (string) $n : '';
     }
 
     private static function titles(): array

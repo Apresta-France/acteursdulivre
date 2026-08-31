@@ -71,6 +71,15 @@ final class Report
         return (int) ($row['n'] ?? 0);
     }
 
+    public static function countOpenForType(string $type): int
+    {
+        $row = Database::fetch(
+            'SELECT COUNT(*) AS n FROM reports WHERE status = "open" AND target_type = ?',
+            [$type]
+        );
+        return (int) ($row['n'] ?? 0);
+    }
+
     /** @return list<array<string, mixed>> */
     private static function list(?string $status): array
     {

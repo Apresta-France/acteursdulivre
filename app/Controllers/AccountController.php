@@ -518,7 +518,7 @@ final class AccountController
                 'file_name' => $file['name'] ?? null,
                 'file_path' => $file['path'] ?? null,
             ]);
-            self::pingJalonThread((int) $id, (int) $user['id'], $code);
+            self::pingJalonThread((int) $id, (int) $user['id'], $code, $file);
             flash('saved', OrderMilestone::flashFor($code));
         } catch (\Throwable $e) {
             flash('error', $e->getMessage());
@@ -1556,23 +1556,14 @@ final class AccountController
         return '/espace/suivi/' . $orderId;
     }
 
-    private static function pingJalonThread(int $orderId, int $userId, string $code): void
+    /** @param array{name?: ?string, path?: ?string} $file */
+    private static function pingJalonThread(int $orderId, int $userId, string $code, array $file = []): void
     {
         $order = Order::findForUser($orderId, $userId);
         if (!$order) {
             return;
         }
-        $messages = [
-            'quote' => 'Devis envoyé dans le suivi de commande.',
-            'quote_accept' => 'Devis accepté. Nous continuons les jalons dans le suivi.',
-            'deposit_invoice' => 'Facture d’acompte déposée dans le suivi de commande.',
-            'deposit_paid' => 'J’ai réglé l’acompte hors plateforme : je le confirme dans le suivi.',
-            'deposit_ack' => 'Acompte bien reçu, je démarre la mission.',
-            'deliver' => 'Prestation livrée : voir le suivi de commande.',
-            'final_invoice' => 'Facture de solde déposée dans le suivi de commande.',
-            'final_paid' => 'J’ai réglé le solde hors plateforme : je le confirme dans le suivi.',
-        ];
-        $body = $messages[$code] ?? null;
+        $body = Conversation::jalonPings()[$code] ?? null;
         if ($body === null) {
             return;
         }
@@ -1580,7 +1571,10 @@ final class AccountController
             $thread = Conversation::open((int) $order['buyer_id'], (int) $order['seller_id'], [
                 'order_id' => $orderId,
             ]);
-            Conversation::send((int) $thread['id'], $userId, $body);
+            $publicUpload = $code === 'deliver' && trim((string) ($file['path'] ?? '')) !== ''
+                ? $file
+                : null;
+            Conversation::send((int) $thread['id'], $userId, $body, null, $publicUpload);
         } catch (\Throwable) {
         }
     }

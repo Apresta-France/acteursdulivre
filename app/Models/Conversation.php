@@ -102,9 +102,15 @@ final class Conversation
 
     /**
      * @param array<string, mixed>|null $file
+     * @param array{path?: ?string, name?: ?string}|null $publicUpload
      */
-    public static function send(int $conversationId, int $userId, string $body, ?array $file = null): array
-    {
+    public static function send(
+        int $conversationId,
+        int $userId,
+        string $body,
+        ?array $file = null,
+        ?array $publicUpload = null
+    ): array {
         $thread = self::findForUser($conversationId, $userId);
         if (!$thread) {
             throw new RuntimeException('Cette conversation est introuvable.');
@@ -122,6 +128,16 @@ final class Conversation
                 ['pdf', 'jpg', 'jpeg', 'png', 'webp', 'txt', 'doc', 'docx', 'odt'],
                 8 * 1024 * 1024
             );
+        } elseif (is_array($publicUpload) && trim((string) ($publicUpload['path'] ?? '')) !== '') {
+            try {
+                $attachment = copy_public_upload_to_private(
+                    (string) $publicUpload['path'],
+                    'messages/' . $conversationId,
+                    (string) ($publicUpload['name'] ?? 'fichier')
+                );
+            } catch (\Throwable) {
+                $attachment = null;
+            }
         }
         if ($body === '' && $attachment === null) {
             throw new RuntimeException('Écrivez un message ou joignez un fichier.');
@@ -259,9 +275,41 @@ final class Conversation
         return max(1, (int) ($row['n'] ?? 1));
     }
 
+    /** @return array<string, string> */
+    public static function jalonPings(): array
+    {
+        return [
+            'quote' => 'Devis envoyé dans le suivi de commande.',
+            'quote_accept' => 'Devis accepté. Nous continuons les jalons dans le suivi.',
+            'deposit_invoice' => 'Facture d’acompte déposée dans le suivi de commande.',
+            'deposit_paid' => 'J’ai réglé l’acompte hors plateforme : je le confirme dans le suivi.',
+            'deposit_ack' => 'Acompte bien reçu, je démarre la mission.',
+            'deliver' => 'Prestation livrée : voir le suivi de commande.',
+            'final_invoice' => 'Facture de solde déposée dans le suivi de commande.',
+            'final_paid' => 'J’ai réglé le solde hors plateforme : je le confirme dans le suivi.',
+        ];
+    }
+
+    public static function jalonPingHref(string $body, int $orderId): string
+    {
+        if ($orderId < 1) {
+            return '';
+        }
+        $body = trim($body);
+        if ($body === '' || !in_array($body, self::jalonPings(), true)) {
+            return '';
+        }
+
+        return '/espace/suivi/' . $orderId;
+    }
+
     /** @return list<array<string, mixed>> */
     public static function messages(int $conversationId): array
     {
+        $orderId = (int) (Database::fetch(
+            'SELECT order_id FROM conversations WHERE id = ?',
+            [$conversationId]
+        )['order_id'] ?? 0);
         $rows = Database::fetchAll(
             'SELECT m.*, u.first_name, u.last_name, u.avatar_url
              FROM messages m
@@ -270,7 +318,7 @@ final class Conversation
              ORDER BY m.id ASC',
             [$conversationId]
         );
-        return array_map(static function (array $row): array {
+        return array_map(static function (array $row) use ($orderId): array {
             $row['who'] = User::displayName($row);
             $row['initials'] = User::initials($row);
             $row['when'] = time_ago($row['created_at'] ?? null);
@@ -281,6 +329,7 @@ final class Conversation
             $row['file_label'] = (string) ($row['attachment_name'] ?? '');
             $size = (int) ($row['attachment_size'] ?? 0);
             $row['file_size'] = $size > 0 ? format_bytes($size) : '';
+            $row['href'] = self::jalonPingHref((string) ($row['body'] ?? ''), $orderId);
             return $row;
         }, $rows);
     }

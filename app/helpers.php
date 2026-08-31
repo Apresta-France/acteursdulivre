@@ -409,6 +409,45 @@ function store_private_upload(array $file, string $subdir, array $allowedExt, in
     ];
 }
 
+/** @return array{path: string, name: string, size: int} */
+function copy_public_upload_to_private(string $publicRelative, string $subdir, string $originalName): array
+{
+    $publicRelative = str_replace(['\\', "\0"], '/', $publicRelative);
+    if ($publicRelative === '' || str_contains($publicRelative, '..')) {
+        throw new RuntimeException('Le fichier n\'a pas pu être enregistré.');
+    }
+
+    $src = ADL_ROOT . '/public/uploads/' . ltrim($publicRelative, '/');
+    $publicRoot = realpath(ADL_ROOT . '/public/uploads');
+    $real = realpath($src);
+    if ($publicRoot === false || $real === false || !str_starts_with($real, $publicRoot) || !is_file($real)) {
+        throw new RuntimeException('Le fichier n\'a pas pu être enregistré.');
+    }
+
+    $ext = strtolower(pathinfo($real, PATHINFO_EXTENSION));
+    $allowed = ['pdf', 'jpg', 'jpeg', 'png', 'webp', 'txt', 'doc', 'docx', 'odt'];
+    if ($ext === '' || !in_array($ext, $allowed, true)) {
+        throw new RuntimeException('Format de fichier non accepté.');
+    }
+
+    $dir = ADL_ROOT . '/storage/uploads/' . trim($subdir, '/');
+    if (!is_dir($dir) && !mkdir($dir, 0775, true) && !is_dir($dir)) {
+        throw new RuntimeException('Impossible de créer le dossier d\'upload.');
+    }
+
+    $name = upload_safe_name($originalName) ?: ('fichier.' . $ext);
+    $stored = bin2hex(random_bytes(16)) . '.' . $ext;
+    if (!copy($real, $dir . '/' . $stored)) {
+        throw new RuntimeException('Le fichier n\'a pas pu être enregistré.');
+    }
+
+    return [
+        'path' => trim($subdir, '/') . '/' . $stored,
+        'name' => $name,
+        'size' => (int) filesize($dir . '/' . $stored),
+    ];
+}
+
 function send_private_file(string $relative, string $downloadName, string $mime = 'application/octet-stream'): never
 {
     $relative = str_replace(['\\', "\0"], '/', $relative);

@@ -55,8 +55,14 @@ $quoteHref = trim((string) ($quoteHref ?? ''));
             <?php foreach ($messages as $msg): ?>
               <article class="msg<?= (int) ($msg['user_id'] ?? 0) === (int) (\Adl\Core\Auth::id() ?? 0) ? ' is-mine' : '' ?>">
                 <div class="msg-meta"><?= e((string) $msg['who']) ?> · <?= e((string) $msg['when']) ?></div>
-                <?php if (trim((string) ($msg['body'] ?? '')) !== ''): ?>
-                  <p><?= nl2br(e((string) $msg['body'])) ?></p>
+                <?php
+                  $body = trim((string) ($msg['body'] ?? ''));
+                  $href = trim((string) ($msg['href'] ?? ''));
+                ?>
+                <?php if ($body !== '' && $href !== ''): ?>
+                  <a class="msg-bubble is-link" href="<?= e(url($href)) ?>" title="Ouvrir le suivi de commande"><?= nl2br(e($body)) ?></a>
+                <?php elseif ($body !== ''): ?>
+                  <p><?= nl2br(e($body)) ?></p>
                 <?php endif; ?>
                 <?php if (!empty($msg['has_file'])): ?>
                   <a class="msg-file" href="<?= e(url((string) $msg['file_href'])) ?>" title="Télécharger">
