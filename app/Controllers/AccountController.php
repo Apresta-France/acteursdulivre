@@ -276,19 +276,9 @@ final class AccountController
             redirect('/espace/publier');
         }
 
-        $attachmentName = null;
-        $attachmentPath = null;
+        $attachment = ['name' => null, 'path' => null];
         try {
-            $stored = store_upload(
-                $request->file('attachment'),
-                'missions',
-                ['pdf', 'doc', 'docx', 'odt', 'txt'],
-                20 * 1024 * 1024
-            );
-            if ($stored) {
-                $attachmentPath = $stored;
-                $attachmentName = (string) ($request->file('attachment')['name'] ?? 'Pièce jointe');
-            }
+            $attachment = self::missionAttachmentFromRequest($request);
         } catch (\Throwable $e) {
             flash('error', user_error_message($e));
             flash('old', $old);
@@ -304,8 +294,8 @@ final class AccountController
                 'budget_min' => self::money($request->string('budget_min')),
                 'budget_max' => self::money($request->string('budget_max')),
                 'deadline' => $request->string('deadline') ?: null,
-                'attachment_name' => $attachmentName,
-                'attachment_path' => $attachmentPath,
+                'attachment_name' => $attachment['name'],
+                'attachment_path' => $attachment['path'],
                 'status' => $draft ? 'draft' : 'open',
             ]);
         } catch (\Throwable $e) {
@@ -315,6 +305,154 @@ final class AccountController
         }
 
         flash('saved', $draft ? 'Brouillon enregistré.' : 'Recherche publiée : les prestataires peuvent maintenant y répondre.');
+        redirect(!empty($mission['slug']) ? '/missions/' . $mission['slug'] : '/espace/missions');
+    }
+
+    public function publierEdit(Request $request, string $id): void
+    {
+        $user = Auth::requireUser();
+        $mission = Mission::findForUser((int) $id, (int) $user['id']);
+        if (!$mission) {
+            not_found('Cette recherche est introuvable.');
+        }
+        if (!in_array((string) ($mission['status'] ?? ''), ['draft', 'open'], true)) {
+            flash('error', 'Cette recherche ne peut plus être modifiée.');
+            redirect((string) ($mission['href'] ?? '/espace/missions'));
+        }
+
+        $old = flash('old') ?: [
+            'title' => (string) ($mission['title'] ?? ''),
+            'brief' => (string) ($mission['brief'] ?? ''),
+            'category_name' => (string) ($mission['category_name'] ?? ''),
+            'volume' => (string) ($mission['volume'] ?? ''),
+            'budget_min' => $mission['budget_min'] !== null && $mission['budget_min'] !== ''
+                ? (string) $mission['budget_min']
+                : '',
+            'budget_max' => $mission['budget_max'] !== null && $mission['budget_max'] !== ''
+                ? (string) $mission['budget_max']
+                : '',
+            'deadline' => substr((string) ($mission['deadline'] ?? ''), 0, 10),
+        ];
+
+        View::page('publier', [
+            'title' => 'Modifier la recherche',
+            'editing' => true,
+            'missionId' => (int) $mission['id'],
+            'missionStatus' => (string) ($mission['status'] ?? 'draft'),
+            'existingAttachment' => (string) ($mission['attachment_name'] ?? ''),
+            'trades' => Catalog::trades(),
+            'error' => flash('error'),
+            'old' => $old,
+            'suggestions' => Catalog::suggestionsForTrade((string) ($old['category_name'] ?? '')),
+            'publisherName' => User::displayName($user),
+        ]);
+    }
+
+    public function publierEditSave(Request $request, string $id): void
+    {
+        $user = Auth::requireUser();
+        $mission = Mission::findForUser((int) $id, (int) $user['id']);
+        if (!$mission) {
+            not_found('Cette recherche est introuvable.');
+        }
+        if (!in_array((string) ($mission['status'] ?? ''), ['draft', 'open'], true)) {
+            flash('error', 'Cette recherche ne peut plus être modifiée.');
+            redirect((string) ($mission['href'] ?? '/espace/missions'));
+        }
+
+        $title = $request->string('title');
+        $brief = $request->string('brief');
+        $category = $request->string('category_name');
+        $draft = $request->string('intent') === 'draft';
+        $publish = !$draft;
+        if ($publish && !User::seeksServices($user)) {
+            Auth::requireSeeker();
+        }
+
+        $volume = Catalog::volumeHint($category) ? ($request->string('volume') ?: null) : null;
+        $old = [
+            'title' => $title,
+            'brief' => $brief,
+            'category_name' => $category,
+            'volume' => $volume ?? '',
+            'budget_min' => $request->string('budget_min'),
+            'budget_max' => $request->string('budget_max'),
+            'deadline' => $request->string('deadline'),
+        ];
+        $back = '/espace/publier/' . (int) $id;
+
+        if ($title === '' || $brief === '' || $category === '') {
+            flash('error', 'Indiquez au moins le métier, le titre et le brief.');
+            flash('old', $old);
+            redirect($back);
+        }
+        if (!in_array($category, Catalog::trades(), true)) {
+            flash('error', 'Choisissez un métier dans la liste.');
+            flash('old', $old);
+            redirect($back);
+        }
+
+        $attachment = [
+            'name' => $mission['attachment_name'] ?? null,
+            'path' => $mission['attachment_path'] ?? null,
+        ];
+        try {
+            $attachment = self::missionAttachmentFromRequest(
+                $request,
+                isset($mission['attachment_path']) ? (string) $mission['attachment_path'] : null,
+                isset($mission['attachment_name']) ? (string) $mission['attachment_name'] : null
+            );
+        } catch (\Throwable $e) {
+            flash('error', user_error_message($e));
+            flash('old', $old);
+            redirect($back);
+        }
+
+        $status = (string) ($mission['status'] ?? 'draft');
+        if ($status === 'draft') {
+            $status = $draft ? 'draft' : 'open';
+        }
+
+        try {
+            $updated = Mission::update((int) $id, (int) $user['id'], [
+                'title' => $title,
+                'brief' => $brief,
+                'category_name' => $category,
+                'volume' => $volume,
+                'budget_min' => self::money($request->string('budget_min')),
+                'budget_max' => self::money($request->string('budget_max')),
+                'deadline' => $request->string('deadline') ?: null,
+                'attachment_name' => $attachment['name'],
+                'attachment_path' => $attachment['path'],
+                'status' => $status,
+            ]);
+        } catch (\Throwable $e) {
+            flash('error', user_error_message($e));
+            flash('old', $old);
+            redirect($back);
+        }
+
+        $nowOpen = ($updated['status'] ?? '') === 'open';
+        if ($status === 'open' && ($mission['status'] ?? '') === 'draft') {
+            flash('saved', 'Recherche publiée : les prestataires peuvent maintenant y répondre.');
+        } elseif ($nowOpen) {
+            flash('saved', 'Recherche mise à jour.');
+        } else {
+            flash('saved', 'Brouillon enregistré.');
+        }
+        redirect(!empty($updated['slug']) ? '/missions/' . $updated['slug'] : '/espace/missions');
+    }
+
+    public function publierPublish(Request $request, string $id): void
+    {
+        $user = Auth::requireSeeker();
+        try {
+            $mission = Mission::publishForUser((int) $id, (int) $user['id']);
+        } catch (\Throwable $e) {
+            flash('error', user_error_message($e));
+            redirect('/espace/publier/' . (int) $id);
+        }
+        flash('saved', 'Recherche publiée : les prestataires peuvent maintenant y répondre.');
         redirect(!empty($mission['slug']) ? '/missions/' . $mission['slug'] : '/espace/missions');
     }
 
@@ -872,7 +1010,9 @@ final class AccountController
             'delay' => $service['delay'] ?? '',
             'price_from' => $service['price_from'] ?? '',
             'packages' => array_map(static function (array $p): array {
+                $id = (int) ($p['id'] ?? 0);
                 return [
+                    'id' => $id > 0 ? (string) $id : '',
                     'name' => $p['name'] ?? '',
                     'description' => $p['description'] ?? '',
                     'price' => $p['price'] ?? '',
@@ -880,7 +1020,9 @@ final class AccountController
                 ];
             }, $service['packages'] ?? []),
             'options' => array_map(static function (array $o): array {
+                $id = (int) ($o['id'] ?? 0);
                 return [
+                    'id' => $id > 0 ? (string) $id : '',
                     'name' => $o['name'] ?? '',
                     'price' => $o['price'] ?? '',
                 ];
@@ -1478,6 +1620,7 @@ final class AccountController
             'title' => 'Paramètres',
             'prenom' => $user['first_name'],
             'nom' => $user['last_name'],
+            'email' => (string) ($user['email'] ?? ''),
             'avatarSrc' => user_avatar_src($user),
             'seeksChecked' => User::seeksServices($user),
             'offersChecked' => User::offersServices($user),
@@ -1510,6 +1653,17 @@ final class AccountController
             redirect('/espace/parametres');
         }
 
+        $email = strtolower($request->string('email'));
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            flash('error', 'Merci de renseigner un e-mail valide.');
+            redirect('/espace/parametres');
+        }
+        $taken = User::findByEmail($email);
+        if ($taken && (int) $taken['id'] !== (int) $user['id']) {
+            flash('error', 'Un compte existe déjà avec cet e-mail.');
+            redirect('/espace/parametres');
+        }
+
         $wasOffering = User::offersServices($user);
         if ($offers && !$wasOffering && !$request->bool('charte_ia')) {
             flash('error', 'Pour proposer vos services, l\'engagement sans IA générative est obligatoire.');
@@ -1530,6 +1684,7 @@ final class AccountController
         User::update((int) $user['id'], [
             'first_name' => $request->string('first_name', $user['first_name']),
             'last_name' => $request->string('last_name', $user['last_name']),
+            'email' => $email,
             'seeks_services' => $seeks ? 1 : 0,
             'offers_services' => $offers ? 1 : 0,
             'role' => ($user['role'] ?? '') === 'admin'
@@ -1830,7 +1985,7 @@ final class AccountController
     }
 
     /**
-     * @return list<array{name: string, description: string, price: string, delay: string}>
+     * @return list<array{id: string, name: string, description: string, price: string, delay: string}>
      */
     private static function packageInput(Request $request): array
     {
@@ -1839,7 +1994,9 @@ final class AccountController
             if (!is_array($row)) {
                 continue;
             }
+            $id = (int) ($row['id'] ?? 0);
             $out[] = [
+                'id' => $id > 0 ? (string) $id : '',
                 'name' => trim((string) ($row['name'] ?? '')),
                 'description' => trim((string) ($row['description'] ?? '')),
                 'price' => trim((string) ($row['price'] ?? '')),
@@ -1850,8 +2007,8 @@ final class AccountController
     }
 
     /**
-     * @param list<array{name: string, description: string, price: string, delay: string}> $input
-     * @return list<array{name: string, description: string, price: int, delay: string}>
+     * @param list<array{id?: string, name: string, description: string, price: string, delay: string}> $input
+     * @return list<array{id: int, name: string, description: string, price: int, delay: string}>
      */
     private static function packagesFromInput(array $input): array
     {
@@ -1863,6 +2020,7 @@ final class AccountController
                 continue;
             }
             $packages[] = [
+                'id' => (int) ($row['id'] ?? 0),
                 'name' => $name,
                 'description' => $row['description'] ?? '',
                 'price' => $price,
@@ -1896,7 +2054,7 @@ final class AccountController
     }
 
     /**
-     * @return list<array{name: string, price: string}>
+     * @return list<array{id: string, name: string, price: string}>
      */
     private static function optionInput(Request $request): array
     {
@@ -1905,7 +2063,9 @@ final class AccountController
             if (!is_array($row)) {
                 continue;
             }
+            $id = (int) ($row['id'] ?? 0);
             $out[] = [
+                'id' => $id > 0 ? (string) $id : '',
                 'name' => trim((string) ($row['name'] ?? '')),
                 'price' => trim((string) ($row['price'] ?? '')),
             ];
@@ -1914,8 +2074,8 @@ final class AccountController
     }
 
     /**
-     * @param list<array{name: string, price: string}> $input
-     * @return list<array{name: string, price: int}>
+     * @param list<array{id?: string, name: string, price: string}> $input
+     * @return list<array{id: int, name: string, price: int}>
      */
     private static function optionsFromInput(array $input): array
     {
@@ -1927,11 +2087,45 @@ final class AccountController
                 continue;
             }
             $options[] = [
+                'id' => (int) ($row['id'] ?? 0),
                 'name' => $name,
                 'price' => $price,
             ];
         }
         return $options;
+    }
+
+    /**
+     * @return array{name: ?string, path: ?string}
+     */
+    private static function missionAttachmentFromRequest(
+        Request $request,
+        ?string $currentPath = null,
+        ?string $currentName = null
+    ): array {
+        $stored = store_private_upload(
+            $request->file('attachment'),
+            'missions',
+            ['pdf', 'doc', 'docx', 'odt', 'txt'],
+            20 * 1024 * 1024
+        );
+        if ($stored) {
+            if ($currentPath) {
+                delete_upload($currentPath);
+            }
+            $original = upload_safe_name((string) ($request->file('attachment')['name'] ?? ''));
+            return [
+                'name' => $original !== '' ? $original : (string) $stored['name'],
+                'path' => (string) $stored['path'],
+            ];
+        }
+        if ($request->string('remove_attachment') === '1') {
+            if ($currentPath) {
+                delete_upload($currentPath);
+            }
+            return ['name' => null, 'path' => null];
+        }
+        return ['name' => $currentName, 'path' => $currentPath];
     }
 
     private static function reviewScore(Request $request, string $key, int $orderId): int

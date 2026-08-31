@@ -1,14 +1,19 @@
 <?php
 $old = is_array($old ?? null) ? $old : [];
+$editing = !empty($editing);
+$missionId = (int) ($missionId ?? 0);
+$missionStatus = (string) ($missionStatus ?? '');
+$existingAttachment = trim((string) ($existingAttachment ?? ''));
 $selected = (string) ($old['category_name'] ?? 'Correction');
 $trades = $trades ?? \Adl\Data\Catalog::trades();
 $hint = \Adl\Data\Catalog::volumeHint($selected) ?? [];
 $briefHint = \Adl\Data\Catalog::briefHint($selected);
+$formAction = $editing && $missionId > 0 ? '/espace/publier/' . $missionId : '/espace/publier';
 ?>
 <div class="espace-page publish-page">
   <div class="espace-page-head">
     <div>
-      <h1>Décrivez votre recherche</h1>
+      <h1><?= $editing ? 'Modifier la recherche' : 'Décrivez votre recherche' ?></h1>
       <p>Plus le brief est précis, plus les devis sont justes. Trois minutes suffisent.</p>
     </div>
   </div>
@@ -18,7 +23,7 @@ $briefHint = \Adl\Data\Catalog::briefHint($selected);
   <?php endif; ?>
 
   <div class="publish-grid">
-    <form class="param-form publish-form" method="post" action="<?= e(url('/espace/publier')) ?>" enctype="multipart/form-data" data-publish-form
+    <form class="param-form publish-form" method="post" action="<?= e(url($formAction)) ?>" enctype="multipart/form-data" data-publish-form
           data-volume-hints="<?= e(json_encode(\Adl\Data\Catalog::VOLUME_HINTS, JSON_UNESCAPED_UNICODE)) ?>"
           data-brief-hints="<?= e(json_encode(\Adl\Data\Catalog::BRIEF_HINTS, JSON_UNESCAPED_UNICODE)) ?>">
       <?= csrf_field() ?>
@@ -84,12 +89,23 @@ $briefHint = \Adl\Data\Catalog::briefHint($selected);
           $filePickAttrs = 'aria-labelledby="search-file-label"';
           require ADL_ROOT . '/app/Views/partials/file-pick.php';
         ?>
+        <?php if ($existingAttachment !== ''): ?>
+          <p class="field-help">Fichier actuel : <?= e($existingAttachment) ?>. Joindre un autre fichier le remplace.</p>
+          <label class="check-row">
+            <input type="checkbox" name="remove_attachment" value="1">
+            Retirer la pièce jointe
+          </label>
+        <?php endif; ?>
         <p class="field-help">Extrait, sommaire ou cahier des charges — PDF, DOCX, ODT, 20 Mo max.</p>
       </div>
 
       <div class="auth-actions publish-actions">
-        <button class="btn-orange" type="submit" name="intent" value="publish">Publier la recherche</button>
-        <button class="btn-ghost" type="submit" name="intent" value="draft">Enregistrer le brouillon</button>
+        <?php if ($editing && $missionStatus === 'open'): ?>
+          <button class="btn-orange" type="submit" name="intent" value="publish">Enregistrer les modifications</button>
+        <?php else: ?>
+          <button class="btn-orange" type="submit" name="intent" value="publish">Publier la recherche</button>
+          <button class="btn-ghost" type="submit" name="intent" value="draft">Enregistrer le brouillon</button>
+        <?php endif; ?>
       </div>
     </form>
 

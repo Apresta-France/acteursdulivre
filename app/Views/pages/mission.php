@@ -10,7 +10,10 @@ if (!$live) {
     <div>
       <div class="mission-row-title" style="margin-bottom: 10px;">
         <span class="status-pill status-<?= e((string) $live['status']) ?>"><?= e((string) $live['status_label']) ?></span>
-        <span class="mission-row-sub">publiée <?= e((string) $live['when']) ?></span>
+        <span class="mission-row-sub"><?= ($live['status'] ?? '') === 'draft' ? 'enregistrée' : 'publiée' ?> <?= e((string) $live['when']) ?></span>
+        <?php if (!empty($isOwner) && in_array((string) ($live['status'] ?? ''), ['draft', 'open'], true)): ?>
+          <a class="btn-ghost" href="<?= e(url('/espace/publier/' . (int) $live['id'])) ?>">Modifier</a>
+        <?php endif; ?>
       </div>
       <h1 class="mission-title"><?= e((string) $live['title']) ?></h1>
       <div class="facts">

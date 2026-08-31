@@ -1,6 +1,6 @@
 <?php
 $old = is_array($old ?? null) ? $old : [];
-$emptyPackage = ['name' => '', 'description' => '', 'price' => '', 'delay' => ''];
+$emptyPackage = ['id' => '', 'name' => '', 'description' => '', 'price' => '', 'delay' => ''];
 $selectedSpecialty = (string) ($old['specialty'] ?? '');
 $trades = is_array($trades ?? null) ? $trades : [];
 $specialties = $specialties ?? \Adl\Data\Catalog::specialties();
@@ -19,7 +19,7 @@ if ($packages === []) {
 }
 $options = is_array($old['options'] ?? null) ? $old['options'] : [];
 if ($options === []) {
-    $options = [['name' => '', 'price' => '']];
+    $options = [['id' => '', 'name' => '', 'price' => '']];
 }
 $coverLabel = \Adl\Data\Catalog::tradeTitle($selected);
 $noTrades = $trades === [];
@@ -115,6 +115,7 @@ $noTrades = $trades === [];
         <div class="repeat-list" data-repeat="packages">
           <?php foreach ($packages as $i => $package): ?>
             <div class="repeat-package" data-repeat-row>
+              <input type="hidden" name="packages[<?= (int) $i ?>][id]" value="<?= e((string) ($package['id'] ?? '')) ?>">
               <div class="repeat-row is-formule">
                 <input class="input" name="packages[<?= (int) $i ?>][name]" value="<?= e((string) ($package['name'] ?? '')) ?>" placeholder="Nom" maxlength="80">
                 <input class="input" name="packages[<?= (int) $i ?>][price]" value="<?= e((string) ($package['price'] ?? '')) ?>" placeholder="Prix €" inputmode="numeric">
@@ -134,6 +135,7 @@ $noTrades = $trades === [];
         <div class="repeat-list" data-repeat="options">
           <?php foreach ($options as $i => $option): ?>
             <div class="repeat-row is-price" data-repeat-row>
+              <input type="hidden" name="options[<?= (int) $i ?>][id]" value="<?= e((string) ($option['id'] ?? '')) ?>">
               <input class="input" name="options[<?= (int) $i ?>][name]" value="<?= e((string) ($option['name'] ?? '')) ?>" placeholder="Livraison accélérée">
               <input class="input" name="options[<?= (int) $i ?>][price]" value="<?= e((string) ($option['price'] ?? '')) ?>" placeholder="Prix €" inputmode="numeric">
               <button type="button" class="icon-btn" data-repeat-remove aria-label="Retirer">✕</button>
@@ -198,8 +200,9 @@ $noTrades = $trades === [];
 </div>
 <template id="tpl-packages">
   <div class="repeat-package" data-repeat-row>
+    <input type="hidden" name="packages[__i__][id]" value="">
     <div class="repeat-row is-formule">
-      <input class="input" name="packages[__i__][name]" placeholder="Nom">
+      <input class="input" name="packages[__i__][name]" placeholder="Nom" maxlength="80">
       <input class="input" name="packages[__i__][price]" placeholder="Prix €" inputmode="numeric">
       <input class="input" name="packages[__i__][delay]" placeholder="Délai">
       <button type="button" class="icon-btn" data-repeat-remove aria-label="Retirer">✕</button>
@@ -209,6 +212,7 @@ $noTrades = $trades === [];
 </template>
 <template id="tpl-options">
   <div class="repeat-row is-price" data-repeat-row>
+    <input type="hidden" name="options[__i__][id]" value="">
     <input class="input" name="options[__i__][name]" placeholder="Livraison accélérée">
     <input class="input" name="options[__i__][price]" placeholder="Prix €" inputmode="numeric">
     <button type="button" class="icon-btn" data-repeat-remove aria-label="Retirer">✕</button>

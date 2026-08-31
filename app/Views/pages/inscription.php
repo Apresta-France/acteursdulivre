@@ -39,7 +39,7 @@ $offersOn = old('offers_services', '1') !== '';
         </div>
       </div>
       <div>
-        <label class="field" for="email">E-mail professionnel</label>
+        <label class="field" for="email" data-email-label><?= $offersOn ? 'E-mail professionnel' : 'E-mail' ?></label>
         <input class="input" id="email" type="email" name="email" value="<?= e((string) old('email')) ?>" placeholder="marion@exemple.fr" required>
       </div>
       <div>

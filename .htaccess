@@ -28,6 +28,9 @@ RewriteEngine On
   AddOutputFilterByType DEFLATE text/html text/css text/plain text/xml application/xml application/javascript application/json image/svg+xml
 </IfModule>
 
+# Anciennes PJ de mission : plus de téléchargement direct
+RewriteRule ^public/uploads/missions(/|$) - [F,L]
+
 # Fichiers et dossiers existants (assets, etc.)
 RewriteCond %{REQUEST_FILENAME} -f [OR]
 RewriteCond %{REQUEST_FILENAME} -d

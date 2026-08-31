@@ -5,7 +5,7 @@ $open = count(array_filter($missions, static fn (array $m): bool => ($m['status'
 <div class="espace-page">
   <div class="espace-page-head">
     <div>
-      <h1>Mes recherches publiées</h1>
+      <h1>Mes recherches</h1>
       <p><?= $open ?> recherche<?= $open > 1 ? 's' : '' ?> ouverte<?= $open > 1 ? 's' : '' ?> · <?= count($missions) ?> au total.</p>
     </div>
     <a class="btn-navy" href="<?= e(url('/espace/publier')) ?>">Publier une recherche</a>
@@ -34,7 +34,7 @@ $open = count(array_filter($missions, static fn (array $m): bool => ($m['status'
           </div>
           <div class="mission-row-sub">
             <?= e((string) ($m['category_name'] ?? 'Recherche')) ?>
-            · publiée <?= e((string) $m['when']) ?>
+            · <?= ($m['status'] ?? '') === 'draft' ? 'enregistrée' : 'publiée' ?> <?= e((string) $m['when']) ?>
             · échéance <?= e((string) $m['deadline_label']) ?>
           </div>
           <div class="side-foot">
@@ -43,6 +43,15 @@ $open = count(array_filter($missions, static fn (array $m): bool => ($m['status'
           </div>
           <div class="auth-actions" style="margin-top: 14px;">
             <a class="btn-ghost" href="<?= e(url((string) $m['href'])) ?>">Voir l'annonce</a>
+            <?php if (in_array((string) ($m['status'] ?? ''), ['draft', 'open'], true)): ?>
+              <a class="btn-ghost" href="<?= e(url('/espace/publier/' . (int) $m['id'])) ?>">Modifier</a>
+            <?php endif; ?>
+            <?php if (($m['status'] ?? '') === 'draft'): ?>
+              <form method="post" action="<?= e(url('/espace/publier/' . (int) $m['id'] . '/publier')) ?>">
+                <?= csrf_field() ?>
+                <button class="btn-navy" type="submit">Publier</button>
+              </form>
+            <?php endif; ?>
             <?php if ((int) ($m['applicants'] ?? 0) > 0): ?>
               <a class="btn-navy" href="<?= e(url((string) $m['href'] . '#candidatures')) ?>">Voir les candidatures</a>
             <?php endif; ?>

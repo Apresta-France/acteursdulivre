@@ -285,43 +285,85 @@ final class Service
     /** @param list<array<string, mixed>> $packages */
     public static function replacePackages(int $serviceId, array $packages): void
     {
-        Database::query('DELETE FROM service_packages WHERE service_id = ?', [$serviceId]);
-        foreach ($packages as $package) {
-            $name = trim((string) ($package['name'] ?? ''));
-            if ($name === '') {
-                continue;
+        Database::transaction(static function () use ($serviceId, $packages): void {
+            $existing = [];
+            foreach (Database::fetchAll('SELECT id FROM service_packages WHERE service_id = ?', [$serviceId]) as $row) {
+                $existing[(int) $row['id']] = true;
             }
+            $kept = [];
+            foreach ($packages as $package) {
+                $name = trim((string) ($package['name'] ?? ''));
+                if ($name === '') {
+                    continue;
+                }
+                $description = trim((string) ($package['description'] ?? '')) ?: null;
+                $price = (int) ($package['price'] ?? 0);
+                $delay = trim((string) ($package['delay'] ?? '')) ?: null;
+                $id = (int) ($package['id'] ?? 0);
+                if ($id > 0 && isset($existing[$id]) && !isset($kept[$id])) {
+                    Database::query(
+                        'UPDATE service_packages SET name = ?, description = ?, price = ?, delay = ? WHERE id = ? AND service_id = ?',
+                        [$name, $description, $price, $delay, $id, $serviceId]
+                    );
+                    $kept[$id] = true;
+                    continue;
+                }
+                Database::query(
+                    'INSERT INTO service_packages (service_id, name, description, price, delay) VALUES (?, ?, ?, ?, ?)',
+                    [$serviceId, $name, $description, $price, $delay]
+                );
+            }
+            $obsolete = array_diff(array_keys($existing), array_keys($kept));
+            if ($obsolete === []) {
+                return;
+            }
+            $in = implode(',', array_fill(0, count($obsolete), '?'));
             Database::query(
-                'INSERT INTO service_packages (service_id, name, description, price, delay) VALUES (?, ?, ?, ?, ?)',
-                [
-                    $serviceId,
-                    $name,
-                    trim((string) ($package['description'] ?? '')) ?: null,
-                    (int) ($package['price'] ?? 0),
-                    trim((string) ($package['delay'] ?? '')) ?: null,
-                ]
+                'DELETE FROM service_packages WHERE service_id = ? AND id IN (' . $in . ')',
+                [$serviceId, ...$obsolete]
             );
-        }
+        });
     }
 
     /** @param list<array<string, mixed>> $options */
     public static function replaceOptions(int $serviceId, array $options): void
     {
-        Database::query('DELETE FROM service_options WHERE service_id = ?', [$serviceId]);
-        foreach ($options as $option) {
-            $name = trim((string) ($option['name'] ?? ''));
-            if ($name === '') {
-                continue;
+        Database::transaction(static function () use ($serviceId, $options): void {
+            $existing = [];
+            foreach (Database::fetchAll('SELECT id FROM service_options WHERE service_id = ?', [$serviceId]) as $row) {
+                $existing[(int) $row['id']] = true;
             }
+            $kept = [];
+            foreach ($options as $option) {
+                $name = trim((string) ($option['name'] ?? ''));
+                if ($name === '') {
+                    continue;
+                }
+                $price = (int) ($option['price'] ?? 0);
+                $id = (int) ($option['id'] ?? 0);
+                if ($id > 0 && isset($existing[$id]) && !isset($kept[$id])) {
+                    Database::query(
+                        'UPDATE service_options SET name = ?, price = ? WHERE id = ? AND service_id = ?',
+                        [$name, $price, $id, $serviceId]
+                    );
+                    $kept[$id] = true;
+                    continue;
+                }
+                Database::query(
+                    'INSERT INTO service_options (service_id, name, price) VALUES (?, ?, ?)',
+                    [$serviceId, $name, $price]
+                );
+            }
+            $obsolete = array_diff(array_keys($existing), array_keys($kept));
+            if ($obsolete === []) {
+                return;
+            }
+            $in = implode(',', array_fill(0, count($obsolete), '?'));
             Database::query(
-                'INSERT INTO service_options (service_id, name, price) VALUES (?, ?, ?)',
-                [
-                    $serviceId,
-                    $name,
-                    (int) ($option['price'] ?? 0),
-                ]
+                'DELETE FROM service_options WHERE service_id = ? AND id IN (' . $in . ')',
+                [$serviceId, ...$obsolete]
             );
-        }
+        });
     }
 
     /**

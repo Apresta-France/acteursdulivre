@@ -34,6 +34,10 @@ $oauthProviders = OAuth::enabledProviders();
         <input class="input" id="last_name" name="last_name" value="<?= e($nom ?? '') ?>" required>
       </div>
     </div>
+    <div>
+      <label class="field" for="email" data-email-label><?= !empty($offersChecked) ? 'E-mail professionnel' : 'E-mail' ?></label>
+      <input class="input" id="email" type="email" name="email" value="<?= e((string) ($email ?? '')) ?>" required>
+    </div>
 
     <div>
       <p class="field" style="margin-bottom: 10px;">Mes usages</p>

@@ -30,6 +30,7 @@ return static function (Router $router): void {
     $router->get('/prestataires/{slug}', [PageController::class, 'profil']);
     $router->get('/missions', [PageController::class, 'missions']);
     $router->get('/missions/{slug}', [PageController::class, 'mission']);
+    $router->get('/missions/{slug}/fichier', [PageController::class, 'missionFile']);
     $router->post('/missions/{slug}/candidater', [AccountController::class, 'applicationCreate']);
     $router->get('/comment-ca-marche', [PageController::class, 'comment']);
     $router->get('/tarifs', [PageController::class, 'tarifs']);
@@ -67,6 +68,9 @@ return static function (Router $router): void {
     $router->post('/espace/bienvenue', [AccountController::class, 'onboardingSave']);
     $router->get('/espace/publier', [AccountController::class, 'publier']);
     $router->post('/espace/publier', [AccountController::class, 'publierSave']);
+    $router->get('/espace/publier/{id}', [AccountController::class, 'publierEdit']);
+    $router->post('/espace/publier/{id}', [AccountController::class, 'publierEditSave']);
+    $router->post('/espace/publier/{id}/publier', [AccountController::class, 'publierPublish']);
     $router->get('/espace/commande', [AccountController::class, 'commande']);
     $router->post('/espace/commande', [AccountController::class, 'commandeSave']);
     $router->get('/espace/suivi', [AccountController::class, 'suivi']);

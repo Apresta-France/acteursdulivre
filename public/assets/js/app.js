@@ -324,6 +324,9 @@
       var input = card.querySelector('input[type="checkbox"]');
       card.classList.toggle('is-on', !!(input && input.checked));
     });
+    document.querySelectorAll('[data-email-label]').forEach(function (label) {
+      label.textContent = offersOn ? 'E-mail professionnel' : 'E-mail';
+    });
   }
   document.querySelectorAll('[data-intent-card]').forEach(function (card) {
     var input = card.querySelector('input[type="checkbox"]');

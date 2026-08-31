@@ -17,6 +17,7 @@ use Adl\Models\Application;
 use Adl\Models\Article;
 use Adl\Models\Favorite;
 use Adl\Models\Invoice;
+use Adl\Models\Mission;
 use Adl\Models\Newsletter;
 use Adl\Models\Profile;
 use Adl\Models\Report;
@@ -317,6 +318,7 @@ final class PageController
             }
         }
         $brief = trim((string) ($mission['brief'] ?? ''));
+        $isDraft = ($mission['status'] ?? '') === 'draft';
         View::page('mission', [
             'title' => $mission['title'],
             'slug' => $slug,
@@ -337,7 +339,8 @@ final class PageController
                 'website',
                 null,
                 [
-                    'json_ld' => [
+                    'robots' => $isDraft ? Seo::ROBOTS_NONE : Seo::ROBOTS_INDEX,
+                    'json_ld' => $isDraft ? [] : [
                         Seo::organization(),
                         Seo::website(),
                         Seo::breadcrumb([
@@ -349,6 +352,23 @@ final class PageController
                 ]
             ),
         ]);
+    }
+
+    public function missionFile(Request $request, string $slug): void
+    {
+        $user = Auth::requireUser();
+        $mission = Mission::findBySlug($slug);
+        if (!$mission || trim((string) ($mission['attachment_path'] ?? '')) === '') {
+            not_found('Cette pièce jointe n\'est plus disponible.');
+        }
+        if (!Mission::canAccessAttachment($mission, $user)) {
+            not_found('Cette pièce jointe n\'est plus disponible.');
+        }
+        $path = (string) $mission['attachment_path'];
+        $name = trim((string) ($mission['attachment_name'] ?? '')) ?: 'document';
+        $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+        $mimes = upload_mime_map();
+        send_any_upload($path, $name, $mimes[$ext][0] ?? 'application/octet-stream');
     }
 
     public function comment(Request $request): void

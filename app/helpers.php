@@ -511,6 +511,14 @@ function send_any_upload(string $relative, string $downloadName, string $mime = 
     send_stored_upload($relative, $downloadName, $mime, false);
 }
 
+function delete_upload(string $relative): void
+{
+    $real = resolve_upload_path($relative, false);
+    if ($real !== null && is_file($real)) {
+        @unlink($real);
+    }
+}
+
 function send_stored_upload(string $relative, string $downloadName, string $mime, bool $privateOnly): never
 {
     $real = resolve_upload_path($relative, $privateOnly);
