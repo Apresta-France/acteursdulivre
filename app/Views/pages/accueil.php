@@ -254,20 +254,39 @@ $query = (string) ($query ?? '');
   </section>
 
   <?php if ($homeTemoins !== []): ?>
-    <section class="mk-block mk-wash-beige">
-      <h2>Ils ont fabriqué leur livre ici</h2>
-      <div class="mk-cards-3">
+    <?php $temoinsCount = count($homeTemoins); ?>
+    <section class="mk-block mk-wash-beige mk-quotes-block" data-count="<?= $temoinsCount ?>">
+      <div class="mk-quotes-head">
+        <div class="mk-kicker">Témoignages</div>
+        <h2>Ils ont fabriqué leur livre ici</h2>
+        <p>Avis publics, déposés après une mission livrée et notée.</p>
+      </div>
+      <div class="mk-quotes">
         <?php foreach ($homeTemoins as $t): ?>
-          <div class="mk-quote">
-            <div class="mk-kicker"><?= !empty($t['note']) ? '★ ' . e((string) $t['note']) : 'Avis' ?></div>
-            <p><?= e((string) $t['txt']) ?></p>
-            <div class="mk-card-by"><?= avatar_html($t, 34) ?>
+          <?php
+            $noteLabel = trim((string) ($t['note'] ?? ''));
+            $filled = $noteLabel !== '' ? (int) round((float) str_replace(',', '.', $noteLabel)) : 0;
+            $filled = max(0, min(5, $filled));
+            $avatarSize = $temoinsCount === 1 ? 44 : 38;
+          ?>
+          <figure class="mk-quote">
+            <span class="mk-quote-mark" aria-hidden="true"><svg width="48" height="36" viewBox="0 0 48 36" fill="currentColor"><path d="M0 20.4C0 10.2 6 3.4 16.4 0l2.8 5.5C13.3 8.3 9.7 12.5 9.7 18.2c0 1.1.2 2.1.5 2.9h9.1V36H0V20.4zm22.7 0C22.7 10.2 28.7 3.4 39.1 0l2.8 5.5c-5.9 2.8-9.5 7-9.5 12.7 0 1.1.2 2.1.5 2.9h9.2V36H22.7V20.4z"/></svg></span>
+            <div class="mk-stars" aria-label="<?= $noteLabel !== '' ? 'Note ' . e($noteLabel) . ' sur 5' : 'Avis' ?>">
+              <?php for ($i = 1; $i <= 5; $i++): ?>
+                <span<?= $i <= $filled ? ' class="is-on"' : '' ?> aria-hidden="true">★</span>
+              <?php endfor; ?>
+            </div>
+            <blockquote>
+              <p><?= e((string) $t['txt']) ?></p>
+            </blockquote>
+            <figcaption class="mk-card-by">
+              <?= avatar_html($t, $avatarSize) ?>
               <span>
                 <strong><?= e((string) $t['who']) ?></strong>
                 <?php if (!empty($t['role'])): ?><em><?= e((string) $t['role']) ?></em><?php endif; ?>
               </span>
-            </div>
-          </div>
+            </figcaption>
+          </figure>
         <?php endforeach; ?>
       </div>
     </section>

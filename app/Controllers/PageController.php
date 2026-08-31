@@ -431,15 +431,80 @@ final class PageController
 
     public function journal(Request $request): void
     {
+        $q = $request->string('q');
+        $catRaw = $request->string('cat');
+        $page = max(1, $request->int('page', 1) ?? 1);
+        $cat = '';
+        $categories = [];
+        $found = [
+            'items' => [],
+            'total' => 0,
+            'page' => 1,
+            'pages' => 1,
+            'per_page' => Article::PER_PAGE,
+        ];
+        $hasJournal = false;
         try {
-            $articles = Article::published();
+            $categories = Article::publishedCategories();
+            $cat = Article::resolveCategory($catRaw, array_column($categories, 'label'));
+            $found = Article::searchPublished($q, $cat, $page, Article::PER_PAGE);
+            $hasJournal = Article::countPublished() > 0;
         } catch (\Throwable) {
-            $articles = [];
         }
+        $filtered = $q !== '' || $cat !== '';
+        $items = $found['items'];
+        $hero = (!$filtered && $found['page'] === 1 && $items !== []) ? $items[0] : null;
+        $rest = $hero ? array_slice($items, 1) : $items;
+
+        $metaExtra = [];
+        if ($cat !== '' && $q === '') {
+            $metaExtra['title'] = 'Le journal — ' . $cat;
+        }
+        $meta = Seo::forScreen('journal', $metaExtra);
+        $canonical = '/journal';
+        if ($cat !== '' && $q === '') {
+            $canonical .= '?cat=' . rawurlencode($cat);
+        }
+        $meta['url'] = Share::absolute($canonical);
+        if ($q !== '' || $found['page'] > 1) {
+            $meta['robots'] = 'noindex, follow';
+        }
+
         View::page('journal', [
-            'title' => 'Le journal des métiers du livre',
-            'articles' => $articles,
-            'meta' => Seo::forScreen('journal'),
+            'title' => $metaExtra['title'] ?? 'Le journal des métiers du livre',
+            'articles' => $items,
+            'hero' => $hero,
+            'rest' => $rest,
+            'journalQ' => $q,
+            'journalCat' => $cat,
+            'journalCategories' => $categories,
+            'journalHasContent' => $hasJournal,
+            'journalFiltered' => $filtered,
+            'pager' => [
+                'page' => $found['page'],
+                'pages' => $found['pages'],
+                'total' => $found['total'],
+            ],
+            'meta' => $meta,
+        ]);
+    }
+
+    public function journalApi(Request $request): void
+    {
+        $q = $request->string('q');
+        $limit = max(1, min(12, $request->int('limit', 8) ?? 8));
+        try {
+            $cat = Article::resolveCategory($request->string('cat'));
+            $suggestions = Article::suggestPublished($q, $cat, $limit);
+        } catch (\Throwable) {
+            $suggestions = [];
+        }
+        foreach ($suggestions as $i => $item) {
+            $suggestions[$i]['href'] = url((string) ($item['href'] ?? '/journal'));
+        }
+        json_response([
+            'suggestions' => $suggestions,
+            'results' => $suggestions,
         ]);
     }
 
@@ -506,13 +571,53 @@ final class PageController
     public function newsletter(Request $request): void
     {
         try {
-            Newsletter::subscribe($request->string('email'));
-            flash('saved', 'Inscription enregistrée. Merci.');
+            $email = $request->string('email');
+            $user = Auth::user();
+            $immediate = $user !== null && strcasecmp((string) ($user['email'] ?? ''), $email) === 0;
+            $result = Newsletter::subscribe($email, 'footer', $user ? (int) $user['id'] : null, $immediate);
+            flash('saved', match ($result) {
+                'already' => 'Cette adresse est déjà inscrite.',
+                'confirmed' => 'Inscription enregistrée. Merci.',
+                default => 'Vérifiez votre boîte : un e-mail de confirmation vient d’être envoyé.',
+            });
         } catch (\Throwable $e) {
             flash('error', user_error_message($e));
         }
         $back = $request->string('back');
         redirect($back !== '' ? $back : '/');
+    }
+
+    public function newsletterConfirm(Request $request, string $token): void
+    {
+        $row = Newsletter::confirm($token);
+        View::render('pages/newsletter-confirmer', [
+            'title' => 'Inscription confirmée',
+            'ok' => $row !== null,
+            'meta' => [
+                'title' => 'Inscription à la lettre — acteursdulivre.fr',
+                'robots' => Seo::ROBOTS_NONE,
+            ],
+        ]);
+    }
+
+    public function newsletterUnsubscribe(Request $request, string $token): void
+    {
+        $row = Newsletter::unsubscribeByToken($token);
+        if ($request->isPost()) {
+            header('Content-Type: text/plain; charset=utf-8');
+            header('Cache-Control: no-store');
+            http_response_code(200);
+            echo 'OK';
+            return;
+        }
+        View::render('pages/newsletter-desinscription', [
+            'title' => 'Désinscription',
+            'ok' => $row !== null,
+            'meta' => [
+                'title' => 'Désinscription de la lettre — acteursdulivre.fr',
+                'robots' => Seo::ROBOTS_NONE,
+            ],
+        ]);
     }
 
     public function report(Request $request): void

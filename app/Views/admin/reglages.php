@@ -31,6 +31,7 @@ $s = $settings ?? [];
 
   <div class="admin-settings-links">
     <a href="<?= e(url('/admin/listes')) ?>">Métiers &amp; spécialités</a>
+    <a href="<?= e(url('/admin/newsletter')) ?>">Newsletter</a>
     <a href="<?= e(url('/admin/smtp')) ?>">SMTP</a>
     <a href="<?= e(url('/admin/sso')) ?>">Google / Facebook</a>
     <a href="<?= e(url('/admin/emails')) ?>">Modèles d’e-mails</a>

@@ -80,6 +80,11 @@ final class Article
         }
     }
 
+    /** @var list<string> */
+    private const CATEGORY_ORDER = ['Tarifs', 'Contrats', 'Métier', 'Fabrication', 'Diffusion'];
+
+    public const PER_PAGE = 9;
+
     /** @return list<array<string, mixed>> */
     public static function published(): array
     {
@@ -89,6 +94,134 @@ final class Article
              ORDER BY published_at DESC'
         );
         return array_map([self::class, 'present'], $rows);
+    }
+
+    public static function countPublished(): int
+    {
+        $row = Database::fetch(
+            'SELECT COUNT(*) AS n FROM articles
+             WHERE published_at IS NOT NULL AND published_at <= NOW()'
+        );
+        return (int) ($row['n'] ?? 0);
+    }
+
+    /**
+     * @return list<array{label: string, n: int}>
+     */
+    public static function publishedCategories(): array
+    {
+        $rows = Database::fetchAll(
+            'SELECT category AS label, COUNT(*) AS n FROM articles
+             WHERE published_at IS NOT NULL AND published_at <= NOW()
+               AND category IS NOT NULL AND TRIM(category) != \'\'
+             GROUP BY category'
+        );
+        $byLabel = [];
+        foreach ($rows as $row) {
+            $label = trim((string) ($row['label'] ?? ''));
+            if ($label === '') {
+                continue;
+            }
+            $byLabel[$label] = ['label' => $label, 'n' => (int) ($row['n'] ?? 0)];
+        }
+        $out = [];
+        foreach (self::CATEGORY_ORDER as $label) {
+            if (isset($byLabel[$label])) {
+                $out[] = $byLabel[$label];
+                unset($byLabel[$label]);
+            }
+        }
+        ksort($byLabel, SORT_NATURAL | SORT_FLAG_CASE);
+        return array_merge($out, array_values($byLabel));
+    }
+
+    /** @param list<string>|null $valid */
+    public static function resolveCategory(string $raw, ?array $valid = null): string
+    {
+        $raw = trim($raw);
+        if ($raw === '') {
+            return '';
+        }
+        $valid = $valid ?? array_column(self::publishedCategories(), 'label');
+        $needle = slugify($raw);
+        foreach ($valid as $label) {
+            if (strcasecmp($label, $raw) === 0 || slugify($label) === $needle) {
+                return $label;
+            }
+        }
+        return '';
+    }
+
+    /**
+     * @return array{items: list<array<string, mixed>>, total: int, page: int, pages: int, per_page: int}
+     */
+    public static function searchPublished(string $q, string $category = '', int $page = 1, int $perPage = self::PER_PAGE): array
+    {
+        $perPage = max(1, min(48, $perPage));
+        $filter = self::publishedFilter($q, $category);
+        $count = Database::fetch(
+            'SELECT COUNT(*) AS n FROM articles WHERE ' . $filter['sql'],
+            $filter['params']
+        );
+        $total = (int) ($count['n'] ?? 0);
+        $pages = max(1, (int) ceil($total / $perPage));
+        $page = max(1, min($page, $pages));
+        $offset = ($page - 1) * $perPage;
+        $rows = $total === 0
+            ? []
+            : Database::fetchAll(
+                'SELECT * FROM articles WHERE ' . $filter['sql']
+                . ' ORDER BY published_at DESC LIMIT ' . $perPage . ' OFFSET ' . $offset,
+                $filter['params']
+            );
+
+        return [
+            'items' => array_map([self::class, 'present'], $rows),
+            'total' => $total,
+            'page' => $page,
+            'pages' => $pages,
+            'per_page' => $perPage,
+        ];
+    }
+
+    /**
+     * @return list<array{href: string, title: string, subtitle: string, kind_label: string, meta: string}>
+     */
+    public static function suggestPublished(string $q, string $category = '', int $limit = 8): array
+    {
+        $found = self::searchPublished($q, $category, 1, max(1, min(12, $limit)));
+        $out = [];
+        foreach ($found['items'] as $item) {
+            $out[] = [
+                'href' => (string) ($item['href'] ?? '/journal'),
+                'title' => (string) ($item['title'] ?? ''),
+                'subtitle' => (string) ($item['chapo'] ?? ''),
+                'kind_label' => (string) ($item['cat'] ?? 'Journal'),
+                'meta' => (string) ($item['read'] ?? ''),
+            ];
+        }
+        return $out;
+    }
+
+    /**
+     * @return array{sql: string, params: list<mixed>}
+     */
+    private static function publishedFilter(string $q, string $category): array
+    {
+        $where = ['published_at IS NOT NULL', 'published_at <= NOW()'];
+        $params = [];
+        $category = trim($category);
+        if ($category !== '') {
+            $where[] = 'category = ?';
+            $params[] = $category;
+        }
+        $q = trim($q);
+        if ($q !== '') {
+            $like = '%' . addcslashes($q, '%_\\') . '%';
+            $where[] = '(title LIKE ? OR excerpt LIKE ? OR category LIKE ?)';
+            array_push($params, $like, $like, $like);
+        }
+        return ['sql' => implode(' AND ', $where), 'params' => $params];
     }
 
     /** @return list<array<string, mixed>> */

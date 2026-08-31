@@ -38,6 +38,25 @@ function url(string $path = '/'): string
     return ($base !== '' ? $base : '') . ($path === '/' ? '/' : rtrim($path, '/'));
 }
 
+function journal_listing_url(string $q = '', string $category = '', int $page = 1): string
+{
+    $query = [];
+    if ($q !== '') {
+        $query['q'] = $q;
+    }
+    if ($category !== '') {
+        $query['cat'] = $category;
+    }
+    if ($page > 1) {
+        $query['page'] = $page;
+    }
+    $href = url('/journal');
+    if ($query !== []) {
+        $href .= '?' . http_build_query($query);
+    }
+    return $href;
+}
+
 function asset(string $path): string
 {
     return url('public/assets/' . ltrim($path, '/'));

@@ -23,6 +23,9 @@
             <td style="padding:18px 28px 28px;font-size:12px;color:#66768A;">
               <a href="<?= e($appUrl ?? 'https://acteursdulivre.fr') ?>" style="color:#D85D3F;">acteursdulivre.fr</a>
               — 12 rue du Calvaire, Nantes
+              <?php if (!empty($unsubscribeUrl)): ?>
+                <br><a href="<?= e((string) $unsubscribeUrl) ?>" style="color:#66768A;">Se désinscrire de la lettre</a>
+              <?php endif; ?>
             </td>
           </tr>
         </table>

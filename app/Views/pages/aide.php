@@ -9,10 +9,10 @@ if ($q !== '') {
     }));
 }
 ?>
-<div class="legal-page" style="padding: 44px;">
-  <div style="max-width: 700px; margin-bottom: 34px;">
+<div class="help-page">
+  <div class="help-intro">
     <h1>Centre d'aide</h1>
-    <form method="get" action="<?= e(url('/aide')) ?>" class="footer-news-form" style="max-width: 100%;">
+    <form method="get" action="<?= e(url('/aide')) ?>" class="help-search" role="search">
       <input type="search" name="q" value="<?= e((string) ($helpQuery ?? '')) ?>" placeholder="annulation, facture, TVA, commission…">
       <button type="submit">Rechercher</button>
     </form>
@@ -27,14 +27,17 @@ if ($q !== '') {
 
   <div class="help-cats">
     <?php foreach ($cats as $c): ?>
-      <div class="side-card">
+      <div class="help-cat">
         <strong><?= e((string) ($c['title'] ?? '')) ?></strong>
-        <p class="mission-row-sub"><?= e((string) ($c['desc'] ?? '')) ?></p>
+        <p><?= e((string) ($c['desc'] ?? '')) ?></p>
+        <?php if (isset($c['n'])): ?>
+          <span><?= (int) $c['n'] ?> articles</span>
+        <?php endif; ?>
       </div>
     <?php endforeach; ?>
   </div>
 
-  <div class="publish-grid" style="margin-top: 34px;">
+  <div class="help-body">
     <div>
       <h2>Questions fréquentes</h2>
       <?php if ($faq === []): ?>

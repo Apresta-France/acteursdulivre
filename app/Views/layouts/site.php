@@ -58,7 +58,7 @@
   <?php if (!empty($isArticle) && !empty($article['img'])): ?>
   <link rel="preload" as="image" href="<?= e((string) $article['img']) ?>">
   <?php endif; ?>
-  <link rel="stylesheet" href="<?= e(asset('css/app.css')) ?>?v=m74">
+  <link rel="stylesheet" href="<?= e(asset('css/app.css')) ?>?v=m78">
   <link rel="icon" href="<?= e(asset('img/favicon.ico')) ?>?v=3" sizes="any">
   <link rel="icon" type="image/png" href="<?= e(asset('img/favicon-32x32.png')) ?>?v=3" sizes="32x32">
   <link rel="apple-touch-icon" href="<?= e(asset('img/apple-touch-icon.png')) ?>?v=3">
@@ -231,13 +231,11 @@
       </div>
 
       <main>
-        <?php if (empty($inEspace)): ?>
-          <?php if ($siteFlash = flash('saved')): ?>
-            <div class="flash flash-ok" style="margin: 16px 24px 0;"><?= e(is_string($siteFlash) ? $siteFlash : 'Enregistré.') ?></div>
-          <?php endif; ?>
-          <?php if ($siteError = flash('error')): ?>
-            <div class="flash flash-error" style="margin: 16px 24px 0;"><?= e((string) $siteError) ?></div>
-          <?php endif; ?>
+        <?php if ($siteFlash = flash('saved')): ?>
+          <div class="flash flash-ok" style="margin: 16px 24px 0;"><?= e(is_string($siteFlash) ? $siteFlash : 'Enregistré.') ?></div>
+        <?php endif; ?>
+        <?php if ($siteError = flash('error')): ?>
+          <div class="flash flash-error" style="margin: 16px 24px 0;"><?= e((string) $siteError) ?></div>
         <?php endif; ?>
         <?php if (!empty($inEspace)): ?>
           <div class="espace-shell r-done">
@@ -254,8 +252,8 @@
       <footer class="site-footer">
         <div class="footer-news">
           <div>
-            <div class="footer-news-title">Le point sur les métiers du livre, une fois par mois</div>
-            <div>Tarifs observés, nouveaux prestataires, suivi des missions. Pas de publicité, désinscription en un clic.</div>
+            <div class="footer-news-title">Le point sur les métiers du livre, une fois par semaine</div>
+            <div>Nouveaux projets, nouveaux profils, une lecture utile. Pas de publicité, confirmation par e-mail, désinscription en un clic.</div>
           </div>
           <form class="footer-news-form" action="<?= e(url('/newsletter')) ?>" method="post">
             <?= csrf_field() ?>
@@ -324,6 +322,6 @@
       </footer>
     </div>
   </div>
-  <script src="<?= e(asset('js/app.js')) ?>?v=m44"></script>
+  <script src="<?= e(asset('js/app.js')) ?>?v=m45"></script>
 </body>
 </html>

@@ -19,7 +19,10 @@ final class SmtpTransport
     ) {
     }
 
-    public function send(string $from, string $fromName, string $to, string $subject, string $html, string $text = ''): void
+    /**
+     * @param array<string, string> $extraHeaders
+     */
+    public function send(string $from, string $fromName, string $to, string $subject, string $html, string $text = '', array $extraHeaders = []): void
     {
         $encryption = $this->resolveEncryption();
         $remote = ($encryption === 'ssl' ? 'ssl://' : '') . $this->host . ':' . $this->port;
@@ -60,7 +63,7 @@ final class SmtpTransport
             $this->cmd($fp, 'RCPT TO:<' . $to . '>', [250, 251]);
             $this->cmd($fp, 'DATA', [354]);
 
-            $payload = $this->buildMessage($from, $fromName, $to, $subject, $html, $text);
+            $payload = $this->buildMessage($from, $fromName, $to, $subject, $html, $text, $extraHeaders);
             $this->write($fp, $this->dotStuff($payload));
             $this->write($fp, ".\r\n");
             $this->expect($fp, [250]);
@@ -125,7 +128,10 @@ final class SmtpTransport
         throw new RuntimeException('Le serveur SMTP n\'accepte ni AUTH LOGIN ni AUTH PLAIN.');
     }
 
-    private function buildMessage(string $from, string $fromName, string $to, string $subject, string $html, string $text): string
+    /**
+     * @param array<string, string> $extraHeaders
+     */
+    private function buildMessage(string $from, string $fromName, string $to, string $subject, string $html, string $text, array $extraHeaders = []): string
     {
         $boundary = 'adl_' . bin2hex(random_bytes(8));
         $domain = substr(strrchr($from, '@') ?: '@acteursdulivre.fr', 1) ?: 'acteursdulivre.fr';
@@ -140,6 +146,14 @@ final class SmtpTransport
             'MIME-Version: 1.0',
             'Content-Type: multipart/alternative; boundary="' . $boundary . '"',
         ];
+        foreach ($extraHeaders as $name => $value) {
+            $name = trim((string) $name);
+            $value = str_replace(["\r", "\n"], '', (string) $value);
+            if ($name === '' || $value === '' || !preg_match('/^[A-Za-z0-9-]+$/', $name)) {
+                continue;
+            }
+            $headers[] = $name . ': ' . $value;
+        }
 
         $body = implode("\r\n", $headers) . "\r\n\r\n";
         $body .= '--' . $boundary . "\r\n";

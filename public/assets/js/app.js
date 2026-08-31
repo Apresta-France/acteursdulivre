@@ -426,9 +426,9 @@
   });
   syncChips();
 
-  function renderSuggest(items) {
+  function renderSuggest(items, emptyMsg) {
     if (!items || !items.length) {
-      return '<div class="search-suggest-empty">Aucun résultat pour l’instant. Essayez un métier ou un nom.</div>';
+      return '<div class="search-suggest-empty">' + escapeHtml(emptyMsg || 'Aucun résultat pour l’instant. Essayez un métier ou un nom.') + '</div>';
     }
     return items.map(function (item) {
       return '<a href="' + escapeHtml(item.href) + '">' +
@@ -480,6 +480,7 @@
     var api = form.getAttribute('data-api');
     if (!input || !panel || !api) return;
 
+    var emptyMsg = form.getAttribute('data-empty') || '';
     var run = debounce(function () {
       var q = input.value.trim();
       if (q.length < 2) {
@@ -488,8 +489,11 @@
         return;
       }
       var params = new URLSearchParams({ q: q, limit: '8' });
+      form.querySelectorAll('input[type="hidden"]').forEach(function (hidden) {
+        if (hidden.name && hidden.value) params.set(hidden.name, hidden.value);
+      });
       fetchSearch(api, params, function (data) {
-        panel.innerHTML = renderSuggest(data.suggestions || data.results || []);
+        panel.innerHTML = renderSuggest(data.suggestions || data.results || [], emptyMsg);
         panel.hidden = false;
       });
     }, 180);

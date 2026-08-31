@@ -6,6 +6,7 @@ namespace Adl\Controllers;
 
 use Adl\Core\Env;
 use Adl\Core\HourlyCron;
+use Adl\Core\NewsletterCron;
 use Adl\Core\Request;
 
 final class CronController
@@ -16,6 +17,10 @@ final class CronController
             'label' => 'Relances profil, mission, demandes et projets',
             'runner' => [HourlyCron::class, 'run'],
         ],
+        'newsletter' => [
+            'label' => 'Newsletter hebdomadaire et file d’envoi',
+            'runner' => [NewsletterCron::class, 'run'],
+        ],
     ];
 
     public function index(Request $request): void
@@ -24,13 +29,9 @@ final class CronController
             $this->json(200, ['ok' => true, 'skipped' => true, 'reason' => 'head']);
             return;
         }
-        if (!$this->authorized($request)) {
-            $this->json(403, ['ok' => false, 'error' => 'Jeton cron manquant ou invalide.']);
-            return;
-        }
         $this->json(200, [
             'ok' => true,
-            'hint' => 'Appelez une tâche précise : /cron/{tache}?token=…',
+            'hint' => 'Appelez une tâche précise : /cron/{tache}',
             'jobs' => self::catalog(),
         ]);
     }
@@ -39,10 +40,6 @@ final class CronController
     {
         if ($this->isHead()) {
             $this->json(200, ['ok' => true, 'skipped' => true, 'reason' => 'head']);
-            return;
-        }
-        if (!$this->authorized($request)) {
-            $this->json(403, ['ok' => false, 'error' => 'Jeton cron manquant ou invalide.']);
             return;
         }
         if (!isset(self::JOBS[$task])) {
@@ -59,16 +56,6 @@ final class CronController
         $result['job'] = $task;
 
         $this->json(!empty($result['ok']) ? 200 : 500, $result);
-    }
-
-    private function authorized(Request $request): bool
-    {
-        $expected = trim((string) Env::get('CRON_TOKEN', ''));
-        $given = $request->string('token');
-        if ($given === '') {
-            $given = trim((string) ($_SERVER['HTTP_X_CRON_TOKEN'] ?? ''));
-        }
-        return $expected !== '' && $given !== '' && hash_equals($expected, $given);
     }
 
     private function isHead(): bool

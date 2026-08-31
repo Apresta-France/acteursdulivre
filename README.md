@@ -40,7 +40,7 @@ Dossiers à laisser inscriptibles par PHP : `storage/` (logs, uploads privés, c
 Relances (profil incomplet, message sans réponse, livraison à valider, facture échue) :
 
 ```bash
-# toutes les heures, ou via l’URL protégée /cron
+# toutes les heures, ou via l’URL /cron/{tache}
 php -r "require 'vendor/autoload.php';" # si Composer est utilisé pour l’autoload
 ```
 

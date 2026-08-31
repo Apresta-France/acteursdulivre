@@ -6,9 +6,11 @@ define('ADL_ROOT', dirname(__DIR__));
 require ADL_ROOT . '/app/bootstrap.php';
 
 use Adl\Core\HourlyCron;
+use Adl\Core\NewsletterCron;
 
 $jobs = [
     'relances' => [HourlyCron::class, 'run'],
+    'newsletter' => [NewsletterCron::class, 'run'],
 ];
 
 $args = array_values(array_filter($argv ?? [], static fn (string $a): bool => $a !== '--force'));

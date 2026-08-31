@@ -6,6 +6,9 @@ namespace Adl\Controllers;
 
 use Adl\Core\Auth;
 use Adl\Core\Mailer;
+use Adl\Core\NewsletterComposer;
+use Adl\Core\NewsletterCron;
+use Adl\Core\NewsletterMailer;
 use Adl\Core\OAuth;
 use Adl\Core\Request;
 use Adl\Core\View;
@@ -17,6 +20,8 @@ use Adl\Models\Conversation;
 use Adl\Models\EmailTemplate;
 use Adl\Models\Invoice;
 use Adl\Models\Mission;
+use Adl\Models\Newsletter;
+use Adl\Models\NewsletterCampaign;
 use Adl\Models\Order;
 use Adl\Models\Profile;
 use Adl\Models\Report;
@@ -668,6 +673,138 @@ final class AdminController
             flash('warning', implode(' ', $notes));
         }
         redirect('/admin/sso');
+    }
+
+    public function newsletter(Request $request): void
+    {
+        $this->page('newsletter', 'admin/newsletter', [
+            'settings' => [
+                'newsletter_enabled' => Newsletter::enabled(),
+                'newsletter_weekday' => (string) Newsletter::weekday(),
+                'newsletter_hour' => (string) Newsletter::hour(),
+                'newsletter_batch_size' => (string) Newsletter::batchSize(),
+                'newsletter_include_missions' => Newsletter::includeMissions(),
+                'newsletter_include_people' => Newsletter::includePeople(),
+                'newsletter_include_url' => Newsletter::includeUrl(),
+                'newsletter_source_url' => Newsletter::sourceUrl(),
+            ],
+            'smtp' => NewsletterMailer::config(),
+            'counts' => [
+                'confirmed' => Newsletter::countByStatus(Newsletter::STATUS_CONFIRMED),
+                'pending' => Newsletter::countByStatus(Newsletter::STATUS_PENDING),
+                'queue' => NewsletterCampaign::pendingCount(),
+            ],
+            'campaigns' => NewsletterCampaign::recent(),
+            'subscribers' => Newsletter::adminList(),
+            'preview' => flash('preview'),
+            'tested' => flash('tested'),
+        ]);
+    }
+
+    public function newsletterSave(Request $request): void
+    {
+        Auth::requireAdmin();
+        Setting::set('newsletter_enabled', $request->bool('newsletter_enabled') ? '1' : '0');
+        Setting::set('newsletter_weekday', (string) max(1, min(7, (int) $request->string('newsletter_weekday', '3'))));
+        Setting::set('newsletter_hour', (string) max(0, min(23, (int) $request->string('newsletter_hour', '8'))));
+        Setting::set('newsletter_batch_size', (string) max(1, min(200, (int) $request->string('newsletter_batch_size', '25'))));
+        Setting::set('newsletter_include_missions', $request->bool('newsletter_include_missions') ? '1' : '0');
+        Setting::set('newsletter_include_people', $request->bool('newsletter_include_people') ? '1' : '0');
+        Setting::set('newsletter_include_url', $request->bool('newsletter_include_url') ? '1' : '0');
+        $url = $request->string('newsletter_source_url');
+        if ($url !== '' && !preg_match('#^https://#i', $url) && !str_starts_with($url, '/')) {
+            flash('error', 'L’URL source doit commencer par https:// ou par /.');
+            redirect('/admin/newsletter');
+        }
+        Setting::set('newsletter_source_url', $url);
+        foreach (['newsletter_smtp_host', 'newsletter_smtp_port', 'newsletter_smtp_username', 'newsletter_smtp_encryption', 'newsletter_smtp_from_address', 'newsletter_smtp_from_name'] as $key) {
+            Setting::set($key, $request->string($key, ''));
+        }
+        $password = $request->string('newsletter_smtp_password', '');
+        if ($password !== '') {
+            Setting::set('newsletter_smtp_password', $password);
+        }
+        flash('saved', 'Réglages de la newsletter enregistrés.');
+        redirect('/admin/newsletter');
+    }
+
+    public function newsletterPreview(Request $request): void
+    {
+        Auth::requireAdmin();
+        try {
+            $composed = NewsletterComposer::compose();
+            flash('preview', $composed);
+            flash('saved', 'Aperçu généré ci-dessous.');
+        } catch (Throwable $e) {
+            flash('error', user_error_message($e));
+        }
+        redirect('/admin/newsletter');
+    }
+
+    public function newsletterTest(Request $request): void
+    {
+        Auth::requireAdmin();
+        $to = $request->string('test_email', Auth::user()['email'] ?? '');
+        if (!filter_var($to, FILTER_VALIDATE_EMAIL)) {
+            flash('error', 'Indiquez une adresse e-mail valide pour le test.');
+            redirect('/admin/newsletter');
+        }
+        try {
+            $composed = NewsletterComposer::compose();
+            NewsletterMailer::send($to, 'Test newsletter — ' . $composed['subject'], $composed['html']);
+            if (!NewsletterMailer::usesSmtp()) {
+                flash('error', 'Aucun SMTP : le message a été écrit dans storage/mail.');
+            } else {
+                flash('tested', 'E-mail de test envoyé vers ' . $to . '.');
+            }
+        } catch (Throwable $e) {
+            flash('error', user_error_message($e));
+        }
+        redirect('/admin/newsletter');
+    }
+
+    public function newsletterSend(Request $request): void
+    {
+        Auth::requireAdmin();
+        try {
+            $composed = NewsletterComposer::compose();
+            NewsletterCampaign::queue($composed, 'manual');
+            NewsletterCron::run(false);
+            flash('saved', 'Lettre mise en file et premier lot envoyé.');
+        } catch (Throwable $e) {
+            flash('error', user_error_message($e));
+        }
+        redirect('/admin/newsletter');
+    }
+
+    public function newsletterUnsub(Request $request): void
+    {
+        Auth::requireAdmin();
+        Newsletter::unsubscribeEmail($request->string('email'));
+        flash('saved', 'Adresse désinscrite.');
+        redirect('/admin/newsletter');
+    }
+
+    public function newsletterExport(Request $request): void
+    {
+        Auth::requireAdmin();
+        header('Content-Type: text/csv; charset=utf-8');
+        header('Content-Disposition: attachment; filename="newsletter-abonnes.csv"');
+        $out = fopen('php://output', 'w');
+        if ($out === false) {
+            return;
+        }
+        fputcsv($out, ['email', 'statut', 'source', 'inscrit_le', 'confirme_le'], ';');
+        foreach (Newsletter::adminList(5000) as $row) {
+            fputcsv($out, [
+                (string) ($row['email'] ?? ''),
+                (string) ($row['status'] ?? ''),
+                (string) ($row['source'] ?? ''),
+                (string) ($row['created_at'] ?? ''),
+                (string) ($row['confirmed_at'] ?? ''),
+            ], ';');
+        }
+        fclose($out);
     }
 
     public function emails(Request $request): void

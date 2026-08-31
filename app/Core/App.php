@@ -18,7 +18,11 @@ final class App
             }
         }
 
-        if ($request->isPost() && $request->path() !== '/install' && !str_starts_with($request->path(), '/install')) {
+        $path = $request->path();
+        $csrfExempt = $path === '/install'
+            || str_starts_with($path, '/install')
+            || str_starts_with($path, '/newsletter/desinscription/');
+        if ($request->isPost() && !$csrfExempt) {
             if (!Csrf::check($request->string('_token'))) {
                 http_response_code(419);
                 View::render('errors/419', [

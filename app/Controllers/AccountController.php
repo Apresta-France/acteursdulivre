@@ -16,6 +16,7 @@ use Adl\Models\Favorite;
 use Adl\Models\Invoice;
 use Adl\Models\LegalAcceptance;
 use Adl\Models\Mission;
+use Adl\Models\Newsletter;
 use Adl\Models\Notification;
 use Adl\Models\Order;
 use Adl\Models\OrderMilestone;
@@ -1627,7 +1628,9 @@ final class AccountController
             'notifyMessages' => !isset($user['notify_messages']) || (int) $user['notify_messages'] === 1,
             'notifyJalons' => !isset($user['notify_jalons']) || (int) $user['notify_jalons'] === 1,
             'notifyMissions' => !isset($user['notify_missions']) || (int) $user['notify_missions'] === 1,
-            'notifyNewsletter' => !empty($user['notify_newsletter']),
+            'notifyNewsletter' => !empty($user['notify_newsletter'])
+                || (($sub = Newsletter::findByEmail((string) ($user['email'] ?? '')))
+                    && ($sub['status'] ?? '') === Newsletter::STATUS_CONFIRMED),
             'companyName' => (string) ($user['company_name'] ?? ''),
             'siret' => (string) ($user['siret'] ?? ''),
             'vatNumber' => (string) ($user['vat_number'] ?? ''),
@@ -1705,12 +1708,21 @@ final class AccountController
     {
         $user = Auth::requireUser();
         try {
+            $wantNews = $request->bool('notify_newsletter');
             User::update((int) $user['id'], [
                 'notify_messages' => $request->bool('notify_messages') ? 1 : 0,
                 'notify_jalons' => $request->bool('notify_jalons') ? 1 : 0,
                 'notify_missions' => $request->bool('notify_missions') ? 1 : 0,
-                'notify_newsletter' => $request->bool('notify_newsletter') ? 1 : 0,
+                'notify_newsletter' => $wantNews ? 1 : 0,
             ]);
+            try {
+                if ($wantNews) {
+                    Newsletter::subscribe((string) $user['email'], 'account', (int) $user['id'], true);
+                } else {
+                    Newsletter::unsubscribeEmail((string) $user['email']);
+                }
+            } catch (\Throwable) {
+            }
             flash('saved', true);
         } catch (\Throwable $e) {
             flash('error', user_error_message($e));

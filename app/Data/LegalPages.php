@@ -397,7 +397,7 @@ final class LegalPages
             [
                 'title' => '3. Finalités et bases légales',
                 'blocks' => [
-                    ['html' => '<ul><li><strong>Fournir le compte et la Plateforme</strong> — exécution du contrat (CGU).</li><li><strong>Mise en relation, missions, messagerie, suivi à jalons, facturation de commission</strong> — exécution du contrat (CGU / CGV).</li><li><strong>Vérification des profils, modération, lutte contre la fraude</strong> — intérêt légitime et, le cas échéant, obligation légale.</li><li><strong>Répondre aux messages de contact</strong> — intérêt légitime ou mesures précontractuelles.</li><li><strong>Lettre d\'information mensuelle</strong> — consentement (désinscription en un clic).</li><li><strong>Obligations comptables et fiscales</strong> — obligation légale.</li><li><strong>Amélioration de la sécurité</strong> — intérêt légitime.</li></ul>'],
+                    ['html' => '<ul><li><strong>Fournir le compte et la Plateforme</strong> — exécution du contrat (CGU).</li><li><strong>Mise en relation, missions, messagerie, suivi à jalons, facturation de commission</strong> — exécution du contrat (CGU / CGV).</li><li><strong>Vérification des profils, modération, lutte contre la fraude</strong> — intérêt légitime et, le cas échéant, obligation légale.</li><li><strong>Répondre aux messages de contact</strong> — intérêt légitime ou mesures précontractuelles.</li><li><strong>Lettre d\'information hebdomadaire</strong> — consentement (confirmation par e-mail, désinscription en un clic).</li><li><strong>Obligations comptables et fiscales</strong> — obligation légale.</li><li><strong>Amélioration de la sécurité</strong> — intérêt légitime.</li></ul>'],
                     ['p' => 'Aucun profilage publicitaire n\'est réalisé. Aucun manuscrit n\'est utilisé pour entraîner un modèle d\'intelligence artificielle.'],
                 ],
             ],
@@ -482,7 +482,7 @@ final class LegalPages
             [
                 'title' => '4. Newsletter et formulaires',
                 'blocks' => [
-                    ['p' => 'Le bandeau d\'inscription à la lettre d\'information du pied de page renvoie aujourd\'hui vers la page Contact : aucune liste n\'est alimentée automatiquement par un cookie. Si vous nous écrivez, vos données suivent la politique de confidentialité.'],
+                    ['p' => 'Le bandeau du pied de page enregistre l\'e-mail dans une liste interne, après confirmation par un lien envoyé à cette adresse. Aucun cookie n\'est déposé pour cet usage. Chaque envoi contient un lien de désinscription. Les paramètres du compte permettent aussi d\'activer ou de retirer cet abonnement.'],
                 ],
             ],
             [

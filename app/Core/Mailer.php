@@ -11,7 +11,10 @@ use Adl\Models\User;
 
 final class Mailer
 {
-    public static function send(string $to, string $subject, string $html, string $text = ''): void
+    /**
+     * @param array{unsubscribe_url?: string, headers?: array<string, string>} $options
+     */
+    public static function send(string $to, string $subject, string $html, string $text = '', array $options = []): void
     {
         $from = self::fromAddress();
         $fromName = self::fromName();
@@ -22,7 +25,10 @@ final class Mailer
             'content' => $html,
             'appName' => Env::get('APP_NAME', 'Acteurs du Livre'),
             'appUrl' => Env::get('APP_URL', 'https://acteursdulivre.fr'),
+            'unsubscribeUrl' => (string) ($options['unsubscribe_url'] ?? ''),
         ]);
+
+        $headers = is_array($options['headers'] ?? null) ? $options['headers'] : [];
 
         if ($host === '') {
             self::logToFile($to, $subject, $wrapped);
@@ -37,7 +43,7 @@ final class Mailer
             self::setting('mail_encryption', Env::get('MAIL_ENCRYPTION', 'tls')),
             self::heloHost(),
         );
-        $transport->send($from, $fromName, $to, $subject, $wrapped, $text);
+        $transport->send($from, $fromName, $to, $subject, $wrapped, $text, $headers);
     }
 
     public static function usesSmtp(): bool

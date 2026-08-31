@@ -84,6 +84,16 @@ final class HourlyCron
             self::remindPendingProjects($stats, $errors);
             self::remindSilentClients($stats, $errors);
             self::markOverdueInvoices($stats, $errors);
+            try {
+                $news = NewsletterCron::run(false);
+                $stats['newsletter_sent'] = (int) (($news['stats']['sent'] ?? 0));
+                $stats['newsletter_queued'] = (int) (($news['stats']['queued'] ?? 0));
+                foreach ($news['errors'] ?? [] as $err) {
+                    $errors[] = 'newsletter: ' . $err;
+                }
+            } catch (Throwable $e) {
+                $errors[] = 'newsletter: ' . $e->getMessage();
+            }
 
             Setting::set('cron_hourly_last_run', date('c'));
 

@@ -21,6 +21,7 @@ return static function (Router $router): void {
     $router->get('/', [PageController::class, 'home']);
     $router->get('/recherche', [PageController::class, 'search']);
     $router->get('/api/recherche', [PageController::class, 'searchApi']);
+    $router->get('/api/journal', [PageController::class, 'journalApi']);
     $router->get('/cron', [CronController::class, 'index']);
     $router->get('/cron/{task}', [CronController::class, 'run']);
     $router->get('/metiers/{slug}', [PageController::class, 'metier']);
@@ -40,6 +41,9 @@ return static function (Router $router): void {
     $router->get('/journal/{slug}', [PageController::class, 'article']);
     $router->get('/aide', [PageController::class, 'aide']);
     $router->post('/newsletter', [PageController::class, 'newsletter']);
+    $router->get('/newsletter/confirmer/{token}', [PageController::class, 'newsletterConfirm']);
+    $router->get('/newsletter/desinscription/{token}', [PageController::class, 'newsletterUnsubscribe']);
+    $router->post('/newsletter/desinscription/{token}', [PageController::class, 'newsletterUnsubscribe']);
     $router->post('/signaler', [PageController::class, 'report']);
     $router->get('/mentions-legales', [PageController::class, 'legal']);
     $router->get('/cgu', [PageController::class, 'legal']);
@@ -153,6 +157,13 @@ return static function (Router $router): void {
     $router->post('/admin/reglages', [AdminController::class, 'reglagesSave']);
     $router->get('/admin/listes', [AdminController::class, 'listes']);
     $router->post('/admin/listes', [AdminController::class, 'listesSave']);
+    $router->get('/admin/newsletter', [AdminController::class, 'newsletter']);
+    $router->post('/admin/newsletter', [AdminController::class, 'newsletterSave']);
+    $router->post('/admin/newsletter/apercu', [AdminController::class, 'newsletterPreview']);
+    $router->post('/admin/newsletter/test', [AdminController::class, 'newsletterTest']);
+    $router->post('/admin/newsletter/envoyer', [AdminController::class, 'newsletterSend']);
+    $router->post('/admin/newsletter/desinscrire', [AdminController::class, 'newsletterUnsub']);
+    $router->get('/admin/newsletter/export', [AdminController::class, 'newsletterExport']);
     $router->get('/admin/smtp', [AdminController::class, 'smtp']);
     $router->post('/admin/smtp', [AdminController::class, 'smtpSave']);
     $router->post('/admin/smtp/test', [AdminController::class, 'smtpTest']);
