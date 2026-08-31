@@ -32,7 +32,7 @@ final class Order
         if ($buyerId < 1 || $sellerId < 1 || $buyerId === $sellerId) {
             throw new \RuntimeException('Cette commande ne peut pas être créée.');
         }
-        Invoice::assertCanOffer($sellerId);
+        Invoice::assertCanOffer($sellerId, true);
 
         $optionsJson = self::encodeOptions($data['options'] ?? []);
         $params = [
@@ -191,6 +191,29 @@ final class Order
             [$buyerId, $serviceId]
         );
         return $row ? self::find((int) $row['id']) : null;
+    }
+
+    /**
+     * @param array{amount?: int, brief?: ?string, package_name?: ?string, options?: list<array<string, mixed>>} $data
+     * @return array<string, mixed>
+     */
+    public static function updatePendingDetails(int $id, array $data): array
+    {
+        $order = self::find($id);
+        if (!$order || ($order['status'] ?? '') !== 'pending') {
+            throw new \RuntimeException('Cette commande n\'est plus en attente.');
+        }
+        Database::query(
+            'UPDATE orders SET amount = ?, brief = ?, package_name = ?, options_json = ? WHERE id = ? AND status = "pending"',
+            [
+                (int) ($data['amount'] ?? 0),
+                trim((string) ($data['brief'] ?? '')) ?: null,
+                trim((string) ($data['package_name'] ?? '')) ?: null,
+                self::encodeOptions($data['options'] ?? []),
+                $id,
+            ]
+        );
+        return self::find($id) ?? $order;
     }
 
     public static function findForUser(int $id, int $userId): ?array

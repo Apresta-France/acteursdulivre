@@ -202,7 +202,7 @@ final class Profile
                 $data['languages'] ?? null,
                 self::normalizeRate((string) ($data['hourly_rate'] ?? ''), (string) ($data['rate_kind'] ?? ''), $data['trades'] ?? []),
                 $data['rate_note'] ?? null,
-                $data['website'] ?? null,
+                self::normalizeSocialUrl(trim((string) ($data['website'] ?? '')), 'website') ?: null,
                 self::encode(self::normalizeSocials($data['socials'] ?? [])),
                 self::encode($data['trades'] ?? []),
                 self::encode($data['skills'] ?? []),

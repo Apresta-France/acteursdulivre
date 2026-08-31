@@ -493,6 +493,11 @@
       var forcedType = searchPage.getAttribute('data-type') || '';
       var q = (data.get('q') || '').toString().trim();
       if (q) params.set('q', q);
+      var cat = (data.get('cat') || '').toString().trim();
+      if (!cat) {
+        try { cat = (new URLSearchParams(window.location.search).get('cat') || '').trim(); } catch (e) {}
+      }
+      if (cat) params.set('cat', cat);
       ['kind', 'metier', 'spec', 'delay', 'level', 'trust'].forEach(function (key) {
         data.getAll(key + '[]').forEach(function (value) {
           if (value) params.append(key + '[]', value);
@@ -546,20 +551,25 @@
         results.innerHTML = renderCards(data.results || []);
         var n = data.count || 0;
         if (countEl) countEl.textContent = '· ' + n + ' résultat' + (n > 1 ? 's' : '');
-        if (titleEl) {
-          var label = data.query || data.cat || 'Tous les métiers du livre';
-          titleEl.childNodes[0].textContent = label + ' ';
+        var label = data.query || data.cat || '';
+        if (!label) {
+          var hubType = data.type || searchPage.getAttribute('data-type') || '';
+          if (hubType === 'prestations') label = 'Prestations à prix affiché';
+          else if (hubType === 'prestataires') label = 'Prestataires du livre';
+          else label = 'Tous les métiers du livre';
         }
+        if (titleEl) titleEl.childNodes[0].textContent = label + ' ';
         var display = new URLSearchParams(params);
-        display.delete('type');
-        display.delete('cat');
+        if (!/\/recherche\/?$/.test(window.location.pathname)) {
+          display.delete('type');
+        }
         var next = display.toString();
         history.replaceState(null, '', window.location.pathname + (next ? '?' + next : ''));
         if (headerInput) headerInput.value = data.query || '';
         syncActive();
         refreshShareBars(searchPage, {
           url: window.location.href,
-          title: 'Recherche : ' + (data.query || data.cat || 'Tous les métiers du livre'),
+          title: 'Recherche : ' + label,
           text: 'Prestataires des métiers du livre sur acteursdulivre.fr'
         });
       });

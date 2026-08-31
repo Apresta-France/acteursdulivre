@@ -169,11 +169,14 @@ final class Invoice
         return $row ? self::present($row) : null;
     }
 
-    public static function assertCanOffer(int $sellerId): void
+    public static function assertCanOffer(int $sellerId, bool $forBuyer = false): void
     {
         $invoice = self::blockingInvoice($sellerId);
         if (!$invoice) {
             return;
+        }
+        if ($forBuyer) {
+            throw new RuntimeException('Ce prestataire ne peut plus prendre de mission pour le moment.');
         }
         throw new RuntimeException(
             'Une facture de commission (' . $invoice['number'] . ') est échue. '

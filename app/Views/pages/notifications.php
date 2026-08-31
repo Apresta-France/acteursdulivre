@@ -19,6 +19,9 @@ $unread = (int) ($unreadCount ?? 0);
   <?php if (!empty($saved)): ?>
     <div class="flash flash-ok"><?= e((string) $saved) ?></div>
   <?php endif; ?>
+  <?php if (!empty($error)): ?>
+    <div class="flash flash-error"><?= e((string) $error) ?></div>
+  <?php endif; ?>
 
   <?php if ($items === []): ?>
     <div class="search-empty">

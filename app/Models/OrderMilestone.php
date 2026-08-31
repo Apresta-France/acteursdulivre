@@ -734,7 +734,7 @@ final class OrderMilestone
     {
         Database::query(
             'UPDATE order_milestones
-             SET status = ?, completed_by = NULL
+             SET status = ?, completed_by = NULL, file_path = NULL, file_name = NULL
              WHERE order_id = ? AND code = ?',
             [self::STATUS_PENDING, $orderId, 'quote']
         );
@@ -804,11 +804,6 @@ final class OrderMilestone
             $deposit = max(0, $deposit ?? 0);
             if ($deposit > $amount) {
                 throw new RuntimeException('L’acompte ne peut pas dépasser le montant du devis.');
-            }
-            if ($fileName === null && $filePath === null) {
-                $existing = self::requireRow((int) ($order['id'] ?? 0), 'quote');
-                $fileName = trim((string) ($existing['file_name'] ?? '')) ?: null;
-                $filePath = trim((string) ($existing['file_path'] ?? '')) ?: null;
             }
             return [
                 'amount' => $amount,

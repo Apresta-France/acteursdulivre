@@ -29,7 +29,7 @@ final class Article
         }
         $category = trim((string) ($data['category'] ?? '')) ?: 'Journal';
         $excerpt = trim((string) ($data['excerpt'] ?? '')) ?: null;
-        $body = (string) ($data['body'] ?? '');
+        $body = sanitize_rich_html((string) ($data['body'] ?? ''));
         $published = !empty($data['published']);
         $current = $id ? self::find($id) : null;
         $slugSource = trim((string) ($data['slug'] ?? '')) ?: $title;

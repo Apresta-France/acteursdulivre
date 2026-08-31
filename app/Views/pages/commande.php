@@ -1,12 +1,12 @@
 <?php
-$service = $service ?? null;
-$package = $selectedPackage ?? null;
+$service = is_array($service ?? null) ? $service : null;
+$package = is_array($selectedPackage ?? null) ? $selectedPackage : null;
 $old = is_array($old ?? null) ? $old : [];
-$serviceOptions = is_array($service['options'] ?? null) ? $service['options'] : [];
+$serviceOptions = ($service !== null && is_array($service['options'] ?? null)) ? $service['options'] : [];
 $selectedOptionIds = is_array($selectedOptionIds ?? null) ? $selectedOptionIds : [];
 $baseAmount = $package
     ? (int) ($package['price'] ?? 0)
-    : (int) ($service['price_from'] ?? 0);
+    : ($service !== null ? (int) ($service['price_from'] ?? 0) : 0);
 ?>
 <div class="espace-page">
   <div class="espace-page-head">

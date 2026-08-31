@@ -357,9 +357,9 @@ final class Catalog
         if ($availableOnly || self::hasFacetFilters($filters)) {
             return null;
         }
-        $type = array_key_exists($type, self::TYPES) ? $type : 'all';
+        $type = ($type === '' || !array_key_exists($type, self::TYPES)) ? 'all' : $type;
         $trade = self::resolveTrade($q !== '' ? $q : $cat);
-        if ($trade !== null && ($q === '' || self::resolveTrade($q) === $trade)) {
+        if ($type === 'all' && $trade !== null && ($q === '' || self::resolveTrade($q) === $trade)) {
             $target = self::tradePath($trade);
             return $target !== $currentPath ? $target : null;
         }
@@ -562,12 +562,15 @@ final class Catalog
                     'subtitle' => $mission['by'] . ' · ' . ($mission['category_name'] ?: 'Recherche'),
                     'href' => $mission['href'],
                     'cat' => (string) ($mission['category_name'] ?? ''),
-                    'meta' => $mission['budget'] . (!empty($mission['deadline']) ? ' · avant le ' . $mission['deadline_label'] : ' · échéance à convenir'),
+                    'budget' => $mission['budget'],
+                    'meta' => !empty($mission['deadline'])
+                        ? 'avant le ' . $mission['deadline_label']
+                        : 'échéance à convenir',
                     'price' => $mission['budget'],
                     'thumb' => '',
                     'initials' => $mission['initials'],
                     'excerpt' => (string) ($mission['brief'] ?? ''),
-                    'tags' => array_values(array_filter([$mission['volume'] ?? null, $mission['category_name'] ?? null])),
+                    'tags' => array_values(array_filter([(string) ($mission['volume'] ?? '')])),
                     'deadline' => $mission['deadline_label'],
                     'when' => $mission['when'],
                     'applicants' => (int) ($mission['applicants'] ?? 0),
@@ -609,7 +612,7 @@ final class Catalog
     {
         $out = [];
         foreach (self::providers() as $provider) {
-            if ($trade !== '' && search_norm((string) $provider['cat']) !== search_norm($trade)) {
+            if ($trade !== '' && !self::itemHasTrade($provider, [$trade])) {
                 continue;
             }
             $out[] = $provider;
@@ -852,8 +855,13 @@ final class Catalog
         if ($filters['specs'] !== [] && !self::itemHasSpec($item, $filters['specs'])) {
             return false;
         }
-        if ($filters['delays'] !== [] && !in_array((string) ($item['delay_bucket'] ?? ''), $filters['delays'], true)) {
-            return false;
+        if ($filters['delays'] !== []) {
+            $bucket = (string) ($item['delay_bucket'] ?? '');
+            $kind = (string) ($item['kind'] ?? '');
+            $applyDelay = $bucket !== '' || $kind === 'prestations' || $kind === 'service';
+            if ($applyDelay && !in_array($bucket, $filters['delays'], true)) {
+                return false;
+            }
         }
         if ($filters['levels'] !== [] && !in_array((string) ($item['level_key'] ?? ''), $filters['levels'], true)) {
             return false;
@@ -1035,13 +1043,16 @@ final class Catalog
     private static function levelKey(string $level): string
     {
         $level = search_norm($level);
+        if ($level === '') {
+            return '';
+        }
         if (str_contains($level, 'expert')) {
             return 'expert';
         }
         if (str_contains($level, 'confirm')) {
             return 'confirme';
         }
-        if ($level === '' || str_contains($level, 'nouveau') || str_contains($level, 'nouvelle') || str_contains($level, 'initie')) {
+        if (str_contains($level, 'nouveau') || str_contains($level, 'nouvelle') || str_contains($level, 'initie')) {
             return 'nouveau';
         }
         return 'nouveau';

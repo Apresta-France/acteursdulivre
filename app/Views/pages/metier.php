@@ -15,7 +15,7 @@ $missions = $missions ?? [];
     <section>
       <div class="espace-page-head">
         <h2>Prestataires</h2>
-        <a href="<?= e(url('/prestataires')) ?>">Tout voir</a>
+        <a href="<?= e(url('/prestataires?cat=' . rawurlencode($trade))) ?>">Tout voir</a>
       </div>
       <?php if ($providers === []): ?>
         <div class="search-empty">
@@ -37,7 +37,7 @@ $missions = $missions ?? [];
     <section>
       <div class="espace-page-head">
         <h2>Prestations</h2>
-        <a href="<?= e(url('/prestations')) ?>">Tout voir</a>
+        <a href="<?= e(url('/prestations?cat=' . rawurlencode($trade))) ?>">Tout voir</a>
       </div>
       <?php if ($services === []): ?>
         <div class="search-empty">
@@ -59,7 +59,7 @@ $missions = $missions ?? [];
     <section>
       <div class="espace-page-head">
         <h2>Recherches ouvertes</h2>
-        <a href="<?= e(url('/missions')) ?>">Tout voir</a>
+        <a href="<?= e(url('/missions?metier=' . rawurlencode($trade))) ?>">Tout voir</a>
       </div>
       <?php if ($missions === []): ?>
         <div class="search-empty">

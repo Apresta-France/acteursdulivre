@@ -80,8 +80,9 @@ final class Conversation
         if ($fromId === $toId) {
             throw new RuntimeException('Vous ne pouvez pas vous écrire à vous-même.');
         }
-        if (!User::find($toId)) {
-            throw new RuntimeException('Ce destinataire est introuvable.');
+        $to = User::find($toId);
+        if (!$to || ($to['status'] ?? '') !== 'active' || !empty($to['deleted_at'])) {
+            throw new RuntimeException('Ce destinataire n\'est plus joignable.');
         }
 
         return Database::transaction(static function () use ($fromId, $toId, $context): array {
@@ -164,50 +165,57 @@ final class Conversation
             throw new RuntimeException('Écrivez un message ou joignez un fichier.');
         }
 
-        Database::query(
-            'INSERT INTO messages (conversation_id, user_id, body, attachment_path, attachment_name, attachment_size, created_at)
-             VALUES (?, ?, ?, ?, ?, ?, NOW())',
-            [
-                $conversationId,
-                $userId,
-                $body !== '' ? $body : null,
-                $attachment['path'] ?? null,
-                $attachment['name'] ?? null,
-                $attachment['size'] ?? null,
-            ]
-        );
-        $messageId = (int) Database::lastId();
-        Database::query('UPDATE conversations SET updated_at = NOW() WHERE id = ?', [$conversationId]);
-        Database::query(
-            'UPDATE conversation_participants SET last_read_at = NOW() WHERE conversation_id = ? AND user_id = ?',
-            [$conversationId, $userId]
-        );
+        $messageId = (int) Database::transaction(static function () use ($conversationId, $userId, $body, $attachment): int {
+            Database::query(
+                'INSERT INTO messages (conversation_id, user_id, body, attachment_path, attachment_name, attachment_size, created_at)
+                 VALUES (?, ?, ?, ?, ?, ?, NOW())',
+                [
+                    $conversationId,
+                    $userId,
+                    $body !== '' ? $body : null,
+                    $attachment['path'] ?? null,
+                    $attachment['name'] ?? null,
+                    $attachment['size'] ?? null,
+                ]
+            );
+            $id = (int) Database::lastId();
+            Database::query('UPDATE conversations SET updated_at = NOW() WHERE id = ?', [$conversationId]);
+            Database::query(
+                'UPDATE conversation_participants SET last_read_at = NOW() WHERE conversation_id = ? AND user_id = ?',
+                [$conversationId, $userId]
+            );
+
+            return $id;
+        });
 
         $preview = $body !== ''
             ? $body
             : 'Pièce jointe : ' . (string) ($attachment['name'] ?? 'fichier');
         $otherId = (int) ($thread['other']['id'] ?? 0);
         if ($notify && $otherId > 0) {
-            $senderName = User::displayName(User::find($userId) ?? []);
-            $unread = self::unreadFromSender($conversationId, $otherId, $userId);
-            $title = $unread > 1
-                ? $unread . ' nouveaux messages de ' . $senderName
-                : 'Nouveau message de ' . $senderName;
-            $hadUnread = Notification::hasUnread($otherId, 'message', 'conversation', $conversationId);
-            Notification::upsertUnread(
-                $otherId,
-                $title,
-                mb_strlen($preview) > 140 ? mb_substr($preview, 0, 137) . '…' : $preview,
-                '/espace/messages/' . $conversationId,
-                'message',
-                'conversation',
-                $conversationId
-            );
-            if (!$hadUnread) {
-                Mailer::notify(User::find($otherId), 'messages', 'nouveau-message', [
-                    'sujet' => (string) ($thread['subject'] ?? 'votre conversation'),
-                    'lien' => url('/espace/messages/' . $conversationId),
-                ]);
+            try {
+                $senderName = User::displayName(User::find($userId) ?? []);
+                $unread = self::unreadFromSender($conversationId, $otherId, $userId);
+                $title = $unread > 1
+                    ? $unread . ' nouveaux messages de ' . $senderName
+                    : 'Nouveau message de ' . $senderName;
+                $hadUnread = Notification::hasUnread($otherId, 'message', 'conversation', $conversationId);
+                Notification::upsertUnread(
+                    $otherId,
+                    $title,
+                    mb_strlen($preview) > 140 ? mb_substr($preview, 0, 137) . '…' : $preview,
+                    '/espace/messages/' . $conversationId,
+                    'message',
+                    'conversation',
+                    $conversationId
+                );
+                if (!$hadUnread) {
+                    Mailer::notify(User::find($otherId), 'messages', 'nouveau-message', [
+                        'sujet' => (string) ($thread['subject'] ?? 'votre conversation'),
+                        'lien' => url('/espace/messages/' . $conversationId),
+                    ]);
+                }
+            } catch (\Throwable) {
             }
         }
 
@@ -500,6 +508,10 @@ final class Conversation
     /** @param array<string, mixed> $context */
     private static function findPair(int $fromId, int $toId, array $context): ?array
     {
+        if ($fromId === $toId) {
+            return null;
+        }
+
         $orderId = isset($context['order_id']) ? (int) $context['order_id'] : 0;
         $missionId = isset($context['mission_id']) ? (int) $context['mission_id'] : 0;
         $serviceId = isset($context['service_id']) ? (int) $context['service_id'] : 0;

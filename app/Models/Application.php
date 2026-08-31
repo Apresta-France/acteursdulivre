@@ -195,6 +195,8 @@ final class Application
                 throw new \RuntimeException('Cette candidature a déjà été traitée.');
             }
 
+            Invoice::assertCanOffer((int) $application['user_id'], true);
+
             $claimed = Database::query(
                 'UPDATE missions SET status = "assigned" WHERE id = ? AND status = "open"',
                 [(int) $application['mission_id']]

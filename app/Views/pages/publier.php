@@ -2,7 +2,7 @@
 $old = is_array($old ?? null) ? $old : [];
 $selected = (string) ($old['category_name'] ?? 'Correction');
 $trades = $trades ?? \Adl\Data\Catalog::trades();
-$volumeHint = \Adl\Data\Catalog::volumeHint($selected);
+$hint = \Adl\Data\Catalog::volumeHint($selected) ?? [];
 $briefHint = \Adl\Data\Catalog::briefHint($selected);
 ?>
 <div class="espace-page publish-page">
@@ -50,13 +50,13 @@ $briefHint = \Adl\Data\Catalog::briefHint($selected);
                   data-preview-brief><?= e((string) ($old['brief'] ?? '')) ?></textarea>
       </div>
 
-      <div class="form-grid-3<?= $volumeHint ? '' : ' is-two' ?>" data-publish-metrics>
-        <div data-volume-wrap<?= $volumeHint ? '' : ' hidden' ?>>
-          <label class="field" for="search-volume" data-volume-label><?= e($volumeHint['label'] ?? 'Volume') ?></label>
+      <div class="form-grid-3<?= $hint ? '' : ' is-two' ?>" data-publish-metrics>
+        <div data-volume-wrap<?= $hint ? '' : ' hidden' ?>>
+          <label class="field" for="search-volume" data-volume-label><?= e($hint['label'] ?? 'Volume') ?></label>
           <input class="input" id="search-volume" name="volume" data-volume-input
                  value="<?= e((string) ($old['volume'] ?? '')) ?>"
-                 placeholder="<?= e($volumeHint['placeholder'] ?? '') ?>"
-                 <?= $volumeHint ? '' : ' disabled' ?>>
+                 placeholder="<?= e($hint['placeholder'] ?? '') ?>"
+                 <?= $hint ? '' : ' disabled' ?>>
         </div>
         <div>
           <label class="field" for="search-min">Budget min. (€)</label>

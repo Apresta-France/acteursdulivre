@@ -67,8 +67,10 @@ if ($q !== '') {
               <option value="<?= e($value) ?>"><?= e($label) ?></option>
             <?php endforeach; ?>
           </select>
+          <label class="field" for="help-url" style="margin-top: 10px;">Lien concerné</label>
+          <input class="input" id="help-url" type="url" name="url" placeholder="https://acteursdulivre.fr/…">
           <label class="field" for="help-body" style="margin-top: 10px;">Précisions</label>
-          <textarea class="textarea" id="help-body" name="body" rows="4" required placeholder="Lien concerné, faits observés."></textarea>
+          <textarea class="textarea" id="help-body" name="body" rows="4" required placeholder="Faits observés, extraits concernés."></textarea>
           <button class="btn-ghost" type="submit" style="margin-top: 12px;">Envoyer le signalement</button>
         </form>
       </div>

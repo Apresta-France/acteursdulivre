@@ -16,6 +16,7 @@ use Adl\Data\Sitemap;
 use Adl\Models\Application;
 use Adl\Models\Article;
 use Adl\Models\Favorite;
+use Adl\Models\Invoice;
 use Adl\Models\Newsletter;
 use Adl\Models\Profile;
 use Adl\Models\Report;
@@ -76,10 +77,14 @@ final class PageController
     public function searchApi(Request $request): void
     {
         $filters = self::searchFilters($request);
+        $cat = $request->string('cat');
+        if ($cat !== '') {
+            $cat = Catalog::resolveTrade($cat) ?? $cat;
+        }
         $found = Catalog::search(
             $request->string('q'),
             $request->string('type', 'all'),
-            $request->string('cat'),
+            $cat,
             max(1, min(48, $request->int('limit', 24) ?? 24)),
             $request->bool('dispo'),
             $filters
@@ -89,6 +94,7 @@ final class PageController
                 $found[$key][$i]['href'] = url((string) ($item['href'] ?? '/recherche'));
             }
         }
+        $found['cat'] = $cat;
         json_response($found);
     }
 
@@ -247,7 +253,7 @@ final class PageController
         $cat = $request->string('metier') ?: $request->string('cat');
         if ($cat !== '') {
             $resolved = Catalog::resolveTrade($cat);
-            $cat = $resolved ?? '';
+            $cat = $resolved ?? $cat;
         }
         $found = Catalog::search('', 'missions', $cat);
         View::page('missions', [
@@ -316,7 +322,8 @@ final class PageController
             'slug' => $slug,
             'liveMission' => $mission,
             'isOwner' => $isOwner,
-            'canApply' => $viewer && User::offersServices($viewer) && !$isOwner && !$myApplication && ($mission['status'] ?? '') === 'open',
+            'canApply' => $viewer && User::offersServices($viewer) && !$isOwner && !$myApplication && ($mission['status'] ?? '') === 'open' && !Invoice::sellerIsBlocked((int) $viewer['id']),
+            'offersServices' => $viewer && User::offersServices($viewer),
             'myApplication' => $myApplication,
             'applications' => $applications,
             'old' => flash('old') ?: [],
@@ -463,12 +470,20 @@ final class PageController
             if ($type === 'conversation') {
                 throw new \RuntimeException('Signalez cette conversation depuis la messagerie.');
             }
+            $body = $request->string('body');
+            $link = $request->string('url');
+            if ($link !== '' && safe_internal_path($link) === null && !preg_match('#^https?://#i', $link)) {
+                $link = '';
+            }
+            if ($link !== '') {
+                $body = ($body !== '' ? $body . "\n\n" : '') . 'Lien : ' . $link;
+            }
             Report::create(
                 $viewer ? (int) $viewer['id'] : null,
                 $type,
                 $request->int('id'),
                 $request->string('reason'),
-                $request->string('body')
+                $body
             );
             flash('saved', 'Signalement reçu. L\'équipe de modération le traitera.');
         } catch (\Throwable $e) {
@@ -520,6 +535,9 @@ final class PageController
             $type = 'all';
         }
         $cat = $request->string('cat');
+        if ($cat !== '') {
+            $cat = Catalog::resolveTrade($cat) ?? $cat;
+        }
         $availableOnly = $request->bool('dispo');
         $filters = self::searchFilters($request);
         $target = Catalog::redirectPath($request->path(), $query, $type, $cat, $availableOnly, $filters);
@@ -587,9 +605,11 @@ final class PageController
         $email = $request->string('email');
         $name = $request->string('name');
         $message = $request->string('message');
+        $old = ['name' => $name, 'email' => $email, 'message' => $message];
 
         if (!filter_var($email, FILTER_VALIDATE_EMAIL) || $message === '') {
             flash('error', 'Merci d\'indiquer un e-mail valide et votre message.');
+            $_SESSION['_old'] = $old;
             redirect('/contact');
         }
 
@@ -598,9 +618,6 @@ final class PageController
                 'nom' => $name !== '' ? $name : 'Visiteur',
                 'email' => $email,
                 'message' => $message,
-            ]);
-            Mailer::sendTemplate('contact-accuse', $email, [
-                'nom' => $name !== '' ? $name : 'bonjour',
             ]);
         } catch (\Throwable $e) {
             try {
@@ -611,10 +628,19 @@ final class PageController
                 );
             } catch (\Throwable) {
                 flash('error', 'Le message n\'a pas pu être envoyé. Réessayez dans un instant.');
+                $_SESSION['_old'] = $old;
                 redirect('/contact');
             }
         }
 
+        try {
+            Mailer::sendTemplate('contact-accuse', $email, [
+                'nom' => $name !== '' ? $name : 'bonjour',
+            ]);
+        } catch (\Throwable) {
+        }
+
+        unset($_SESSION['_old']);
         flash('contact_sent', true);
         redirect('/contact');
     }

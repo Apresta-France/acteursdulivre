@@ -193,11 +193,8 @@ function redirect(string $path, int $code = 302): never
 
 function safe_internal_path(?string $path): ?string
 {
-    $path = str_replace(["\r", "\n"], '', trim((string) $path));
+    $path = str_replace(["\r", "\n", '\\'], '', trim((string) $path));
     if ($path === '' || $path[0] !== '/' || str_starts_with($path, '//')) {
-        return null;
-    }
-    if (str_contains($path, 'avec=')) {
         return null;
     }
     return $path;
@@ -277,7 +274,12 @@ function json_response(array $payload, int $code = 200): never
 {
     http_response_code($code);
     header('Content-Type: application/json; charset=utf-8');
-    echo json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    $flags = JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES;
+    if (defined('JSON_INVALID_UTF8_SUBSTITUTE')) {
+        $flags |= JSON_INVALID_UTF8_SUBSTITUTE;
+    }
+    $json = json_encode($payload, $flags);
+    echo $json !== false ? $json : '{}';
     exit;
 }
 

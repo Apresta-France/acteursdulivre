@@ -16,7 +16,7 @@ final class Setting
             return self::$cache[$key];
         }
         $row = Database::fetch('SELECT setting_value FROM settings WHERE setting_key = ?', [$key]);
-        self::$cache[$key] = $row['setting_value'] ?? $default;
+        self::$cache[$key] = $row === null ? $default : ($row['setting_value'] ?? $default);
         return self::$cache[$key];
     }
 

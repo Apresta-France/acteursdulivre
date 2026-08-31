@@ -105,11 +105,16 @@ if (!$live) {
           <span class="status-pill status-<?= e((string) $myApplication['status_tone']) ?>"><?= e((string) $myApplication['status_label']) ?></span>
           <p class="mission-row-sub" style="margin-top: 10px;"><?= e((string) $myApplication['price']) ?> · <?= e((string) ($myApplication['delay'] ?: 'Délai à convenir')) ?></p>
         </div>
-      <?php elseif (!\Adl\Core\Auth::check()): ?>
+      <?php elseif (!\Adl\Core\Auth::check() && ($live['status'] ?? '') === 'open'): ?>
         <div class="side-card">
           <div class="side-kicker">Prestataire ?</div>
           <p>Connectez-vous pour envoyer un devis. Aucune commission sur la candidature.</p>
           <a class="btn-orange" href="<?= e(url('/connexion?next=' . rawurlencode((string) ($live['href'] ?? '/missions')))) ?>">Se connecter</a>
+        </div>
+      <?php elseif (\Adl\Core\Auth::check() && empty($isOwner) && empty($offersServices) && ($live['status'] ?? '') === 'open'): ?>
+        <div class="side-card">
+          <div class="side-kicker">Proposer vos services</div>
+          <p>Pour candidater, activez « Je propose mes services » dans vos <a href="<?= e(url('/espace/parametres')) ?>">paramètres</a>.</p>
         </div>
       <?php endif; ?>
       <?php if (!empty($suggestions)): ?>

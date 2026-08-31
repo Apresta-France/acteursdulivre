@@ -11,6 +11,9 @@
   <?php if (!empty($saved)): ?>
     <div class="flash flash-ok"><?= e(is_string($saved) ? $saved : 'Enregistré.') ?></div>
   <?php endif; ?>
+  <?php if (!empty($error)): ?>
+    <div class="flash flash-error"><?= e((string) $error) ?></div>
+  <?php endif; ?>
 
   <?php if ($favorites === []): ?>
     <div class="search-empty">

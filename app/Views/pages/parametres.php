@@ -51,6 +51,17 @@ $oauthProviders = OAuth::enabledProviders();
       </div>
     </div>
 
+    <?php if (empty($offersChecked) && empty(($user ?? [])['offers_services'])): ?>
+      <div class="ia-box" data-if-offers hidden>
+        <div class="ia-box-title">Engagement sans IA générative</div>
+        <p>Obligatoire pour proposer vos services. Les outils de métier — correcteur orthographique, mémoire de traduction — restent autorisés.</p>
+        <label class="ia-box-check">
+          <input type="checkbox" name="charte_ia" value="1">
+          Je m'engage à ne fournir aucun livrable produit par une IA générative.
+        </label>
+      </div>
+    <?php endif; ?>
+
     <div class="auth-actions">
       <button class="btn-orange" type="submit">Enregistrer</button>
     </div>

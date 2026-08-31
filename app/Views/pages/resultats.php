@@ -63,6 +63,9 @@ if ((int) $bmin !== \Adl\Data\Catalog::BUDGET_MIN || (int) $bmax !== \Adl\Data\C
       </div>
       <form class="search-filters" data-search-filters>
         <input type="hidden" name="q" value="<?= e($q) ?>" data-search-q>
+        <?php if ($cat !== ''): ?>
+          <input type="hidden" name="cat" value="<?= e($cat) ?>">
+        <?php endif; ?>
         <?php foreach ($groups as $group): ?>
           <?php if (!empty($facets[$group['facet']])): ?>
             <?= search_filter_group($group['name'], $group['label'], $facets[$group['facet']], $filters[$group['key']] ?? []) ?>

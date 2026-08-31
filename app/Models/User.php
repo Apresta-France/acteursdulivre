@@ -128,12 +128,24 @@ final class User
             throw new \RuntimeException('Le mot de passe doit contenir au moins 8 caractères.');
         }
         self::update($id, ['password' => password_hash($password, PASSWORD_DEFAULT)]);
+        self::revokeRememberTokens($id);
+    }
+
+    public static function revokeRememberTokens(int $id): void
+    {
+        if ($id < 1) {
+            return;
+        }
+        try {
+            Database::query('DELETE FROM remember_tokens WHERE user_id = ?', [$id]);
+        } catch (\Throwable) {
+        }
     }
 
     public static function requestPasswordReset(string $email): ?string
     {
         $user = self::findByEmail($email);
-        if (!$user || self::isOauthOnly($user)) {
+        if (!$user || self::isOauthOnly($user) || ($user['status'] ?? '') !== 'active') {
             return null;
         }
         $token = bin2hex(random_bytes(32));
@@ -161,7 +173,7 @@ final class User
             return null;
         }
         $user = self::findByEmail((string) $row['email']);
-        if (!$user) {
+        if (!$user || ($user['status'] ?? '') !== 'active') {
             Database::query('DELETE FROM password_resets WHERE token = ?', [$hash]);
             return null;
         }
@@ -506,6 +518,7 @@ final class User
             'status' => 'suspended',
             'deleted_at' => date('Y-m-d H:i:s'),
         ]);
+        self::revokeRememberTokens($id);
     }
 
     /** @return array<string, mixed> */

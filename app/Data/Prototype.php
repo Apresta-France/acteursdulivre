@@ -86,7 +86,7 @@ final class Prototype
     {
         $navy = self::NAVY;
         $initials = $user ? User::initials($user) : 'AD';
-        $first = $user['first_name'] ?? '';
+        $first = is_array($user) ? ($user['first_name'] ?? '') : '';
 
         $railNames = Catalog::trades();
         $rail = [];
@@ -152,7 +152,7 @@ final class Prototype
             'userAvatarUrl' => user_avatar_src($user),
             'userFirst' => $first,
             'userName' => $user ? User::displayName($user) : '',
-            'isAdmin' => ($user['role'] ?? '') === 'admin',
+            'isAdmin' => is_array($user) && ($user['role'] ?? '') === 'admin',
             'seeksServices' => $seeks,
             'offersServices' => $offers,
             'inEspace' => $logged && self::isEspaceScreen($screen),
@@ -271,7 +271,7 @@ final class Prototype
                 'homeStats' => $stats,
                 'homeMetiers' => Catalog::tradeCards(),
                 'homeFeatured' => $featured,
-                'homeEntry' => $entry !== [] ? $entry : $featured,
+                'homeEntry' => $entry,
                 'homeMissions' => Catalog::homeMissions(5),
                 'homeTemoins' => Catalog::homeReviews(3),
                 'equipe' => Catalog::equipe(),
@@ -1571,7 +1571,7 @@ final class Prototype
                     $item('Mes prestations', '/espace/prestations', 'mesprestations', 'grid'),
                     $item('Appels d\'offres', '/missions', '', 'megaphone'),
                     $item('Mes candidatures', '/espace/candidatures', 'candidatures', 'send'),
-                    $item('Suivi', '/espace/suivi', 'suivi', 'clipboard'),
+                    ...($seeks ? [] : [$item('Suivi', '/espace/suivi', 'suivi', 'clipboard')]),
                     $item('Facturation', '/espace/facturation', 'facturation', 'invoice'),
                 ],
             ];

@@ -354,7 +354,7 @@ final class HourlyCron
                     'first_name' => $order['buyer_first'],
                     'last_name' => $order['buyer_last'],
                 ];
-                $link = '/espace/commandes';
+                $link = '/espace/suivi/' . (int) $order['id'];
                 if (self::dispatch(
                     $buyer,
                     'pending_project',
@@ -393,11 +393,11 @@ final class HourlyCron
                         'prenom' => $seller['first_name'],
                         'titre' => $title,
                         'detail' => $detailSeller,
-                        'lien' => url('/espace/suivi'),
+                        'lien' => url('/espace/suivi/' . (int) $order['id']),
                     ],
                     'Projet en cours',
                     $detailSeller,
-                    '/espace/suivi',
+                    '/espace/suivi/' . (int) $order['id'],
                     'order',
                     (int) $order['id'],
                     self::PROJECT_COOLDOWN_HOURS,

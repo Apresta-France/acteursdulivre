@@ -150,12 +150,13 @@ final class Report
                 default => (string) ($row['target_type'] ?? ''),
             };
             $row['when'] = time_ago($row['created_at'] ?? null);
+            $targetId = (int) ($row['target_id'] ?? 0);
             $row['href'] = match ($row['target_type'] ?? '') {
-                'service' => self::serviceHref((int) ($row['target_id'] ?? 0)),
-                'mission' => self::missionHref((int) ($row['target_id'] ?? 0)),
-                'user' => '/admin/utilisateurs/' . (int) ($row['target_id'] ?? 0),
+                'service' => self::serviceHref($targetId),
+                'mission' => self::missionHref($targetId),
+                'user' => $targetId > 0 ? '/admin/utilisateurs/' . $targetId : '/admin/moderation',
                 'order' => '/admin/finances',
-                'conversation' => '/admin/conversations/' . (int) ($row['target_id'] ?? 0),
+                'conversation' => $targetId > 0 ? '/admin/conversations/' . $targetId : '/admin/moderation',
                 default => '/admin/moderation',
             };
             return $row;

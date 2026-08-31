@@ -83,7 +83,7 @@ $presHint = $presentationHints[$selectedTrades[0] ?? ''] ?? 'Votre parcours, vos
           </div>
           <div class="onboard-actions">
             <button class="btn-orange" type="submit" name="intent" value="continue">Continuer</button>
-            <button class="btn-ghost" type="submit" name="intent" value="skip">Passer cette étape</button>
+            <button class="btn-ghost" type="submit" name="intent" value="skip" formnovalidate>Passer cette étape</button>
           </div>
         </form>
 
@@ -122,7 +122,7 @@ $presHint = $presentationHints[$selectedTrades[0] ?? ''] ?? 'Votre parcours, vos
           </div>
           <div class="onboard-actions">
             <button class="btn-orange" type="submit" name="intent" value="continue">Voir l’aperçu</button>
-            <button class="btn-ghost" type="submit" name="intent" value="skip">Passer cette étape</button>
+            <button class="btn-ghost" type="submit" name="intent" value="skip" formnovalidate>Passer cette étape</button>
           </div>
         </form>
 
@@ -156,13 +156,14 @@ $presHint = $presentationHints[$selectedTrades[0] ?? ''] ?? 'Votre parcours, vos
                       placeholder="<?= e(\Adl\Data\Catalog::briefHint($missionCat)) ?>"
                       data-preview-brief><?= e($missionBrief) ?></textarea>
           </div>
-          <div class="form-grid-3<?= \Adl\Data\Catalog::volumeHint($missionCat) ? '' : ' is-two' ?>" data-publish-metrics>
-            <div data-volume-wrap<?= \Adl\Data\Catalog::volumeHint($missionCat) ? '' : ' hidden' ?>>
-              <label class="field" for="onboard-volume" data-volume-label><?= e(\Adl\Data\Catalog::volumeHint($missionCat)['label'] ?? 'Volume') ?></label>
+          <?php $hint = \Adl\Data\Catalog::volumeHint($missionCat) ?? []; ?>
+          <div class="form-grid-3<?= $hint ? '' : ' is-two' ?>" data-publish-metrics>
+            <div data-volume-wrap<?= $hint ? '' : ' hidden' ?>>
+              <label class="field" for="onboard-volume" data-volume-label><?= e($hint['label'] ?? 'Volume') ?></label>
               <input class="input" id="onboard-volume" name="volume" data-volume-input
                      value="<?= e((string) ($old['volume'] ?? '')) ?>"
-                     placeholder="<?= e(\Adl\Data\Catalog::volumeHint($missionCat)['placeholder'] ?? '') ?>"
-                     <?= \Adl\Data\Catalog::volumeHint($missionCat) ? '' : ' disabled' ?>>
+                     placeholder="<?= e($hint['placeholder'] ?? '') ?>"
+                     <?= $hint ? '' : ' disabled' ?>>
             </div>
             <div>
               <label class="field" for="onboard-min">Budget min. (€)</label>
@@ -175,7 +176,7 @@ $presHint = $presentationHints[$selectedTrades[0] ?? ''] ?? 'Votre parcours, vos
           </div>
           <div class="onboard-actions">
             <button class="btn-orange" type="submit" name="intent" value="continue">Publier la recherche</button>
-            <button class="btn-ghost" type="submit" name="intent" value="skip">Je le ferai plus tard</button>
+            <button class="btn-ghost" type="submit" name="intent" value="skip" formnovalidate>Je le ferai plus tard</button>
           </div>
         </form>
 
@@ -332,7 +333,7 @@ $presHint = $presentationHints[$selectedTrades[0] ?? ''] ?? 'Votre parcours, vos
       <form method="post" action="<?= e(url('/espace/bienvenue')) ?>">
         <?= csrf_field() ?>
         <input type="hidden" name="etape" value="<?= e($step) ?>">
-        <button class="onboard-later" type="submit" name="intent" value="later">Je termine plus tard, aller à l’espace</button>
+        <button class="onboard-later" type="submit" name="intent" value="later" formnovalidate>Je termine plus tard, aller à l’espace</button>
       </form>
     </aside>
   </div>

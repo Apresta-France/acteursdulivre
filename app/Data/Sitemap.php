@@ -66,10 +66,12 @@ final class Sitemap
         }
 
         foreach (self::rows(
-            'SELECT slug, created_at AS lastmod
-             FROM missions
-             WHERE status = "open"
-               AND slug IS NOT NULL AND slug != ""'
+            'SELECT m.slug, m.created_at AS lastmod
+             FROM missions m
+             JOIN users u ON u.id = m.user_id
+             WHERE m.status = "open"
+               AND u.status = "active"
+               AND m.slug IS NOT NULL AND m.slug != ""'
         ) as $row) {
             self::push($urls, $seen, '/missions/' . $row['slug'], $row['lastmod'] ?? null, '0.6');
         }

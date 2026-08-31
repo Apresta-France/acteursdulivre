@@ -3,6 +3,8 @@ $p = $liveProfile ?? null;
 if (!$p) {
     not_found('Ce profil n\'est pas publié.');
 }
+$viewer = \Adl\Core\Auth::user();
+$isOwnProfile = $viewer && (int) ($viewer['id'] ?? 0) === (int) ($p['user_id'] ?? 0);
 ?>
 <div class="profile-page">
   <div class="profile-hero">
@@ -31,7 +33,10 @@ if (!$p) {
       <?php endif; ?>
     </div>
     <div class="profile-hero-actions">
-      <?php if (!empty($p['is_busy'])): ?>
+      <?php if ($isOwnProfile): ?>
+        <p class="profile-avail-note">C’est votre vitrine publique. Les porteurs de projet vous écrivent depuis cette page.</p>
+        <a class="btn-orange" href="<?= e(url('/espace/vitrine')) ?>">Modifier la vitrine</a>
+      <?php elseif (!empty($p['is_busy'])): ?>
         <p class="profile-avail-note">Planning actuellement chargé. Vous pouvez laisser un message pour une date ultérieure.</p>
         <form method="post" action="<?= e(url('/espace/messages')) ?>">
           <?= csrf_field() ?>
@@ -176,7 +181,10 @@ if (!$p) {
           <div><span>Disponibilité</span><strong><?= e((string) ($p['availability_summary'] ?? ($p['availability'] !== '' ? $p['availability'] : 'Disponible'))) ?></strong></div>
           <?php if ($p['languages'] !== ''): ?><div><span>Langues</span><strong><?= e((string) $p['languages']) ?></strong></div><?php endif; ?>
           <?php if (!empty($p['trades'])): ?><div><span>Métiers</span><strong><?= e(implode(', ', $p['trades'])) ?></strong></div><?php endif; ?>
-          <?php if ($p['website'] !== ''): ?><div><span>Site</span><a href="<?= e((string) $p['website']) ?>" target="_blank" rel="noopener noreferrer"><?= e((string) $p['website']) ?></a></div><?php endif; ?>
+          <?php if ($p['website'] !== ''): ?>
+            <?php $website = (string) $p['website']; ?>
+            <div><span>Site</span><?php if (preg_match('#^https?://#i', $website)): ?><a href="<?= e($website) ?>" target="_blank" rel="noopener noreferrer"><?= e($website) ?></a><?php else: ?><strong><?= e($website) ?></strong><?php endif; ?></div>
+          <?php endif; ?>
         </div>
         <?php if (!empty($p['socials'])): ?>
           <div class="profile-socials">
@@ -188,6 +196,7 @@ if (!$p) {
             <?php endforeach; ?>
           </div>
         <?php endif; ?>
+        <?php if (!$isOwnProfile): ?>
         <details class="profile-report">
           <summary>Signaler ce profil</summary>
           <form method="post" action="<?= e(url('/signaler')) ?>">
@@ -205,6 +214,7 @@ if (!$p) {
             <button class="btn-ghost" type="submit">Envoyer le signalement</button>
           </form>
         </details>
+        <?php endif; ?>
       </div>
       <?php if (!empty($p['tools'])): ?>
         <div class="side-card">

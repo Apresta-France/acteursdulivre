@@ -317,6 +317,7 @@ body.is-admin-open .admin-nav-toggle span:nth-child(3) { transform: translateY(-
   z-index: 30;
   border: 0;
 }
+body.is-nav-open .site-header, .site-header.is-open { position: relative; z-index: 31; }
 .btn-navy {
   background: var(--navy);
   color: #fff;

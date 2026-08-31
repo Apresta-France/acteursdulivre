@@ -21,7 +21,7 @@ $criteria = $criteria ?? \Adl\Models\Review::CRITERIA;
     <div class="search-empty">
       <strong>Aucune mission à valider pour le moment.</strong>
       <span>Dès que le solde sera déclaré réglé dans le suivi, vous pourrez confirmer la fin de mission et laisser votre avis ici.</span>
-      <a class="btn-ghost" href="<?= e(url('/espace/commandes')) ?>">Voir mes commandes</a>
+      <a class="btn-ghost" href="<?= e(url('/espace/suivi')) ?>">Voir le suivi</a>
     </div>
   <?php else: ?>
     <div class="review-stack">
@@ -43,7 +43,7 @@ $criteria = $criteria ?? \Adl\Models\Review::CRITERIA;
                 <div class="review-stars" role="radiogroup" aria-label="<?= e($label) ?>">
                   <?php for ($n = 1; $n <= 5; $n++): ?>
                     <label>
-                      <input type="radio" name="<?= e($key) ?>" value="<?= $n ?>" required<?= $n === 5 ? ' checked' : '' ?>>
+                      <input type="radio" name="<?= e($key) ?>[<?= (int) $order['id'] ?>]" value="<?= $n ?>" required<?= $n === 5 ? ' checked' : '' ?>>
                       <span><?= $n ?></span>
                     </label>
                   <?php endfor; ?>

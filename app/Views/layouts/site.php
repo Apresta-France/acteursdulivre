@@ -52,7 +52,7 @@
   <?php if (!empty($isAccueil)): ?>
   <link rel="preload" as="image" href="<?= e(photo(0)) ?>">
   <?php endif; ?>
-  <link rel="stylesheet" href="<?= e(asset('css/app.css')) ?>?v=m64">
+  <link rel="stylesheet" href="<?= e(asset('css/app.css')) ?>?v=m65">
   <link rel="icon" href="<?= e(asset('img/favicon.ico')) ?>?v=3" sizes="any">
   <link rel="icon" type="image/png" href="<?= e(asset('img/favicon-32x32.png')) ?>?v=3" sizes="32x32">
   <link rel="apple-touch-icon" href="<?= e(asset('img/apple-touch-icon.png')) ?>?v=3">
@@ -99,6 +99,22 @@
           </picture>
         </a>
         <form class="search" role="search" action="<?= e(url('/recherche')) ?>" method="get" data-live-search data-api="<?= e(url('/api/recherche')) ?>" autocomplete="off">
+          <?php
+            $headerSearchType = (string) ($searchType ?? '');
+            if ($headerSearchType === '' || $headerSearchType === 'all') {
+                $headerPath = parse_url((string) ($_SERVER['REQUEST_URI'] ?? '/'), PHP_URL_PATH) ?: '/';
+                $headerPath = $headerPath !== '/' ? rtrim($headerPath, '/') : '/';
+                $headerSearchType = match ($headerPath) {
+                    '/prestations' => 'prestations',
+                    '/prestataires' => 'prestataires',
+                    '/missions' => array_key_exists('missions', \Adl\Data\Catalog::TYPES) ? 'missions' : '',
+                    default => '',
+                };
+            }
+          ?>
+          <?php if ($headerSearchType !== '' && $headerSearchType !== 'all' && array_key_exists($headerSearchType, \Adl\Data\Catalog::TYPES)): ?>
+            <input type="hidden" name="type" value="<?= e($headerSearchType) ?>">
+          <?php endif; ?>
           <input type="search" name="q" value="<?= e($query ?? '') ?>" placeholder="correcteur roman, illustration jeunesse…" autocomplete="off" data-live-input aria-label="Rechercher un prestataire ou une prestation">
           <button type="submit">Chercher</button>
           <div class="search-suggest" data-live-panel hidden></div>
@@ -301,6 +317,6 @@
       </footer>
     </div>
   </div>
-  <script src="<?= e(asset('js/app.js')) ?>?v=m40"></script>
+  <script src="<?= e(asset('js/app.js')) ?>?v=m41"></script>
 </body>
 </html>

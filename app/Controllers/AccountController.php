@@ -14,6 +14,7 @@ use Adl\Models\Commission;
 use Adl\Models\Conversation;
 use Adl\Models\Favorite;
 use Adl\Models\Invoice;
+use Adl\Models\LegalAcceptance;
 use Adl\Models\Mission;
 use Adl\Models\Notification;
 use Adl\Models\Order;
@@ -129,11 +130,12 @@ final class AccountController
         $step = Onboarding::resolveStep($user, $request->string('etape'), $ctx['plan']);
         $intent = $request->string('intent', 'continue');
 
-        if ($intent === 'later' || $step === 'apercu') {
+        if ($intent === 'later') {
+            flash('saved', 'Vous pourrez reprendre ces étapes depuis votre tableau de bord.');
+            redirect('/espace');
+        }
+        if ($step === 'apercu') {
             User::markOnboardingDone((int) $user['id']);
-            if ($intent === 'later') {
-                flash('saved', 'Vous pourrez reprendre ces étapes depuis votre tableau de bord.');
-            }
             redirect('/espace');
         }
 
@@ -293,18 +295,24 @@ final class AccountController
             redirect('/espace/publier');
         }
 
-        $mission = Mission::create((int) $user['id'], [
-            'title' => $title,
-            'brief' => $brief,
-            'category_name' => $category,
-            'volume' => $volume,
-            'budget_min' => self::money($request->string('budget_min')),
-            'budget_max' => self::money($request->string('budget_max')),
-            'deadline' => $request->string('deadline') ?: null,
-            'attachment_name' => $attachmentName,
-            'attachment_path' => $attachmentPath,
-            'status' => $draft ? 'draft' : 'open',
-        ]);
+        try {
+            $mission = Mission::create((int) $user['id'], [
+                'title' => $title,
+                'brief' => $brief,
+                'category_name' => $category,
+                'volume' => $volume,
+                'budget_min' => self::money($request->string('budget_min')),
+                'budget_max' => self::money($request->string('budget_max')),
+                'deadline' => $request->string('deadline') ?: null,
+                'attachment_name' => $attachmentName,
+                'attachment_path' => $attachmentPath,
+                'status' => $draft ? 'draft' : 'open',
+            ]);
+        } catch (\Throwable $e) {
+            flash('error', user_error_message($e));
+            flash('old', $old);
+            redirect('/espace/publier');
+        }
 
         flash('saved', $draft ? 'Brouillon enregistré.' : 'Recherche publiée : les prestataires peuvent maintenant y répondre.');
         redirect(!empty($mission['slug']) ? '/missions/' . $mission['slug'] : '/espace/missions');
@@ -339,7 +347,8 @@ final class AccountController
             redirect((string) $service['href']);
         }
 
-        $packageId = $request->int('formule');
+        $old = flash('old') ?: [];
+        $packageId = (int) ($old['package_id'] ?? $request->int('formule') ?? 0);
         $selected = null;
         foreach ($service['packages'] ?? [] as $package) {
             if ($packageId && (int) ($package['id'] ?? 0) === $packageId) {
@@ -350,8 +359,6 @@ final class AccountController
         if (!$selected && ($service['packages'] ?? []) !== []) {
             $selected = $service['packages'][0];
         }
-
-        $old = flash('old') ?: [];
         $selectedOptionIds = [];
         $rawOptionIds = $old['option_ids'] ?? $old['options'] ?? $request->list('options');
         foreach ($rawOptionIds as $id) {
@@ -399,8 +406,10 @@ final class AccountController
                 break;
             }
         }
-        if (!$selected && ($service['packages'] ?? []) !== []) {
-            $selected = $service['packages'][0];
+        if (($service['packages'] ?? []) !== [] && !$selected) {
+            flash('error', 'Choisissez une formule encore disponible.');
+            flash('old', $request->all());
+            redirect('/espace/commande?prestation=' . rawurlencode((string) $service['slug']));
         }
         $pickedOptions = Service::pickOptions($service, $request->list('options'));
         $amount = $selected
@@ -419,7 +428,25 @@ final class AccountController
                     'order_id' => (int) $existing['id'],
                     'service_id' => (int) $service['id'],
                 ]);
-                flash('saved', 'Cette commande est déjà ouverte. Le prestataire envoie le devis depuis le suivi.');
+                $currentCode = (string) ($existing['current_milestone']['code'] ?? 'quote');
+                $sameCart = (int) ($existing['amount'] ?? 0) === $amount
+                    && (string) ($existing['brief'] ?? '') === $brief
+                    && (string) ($existing['package_name'] ?? '') === (string) ($selected['name'] ?? '');
+                if ($currentCode !== 'quote') {
+                    flash('saved', 'Cette commande est déjà ouverte. Consultez le devis et les jalons dans le suivi.');
+                    redirect('/espace/suivi/' . (int) $existing['id']);
+                }
+                if (!$sameCart) {
+                    Order::updatePendingDetails((int) $existing['id'], [
+                        'amount' => $amount,
+                        'brief' => $brief,
+                        'package_name' => $selected['name'] ?? null,
+                        'options' => $pickedOptions,
+                    ]);
+                    flash('saved', 'Votre demande a été mise à jour. Le prestataire envoie le devis depuis le suivi.');
+                } else {
+                    flash('saved', 'Cette commande est déjà ouverte. Le prestataire envoie le devis depuis le suivi.');
+                }
                 redirect('/espace/suivi/' . (int) $existing['id']);
             }
             $order = Order::create([
@@ -527,6 +554,9 @@ final class AccountController
         $user = Auth::requireUser();
         $code = $request->string('code');
         try {
+            if (!Order::findForUser((int) $id, (int) $user['id']) && ($user['role'] ?? '') !== 'admin') {
+                throw new \RuntimeException('Cette commande est introuvable.');
+            }
             $file = self::storeMilestoneFile($request, (int) $id, $code);
             OrderMilestone::complete((int) $id, (int) $user['id'], $code, [
                 'amount' => self::money($request->string('amount')),
@@ -635,16 +665,21 @@ final class AccountController
 
     public function missions(Request $request): void
     {
-        $user = Auth::requireSeeker();
+        $user = Auth::requireUser();
         try {
             $missions = Mission::forUser((int) $user['id']);
         } catch (\Throwable) {
             $missions = [];
         }
+        if (!User::seeksServices($user) && $missions === []) {
+            flash('error', 'Cette action est disponible si vous cherchez des prestataires. Vous pouvez l\'activer dans vos paramètres.');
+            redirect('/espace');
+        }
         View::page('mesmissions', [
             'title' => 'Mes recherches',
             'myMissions' => $missions,
             'saved' => flash('saved'),
+            'error' => flash('error'),
         ]);
     }
 
@@ -782,6 +817,11 @@ final class AccountController
             flash('old', $old);
             redirect('/espace/prestations/creer');
         }
+        if (self::incompletePricedRows($optionsInput)) {
+            flash('error', 'Chaque option doit avoir un nom et un prix.');
+            flash('old', $old);
+            redirect('/espace/prestations/creer');
+        }
 
         try {
             $service = Service::create((int) $user['id'], [
@@ -851,7 +891,10 @@ final class AccountController
             'editing' => true,
             'serviceId' => (int) $service['id'],
             'trades' => self::offererTrades((int) $user['id'], (string) ($service['category_name'] ?? '')),
-            'specialties' => Catalog::specialties(),
+            'specialties' => array_values(array_unique(array_filter(array_merge(
+                Catalog::specialties(),
+                [(string) ($service['specialty'] ?? '')]
+            )))),
             'commission' => (string) ($quote['first_free'] ? 0 : $quote['percent']),
             'firstMissionFree' => $quote['first_free'],
             'standardCommission' => (string) Commission::percentForSeller((int) $user['id']),
@@ -905,7 +948,11 @@ final class AccountController
             flash('old', $old);
             redirect('/espace/prestations/' . (int) $id . '/modifier');
         }
-        if ($specialty !== '' && !in_array($specialty, Catalog::specialties(), true)) {
+        $allowedSpecialties = array_values(array_unique(array_merge(
+            Catalog::specialties(),
+            array_filter([(string) ($service['specialty'] ?? '')])
+        )));
+        if ($specialty !== '' && !in_array($specialty, $allowedSpecialties, true)) {
             flash('error', 'Choisissez une spécialité dans la liste.');
             flash('old', $old);
             redirect('/espace/prestations/' . (int) $id . '/modifier');
@@ -932,6 +979,11 @@ final class AccountController
         $options = self::optionsFromInput($optionsInput);
         if (self::incompletePricedRows($packagesInput, ['description', 'delay'])) {
             flash('error', 'Chaque formule doit avoir un nom et un prix.');
+            flash('old', $old);
+            redirect('/espace/prestations/' . (int) $id . '/modifier');
+        }
+        if (self::incompletePricedRows($optionsInput)) {
+            flash('error', 'Chaque option doit avoir un nom et un prix.');
             flash('old', $old);
             redirect('/espace/prestations/' . (int) $id . '/modifier');
         }
@@ -983,6 +1035,10 @@ final class AccountController
     {
         $user = Auth::requireUser();
         $avec = $request->int('avec');
+        if ($avec && $avec === (int) $user['id']) {
+            flash('error', 'Vous ne pouvez pas vous écrire à vous-même.');
+            $avec = null;
+        }
         if ($avec) {
             $context = [
                 'subject' => $request->string('sujet'),
@@ -1127,20 +1183,22 @@ final class AccountController
 
     public function applicationAccept(Request $request, string $id): void
     {
-        $user = Auth::requireSeeker();
+        $user = Auth::requireUser();
         try {
             $order = Application::accept((int) $id, (int) $user['id']);
             flash('saved', 'Candidature acceptée. La commande est ouverte.');
             redirect('/espace/suivi/' . (int) $order['id']);
         } catch (\Throwable $e) {
             flash('error', user_error_message($e));
-            redirect('/espace/missions');
+            $app = Application::find((int) $id);
+            $slug = (string) ($app['slug'] ?? '');
+            redirect($slug !== '' ? '/missions/' . rawurlencode($slug) : '/espace/missions');
         }
     }
 
     public function applicationReject(Request $request, string $id): void
     {
-        $user = Auth::requireSeeker();
+        $user = Auth::requireUser();
         try {
             Application::reject((int) $id, (int) $user['id']);
             flash('saved', 'Candidature écartée.');
@@ -1179,6 +1237,7 @@ final class AccountController
             'items' => $items,
             'unreadCount' => $unread,
             'saved' => flash('saved'),
+            'error' => flash('error'),
         ]);
     }
 
@@ -1187,9 +1246,10 @@ final class AccountController
         $user = Auth::requireUser();
         try {
             Notification::markAllRead((int) $user['id']);
-        } catch (\Throwable) {
+            flash('saved', 'Toutes les alertes sont marquées comme lues.');
+        } catch (\Throwable $e) {
+            flash('error', user_error_message($e));
         }
-        flash('saved', 'Toutes les alertes sont marquées comme lues.');
         redirect('/espace/notifications');
     }
 
@@ -1200,6 +1260,9 @@ final class AccountController
             $item = Notification::markRead((int) $id, (int) $user['id']);
         } catch (\Throwable) {
             $item = null;
+        }
+        if (!is_array($item)) {
+            redirect('/espace/notifications');
         }
         redirect((string) ($item['href'] ?? '/espace/notifications'));
     }
@@ -1245,10 +1308,11 @@ final class AccountController
             redirect('/espace/avis');
         }
         try {
-            Order::confirmByBuyer((int) $id, (int) $user['id'], [
-                'quality' => (int) $request->string('quality'),
-                'efficiency' => (int) $request->string('efficiency'),
-                'satisfaction' => (int) $request->string('satisfaction'),
+            $oid = (int) $id;
+            Order::confirmByBuyer($oid, (int) $user['id'], [
+                'quality' => self::reviewScore($request, 'quality', $oid),
+                'efficiency' => self::reviewScore($request, 'efficiency', $oid),
+                'satisfaction' => self::reviewScore($request, 'satisfaction', $oid),
                 'body' => $request->string('body'),
             ]);
         } catch (\Throwable $e) {
@@ -1301,10 +1365,24 @@ final class AccountController
             $allowedTrades = array_values(array_unique(array_merge(Catalog::trades(), $current['trades'] ?? [])));
             $allowedGenres = array_values(array_unique(array_merge(Catalog::specialties(), $current['genres'] ?? [])));
             $trades = array_values(array_filter($trades, static fn (string $trade): bool => in_array($trade, $allowedTrades, true)));
+            $catalogTrades = Catalog::trades();
+            foreach ($current['trades'] ?? [] as $kept) {
+                $kept = (string) $kept;
+                if ($kept !== '' && !in_array($kept, $catalogTrades, true) && !in_array($kept, $trades, true)) {
+                    $trades[] = $kept;
+                }
+            }
             $genres = array_values(array_filter(
                 array_filter($request->list('genres'), 'is_string'),
                 static fn (string $genre): bool => in_array($genre, $allowedGenres, true)
             ));
+            $catalogGenres = Catalog::specialties();
+            foreach ($current['genres'] ?? [] as $kept) {
+                $kept = (string) $kept;
+                if ($kept !== '' && !in_array($kept, $catalogGenres, true) && !in_array($kept, $genres, true)) {
+                    $genres[] = $kept;
+                }
+            }
 
             $profile = Profile::save((int) $user['id'], [
                 'first_name' => $first,
@@ -1432,6 +1510,12 @@ final class AccountController
             redirect('/espace/parametres');
         }
 
+        $wasOffering = User::offersServices($user);
+        if ($offers && !$wasOffering && !$request->bool('charte_ia')) {
+            flash('error', 'Pour proposer vos services, l\'engagement sans IA générative est obligatoire.');
+            redirect('/espace/parametres');
+        }
+
         if ($offers) {
             User::ensureProfile((int) $user['id']);
         }
@@ -1452,6 +1536,12 @@ final class AccountController
                 ? 'admin'
                 : User::roleFromIntents($seeks, $offers),
         ]);
+        if ($offers && !$wasOffering) {
+            try {
+                LegalAcceptance::record((int) $user['id'], 'charte_ia', 'parametres');
+            } catch (\Throwable) {
+            }
+        }
         flash('saved', true);
         redirect('/espace/parametres');
     }
@@ -1548,7 +1638,7 @@ final class AccountController
             redirect('/espace/parametres');
         }
         if ($password !== $confirm) {
-            flash('error', 'Les deux mot de passe ne correspondent pas.');
+            flash('error', 'Les deux mots de passe ne correspondent pas.');
             redirect('/espace/parametres');
         }
         User::setPassword((int) $user['id'], $password);
@@ -1844,11 +1934,23 @@ final class AccountController
         return $options;
     }
 
+    private static function reviewScore(Request $request, string $key, int $orderId): int
+    {
+        $value = $request->input($key);
+        if (is_array($value)) {
+            return (int) ($value[$orderId] ?? $value[(string) $orderId] ?? 0);
+        }
+        return (int) $value;
+    }
+
     private static function money(string $value): ?int
     {
         $value = trim(str_replace(["\u{00A0}", ' '], '', $value));
         if ($value === '') {
             return null;
+        }
+        if (preg_match('/^\d{1,3}(?:\.\d{3})+(?:,\d+)?$/', $value)) {
+            $value = str_replace('.', '', $value);
         }
         $normalized = str_replace(',', '.', $value);
         if (is_numeric($normalized)) {

@@ -17,6 +17,9 @@ if ($selectedPackage) {
     $orderHref .= '&formule=' . (int) ($selectedPackage['id'] ?? 0);
 }
 $ctaLabel = 'Commander — ' . format_euros($baseAmount);
+$formulePriceLabel = is_array($selectedPackage)
+    ? (string) ($selectedPackage['price_label'] ?? $service['price'])
+    : (string) $service['price'];
 ?>
 <div class="fiche-page">
   <div class="search-crumb">Prestations · <?= e((string) ($service['cat'] ?: 'Offre')) ?><?php if (!empty($service['specialty'])): ?> · <?= e((string) $service['specialty']) ?><?php endif; ?></div>
@@ -94,7 +97,7 @@ $ctaLabel = 'Commander — ' . format_euros($baseAmount);
         <div class="fiche-order-body">
           <div class="fiche-order-price-row">
             <span data-order-formule-name><?= e((string) ($selectedPackage['name'] ?? 'Prestation')) ?></span>
-            <strong class="fiche-order-price" data-order-formule-price><?= e($selectedPackage['price_label'] ?? $service['price']) ?></strong>
+            <strong class="fiche-order-price" data-order-formule-price><?= e($formulePriceLabel) ?></strong>
           </div>
           <?php
             $formuleDesc = (string) ($selectedPackage['description'] ?? '');

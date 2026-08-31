@@ -19,7 +19,7 @@ $shareLabel = 'Partager l\'article';
     <p class="article-chapo"><?= e((string) $article['chapo']) ?></p>
   <?php endif; ?>
   <div class="article-body">
-    <?= !empty($article['body']) ? $article['body'] : '<p>Le texte de cet article n\'est pas encore renseigné.</p>' ?>
+    <?= rich_html((string) ($article['body'] ?? ''), '<p>Le texte de cet article n\'est pas encore renseigné.</p>') ?>
   </div>
   <p><a class="btn-ghost" href="<?= e(url('/journal')) ?>">Retour au journal</a></p>
 </div>

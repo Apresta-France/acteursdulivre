@@ -14,6 +14,9 @@ $open = count(array_filter($missions, static fn (array $m): bool => ($m['status'
   <?php if (!empty($saved)): ?>
     <div class="flash flash-ok"><?= e((string) $saved) ?></div>
   <?php endif; ?>
+  <?php if (!empty($error)): ?>
+    <div class="flash flash-error"><?= e((string) $error) ?></div>
+  <?php endif; ?>
 
   <?php if ($missions === []): ?>
     <div class="search-empty">

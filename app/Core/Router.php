@@ -25,7 +25,15 @@ final class Router
 
     private function compile(string $path): string
     {
-        $regex = preg_replace('#\{([a-zA-Z_][a-zA-Z0-9_-]*)\}#', '(?P<$1>[^/]+)', $path);
+        $parts = preg_split('#(\{[a-zA-Z_][a-zA-Z0-9_-]*\})#', $path, -1, PREG_SPLIT_DELIM_CAPTURE) ?: [$path];
+        $regex = '';
+        foreach ($parts as $part) {
+            if (preg_match('#^\{([a-zA-Z_][a-zA-Z0-9_-]*)\}$#', $part, $m)) {
+                $regex .= '(?P<' . $m[1] . '>[^/]+)';
+            } else {
+                $regex .= preg_quote($part, '#');
+            }
+        }
         return '#^' . $regex . '$#';
     }
 

@@ -116,7 +116,7 @@ $noTrades = $trades === [];
           <?php foreach ($packages as $i => $package): ?>
             <div class="repeat-package" data-repeat-row>
               <div class="repeat-row is-formule">
-                <input class="input" name="packages[<?= (int) $i ?>][name]" value="<?= e((string) ($package['name'] ?? '')) ?>" placeholder="Nom">
+                <input class="input" name="packages[<?= (int) $i ?>][name]" value="<?= e((string) ($package['name'] ?? '')) ?>" placeholder="Nom" maxlength="80">
                 <input class="input" name="packages[<?= (int) $i ?>][price]" value="<?= e((string) ($package['price'] ?? '')) ?>" placeholder="Prix €" inputmode="numeric">
                 <input class="input" name="packages[<?= (int) $i ?>][delay]" value="<?= e((string) ($package['delay'] ?? '')) ?>" placeholder="Délai">
                 <button type="button" class="icon-btn" data-repeat-remove aria-label="Retirer">✕</button>

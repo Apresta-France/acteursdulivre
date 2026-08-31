@@ -38,7 +38,11 @@ final class Request
 
     public function string(string $key, string $default = ''): string
     {
-        return trim((string) $this->input($key, $default));
+        $value = $this->input($key, $default);
+        if (!is_scalar($value) && $value !== null) {
+            return $default;
+        }
+        return trim((string) ($value ?? $default));
     }
 
     public function bool(string $key): bool

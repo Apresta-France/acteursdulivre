@@ -145,12 +145,13 @@ final class Service
 
         $priceFrom = isset($data['price_from']) ? (int) $data['price_from'] : null;
         if ($priceFrom === null) {
+            $prices = [];
             foreach ($packages as $package) {
                 if (isset($package['price']) && (int) $package['price'] > 0) {
-                    $priceFrom = (int) $package['price'];
-                    break;
+                    $prices[] = (int) $package['price'];
                 }
             }
+            $priceFrom = $prices !== [] ? min($prices) : null;
         }
 
         Database::query(
@@ -197,12 +198,13 @@ final class Service
         $title = trim((string) ($data['title'] ?? $service['title'] ?? ''));
         $priceFrom = isset($data['price_from']) ? (int) $data['price_from'] : null;
         if ($priceFrom === null) {
+            $prices = [];
             foreach ($packages as $package) {
                 if (isset($package['price']) && (int) $package['price'] > 0) {
-                    $priceFrom = (int) $package['price'];
-                    break;
+                    $prices[] = (int) $package['price'];
                 }
             }
+            $priceFrom = $prices !== [] ? min($prices) : null;
         }
 
         $imagePath = array_key_exists('image_path', $data)

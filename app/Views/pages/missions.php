@@ -3,6 +3,11 @@ $missions = $liveMissions ?? [];
 $cat = (string) ($searchCat ?? '');
 $trades = $trades ?? \Adl\Data\Catalog::trades();
 $count = count($missions);
+$viewer = \Adl\Core\Auth::user();
+$canPublish = $viewer && \Adl\Models\User::seeksServices($viewer);
+$publishHref = !$viewer
+    ? '/connexion?next=' . rawurlencode('/espace/publier')
+    : ($canPublish ? '/espace/publier' : '');
 ?>
 <div class="missions-page">
   <div class="missions-head">
@@ -10,7 +15,9 @@ $count = count($missions);
       <h1>Appels d'offres <span>· <?= $count ?> recherche<?= $count > 1 ? 's' : '' ?></span></h1>
       <p>Les porteurs de projet publient, vous postulez avec votre devis. Aucune commission sur la candidature.</p>
     </div>
-    <a class="btn-navy" href="<?= e(url('/espace/publier')) ?>">Publier une recherche</a>
+    <?php if ($publishHref !== ''): ?>
+      <a class="btn-navy" href="<?= e(url($publishHref)) ?>">Publier une recherche</a>
+    <?php endif; ?>
   </div>
 
   <form class="chip-row missions-filters" method="get" action="<?= e(url('/missions')) ?>">
@@ -54,9 +61,15 @@ $count = count($missions);
     </div>
     <aside>
       <div class="side-card side-card-warm">
-        <div class="side-title-sm">Publier une recherche</div>
-        <p>Décrivez le besoin et le budget : les prestataires qualifiés vous envoient leur devis. Gratuit pour le porteur de projet.</p>
-        <a class="btn-ghost" href="<?= e(url('/espace/publier')) ?>">Décrire mon besoin</a>
+        <?php if ($viewer && !$canPublish): ?>
+          <div class="side-title-sm">Publier une recherche</div>
+          <p>Pour publier un appel d’offres, activez l’usage « Je cherche des prestataires » dans vos paramètres.</p>
+          <a class="btn-ghost" href="<?= e(url('/espace/parametres')) ?>">Modifier mes usages</a>
+        <?php else: ?>
+          <div class="side-title-sm">Publier une recherche</div>
+          <p>Décrivez le besoin et le budget : les prestataires qualifiés vous envoient leur devis. Gratuit pour le porteur de projet.</p>
+          <a class="btn-ghost" href="<?= e(url($publishHref !== '' ? $publishHref : '/espace/publier')) ?>">Décrire mon besoin</a>
+        <?php endif; ?>
       </div>
     </aside>
   </div>

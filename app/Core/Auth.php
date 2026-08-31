@@ -56,7 +56,9 @@ final class Auth
         session_regenerate_id(true);
         $_SESSION['user_id'] = (int) $user['id'];
         $_SESSION['_user_cache'] = $user;
+        unset($_SESSION['_oauth_pending']);
         User::touchLastLogin((int) $user['id']);
+        self::forgetRemember();
         if ($remember) {
             self::issueRemember((int) $user['id']);
         }
@@ -73,7 +75,16 @@ final class Auth
     {
         $user = self::user();
         if (!$user) {
-            $_SESSION['_intended'] = $_SERVER['REQUEST_URI'] ?? '/espace';
+            $uri = (string) ($_SERVER['REQUEST_URI'] ?? '/espace');
+            if (strtoupper((string) ($_SERVER['REQUEST_METHOD'] ?? '')) === 'POST') {
+                $path = parse_url($uri, PHP_URL_PATH) ?: '/espace';
+                if (preg_match('#^(/missions/[^/]+)/candidater$#', $path, $m)) {
+                    $uri = $m[1];
+                } else {
+                    $uri = $path;
+                }
+            }
+            $_SESSION['_intended'] = $uri;
             $avec = (int) ($_POST['avec'] ?? 0);
             if ($avec > 0) {
                 $_SESSION['_pending_message'] = [

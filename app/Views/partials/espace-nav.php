@@ -1,4 +1,4 @@
-<nav class="espace-nav" aria-label="Espace client">
+<nav class="espace-nav" aria-label="Navigation de l'espace">
   <?php foreach ($espaceNav ?? [] as $group): ?>
     <div class="espace-nav-group">
       <?php if (($group['title'] ?? '') !== ''): ?>

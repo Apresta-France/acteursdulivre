@@ -13,16 +13,16 @@
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
         <div>
           <label class="field" for="name">Nom</label>
-          <input class="input" id="name" name="name" placeholder="Votre nom">
+          <input class="input" id="name" name="name" value="<?= e((string) old('name')) ?>" placeholder="Votre nom">
         </div>
         <div>
           <label class="field" for="email">E-mail</label>
-          <input class="input" id="email" type="email" name="email" placeholder="vous@exemple.fr" required>
+          <input class="input" id="email" type="email" name="email" value="<?= e((string) old('email')) ?>" placeholder="vous@exemple.fr" required>
         </div>
       </div>
       <div>
         <label class="field" for="message">Message</label>
-        <textarea class="textarea" id="message" name="message" placeholder="Dites-nous tout." required style="height: 150px; resize: none; line-height: 1.6;"></textarea>
+        <textarea class="textarea" id="message" name="message" placeholder="Dites-nous tout." required style="height: 150px; resize: none; line-height: 1.6;"><?= e((string) old('message')) ?></textarea>
       </div>
       <button class="btn-orange" type="submit" style="align-self: flex-start;">Envoyer</button>
     </form>

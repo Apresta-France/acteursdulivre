@@ -52,7 +52,7 @@ final class AuthController
         }
 
         $intended = safe_internal_path($_SESSION['_intended'] ?? null) ?? '/espace';
-        unset($_SESSION['_intended'], $_SESSION['_old']);
+        unset($_SESSION['_intended'], $_SESSION['_old'], $_SESSION['_oauth_pending']);
         $user = Auth::user();
         if ($user) {
             self::consumePendingMessage($user);
@@ -224,7 +224,7 @@ final class AuthController
             redirect('/mot-de-passe/' . rawurlencode($token));
         }
         if ($password !== $confirm) {
-            flash('error', 'Les deux mot de passe ne correspondent pas.');
+            flash('error', 'Les deux mots de passe ne correspondent pas.');
             redirect('/mot-de-passe/' . rawurlencode($token));
         }
         User::setPassword((int) $user['id'], $password);
@@ -344,14 +344,17 @@ final class AuthController
 
         if (!$seeks && !$offers) {
             flash('error', 'Choisissez au moins un usage : chercher des prestataires, proposer vos services, ou les deux.');
+            $_SESSION['_old'] = ['seeks_services' => $seeks ? '1' : '', 'offers_services' => $offers ? '1' : ''];
             redirect('/inscription/sso');
         }
         if ($offers && !$request->bool('charte_ia')) {
             flash('error', 'Pour proposer vos services, l\'engagement sans IA générative est obligatoire.');
+            $_SESSION['_old'] = ['seeks_services' => $seeks ? '1' : '', 'offers_services' => $offers ? '1' : ''];
             redirect('/inscription/sso');
         }
         if (!$request->bool('charte')) {
             flash('error', 'L\'acceptation des CGU, des CGV et de la politique de confidentialité est obligatoire.');
+            $_SESSION['_old'] = ['seeks_services' => $seeks ? '1' : '', 'offers_services' => $offers ? '1' : ''];
             redirect('/inscription/sso');
         }
         if (User::findByEmail($pending['email'])) {
