@@ -675,6 +675,13 @@ function inbox_message_html(array $msg, int $currentUserId): string
 
 function icon(string $name, int $size = 20): string
 {
+    $line = [
+        'chat' => '<path d="M17.2 3.5A4.2 4.2 0 0 1 21.4 7.7v6.6a4.2 4.2 0 0 1-4.2 4.2h-5.1l-4.8 2.8v-2.8H6.8A4.2 4.2 0 0 1 2.6 14.3V7.7A4.2 4.2 0 0 1 6.8 3.5z"/><circle cx="8.4" cy="11" r="1.1" fill="currentColor" stroke="none"/><circle cx="12" cy="11" r="1.1" fill="currentColor" stroke="none"/><circle cx="15.6" cy="11" r="1.1" fill="currentColor" stroke="none"/>',
+        'bell' => '<path d="M6.15 9.6a5.85 5.85 0 0 1 11.7 0c0 4.35 1.55 6.15 2.25 7 .26.32.03.9-.4.9H4.3c-.43 0-.66-.58-.4-.9.7-.85 2.25-2.65 2.25-7z"/><path d="M10 19.2a2 2 0 0 0 4 0"/><path d="M10.35 4.15A1.65 1.65 0 0 1 12 2.5 1.65 1.65 0 0 1 13.65 4.15"/>',
+    ];
+    if (isset($line[$name])) {
+        return '<svg class="ico ico-line" xmlns="http://www.w3.org/2000/svg" width="' . $size . '" height="' . $size . '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">' . $line[$name] . '</svg>';
+    }
     $paths = [
         'home' => '<path d="M12 3.2 2.8 11.1h2.4V21h5.3v-6.1h3V21h5.3v-9.9h2.4L12 3.2z"/>',
         'search' => '<path fill-rule="evenodd" d="M10.6 3a7.6 7.6 0 1 0 4.7 13.6l4.1 4.1 1.5-1.5-4.1-4.1A7.6 7.6 0 0 0 10.6 3zm0 2.2a5.4 5.4 0 1 1 0 10.8 5.4 5.4 0 0 1 0-10.8z"/>',
@@ -690,8 +697,6 @@ function icon(string $name, int $size = 20): string
         'send' => '<path d="M3 11.2 21 3l-4.6 18-4.8-6.3L3 11.2zm8.7 2.3 2.5 3.3 2.3-9-6.7 4.4 1.9 1.3z"/>',
         'invoice' => '<path fill-rule="evenodd" d="M7 2h10v20l-2.5-1.3L12 22l-2.5-1.3L7 22V2zm3 5h4v2h-4V7zm0 4h7v2h-7v-2zm0 4h7v2h-7v-2z"/>',
         'mail' => '<path fill-rule="evenodd" d="M3 5h18v14H3V5zm2 2.2 7 5 7-5H5zm0 2.4V17h14V9.6l-7 5-7-5z"/>',
-        'chat' => '<path d="M4 3h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2h-5.2L8 21.4V17H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/>',
-        'bell' => '<path d="M12 2a6 6 0 0 1 6 6v4.2l1.6 2.4V16H4.4v-1.4L6 12.2V8a6 6 0 0 1 6-6zm-2.4 16h4.8A2.4 2.4 0 0 1 12 20.4 2.4 2.4 0 0 1 9.6 18z"/>',
         'gear' => '<path fill-rule="evenodd" d="M10.2 2h3.6l.4 2.2c.7.2 1.3.5 1.9.9l2.1-.9 1.8 3.1-1.7 1.5c.2.6.3 1.3.3 2s-.1 1.4-.3 2l1.7 1.5-1.8 3.1-2.1-.9c-.6.4-1.2.7-1.9.9L13.8 22h-3.6l-.4-2.2a7 7 0 0 1-1.9-.9l-2.1.9-1.8-3.1 1.7-1.5A7 7 0 0 1 5.4 12c0-.7.1-1.4.3-2L4 8.5l1.8-3.1 2.1.9c.6-.4 1.2-.7 1.9-.9L10.2 2zM12 8.4A3.6 3.6 0 1 0 12 15.6 3.6 3.6 0 0 0 12 8.4z"/>',
         'arrow' => '<path d="M10 5.6 16.4 12 10 18.4 8.6 17l4.9-5-4.9-5L10 5.6z"/>',
         'sliders' => '<path d="M4 5h10v2H4V5zm12 0h4v2h-4V5zM4 11h4v2H4v-2zm6 0h10v2H10v-2zM4 17h8v2H4v-2zm10 0h6v2h-6v-2zM13 3h2v6h-2V3zm-6 6h2v6H7V9zm8 6h2v6h-2v-6z"/>',

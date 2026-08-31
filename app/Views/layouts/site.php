@@ -52,7 +52,7 @@
   <?php if (!empty($isAccueil)): ?>
   <link rel="preload" as="image" href="<?= e(photo(0)) ?>">
   <?php endif; ?>
-  <link rel="stylesheet" href="<?= e(asset('css/app.css')) ?>?v=m63">
+  <link rel="stylesheet" href="<?= e(asset('css/app.css')) ?>?v=m64">
   <link rel="icon" href="<?= e(asset('img/favicon.ico')) ?>?v=3" sizes="any">
   <link rel="icon" type="image/png" href="<?= e(asset('img/favicon-32x32.png')) ?>?v=3" sizes="32x32">
   <link rel="apple-touch-icon" href="<?= e(asset('img/apple-touch-icon.png')) ?>?v=3">
@@ -157,11 +157,11 @@
               ?>
               <div class="header-icons">
                 <a href="<?= e(url('/espace/messages')) ?>" class="header-icon-link" aria-label="<?= $headerUnreadMessages > 0 ? 'Messages (' . $headerUnreadMessages . ' non lus)' : 'Messages' ?>" title="Messages">
-                  <?= icon('chat', 20) ?>
+                  <?= icon('chat', 22) ?>
                   <?php if ($headerUnreadMessages > 0): ?><span class="badge-orange"><?= $headerUnreadMessages ?></span><?php endif; ?>
                 </a>
                 <a href="<?= e(url('/espace/notifications')) ?>" class="header-icon-link" aria-label="<?= $headerUnreadAlerts > 0 ? 'Notifications (' . $headerUnreadAlerts . ')' : 'Notifications' ?>" title="Notifications">
-                  <?= icon('bell', 20) ?>
+                  <?= icon('bell', 22) ?>
                   <?php if ($headerUnreadAlerts > 0): ?><span class="badge-orange"><?= $headerUnreadAlerts ?></span><?php endif; ?>
                 </a>
               </div>

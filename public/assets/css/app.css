@@ -175,7 +175,9 @@ img { max-width: 100%; }
   height: 36px;
   color: var(--navy);
 }
-.header-icon-link .ico { opacity: .78; }
+.header-icon-link .ico { opacity: .92; }
+.header-icon-link:hover .ico { opacity: 1; }
+.header-icon-link .ico-line { stroke-width: 2.35; }
 .header-icon-link .badge-orange,
 .header-icon-link .badge-soft {
   position: absolute;
