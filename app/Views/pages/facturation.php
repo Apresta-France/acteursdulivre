@@ -8,7 +8,7 @@ $due = (int) ($dueAmount ?? 0);
   <div class="espace-page-head">
     <div>
       <h1>Facturation</h1>
-      <p><?= count($invoices) ?> facture<?= count($invoices) > 1 ? 's' : '' ?> de commission · <?= e(format_euros($due)) ?> en attente · <?= e(format_euros($total)) ?> de missions. C’est le dernier jalon après validation client.</p>
+      <p><?= count($invoices) ?> facture<?= count($invoices) > 1 ? 's' : '' ?> de commission · <?= e(format_euros($due)) ?> en attente · <?= e(format_euros($total)) ?> de missions. Commission calculée hors taxes. C’est le dernier jalon après validation client.</p>
     </div>
   </div>
 
@@ -49,7 +49,7 @@ $due = (int) ($dueAmount ?? 0);
   <?php if ($orders === []): ?>
     <div class="search-empty">
       <strong>Aucune facture de commission pour le moment.</strong>
-      <span>Quand un client confirmera une mission et la notera, la facture de commission — dernier jalon — apparaîtra ici. La première mission est offerte. Le prix de la mission se règle hors plateforme.</span>
+      <span>Quand un client confirmera une mission et la notera, la facture de commission — dernier jalon — apparaîtra ici. La première mission est offerte. La commission est calculée hors taxes. Le prix de la mission se règle hors plateforme.</span>
     </div>
   <?php else: ?>
     <div class="my-missions">

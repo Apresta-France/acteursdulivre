@@ -191,9 +191,9 @@ $noTrades = $trades === [];
       <div class="side-card side-card-warm">
         <div class="side-kicker">Ce que vous toucherez</div>
         <?php if ($firstFree): ?>
-        <p>Votre première mission est offerte. À partir de la deuxième, commission de <?= e($standardCommission) ?> % facturée lorsque le client confirme et note<?= $founder ? ' (membre fondateur)' : '' ?>. Aucun abonnement.</p>
+        <p>Votre première mission est offerte. À partir de la deuxième, commission de <?= e($standardCommission) ?>&nbsp;% sur le montant hors taxes (hors TVA), facturée lorsque le client confirme et note<?= $founder ? ' (membre fondateur)' : '' ?>. Aucun abonnement.</p>
         <?php else: ?>
-        <p>Commission de <?= e($commission) ?> % facturée à la validation client<?= $founder ? ' (membre fondateur)' : '' ?>, sans abonnement. Exemple : 780 € vendus, commission <?= e((string) (int) round(780 * ((int) $commission) / 100)) ?> €.</p>
+        <p>Commission de <?= e($commission) ?>&nbsp;% sur le montant hors taxes (hors TVA), facturée à la validation client<?= $founder ? ' (membre fondateur)' : '' ?>, sans abonnement. Exemple : 780&nbsp;€ HT vendus, commission <?= e((string) (int) round(780 * ((int) $commission) / 100)) ?>&nbsp;€.</p>
         <?php endif; ?>
       </div>
     </aside>

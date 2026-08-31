@@ -133,7 +133,7 @@ final class OrderMilestone
             'actor' => self::ACTOR_PLATFORM,
             'title' => 'Facture de commission',
             'done' => 'Commission calculée',
-            'lead_seller' => 'La plateforme calcule sa commission sur le montant de la mission validée.',
+            'lead_seller' => 'La plateforme calcule sa commission sur le montant hors taxes (hors TVA) de la mission validée.',
             'lead_buyer' => 'La plateforme facture sa commission au prestataire, pas à vous.',
             'form' => 'info',
         ],

@@ -318,7 +318,7 @@ $query = (string) ($query ?? '');
   <section class="mk-cta">
     <div>
       <h2>Vous exercez un métier du livre ?</h2>
-      <p>Créez votre vitrine, fixez vos tarifs, recevez des demandes qualifiées. Le client vous règle hors plateforme. Aucun abonnement : la première mission est offerte, puis 8 % de commission facturés au prestataire lorsqu'il confirme et note.</p>
+      <p>Créez votre vitrine, fixez vos tarifs, recevez des demandes qualifiées. Le client vous règle hors plateforme. Aucun abonnement : la première mission est offerte, puis 8 % de commission hors taxes (hors TVA) facturés au prestataire lorsqu'il confirme et note.</p>
     </div>
     <div class="mk-cta-actions">
       <a class="btn-orange" href="<?= e(url('/inscription')) ?>">Proposer mes services</a>

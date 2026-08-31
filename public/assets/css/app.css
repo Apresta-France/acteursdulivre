@@ -90,6 +90,7 @@ img { max-width: 100%; }
   justify-content: center;
   gap: 14px;
   font-size: 14px;
+  border-radius: 24px 24px 0 0;
 }
 .preopen a { color: #fff; text-decoration: underline; }
 .preopen-short { display: none; }
@@ -878,6 +879,7 @@ main, main > * { min-width: 0; }
 @media (max-width: 768px) {
   .site-shell { padding: 0; }
   .site-canvas { box-shadow: none; border-radius: 0; }
+  .preopen { border-radius: 0; }
   .preopen { padding-top: max(11px, env(safe-area-inset-top)); font-size: 13px; line-height: 1.45; }
   .preopen-text {
     display: -webkit-box;
@@ -4026,6 +4028,9 @@ img.profile-avatar,
 .tarif-card { border: 1px solid var(--line); border-radius: 14px; padding: 26px; }
 .tarif-card.is-navy { background: #022746; color: #E4EDF5; }
 .tarif-card.is-navy h2, .tarif-card.is-navy .mk-kicker { color: #E8845F; }
+.tarif-card.is-navy p { color: #C5D4E0; }
+.tarif-card.is-navy .mk-points li { color: #E4EDF5; }
+.tarif-card.is-navy .mk-points li::before { color: #E8845F; }
 .tarif-card h2 { font-size: 24px; margin: 12px 0 6px; color: inherit; }
 .tarif-pct { font-family: var(--display); font-size: 44px; font-weight: 700; }
 .tarif-exemple { border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }

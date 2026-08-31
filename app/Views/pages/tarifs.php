@@ -6,7 +6,7 @@ $tarifsFaq = $tarifsFaq ?? [];
 ?>
 <div class="mk-page mk-pad tarif-page">
   <h1>Tarifs et commission</h1>
-  <p class="mk-lead">Aucun abonnement. Publier une recherche, créer une vitrine et proposer des fiches sont libres. Le client règle le prestataire hors plateforme. La première mission est offerte ; ensuite, 8&nbsp;% de commission sur les missions réalisées.</p>
+  <p class="mk-lead">Aucun abonnement. Publier une recherche, créer une vitrine et proposer des fiches sont libres. Le client règle le prestataire hors plateforme. La première mission est offerte ; ensuite, 8&nbsp;% de commission sur le montant hors taxes (hors TVA) des missions réalisées.</p>
 
   <div class="tarif-grid">
     <?php foreach ($niveaux as $i => $n): ?>
@@ -41,7 +41,7 @@ $tarifsFaq = $tarifsFaq ?? [];
           <li><?= e((string) $g) ?></li>
         <?php endforeach; ?>
       </ul>
-      <p class="mk-note">Le client règle le prestataire hors plateforme. Quand il confirme la mission et note la prestation, la plateforme facture sa commission au prestataire — dernier jalon — payable sous 15 jours. Une facture impayée à l'échéance suspend les offres.</p>
+      <p class="mk-note">Le client règle le prestataire hors plateforme. Quand il confirme la mission et note la prestation, la plateforme facture sa commission au prestataire — calculée sur le montant hors taxes (hors TVA) — dernier jalon, payable sous 15 jours. Une facture impayée à l'échéance suspend les offres.</p>
     </div>
   </div>
 

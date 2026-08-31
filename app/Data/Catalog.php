@@ -777,7 +777,7 @@ final class Catalog
         return [
             ['v' => '0 €', 'k' => 'pour candidater : aucune commission sur la candidature'],
             ['v' => '1ʳᵉ', 'k' => 'mission offerte au prestataire, sans commission'],
-            ['v' => $commission . ' %', 'k' => 'dès la 2ᵉ mission réalisée, sans abonnement'],
+            ['v' => $commission . ' %', 'k' => 'dès la 2ᵉ mission réalisée, sur le hors-taxe, sans abonnement'],
         ];
     }
 

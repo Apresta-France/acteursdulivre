@@ -573,9 +573,9 @@ final class Prototype
             'commentImg' => photo(2),
             'niveaux' => self::niveaux(),
             'exemple' => [
-                ['k' => 'Prestation vendue (formule Standard)', 'v' => '780 €', 'style' => 'color: #14202C;'],
+                ['k' => 'Prestation vendue (montant HT)', 'v' => '780 €', 'style' => 'color: #14202C;'],
                 ['k' => '1ʳᵉ mission : commission', 'v' => '0 €', 'style' => 'color: #2E6B45;'],
-                ['k' => 'À partir de la 2ᵉ : commission 8 %', 'v' => '− 62 €', 'style' => 'color: #D85D3F;'],
+                ['k' => 'À partir de la 2ᵉ : 8 % sur le HT', 'v' => '− 62 €', 'style' => 'color: #D85D3F;'],
                 ['k' => 'Le prestataire conserve (dès la 2ᵉ)', 'v' => '718 €', 'style' => 'color: #022746; font-weight: 700; font-family: \'Space Grotesk\', sans-serif;'],
             ],
             'gratuit' => [
@@ -1004,8 +1004,9 @@ final class Prototype
             ['Comment se règlent les missions ?', 'Client et prestataire se règlent entre eux (virement, chèque, facture entreprise…). La plateforme n\'encaisse rien. Chaque étape se confirme dans le suivi : devis, factures, déclarations de règlement, livraison, validation.'],
             ['Puis-je annuler une commande ?', 'Vous pouvez refuser un devis : la commande reste ouverte et le prestataire peut en proposer un autre. Annuler la commande clôture définitivement le dossier, gratuitement tant que le devis n\'est pas accepté. Après acceptation, l\'annulation se négocie dans la messagerie ; à défaut d\'accord, la médiation interne reprend le dossier.'],
             ['Qui facture le client final ?', 'Le prestataire facture directement son client, hors plateforme. La plateforme facture uniquement sa commission au prestataire, à la validation de la mission.'],
-            ['La première mission est-elle payante ?', 'Non. La première mission réalisée via la plateforme est entièrement gratuite. À partir de la deuxième, la commission est de 8 %.'],
-            ['La plateforme prend-elle une commission sur les appels d\'offres ?', 'Publier et candidater sont gratuits, sans abonnement. La commission de 8 % s\'applique uniquement à partir de la deuxième mission réalisée.'],
+            ['La première mission est-elle payante ?', 'Non. La première mission réalisée via la plateforme est entièrement gratuite. À partir de la deuxième, la commission est de 8 % sur le montant hors taxes (hors TVA).'],
+            ['La commission est-elle calculée TTC ?', 'Non : elle est calculée sur le montant hors taxes (hors TVA) de la mission. Si le prestataire est en franchise en base, le prix facturé au client vaut montant HT.'],
+            ['La plateforme prend-elle une commission sur les appels d\'offres ?', 'Publier et candidater sont gratuits, sans abonnement. La commission de 8 % s\'applique uniquement à partir de la deuxième mission réalisée, sur le montant hors taxes.'],
             ['L\'IA générative est-elle autorisée sur la plateforme ?', 'Non, pour les missions entre acteurs du livre : aucun livrable ne peut être produit par une IA générative. Le moratoire ne s\'applique pas à la fabrication de la plateforme. Le détail figure dans les règles IA.'],
             ['Y a-t-il un contrat type ?', 'Non. L\'acceptation du devis dans le suivi vaut accord entre les parties. La plateforme ne génère ni contrat type ni NDA.'],
         ];
@@ -1346,7 +1347,7 @@ final class Prototype
     {
         return [
             ['kicker' => 'Pour commencer', 'name' => 'Première mission', 'pct' => '0 %', 'items' => ['Aucun abonnement', 'Compte, vitrine et fiches libres', 'Candidatures et devis gratuits', 'Commission plateforme offerte'], 'card' => 'border-radius: 14px; padding: 26px; background: #022746; color: #E4EDF5; border: 1px solid #022746;', 'kickerColor' => '#E8845F'],
-            ['kicker' => 'Ensuite', 'name' => 'À partir de la 2ᵉ', 'pct' => '8 %', 'items' => ['Uniquement sur les missions réalisées', 'Le client règle le prestataire hors plateforme', 'Facturée au prestataire à la validation (dernier jalon)', '15 jours pour régler, sinon les offres sont suspendues'], 'card' => 'border-radius: 14px; padding: 26px; background: #FFF; color: #022746; border: 1px solid #E8ECF1;', 'kickerColor' => self::ORANGE],
+            ['kicker' => 'Ensuite', 'name' => 'À partir de la 2ᵉ', 'pct' => '8 %', 'items' => ['Calculée sur le montant hors taxes (hors TVA)', 'Uniquement sur les missions réalisées', 'Le client règle le prestataire hors plateforme', 'Facturée au prestataire à la validation (dernier jalon)', '15 jours pour régler, sinon les offres sont suspendues'], 'card' => 'border-radius: 14px; padding: 26px; background: #FFF; color: #022746; border: 1px solid #E8ECF1;', 'kickerColor' => self::ORANGE],
         ];
     }
 

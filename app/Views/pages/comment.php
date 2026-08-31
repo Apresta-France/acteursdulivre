@@ -40,7 +40,7 @@ $commentFaq = $commentFaq ?? [];
   <section class="mk-split">
     <div>
       <h2>Côté prestataire</h2>
-      <p>Vous créez votre vitrine, vous fixez vos prix, vous envoyez le devis. Le client vous règle hors plateforme : le suivi impose les jalons. Aucun abonnement : la première mission est offerte, puis la plateforme facture 8 % au prestataire lorsque le client confirme et note la mission.</p>
+      <p>Vous créez votre vitrine, vous fixez vos prix, vous envoyez le devis. Le client vous règle hors plateforme : le suivi impose les jalons. Aucun abonnement : la première mission est offerte, puis la plateforme facture 8 % du montant hors taxes (hors TVA) au prestataire lorsque le client confirme et note la mission.</p>
       <div class="mk-cta-actions">
         <a class="btn-navy" href="<?= e(url('/espace/prestations/creer')) ?>">Proposer une prestation</a>
         <a class="btn-ghost" href="<?= e(url('/tarifs')) ?>">Voir les tarifs</a>

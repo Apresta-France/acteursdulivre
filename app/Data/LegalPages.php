@@ -7,7 +7,7 @@ namespace Adl\Data;
 final class LegalPages
 {
     public const UPDATED = '31 août 2026';
-    public const VERSION = '1.5';
+    public const VERSION = '1.6';
 
     public static function slugs(): array
     {
@@ -106,7 +106,7 @@ final class LegalPages
                 'blocks' => [
                     ['p' => 'acteursdulivre.fr est une place de marché des métiers du livre. Elle met en relation des porteurs de projet (auteurs, éditeurs, collectifs, institutions) et des prestataires (correcteurs, bêta-lecteurs, illustrateurs, traducteurs, maquettistes, imprimeurs, attachés de presse, libraires, narrateurs, agents, organisateurs de salons, notamment).'],
                     ['p' => 'EDITIONS TESSERACT n\'est ni l\'éditeur des ouvrages des utilisateurs, ni l\'employeur, ni l\'agent des prestataires. Les accords de prestation sont conclus entre le porteur de projet et le prestataire, notamment par l\'acceptation du devis dans le suivi. La Plateforme intervient au titre de l\'intermédiation, de l\'outillage (vitrine, missions, messagerie, suivi à jalons, facturation de la commission) et, le cas échéant, de la médiation. Elle ne génère pas de contrat type ni d\'accord de confidentialité.'],
-                    ['p' => 'La Plateforme n\'encaisse pas le prix des missions. Le Client et le Prestataire se règlent directement, hors de la Plateforme. EDITIONS TESSERACT suit les jalons déclarés par les parties, puis facture sa commission au Prestataire lorsque le Client confirme et note la mission.'],
+                    ['p' => 'La Plateforme n\'encaisse pas le prix des missions. Le Client et le Prestataire se règlent directement, hors de la Plateforme. EDITIONS TESSERACT suit les jalons déclarés par les parties, puis facture sa commission au Prestataire — calculée sur le montant hors taxes (hors TVA) de la mission — lorsque le Client confirme et note.'],
                     ['p' => 'La Plateforme est actuellement en pré-ouverture : les professionnels du livre peuvent créer un compte. L\'ouverture aux clients est annoncée pour octobre 2026.'],
                 ],
             ],
@@ -154,7 +154,7 @@ final class LegalPages
                 'blocks' => [
                     ['p' => 'La Plateforme permet notamment :'],
                     ['html' => '<ul><li>de consulter un annuaire de professionnels du livre et des pages métier ;</li><li>de publier une vitrine, un CV, un portfolio et des formules à prix affiché ;</li><li>de commander une prestation packagée ou de publier un appel d\'offres ;</li><li>de candidater, d\'échanger par messagerie, d\'envoyer un devis et de suivre une mission par jalons (factures, déclarations de règlement, livraison, validation) ;</li><li>de laisser un avis après une mission réellement réalisée via la Plateforme ;</li><li>d\'accéder à un centre d\'aide, à un journal et à un formulaire de contact.</li></ul>'],
-                    ['p' => 'EDITIONS TESSERACT ne choisit pas le prestataire à la place du Client, ne pousse aucun profil contre rémunération publicitaire, et ne prend aucun droit sur les ouvrages. Elle n\'encaisse pas le prix des missions : Client et Prestataire se règlent hors Plateforme.'],
+                    ['p' => 'EDITIONS TESSERACT ne choisit pas le prestataire à la place du Client, ne pousse aucun profil contre rémunération publicitaire, et ne prend aucun droit sur les ouvrages. Elle n\'encaisse pas le prix des missions : Client et Prestataire se règlent hors Plateforme. La commission due par le Prestataire est calculée sur le montant hors taxes de la mission, dans les conditions des CGV.'],
                 ],
             ],
             [
@@ -290,7 +290,8 @@ final class LegalPages
                     ['p' => 'Le prix de la mission est celui affiché sur la formule ou celui du devis accepté, en euros TTC, hors options ultérieures. Les prix des fiches de prestation s\'affichent TTC. Selon le régime fiscal du Prestataire, la TVA est incluse ou non applicable (franchise en base).'],
                     ['p' => 'La Plateforme se rémunère uniquement sur les missions attribuées et réalisées, par une commission due par le Prestataire :'],
                     ['html' => '<ul><li>0&nbsp;% sur la première mission réalisée par le Prestataire via la Plateforme : elle est entièrement gratuite ;</li><li>8&nbsp;% à partir de la deuxième mission réalisée.</li></ul>'],
-                    ['p' => 'Exemple : une formule à 780 € au taux de 8 % donne une commission de 62 €. Sur la première mission, la commission est de 0 €.'],
+                    ['p' => 'La commission est toujours calculée sur le montant hors taxes (HT) de la mission, hors TVA. Lorsque le Prestataire est assujetti et facture la TVA, la base est le montant HT de sa facture au Client. Lorsqu\'il est en franchise en base de TVA, le prix convenu constitue le montant HT.'],
+                    ['p' => 'Exemple : une mission à 780 € HT au taux de 8 % donne une commission de 62 €. Sur la première mission, la commission est de 0 €.'],
                     ['p' => 'Le Client paie le Prestataire hors Plateforme. La commission est due uniquement par le Prestataire à EDITIONS TESSERACT. Elle rémunère le service d\'intermédiation et d\'outillage. Elle n\'est pas un salaire ni une retenue à la source pour le compte du Prestataire. Elle n\'est due qu\'après confirmation de la mission par le Client, dans les conditions de l\'article 6.'],
                     ['p' => 'Des conditions particulières peuvent être accordées à certains Prestataires. Elles leur sont indiquées dans leur espace et, le cas échéant, par la mention « Membre fondateur » sur leur profil.'],
                 ],
@@ -300,7 +301,7 @@ final class LegalPages
                 'blocks' => [
                     ['p' => 'Le suivi impose des jalons successifs. Selon le devis : envoi et acceptation du devis ; le cas échéant, facture d\'acompte, déclaration de règlement par le Client, accusé de réception par le Prestataire ; livraison ; le cas échéant, facture de solde et déclaration de règlement ; puis confirmation et avis du Client.'],
                     ['p' => 'Lorsque le travail est terminé et que les jalons de règlement convenus sont déclarés, le Client confirme sur la Plateforme que la mission est finalisée. Cette confirmation s\'accompagne obligatoirement d\'un avis : le Client note au moins la qualité de la prestation, l\'efficacité et la satisfaction globale, et peut laisser un commentaire.'],
-                    ['p' => 'C\'est à ce moment que EDITIONS TESSERACT facture le Prestataire pour la commission due (0 € sur la première mission, 8 % ensuite). La facture est émise au Prestataire qui a réalisé la mission, pas au Client. Elle constitue le dernier jalon du Prestataire.'],
+                    ['p' => 'C\'est à ce moment que EDITIONS TESSERACT facture le Prestataire pour la commission due (0 € sur la première mission, 8 % du montant HT ensuite). La facture est émise au Prestataire qui a réalisé la mission, pas au Client. Elle constitue le dernier jalon du Prestataire.'],
                     ['p' => 'Le Prestataire facture de son côté le Client pour le prix de la mission. Chaque Utilisateur est seul responsable de ses mentions légales de facture, de sa TVA et de ses obligations comptables. Les déclarations de règlement sur la Plateforme valent engagement sur l\'honneur ; elles ne prouvent pas à elles seules l\'encaissement effectif des fonds.'],
                     ['p' => 'L\'absence de réponse du Client après relance peut, lorsque le suivi l\'indique, valoir validation de la livraison. L\'avis reste alors à déposer ; la facture de commission peut être émise dès cette validation.'],
                 ],
@@ -327,7 +328,7 @@ final class LegalPages
                 'title' => '9. Annulation',
                 'blocks' => [
                     ['p' => 'Tant que la mission n\'a pas démarré (aucun fichier transmis pour exécution, aucun jalon commencé), l\'annulation est gratuite pour les deux parties et aucune commission n\'est due.'],
-                    ['p' => 'Après démarrage, l\'annulation suit le contrat conclu entre les parties. En l\'absence de clause plus précise : le travail déjà réalisé peut être facturé au prorata ; la commission n\'est due que sur les sommes effectivement dues au Prestataire. En cas de désaccord, la médiation interne s\'applique.'],
+                    ['p' => 'Après démarrage, l\'annulation suit le contrat conclu entre les parties. En l\'absence de clause plus précise : le travail déjà réalisé peut être facturé au prorata ; la commission n\'est due que sur le montant hors taxes des sommes effectivement dues au Prestataire. En cas de désaccord, la médiation interne s\'applique.'],
                 ],
             ],
             [

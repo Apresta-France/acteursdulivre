@@ -64,6 +64,6 @@ $who = $company !== '' ? $company : trim(($seller['first_name'] ?? '') . ' ' . (
   <?php else: ?>
     <p class="total"><?= e((string) ($invoice['status_label'] ?? '')) ?></p>
   <?php endif; ?>
-  <p class="muted">Cette facture porte uniquement sur la commission due à EDITIONS TESSERACT. Le prix de la mission se règle hors plateforme, entre le client et le prestataire. Mentions de facture du prestataire : à sa charge.</p>
+  <p class="muted">Cette facture porte uniquement sur la commission due à EDITIONS TESSERACT, calculée sur le montant hors taxes (hors TVA) de la mission. Le prix de la mission se règle hors plateforme, entre le client et le prestataire. Mentions de facture du prestataire : à sa charge.</p>
 </body>
 </html>
