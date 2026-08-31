@@ -267,9 +267,18 @@ $mine = !empty($action['mine']);
         <div class="jalon-brief">
           <div class="side-kicker">Brief</div>
           <p><?= nl2br(e((string) $order['brief'])) ?></p>
+        </div>
+      <?php endif; ?>
+
+      <?php if (!empty($order['package_name']) || !empty($order['options'])): ?>
+        <div class="jalon-brief">
+          <div class="side-kicker">Formule et options</div>
           <?php if (!empty($order['package_name'])): ?>
             <p class="jalon-meta">Formule : <?= e((string) $order['package_name']) ?></p>
           <?php endif; ?>
+          <?php foreach ($order['options'] ?? [] as $option): ?>
+            <p class="jalon-meta"><?= e((string) ($option['name'] ?? '')) ?> · +<?= e((string) ($option['price_label'] ?? format_euros((int) ($option['price'] ?? 0)))) ?></p>
+          <?php endforeach; ?>
         </div>
       <?php endif; ?>
 

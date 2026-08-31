@@ -13,6 +13,8 @@ $selectedGenres = $p['genres'] ?? [];
 $trades = $trades ?? \Adl\Data\Catalog::trades();
 $genres = $genres ?? \Adl\Data\Catalog::specialties();
 $tools = implode(', ', $p['tools'] ?? []);
+$socials = !empty($p['socials']) ? $p['socials'] : [['network' => '', 'url' => '']];
+$socialNetworks = $socialNetworks ?? \Adl\Models\Profile::SOCIAL_NETWORKS;
 $completion = (int) ($completion ?? ($p['completion'] ?? 0));
 $publicHref = !empty($p['slug']) ? url('/prestataires/' . $p['slug']) : '';
 $rateKind = \Adl\Models\Profile::isPercentRate($p) || (\Adl\Models\Profile::isBookstore($p) && trim((string) ($p['hourly_rate'] ?? '')) === '')
@@ -147,6 +149,25 @@ if ($rateKind === 'percent') {
             <input class="input" id="website" name="website" value="<?= e((string) ($p['website'] ?? '')) ?>" placeholder="https://">
           </div>
         </div>
+      </div>
+      <div>
+        <span class="field">Réseaux sociaux</span>
+        <p class="field-help">Les liens apparaissent sur votre vitrine publique. Un compte ou une adresse https:// suffit.</p>
+        <div class="repeat-list" data-repeat="socials">
+          <?php foreach ($socials as $i => $social): ?>
+            <div class="repeat-row repeat-row-social" data-repeat-row>
+              <select class="input" name="socials[<?= $i ?>][network]" aria-label="Réseau">
+                <option value="">Réseau</option>
+                <?php foreach ($socialNetworks as $value => $label): ?>
+                  <option value="<?= e($value) ?>"<?= (($social['network'] ?? '') === $value) ? ' selected' : '' ?>><?= e($label) ?></option>
+                <?php endforeach; ?>
+              </select>
+              <input class="input" name="socials[<?= $i ?>][url]" value="<?= e((string) ($social['url'] ?? '')) ?>" placeholder="https:// ou @compte">
+              <button type="button" class="icon-btn" data-repeat-remove aria-label="Retirer">✕</button>
+            </div>
+          <?php endforeach; ?>
+        </div>
+        <button type="button" class="btn-ghost" data-repeat-add="socials">Ajouter un réseau</button>
       </div>
     </div>
 
@@ -336,6 +357,16 @@ if ($rateKind === 'percent') {
   </section>
 </div>
 
+<template id="tpl-socials">
+  <div class="repeat-row repeat-row-social" data-repeat-row>
+    <select class="input" name="socials[__i__][network]" aria-label="Réseau">
+      <option value="">Réseau</option>
+      <?php foreach ($socialNetworks as $value => $label): ?><option value="<?= e($value) ?>"><?= e($label) ?></option><?php endforeach; ?>
+    </select>
+    <input class="input" name="socials[__i__][url]" placeholder="https:// ou @compte">
+    <button type="button" class="icon-btn" data-repeat-remove aria-label="Retirer">✕</button>
+  </div>
+</template>
 <template id="tpl-skills">
   <div class="repeat-row" data-repeat-row>
     <input class="input" name="skills[__i__][label]" placeholder="Correction orthotypographique">

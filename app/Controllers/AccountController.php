@@ -346,11 +346,25 @@ final class AccountController
             $selected = $service['packages'][0];
         }
 
+        $old = flash('old') ?: [];
+        $selectedOptionIds = [];
+        $rawOptionIds = $old['option_ids'] ?? $old['options'] ?? $request->list('options');
+        foreach ($rawOptionIds as $id) {
+            if (is_array($id)) {
+                continue;
+            }
+            $id = (int) $id;
+            if ($id > 0) {
+                $selectedOptionIds[] = $id;
+            }
+        }
+
         View::page('commande', [
             'title' => 'Confirmer la commande',
             'service' => $service,
             'selectedPackage' => $selected,
-            'old' => flash('old') ?: [],
+            'selectedOptionIds' => array_values(array_unique($selectedOptionIds)),
+            'old' => $old,
             'error' => flash('error'),
         ]);
     }
@@ -380,9 +394,13 @@ final class AccountController
                 break;
             }
         }
+        $pickedOptions = Service::pickOptions($service, $request->list('options'));
         $amount = $selected
             ? (int) ($selected['price'] ?? 0)
             : (int) ($service['price_from'] ?? 0);
+        foreach ($pickedOptions as $option) {
+            $amount += (int) ($option['price'] ?? 0);
+        }
         $brief = $request->string('brief');
 
         try {
@@ -393,6 +411,7 @@ final class AccountController
                 'amount' => $amount,
                 'brief' => $brief,
                 'package_name' => $selected['name'] ?? null,
+                'options' => $pickedOptions,
             ]);
             Conversation::open((int) $user['id'], (int) $service['user_id'], [
                 'subject' => (string) $service['title'],
@@ -603,7 +622,7 @@ final class AccountController
         }
         View::page('creer', [
             'title' => 'Proposer une prestation',
-            'trades' => Catalog::trades(),
+            'trades' => self::offererTrades((int) $user['id']),
             'specialties' => Catalog::specialties(),
             'commission' => (string) ($quote['first_free'] ? 0 : $quote['percent']),
             'firstMissionFree' => $quote['first_free'],
@@ -619,23 +638,13 @@ final class AccountController
     {
         $user = Auth::requireOfferer();
         $title = $request->string('title');
-        $excerpt = $request->string('excerpt');
+        $excerpt = sanitize_rich_html($request->string('excerpt'));
         $category = $request->string('category_name');
         $specialty = $request->string('specialty');
         $draft = $request->string('intent') === 'draft';
 
-        $packagesInput = [];
-        foreach ($request->list('packages') as $row) {
-            if (!is_array($row)) {
-                continue;
-            }
-            $packagesInput[] = [
-                'name' => trim((string) ($row['name'] ?? '')),
-                'description' => trim((string) ($row['description'] ?? '')),
-                'price' => trim((string) ($row['price'] ?? '')),
-                'delay' => trim((string) ($row['delay'] ?? '')),
-            ];
-        }
+        $packagesInput = self::packageInput($request);
+        $optionsInput = self::optionInput($request);
 
         $old = [
             'title' => $title,
@@ -645,15 +654,22 @@ final class AccountController
             'delay' => $request->string('delay'),
             'price_from' => $request->string('price_from'),
             'packages' => $packagesInput,
+            'options' => $optionsInput,
         ];
 
+        $allowedTrades = self::offererTrades((int) $user['id']);
         if ($title === '' || $category === '') {
             flash('error', 'Indiquez au moins le métier et le titre de la prestation.');
             flash('old', $old);
             redirect('/espace/prestations/creer');
         }
-        if (!in_array($category, Catalog::trades(), true)) {
-            flash('error', 'Choisissez un métier dans la liste.');
+        if ($allowedTrades === []) {
+            flash('error', 'Indiquez d\'abord vos métiers sur votre vitrine, puis choisissez-en un pour cette prestation.');
+            flash('old', $old);
+            redirect('/espace/prestations/creer');
+        }
+        if (!in_array($category, $allowedTrades, true)) {
+            flash('error', 'Choisissez un métier parmi ceux de votre vitrine.');
             flash('old', $old);
             redirect('/espace/prestations/creer');
         }
@@ -689,18 +705,8 @@ final class AccountController
             redirect('/espace/prestations/creer');
         }
 
-        $packages = [];
-        foreach ($packagesInput as $row) {
-            if ($row['name'] === '') {
-                continue;
-            }
-            $packages[] = [
-                'name' => $row['name'],
-                'description' => $row['description'],
-                'price' => self::money($row['price']) ?? 0,
-                'delay' => $row['delay'],
-            ];
-        }
+        $packages = self::packagesFromInput($packagesInput);
+        $options = self::optionsFromInput($optionsInput);
 
         try {
             $service = Service::create((int) $user['id'], [
@@ -712,7 +718,7 @@ final class AccountController
                 'delay' => $request->string('delay') ?: null,
                 'price_from' => self::money($request->string('price_from')),
                 'status' => $draft ? 'draft' : 'published',
-            ], $packages);
+            ], $packages, $options);
         } catch (\RuntimeException $e) {
             flash('error', $e->getMessage());
             flash('old', $old);
@@ -755,12 +761,18 @@ final class AccountController
                     'delay' => $p['delay'] ?? '',
                 ];
             }, $service['packages'] ?? []),
+            'options' => array_map(static function (array $o): array {
+                return [
+                    'name' => $o['name'] ?? '',
+                    'price' => $o['price'] ?? '',
+                ];
+            }, $service['options'] ?? []),
         ];
         View::page('creer', [
             'title' => 'Modifier la prestation',
             'editing' => true,
             'serviceId' => (int) $service['id'],
-            'trades' => Catalog::trades(),
+            'trades' => self::offererTrades((int) $user['id'], (string) ($service['category_name'] ?? '')),
             'specialties' => Catalog::specialties(),
             'commission' => (string) ($quote['first_free'] ? 0 : $quote['percent']),
             'firstMissionFree' => $quote['first_free'],
@@ -781,23 +793,13 @@ final class AccountController
         }
 
         $title = $request->string('title');
-        $excerpt = $request->string('excerpt');
+        $excerpt = sanitize_rich_html($request->string('excerpt'));
         $category = $request->string('category_name');
         $specialty = $request->string('specialty');
         $draft = $request->string('intent') === 'draft';
 
-        $packagesInput = [];
-        foreach ($request->list('packages') as $row) {
-            if (!is_array($row)) {
-                continue;
-            }
-            $packagesInput[] = [
-                'name' => trim((string) ($row['name'] ?? '')),
-                'description' => trim((string) ($row['description'] ?? '')),
-                'price' => trim((string) ($row['price'] ?? '')),
-                'delay' => trim((string) ($row['delay'] ?? '')),
-            ];
-        }
+        $packagesInput = self::packageInput($request);
+        $optionsInput = self::optionInput($request);
         $old = [
             'title' => $title,
             'excerpt' => $excerpt,
@@ -806,10 +808,22 @@ final class AccountController
             'delay' => $request->string('delay'),
             'price_from' => $request->string('price_from'),
             'packages' => $packagesInput,
+            'options' => $optionsInput,
         ];
 
+        $allowedTrades = self::offererTrades((int) $user['id'], (string) ($service['category_name'] ?? ''));
         if ($title === '' || $category === '') {
             flash('error', 'Indiquez au moins le métier et le titre de la prestation.');
+            flash('old', $old);
+            redirect('/espace/prestations/' . (int) $id . '/modifier');
+        }
+        if ($allowedTrades === []) {
+            flash('error', 'Indiquez d\'abord vos métiers sur votre vitrine, puis choisissez-en un pour cette prestation.');
+            flash('old', $old);
+            redirect('/espace/prestations/' . (int) $id . '/modifier');
+        }
+        if (!in_array($category, $allowedTrades, true)) {
+            flash('error', 'Choisissez un métier parmi ceux de votre vitrine.');
             flash('old', $old);
             redirect('/espace/prestations/' . (int) $id . '/modifier');
         }
@@ -831,18 +845,8 @@ final class AccountController
             redirect('/espace/prestations/' . (int) $id . '/modifier');
         }
 
-        $packages = [];
-        foreach ($packagesInput as $row) {
-            if ($row['name'] === '') {
-                continue;
-            }
-            $packages[] = [
-                'name' => $row['name'],
-                'description' => $row['description'],
-                'price' => self::money($row['price']) ?? 0,
-                'delay' => $row['delay'],
-            ];
-        }
+        $packages = self::packagesFromInput($packagesInput);
+        $options = self::optionsFromInput($optionsInput);
 
         try {
             $updated = Service::update((int) $id, (int) $user['id'], [
@@ -854,7 +858,7 @@ final class AccountController
                 'delay' => $request->string('delay') ?: null,
                 'price_from' => self::money($request->string('price_from')),
                 'status' => $draft ? 'draft' : 'published',
-            ], $packages);
+            ], $packages, $options);
         } catch (\Throwable $e) {
             flash('error', $e->getMessage());
             flash('old', $old);
@@ -1113,6 +1117,7 @@ final class AccountController
             'skillLevels' => Profile::SKILL_LEVELS,
             'langLevels' => Profile::LANG_LEVELS,
             'portfolioKinds' => Profile::PORTFOLIO_KINDS,
+            'socialNetworks' => Profile::SOCIAL_NETWORKS,
             'completion' => $profile['completion'] ?? 0,
             'saved' => flash('saved') ? true : false,
             'error' => flash('error'),
@@ -1153,6 +1158,7 @@ final class AccountController
                 'rate_kind' => $request->string('rate_kind'),
                 'rate_note' => $request->string('rate_note'),
                 'website' => $request->string('website'),
+                'socials' => self::rows($request->list('socials'), ['network', 'url']),
                 'trades' => $trades,
                 'skills' => self::rows($request->list('skills'), ['label', 'niveau']),
                 'tools' => self::stringList($request->string('tools')),
@@ -1524,6 +1530,109 @@ final class AccountController
             Conversation::send((int) $thread['id'], $userId, $body);
         } catch (\Throwable) {
         }
+    }
+
+    /** @return list<string> */
+    private static function offererTrades(int $userId, string $keep = ''): array
+    {
+        $profile = null;
+        try {
+            $profile = Profile::findByUser($userId);
+        } catch (\Throwable) {
+        }
+        $chosen = [];
+        foreach ($profile['trades'] ?? [] as $trade) {
+            if (is_string($trade) && $trade !== '') {
+                $chosen[] = $trade;
+            }
+        }
+        $chosen = array_values(array_unique($chosen));
+        if ($keep !== '' && !in_array($keep, $chosen, true)) {
+            $chosen[] = $keep;
+        }
+        return $chosen;
+    }
+
+    /**
+     * @return list<array{name: string, description: string, price: string, delay: string}>
+     */
+    private static function packageInput(Request $request): array
+    {
+        $out = [];
+        foreach ($request->list('packages') as $row) {
+            if (!is_array($row)) {
+                continue;
+            }
+            $out[] = [
+                'name' => trim((string) ($row['name'] ?? '')),
+                'description' => trim((string) ($row['description'] ?? '')),
+                'price' => trim((string) ($row['price'] ?? '')),
+                'delay' => trim((string) ($row['delay'] ?? '')),
+            ];
+        }
+        return $out;
+    }
+
+    /**
+     * @param list<array{name: string, description: string, price: string, delay: string}> $input
+     * @return list<array{name: string, description: string, price: int, delay: string}>
+     */
+    private static function packagesFromInput(array $input): array
+    {
+        $packages = [];
+        foreach ($input as $row) {
+            $name = $row['name'] ?? '';
+            $price = self::money((string) ($row['price'] ?? ''));
+            if ($name === '' || $price === null) {
+                continue;
+            }
+            $packages[] = [
+                'name' => $name,
+                'description' => $row['description'] ?? '',
+                'price' => $price,
+                'delay' => $row['delay'] ?? '',
+            ];
+        }
+        return $packages;
+    }
+
+    /**
+     * @return list<array{name: string, price: string}>
+     */
+    private static function optionInput(Request $request): array
+    {
+        $out = [];
+        foreach ($request->list('options') as $row) {
+            if (!is_array($row)) {
+                continue;
+            }
+            $out[] = [
+                'name' => trim((string) ($row['name'] ?? '')),
+                'price' => trim((string) ($row['price'] ?? '')),
+            ];
+        }
+        return $out;
+    }
+
+    /**
+     * @param list<array{name: string, price: string}> $input
+     * @return list<array{name: string, price: int}>
+     */
+    private static function optionsFromInput(array $input): array
+    {
+        $options = [];
+        foreach ($input as $row) {
+            $name = $row['name'] ?? '';
+            $price = self::money((string) ($row['price'] ?? ''));
+            if ($name === '' || $price === null) {
+                continue;
+            }
+            $options[] = [
+                'name' => $name,
+                'price' => $price,
+            ];
+        }
+        return $options;
     }
 
     private static function money(string $value): ?int

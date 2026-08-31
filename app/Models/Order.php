@@ -21,7 +21,7 @@ final class Order
     public const COMPLETABLE = ['delivered', 'in_progress'];
 
     /**
-     * @param array{buyer_id: int, seller_id: int, amount?: int, service_id?: ?int, mission_id?: ?int, brief?: ?string, package_name?: ?string} $data
+     * @param array{buyer_id: int, seller_id: int, amount?: int, service_id?: ?int, mission_id?: ?int, brief?: ?string, package_name?: ?string, options?: list<array<string, mixed>>} $data
      * @return array<string, mixed>
      */
     public static function create(array $data): array
@@ -34,9 +34,10 @@ final class Order
         Invoice::assertCanOffer($sellerId);
 
         $number = self::nextNumber();
+        $optionsJson = self::encodeOptions($data['options'] ?? []);
         Database::query(
-            'INSERT INTO orders (number, buyer_id, seller_id, service_id, mission_id, amount, status, brief, package_name, created_at)
-             VALUES (?, ?, ?, ?, ?, ?, "pending", ?, ?, NOW())',
+            'INSERT INTO orders (number, buyer_id, seller_id, service_id, mission_id, amount, status, brief, package_name, options_json, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, "pending", ?, ?, ?, NOW())',
             [
                 $number,
                 $buyerId,
@@ -46,6 +47,7 @@ final class Order
                 (int) ($data['amount'] ?? 0),
                 trim((string) ($data['brief'] ?? '')) ?: null,
                 trim((string) ($data['package_name'] ?? '')) ?: null,
+                $optionsJson,
             ]
         );
 
@@ -560,6 +562,7 @@ final class Order
         $row['can_dispute'] = in_array($status, ['pending', 'in_progress', 'delivered'], true);
         $row['confirm_href'] = '/espace/avis';
         $row['href'] = '/espace/suivi/' . (int) ($row['id'] ?? 0);
+        $row['options'] = self::decodeOptions($row['options_json'] ?? null);
         $row['dispute_reason'] = trim((string) ($row['dispute_reason'] ?? ''));
         $row['dispute_admin_note'] = trim((string) ($row['dispute_admin_note'] ?? ''));
         $row['dispute_when'] = !empty($row['dispute_at']) ? time_ago($row['dispute_at']) : '';
@@ -567,6 +570,60 @@ final class Order
             ? format_euros((int) ($row['commission_amount'] ?? 0))
             : '';
         return $row;
+    }
+
+    /**
+     * @param list<mixed> $options
+     */
+    private static function encodeOptions(array $options): ?string
+    {
+        $clean = [];
+        foreach ($options as $option) {
+            if (!is_array($option)) {
+                continue;
+            }
+            $name = trim((string) ($option['name'] ?? ''));
+            if ($name === '') {
+                continue;
+            }
+            $clean[] = [
+                'name' => $name,
+                'price' => (int) ($option['price'] ?? 0),
+            ];
+        }
+        if ($clean === []) {
+            return null;
+        }
+        return json_encode($clean, JSON_UNESCAPED_UNICODE) ?: null;
+    }
+
+    /** @return list<array{name: string, price: int, price_label: string}> */
+    private static function decodeOptions(mixed $json): array
+    {
+        if (!is_string($json) || trim($json) === '') {
+            return [];
+        }
+        $decoded = json_decode($json, true);
+        if (!is_array($decoded)) {
+            return [];
+        }
+        $out = [];
+        foreach ($decoded as $option) {
+            if (!is_array($option)) {
+                continue;
+            }
+            $name = trim((string) ($option['name'] ?? ''));
+            if ($name === '') {
+                continue;
+            }
+            $price = (int) ($option['price'] ?? 0);
+            $out[] = [
+                'name' => $name,
+                'price' => $price,
+                'price_label' => format_euros($price),
+            ];
+        }
+        return $out;
     }
 
     private static function nextNumber(): string

@@ -4,6 +4,7 @@ $shareTitle = $shareTitle ?? ($meta['title'] ?? ($title ?? 'Acteurs du Livre'));
 $shareText = $shareText ?? ($meta['description'] ?? '');
 $shareLabel = $shareLabel ?? 'Partager';
 $shareCompact = !empty($shareCompact);
+$shareNative = $shareNative ?? true;
 $networks = \Adl\Data\Share::networks($shareUrl, $shareTitle, $shareText);
 ?>
 <div class="share-bar<?= $shareCompact ? ' is-compact' : '' ?>"
@@ -23,9 +24,11 @@ $networks = \Adl\Data\Share::networks($shareUrl, $shareTitle, $shareText);
         <span><?= e($network['label']) ?></span>
       </a>
     <?php endforeach; ?>
-    <button type="button" class="share-btn share-native" data-share-native hidden title="Partager">
-      <?= icon('share', $shareCompact ? 15 : 16) ?>
-      <span>Plus</span>
-    </button>
+    <?php if ($shareNative): ?>
+      <button type="button" class="share-btn share-native" data-share-native hidden title="Partager">
+        <?= icon('share', $shareCompact ? 15 : 16) ?>
+        <span>Plus</span>
+      </button>
+    <?php endif; ?>
   </div>
 </div>

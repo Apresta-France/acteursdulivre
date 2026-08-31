@@ -956,4 +956,76 @@
   }
 
   bindFilePicks(document);
+
+  function toEditorHtml(raw) {
+    if (!raw) return '';
+    if (/<[a-z][\s\S]*>/i.test(raw)) return raw;
+    return raw.split(/\n\s*\n/).map(function (block) {
+      return '<p>' + block.replace(/\n/g, '<br>') + '</p>';
+    }).join('');
+  }
+
+  function editorIsEmpty(editor) {
+    return (editor.innerText || '').replace(/\u00a0/g, ' ').trim() === '';
+  }
+
+  document.querySelectorAll('[data-wysiwyg]').forEach(function (wrap) {
+    var source = wrap.querySelector('.wysiwyg-source');
+    var editor = wrap.querySelector('.wysiwyg-editor');
+    var toolbar = wrap.querySelector('.wysiwyg-toolbar');
+    if (!source || !editor || !toolbar) return;
+
+    editor.innerHTML = toEditorHtml(source.value);
+    editor.setAttribute('data-placeholder', source.getAttribute('placeholder') || '');
+    toolbar.hidden = false;
+    editor.hidden = false;
+    wrap.classList.add('is-ready');
+
+    function sync() {
+      source.value = editorIsEmpty(editor) ? '' : editor.innerHTML;
+    }
+
+    editor.addEventListener('input', sync);
+    editor.addEventListener('blur', sync);
+    var form = wrap.closest('form');
+    if (form) form.addEventListener('submit', sync);
+
+    toolbar.addEventListener('mousedown', function (event) {
+      event.preventDefault();
+    });
+
+    toolbar.addEventListener('click', function (event) {
+      var btn = event.target.closest('[data-wysiwyg-cmd]');
+      if (!btn) return;
+      var cmd = btn.getAttribute('data-wysiwyg-cmd');
+      editor.focus();
+      if (cmd === 'createLink') {
+        var current = window.getSelection() && window.getSelection().toString();
+        var href = window.prompt('Adresse du lien', current && /^https?:\/\//i.test(current) ? current : 'https://');
+        if (!href) return;
+        if (!/^https?:\/\//i.test(href) && !/^mailto:/i.test(href)) href = 'https://' + href.replace(/^\/+/, '');
+        document.execCommand('createLink', false, href);
+      } else {
+        document.execCommand(cmd, false, null);
+      }
+      sync();
+    });
+  });
+
+  document.querySelectorAll('[data-order-total]').forEach(function (root) {
+    var base = parseInt(root.getAttribute('data-base') || '0', 10) || 0;
+    var out = root.querySelector('[data-order-total-value]');
+    function formatEuros(n) {
+      return n.toLocaleString('fr-FR') + ' €';
+    }
+    function syncTotal() {
+      var total = base;
+      root.querySelectorAll('input[type="checkbox"][data-price]:checked').forEach(function (box) {
+        total += parseInt(box.getAttribute('data-price') || '0', 10) || 0;
+      });
+      if (out) out.textContent = formatEuros(total);
+    }
+    root.addEventListener('change', syncTotal);
+    syncTotal();
+  });
 })();

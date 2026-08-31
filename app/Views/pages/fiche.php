@@ -4,6 +4,7 @@ if (!$service) {
     not_found('Cette prestation n\'est plus disponible.');
 }
 $packages = $service['packages'] ?? [];
+$options = $service['options'] ?? [];
 ?>
 <div class="fiche-page">
   <div class="search-crumb">Prestations · <?= e((string) ($service['cat'] ?: 'Offre')) ?><?php if (!empty($service['specialty'])): ?> · <?= e((string) $service['specialty']) ?><?php endif; ?></div>
@@ -15,7 +16,10 @@ $packages = $service['packages'] ?? [];
         <?= service_cover_html((string) ($service['cat'] ?? ''), 'is-hero') ?>
       <?php endif; ?>
       <h1><?= e((string) $service['title']) ?></h1>
-      <p class="journal-lead"><?= e((string) ($service['excerpt'] ?: 'Prestation proposée par ' . $service['by'] . '.')) ?></p>
+      <div class="service-excerpt"><?= rich_html(
+          (string) ($service['excerpt'] ?? ''),
+          '<p>Prestation proposée par ' . e((string) $service['by']) . '.</p>'
+      ) ?></div>
       <div class="facts">
         <div><span>Prix</span><strong><?= e((string) $service['price']) ?></strong></div>
         <div><span>Délai</span><strong><?= e((string) ($service['delay'] ?: 'à convenir')) ?></strong></div>
@@ -44,6 +48,21 @@ $packages = $service['packages'] ?? [];
                   <a class="btn-ghost" href="<?= e(url('/espace/commande?prestation=' . rawurlencode((string) $service['slug']) . '&formule=' . (int) ($package['id'] ?? 0))) ?>">Ouvrir cette formule</a>
                 </div>
               <?php endif; ?>
+            </article>
+          <?php endforeach; ?>
+        </div>
+      <?php endif; ?>
+
+      <?php if ($options !== []): ?>
+        <h2>Options</h2>
+        <p class="field-help" style="margin-top: 0;">Leur prix s'ajoute à la formule choisie, ou au prix de base s'il n'y a pas de formule.</p>
+        <div class="my-missions">
+          <?php foreach ($options as $option): ?>
+            <article class="side-card">
+              <div class="side-foot" style="margin-top: 0; border-top: 0; padding-top: 0;">
+                <span><?= e((string) ($option['name'] ?? '')) ?></span>
+                <strong>+<?= e((string) ($option['price_label'] ?? format_euros((int) ($option['price'] ?? 0)))) ?></strong>
+              </div>
             </article>
           <?php endforeach; ?>
         </div>

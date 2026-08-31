@@ -492,6 +492,20 @@ final class Seo
                 'name' => (string) $profile['city'],
             ];
         }
+        $sameAs = [];
+        $website = trim((string) ($profile['website'] ?? ''));
+        if ($website !== '') {
+            $sameAs[] = $website;
+        }
+        foreach ($profile['socials'] ?? [] as $social) {
+            $href = trim((string) ($social['url'] ?? ''));
+            if ($href !== '') {
+                $sameAs[] = $href;
+            }
+        }
+        if ($sameAs !== []) {
+            $out['sameAs'] = array_values(array_unique($sameAs));
+        }
         return $out;
     }
 

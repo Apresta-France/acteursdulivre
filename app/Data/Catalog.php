@@ -804,6 +804,7 @@ final class Catalog
             'portfolio' => $portfolio,
             'tags' => $tags,
             'website' => (string) ($profile['website'] ?? ''),
+            'socials' => $profile['socials'] ?? [],
             'href' => Profile::publicHref($profile),
             'is_founder' => !empty($profile['is_founder']),
             'user_id' => (int) ($profile['user_id'] ?? 0),

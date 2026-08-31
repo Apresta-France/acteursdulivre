@@ -43,6 +43,7 @@ if (!$p) {
         $shareTitle = $meta['title'] ?? ((string) ($p['name'] ?? 'Prestataire') . ' — acteursdulivre.fr');
         $shareText = $meta['description'] ?? trim((string) ($p['title'] ?? '') . ($p['city'] ? ' · ' . $p['city'] : ''));
         $shareCompact = true;
+        $shareNative = false;
         require ADL_ROOT . '/app/Views/partials/share.php';
       ?>
     </div>
@@ -161,22 +162,35 @@ if (!$p) {
           <div><span>Disponibilité</span><strong><?= e((string) ($p['availability_summary'] ?? ($p['availability'] !== '' ? $p['availability'] : 'Disponible'))) ?></strong></div>
           <?php if ($p['languages'] !== ''): ?><div><span>Langues</span><strong><?= e((string) $p['languages']) ?></strong></div><?php endif; ?>
           <?php if (!empty($p['trades'])): ?><div><span>Métiers</span><strong><?= e(implode(', ', $p['trades'])) ?></strong></div><?php endif; ?>
-          <?php if ($p['website'] !== ''): ?><div><span>Site</span><a href="<?= e((string) $p['website']) ?>"><?= e((string) $p['website']) ?></a></div><?php endif; ?>
+          <?php if ($p['website'] !== ''): ?><div><span>Site</span><a href="<?= e((string) $p['website']) ?>" target="_blank" rel="noopener noreferrer"><?= e((string) $p['website']) ?></a></div><?php endif; ?>
         </div>
-        <form method="post" action="<?= e(url('/signaler')) ?>" style="margin-top: 16px;">
-          <?= csrf_field() ?>
-          <input type="hidden" name="type" value="user">
-          <input type="hidden" name="id" value="<?= (int) ($p['user_id'] ?? 0) ?>">
-          <input type="hidden" name="back" value="<?= e((string) ($p['href'] ?? '/')) ?>">
-          <label class="field" for="report-reason">Signaler ce profil</label>
-          <select class="input" id="report-reason" name="reason" required>
-            <?php foreach (\Adl\Models\Report::REASONS as $value => $label): ?>
-              <option value="<?= e($value) ?>"><?= e($label) ?></option>
+        <?php if (!empty($p['socials'])): ?>
+          <div class="profile-socials">
+            <?php foreach ($p['socials'] as $social): ?>
+              <a href="<?= e((string) $social['url']) ?>"
+                 target="_blank" rel="noopener noreferrer"
+                 title="<?= e((string) $social['label']) ?>"
+                 aria-label="<?= e((string) $social['label']) ?>"><?= icon('share-' . (string) $social['network'], 16) ?></a>
             <?php endforeach; ?>
-          </select>
-          <textarea class="textarea" name="body" rows="2" placeholder="Précision (optionnel)" style="margin-top: 8px;"></textarea>
-          <button class="btn-ghost" type="submit" style="margin-top: 10px;">Envoyer le signalement</button>
-        </form>
+          </div>
+        <?php endif; ?>
+        <details class="profile-report">
+          <summary>Signaler ce profil</summary>
+          <form method="post" action="<?= e(url('/signaler')) ?>">
+            <?= csrf_field() ?>
+            <input type="hidden" name="type" value="user">
+            <input type="hidden" name="id" value="<?= (int) ($p['user_id'] ?? 0) ?>">
+            <input type="hidden" name="back" value="<?= e((string) ($p['href'] ?? '/')) ?>">
+            <label class="field" for="report-reason">Motif</label>
+            <select class="input" id="report-reason" name="reason" required>
+              <?php foreach (\Adl\Models\Report::REASONS as $value => $label): ?>
+                <option value="<?= e($value) ?>"><?= e($label) ?></option>
+              <?php endforeach; ?>
+            </select>
+            <textarea class="textarea" name="body" rows="2" placeholder="Précision (optionnel)"></textarea>
+            <button class="btn-ghost" type="submit">Envoyer le signalement</button>
+          </form>
+        </details>
       </div>
       <?php if (!empty($p['tools'])): ?>
         <div class="side-card">

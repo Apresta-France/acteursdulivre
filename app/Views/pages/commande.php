@@ -2,6 +2,11 @@
 $service = $service ?? null;
 $package = $selectedPackage ?? null;
 $old = is_array($old ?? null) ? $old : [];
+$serviceOptions = is_array($service['options'] ?? null) ? $service['options'] : [];
+$selectedOptionIds = is_array($selectedOptionIds ?? null) ? $selectedOptionIds : [];
+$baseAmount = $package
+    ? (int) ($package['price'] ?? 0)
+    : (int) ($service['price_from'] ?? 0);
 ?>
 <div class="espace-page">
   <div class="espace-page-head">
@@ -22,7 +27,7 @@ $old = is_array($old ?? null) ? $old : [];
       <a class="btn-orange" href="<?= e(url('/prestations')) ?>">Parcourir les prestations</a>
     </div>
   <?php else: ?>
-    <div class="publish-grid">
+    <div class="publish-grid" data-order-total data-base="<?= (int) $baseAmount ?>">
       <form class="param-form" method="post" action="<?= e(url('/espace/commande')) ?>">
         <?= csrf_field() ?>
         <input type="hidden" name="service_id" value="<?= (int) $service['id'] ?>">
@@ -32,6 +37,24 @@ $old = is_array($old ?? null) ? $old : [];
           <textarea class="textarea" id="brief" name="brief" rows="6" placeholder="Calendrier, format de livraison, points de vigilance…"><?= e((string) ($old['brief'] ?? '')) ?></textarea>
           <p class="field-help">Ce message ouvre aussi la conversation. Vous pourrez préciser ensuite.</p>
         </div>
+        <?php if ($serviceOptions !== []): ?>
+          <div>
+            <span class="field">Options</span>
+            <p class="field-help" style="margin-top: 0; margin-bottom: 12px;">Chaque option s'ajoute au prix de la formule ou de la prestation.</p>
+            <div class="option-list">
+              <?php foreach ($serviceOptions as $option): ?>
+                <?php $optionId = (int) ($option['id'] ?? 0); ?>
+                <label class="option-row">
+                  <input type="checkbox" name="options[]" value="<?= $optionId ?>"
+                         data-price="<?= (int) ($option['price'] ?? 0) ?>"
+                         <?= in_array($optionId, $selectedOptionIds, true) ? ' checked' : '' ?>>
+                  <span><?= e((string) ($option['name'] ?? '')) ?></span>
+                  <strong>+<?= e((string) ($option['price_label'] ?? format_euros((int) ($option['price'] ?? 0)))) ?></strong>
+                </label>
+              <?php endforeach; ?>
+            </div>
+          </div>
+        <?php endif; ?>
         <div class="auth-actions">
           <button class="btn-orange" type="submit">Ouvrir la commande</button>
           <a class="btn-ghost" href="<?= e(url((string) $service['href'])) ?>">Retour à la fiche</a>
@@ -51,6 +74,12 @@ $old = is_array($old ?? null) ? $old : [];
             <div class="side-foot">
               <span><?= e((string) ($service['delay'] ?: 'Délai à convenir')) ?></span>
               <strong><?= e((string) $service['price']) ?></strong>
+            </div>
+          <?php endif; ?>
+          <?php if ($serviceOptions !== []): ?>
+            <div class="side-foot">
+              <span>Total</span>
+              <strong data-order-total-value><?= e(format_euros($baseAmount)) ?></strong>
             </div>
           <?php endif; ?>
         </div>

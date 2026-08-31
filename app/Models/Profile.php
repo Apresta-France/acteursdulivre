@@ -33,6 +33,18 @@ final class Profile
         'book' => 'Ouvrage publié',
     ];
 
+    public const SOCIAL_NETWORKS = [
+        'linkedin' => 'LinkedIn',
+        'instagram' => 'Instagram',
+        'facebook' => 'Facebook',
+        'x' => 'X (Twitter)',
+        'youtube' => 'YouTube',
+        'tiktok' => 'TikTok',
+        'bluesky' => 'Bluesky',
+        'threads' => 'Threads',
+        'mastodon' => 'Mastodon',
+    ];
+
     public const STATUS_AVAILABLE = 'available';
     public const STATUS_BUSY = 'busy';
 
@@ -175,7 +187,7 @@ final class Profile
             'UPDATE profiles SET
                 slug = ?, title = ?, presentation = ?, city = ?, availability = ?,
                 availability_status = ?,
-                languages = ?, hourly_rate = ?, rate_note = ?, website = ?,
+                languages = ?, hourly_rate = ?, rate_note = ?, website = ?, socials_json = ?,
                 trades_json = ?, skills_json = ?, tools_json = ?, genres_json = ?,
                 languages_json = ?, experiences_json = ?, education_json = ?,
                 updated_at = NOW()
@@ -191,6 +203,7 @@ final class Profile
                 self::normalizeRate((string) ($data['hourly_rate'] ?? ''), (string) ($data['rate_kind'] ?? ''), $data['trades'] ?? []),
                 $data['rate_note'] ?? null,
                 $data['website'] ?? null,
+                self::encode(self::normalizeSocials($data['socials'] ?? [])),
                 self::encode($data['trades'] ?? []),
                 self::encode($data['skills'] ?? []),
                 self::encode($data['tools'] ?? []),
@@ -228,6 +241,7 @@ final class Profile
             'rate_kind' => array_key_exists('rate_kind', $data) ? $data['rate_kind'] : ($current['rate_kind'] ?? ''),
             'rate_note' => array_key_exists('rate_note', $data) ? $data['rate_note'] : ($current['rate_note'] ?? ''),
             'website' => array_key_exists('website', $data) ? $data['website'] : ($current['website'] ?? ''),
+            'socials' => array_key_exists('socials', $data) ? $data['socials'] : ($current['socials'] ?? []),
             'trades' => array_key_exists('trades', $data) ? $data['trades'] : ($current['trades'] ?? []),
             'skills' => array_key_exists('skills', $data) ? $data['skills'] : ($current['skills'] ?? []),
             'tools' => array_key_exists('tools', $data) ? $data['tools'] : ($current['tools'] ?? []),
@@ -426,9 +440,89 @@ final class Profile
         return self::isPercentRate($profile) ? 'commission ' . $rate : 'à partir de ' . $rate;
     }
 
+    /**
+     * @param mixed $rows
+     * @return list<array{network: string, label: string, url: string}>
+     */
+    public static function normalizeSocials(mixed $rows): array
+    {
+        if (!is_array($rows)) {
+            return [];
+        }
+
+        $out = [];
+        $seen = [];
+        foreach ($rows as $row) {
+            if (!is_array($row)) {
+                continue;
+            }
+            $network = strtolower(trim((string) ($row['network'] ?? '')));
+            if ($network === '' || !isset(self::SOCIAL_NETWORKS[$network]) || isset($seen[$network])) {
+                continue;
+            }
+            $url = self::normalizeSocialUrl((string) ($row['url'] ?? ''), $network);
+            if ($url === '') {
+                continue;
+            }
+            $seen[$network] = true;
+            $out[] = [
+                'network' => $network,
+                'label' => self::SOCIAL_NETWORKS[$network],
+                'url' => $url,
+            ];
+        }
+
+        return $out;
+    }
+
+    public static function normalizeSocialUrl(string $raw, string $network): string
+    {
+        $raw = trim($raw);
+        if ($raw === '') {
+            return '';
+        }
+
+        if (preg_match('#^https?://#i', $raw) !== 1 && !str_contains($raw, '.')) {
+            $handle = ltrim($raw, '@/');
+            $handle = trim($handle);
+            if ($handle === '' || preg_match('#^[A-Za-z0-9._-]+$#', $handle) !== 1) {
+                return '';
+            }
+            $raw = match ($network) {
+                'instagram' => 'https://www.instagram.com/' . $handle,
+                'facebook' => 'https://www.facebook.com/' . $handle,
+                'linkedin' => 'https://www.linkedin.com/in/' . $handle,
+                'x' => 'https://x.com/' . $handle,
+                'youtube' => 'https://www.youtube.com/@' . $handle,
+                'tiktok' => 'https://www.tiktok.com/@' . $handle,
+                'bluesky' => 'https://bsky.app/profile/' . $handle,
+                'threads' => 'https://www.threads.net/@' . $handle,
+                default => $raw,
+            };
+        }
+
+        if (preg_match('#^https?://#i', $raw) !== 1) {
+            $raw = 'https://' . ltrim($raw, '/');
+        }
+
+        if (filter_var($raw, FILTER_VALIDATE_URL) === false) {
+            return '';
+        }
+
+        $parts = parse_url($raw);
+        $scheme = strtolower((string) ($parts['scheme'] ?? ''));
+        $host = strtolower((string) ($parts['host'] ?? ''));
+        if (!in_array($scheme, ['http', 'https'], true) || $host === '' || !str_contains($host, '.')) {
+            return '';
+        }
+
+        return $raw;
+    }
+
     /** @param array<string, mixed> $row */
     private static function hydrate(array $row): array
     {
+        $row['socials'] = self::normalizeSocials(self::decode($row['socials_json'] ?? null));
         $row['trades'] = self::decode($row['trades_json'] ?? null);
         $row['skills'] = self::decode($row['skills_json'] ?? null);
         $row['tools'] = self::decode($row['tools_json'] ?? null);

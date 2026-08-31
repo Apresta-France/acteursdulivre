@@ -155,11 +155,25 @@ final class PageController
             not_found('Cette prestation n\'est plus disponible.');
         }
 
+        $viewer = Auth::user();
+        $canOrder = $viewer
+            && User::seeksServices($viewer)
+            && (int) ($viewer['id'] ?? 0) !== (int) ($service['user_id'] ?? 0);
+        $isFavorite = false;
+        if ($viewer) {
+            try {
+                $isFavorite = Favorite::has((int) $viewer['id'], (int) $service['id']);
+            } catch (\Throwable) {
+            }
+        }
+
         $excerpt = trim((string) ($service['excerpt'] ?: $service['by'] . ' · ' . $service['price']));
         View::page('fiche', [
             'title' => $service['title'],
             'slug' => $slug,
             'service' => $service,
+            'canOrder' => $canOrder,
+            'isFavorite' => $isFavorite,
             'meta' => Seo::build(
                 $service['title'],
                 $excerpt !== '' ? $excerpt : (string) $service['title'],

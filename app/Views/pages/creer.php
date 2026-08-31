@@ -1,20 +1,32 @@
 <?php
 $old = is_array($old ?? null) ? $old : [];
-$selected = (string) ($old['category_name'] ?? 'Correction');
+$emptyPackage = ['name' => '', 'description' => '', 'price' => '', 'delay' => ''];
 $selectedSpecialty = (string) ($old['specialty'] ?? '');
-$trades = $trades ?? \Adl\Data\Catalog::trades();
+$trades = is_array($trades ?? null) ? $trades : [];
 $specialties = $specialties ?? \Adl\Data\Catalog::specialties();
 $commission = (string) ($commission ?? '8');
 $firstFree = !empty($firstMissionFree);
 $standardCommission = (string) ($standardCommission ?? '8');
 $blocked = !empty($billingBlock);
 $founder = !empty($isFounder);
-$packages = is_array($old['packages'] ?? null) ? $old['packages'] : [
-    ['name' => 'Essentielle', 'description' => '', 'price' => '', 'delay' => ''],
-    ['name' => 'Standard', 'description' => '', 'price' => '', 'delay' => ''],
-    ['name' => 'Complète', 'description' => '', 'price' => '', 'delay' => ''],
-];
+$selected = (string) ($old['category_name'] ?? '');
+if ($trades !== [] && !in_array($selected, $trades, true)) {
+    $selected = (string) $trades[0];
+}
+$packages = is_array($old['packages'] ?? null) ? $old['packages'] : [];
+if ($packages === []) {
+    $packages = [$emptyPackage, $emptyPackage, $emptyPackage];
+} else {
+    while (count($packages) < 3) {
+        $packages[] = $emptyPackage;
+    }
+}
+$options = is_array($old['options'] ?? null) ? $old['options'] : [];
+if ($options === []) {
+    $options = [['name' => '', 'price' => '']];
+}
 $coverLabel = \Adl\Data\Catalog::tradeTitle($selected);
+$noTrades = $trades === [];
 ?>
 <div class="espace-page publish-page">
   <div class="espace-page-head">
@@ -44,13 +56,19 @@ $coverLabel = \Adl\Data\Catalog::tradeTitle($selected);
       <div class="form-grid-2">
         <div>
           <label class="field" for="service-trade">Métier</label>
-          <select class="input" id="service-trade" name="category_name" required data-cover-trade>
-            <?php foreach ($trades as $trade): ?>
-              <option value="<?= e($trade) ?>"<?= $selected === $trade ? ' selected' : '' ?>>
-                <?= e(\Adl\Data\Catalog::tradeTitle($trade)) ?>
-              </option>
-            <?php endforeach; ?>
-          </select>
+          <?php if ($noTrades): ?>
+            <input type="hidden" name="category_name" value="">
+            <p class="field-help" style="margin-top: 8px;">Ajoutez d'abord vos métiers sur <a href="<?= e(url('/espace/vitrine')) ?>">votre vitrine</a> (trois maximum). Seuls ceux-là apparaissent ici.</p>
+          <?php else: ?>
+            <select class="input" id="service-trade" name="category_name" required data-cover-trade>
+              <?php foreach ($trades as $trade): ?>
+                <option value="<?= e($trade) ?>"<?= $selected === $trade ? ' selected' : '' ?>>
+                  <?= e(\Adl\Data\Catalog::tradeTitle($trade)) ?>
+                </option>
+              <?php endforeach; ?>
+            </select>
+            <p class="field-help">Uniquement les métiers choisis sur votre vitrine.</p>
+          <?php endif; ?>
         </div>
         <div>
           <label class="field" for="service-specialty">Spécialité</label>
@@ -67,9 +85,20 @@ $coverLabel = \Adl\Data\Catalog::tradeTitle($selected);
       </div>
 
       <div>
-        <label class="field" for="service-excerpt">Périmètre</label>
-        <textarea class="textarea" id="service-excerpt" name="excerpt" rows="5"
-                  placeholder="Ce qui est inclus, les exclusions, le format de livraison…"><?= e((string) ($old['excerpt'] ?? '')) ?></textarea>
+        <label class="field" for="service-excerpt" id="service-excerpt-label">Description et périmètre de la prestation</label>
+        <div class="wysiwyg" data-wysiwyg>
+          <div class="wysiwyg-toolbar" hidden>
+            <button type="button" data-wysiwyg-cmd="bold" aria-label="Gras" title="Gras"><strong>G</strong></button>
+            <button type="button" data-wysiwyg-cmd="italic" aria-label="Italique" title="Italique"><em>I</em></button>
+            <button type="button" data-wysiwyg-cmd="insertUnorderedList" aria-label="Liste à puces" title="Liste à puces">• Liste</button>
+            <button type="button" data-wysiwyg-cmd="insertOrderedList" aria-label="Liste numérotée" title="Liste numérotée">1. Liste</button>
+            <button type="button" data-wysiwyg-cmd="createLink" aria-label="Lien" title="Ajouter un lien">Lien</button>
+          </div>
+          <textarea class="textarea wysiwyg-source" id="service-excerpt" name="excerpt" rows="8"
+                    placeholder="Ce qui est inclus, les exclusions, le format de livraison…"><?= e((string) ($old['excerpt'] ?? '')) ?></textarea>
+          <div class="wysiwyg-editor" contenteditable="true" role="textbox" aria-multiline="true" aria-labelledby="service-excerpt-label" hidden></div>
+        </div>
+        <p class="field-help">Présentez l’offre : ce qui est inclus, les exclusions, le format et le volume livrés.</p>
       </div>
 
       <div class="form-grid-2">
@@ -85,7 +114,7 @@ $coverLabel = \Adl\Data\Catalog::tradeTitle($selected);
 
       <div>
         <span class="field">Formules (optionnel)</span>
-        <p class="field-help" style="margin-top: 0; margin-bottom: 12px;">Trois niveaux aident à comparer. Le prix « à partir de » reprend la formule la moins chère si vous le laissez vide.</p>
+        <p class="field-help" style="margin-top: 0; margin-bottom: 12px;">Laissez vides les lignes inutilisées : elles ne sont pas enregistrées. Le prix « à partir de » reprend la formule la moins chère si vous le laissez vide.</p>
         <?php foreach ($packages as $i => $package): ?>
           <div class="form-grid-3" style="margin-bottom: 12px;">
             <input class="input" name="packages[<?= (int) $i ?>][name]" value="<?= e((string) ($package['name'] ?? '')) ?>" placeholder="Nom">
@@ -94,6 +123,21 @@ $coverLabel = \Adl\Data\Catalog::tradeTitle($selected);
           </div>
           <input class="input" name="packages[<?= (int) $i ?>][description]" value="<?= e((string) ($package['description'] ?? '')) ?>" placeholder="Ce que comprend cette formule" style="margin-bottom: 16px;">
         <?php endforeach; ?>
+      </div>
+
+      <div>
+        <span class="field">Options (optionnel)</span>
+        <p class="field-help" style="margin-top: 0; margin-bottom: 12px;">Le client peut les ajouter à la formule ou au prix de base. Leur montant s'ajoute au total.</p>
+        <div class="repeat-list" data-repeat="options">
+          <?php foreach ($options as $i => $option): ?>
+            <div class="repeat-row is-price" data-repeat-row>
+              <input class="input" name="options[<?= (int) $i ?>][name]" value="<?= e((string) ($option['name'] ?? '')) ?>" placeholder="Livraison accélérée">
+              <input class="input" name="options[<?= (int) $i ?>][price]" value="<?= e((string) ($option['price'] ?? '')) ?>" placeholder="Prix €" inputmode="numeric">
+              <button type="button" class="icon-btn" data-repeat-remove aria-label="Retirer">✕</button>
+            </div>
+          <?php endforeach; ?>
+        </div>
+        <button type="button" class="btn-ghost" data-repeat-add="options">Ajouter une option</button>
       </div>
 
       <div>
@@ -122,8 +166,8 @@ $coverLabel = \Adl\Data\Catalog::tradeTitle($selected);
       </div>
 
       <div class="auth-actions publish-actions">
-        <button class="btn-orange" type="submit" name="intent" value="publish"<?= $blocked ? ' disabled' : '' ?>>Mettre en ligne</button>
-        <button class="btn-ghost" type="submit" name="intent" value="draft">Enregistrer le brouillon</button>
+        <button class="btn-orange" type="submit" name="intent" value="publish"<?= ($blocked || $noTrades) ? ' disabled' : '' ?>>Mettre en ligne</button>
+        <button class="btn-ghost" type="submit" name="intent" value="draft"<?= $noTrades ? ' disabled' : '' ?>>Enregistrer le brouillon</button>
       </div>
     </form>
 
@@ -134,7 +178,7 @@ $coverLabel = \Adl\Data\Catalog::tradeTitle($selected);
           <li>Titre clair, sans superlatif</li>
           <li>Métier et spécialité renseignés</li>
           <li>Prix ou au moins une formule</li>
-          <li>Périmètre et exclusions précisés</li>
+          <li>Description, périmètre et exclusions précisés</li>
         </ul>
       </div>
       <div class="side-card side-card-warm">
@@ -148,3 +192,10 @@ $coverLabel = \Adl\Data\Catalog::tradeTitle($selected);
     </aside>
   </div>
 </div>
+<template id="tpl-options">
+  <div class="repeat-row is-price" data-repeat-row>
+    <input class="input" name="options[__i__][name]" placeholder="Livraison accélérée">
+    <input class="input" name="options[__i__][price]" placeholder="Prix €" inputmode="numeric">
+    <button type="button" class="icon-btn" data-repeat-remove aria-label="Retirer">✕</button>
+  </div>
+</template>

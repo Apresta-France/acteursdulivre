@@ -128,8 +128,9 @@ final class Service
     /**
      * @param array<string, mixed> $data
      * @param list<array<string, mixed>> $packages
+     * @param list<array<string, mixed>> $options
      */
-    public static function create(int $userId, array $data, array $packages = []): array
+    public static function create(int $userId, array $data, array $packages = [], array $options = []): array
     {
         $status = (string) ($data['status'] ?? 'published');
         if ($status === 'published') {
@@ -171,6 +172,7 @@ final class Service
 
         $id = (int) Database::lastId();
         self::replacePackages($id, $packages);
+        self::replaceOptions($id, $options);
 
         return self::find($id) ?? ['slug' => $slug];
     }
@@ -178,8 +180,9 @@ final class Service
     /**
      * @param array<string, mixed> $data
      * @param list<array<string, mixed>> $packages
+     * @param list<array<string, mixed>> $options
      */
-    public static function update(int $id, int $userId, array $data, array $packages = []): array
+    public static function update(int $id, int $userId, array $data, array $packages = [], array $options = []): array
     {
         $service = self::find($id);
         if (!$service || (int) ($service['user_id'] ?? 0) !== $userId) {
@@ -224,6 +227,7 @@ final class Service
             ]
         );
         self::replacePackages($id, $packages);
+        self::replaceOptions($id, $options);
 
         return self::find($id) ?? $service;
     }
@@ -250,6 +254,61 @@ final class Service
         }
     }
 
+    /** @param list<array<string, mixed>> $options */
+    public static function replaceOptions(int $serviceId, array $options): void
+    {
+        Database::query('DELETE FROM service_options WHERE service_id = ?', [$serviceId]);
+        foreach ($options as $option) {
+            $name = trim((string) ($option['name'] ?? ''));
+            if ($name === '') {
+                continue;
+            }
+            Database::query(
+                'INSERT INTO service_options (service_id, name, price) VALUES (?, ?, ?)',
+                [
+                    $serviceId,
+                    $name,
+                    (int) ($option['price'] ?? 0),
+                ]
+            );
+        }
+    }
+
+    /**
+     * @param array<string, mixed> $service
+     * @param list<mixed> $ids
+     * @return list<array{id: int, name: string, price: int}>
+     */
+    public static function pickOptions(array $service, array $ids): array
+    {
+        $wanted = [];
+        foreach ($ids as $id) {
+            if (is_array($id)) {
+                continue;
+            }
+            $id = (int) $id;
+            if ($id > 0) {
+                $wanted[$id] = true;
+            }
+        }
+        $picked = [];
+        foreach ($service['options'] ?? [] as $option) {
+            if (!is_array($option)) {
+                continue;
+            }
+            $id = (int) ($option['id'] ?? 0);
+            if ($id < 1 || !isset($wanted[$id])) {
+                continue;
+            }
+            $picked[] = [
+                'id' => $id,
+                'name' => (string) ($option['name'] ?? ''),
+                'price' => (int) ($option['price'] ?? 0),
+            ];
+        }
+        return $picked;
+    }
+
     /** @param array<string, mixed> $row */
     private static function present(array $row): array
     {
@@ -263,6 +322,19 @@ final class Service
         }
         unset($package);
 
+        $options = [];
+        try {
+            $options = Database::fetchAll(
+                'SELECT * FROM service_options WHERE service_id = ? ORDER BY id ASC',
+                [(int) $row['id']]
+            );
+        } catch (\Throwable) {
+        }
+        foreach ($options as &$option) {
+            $option['price_label'] = format_euros((int) ($option['price'] ?? 0));
+        }
+        unset($option);
+
         $row['by'] = User::displayName($row);
         $row['initials'] = User::initials($row);
         $row['avatar'] = avatar_style($row['initials'], 26);
@@ -273,6 +345,7 @@ final class Service
         $row['href'] = '/prestations/' . $row['slug'];
         $row['profile_href'] = !empty($row['profile_slug']) ? '/prestataires/' . $row['profile_slug'] : '';
         $row['packages'] = $packages;
+        $row['options'] = $options;
         $imagePath = trim((string) ($row['image_path'] ?? ''));
         $row['has_image'] = $imagePath !== '';
         $row['img'] = $imagePath !== '' ? uploaded($imagePath) : service_brand_cover_url((string) ($row['category_name'] ?? ''));
@@ -284,7 +357,7 @@ final class Service
         $row['subtitle'] = $row['by'];
         $row['meta'] = trim(($row['delay'] ?? '') . ($reviews['avg'] !== '' ? ' · ★ ' . $reviews['avg'] : ''));
         $row['thumb'] = $row['has_image'] ? $row['img'] : '';
-        $row['search'] = $row['cat'] . ' ' . $row['specialty'] . ' ' . $row['title'] . ' ' . $row['by'] . ' ' . ($row['excerpt'] ?? '');
+        $row['search'] = $row['cat'] . ' ' . $row['specialty'] . ' ' . $row['title'] . ' ' . $row['by'] . ' ' . plain_text((string) ($row['excerpt'] ?? ''));
         return $row;
     }
 }
