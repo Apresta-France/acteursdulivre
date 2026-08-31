@@ -156,9 +156,7 @@ final class PageController
         }
 
         $viewer = Auth::user();
-        $canOrder = $viewer
-            && User::seeksServices($viewer)
-            && (int) ($viewer['id'] ?? 0) !== (int) ($service['user_id'] ?? 0);
+        $canOrder = !$viewer || (int) ($viewer['id'] ?? 0) !== (int) ($service['user_id'] ?? 0);
         $isFavorite = false;
         if ($viewer) {
             try {

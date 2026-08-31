@@ -86,6 +86,7 @@ return static function (Router $router): void {
     $router->post('/espace/prestations/creer', [AccountController::class, 'creerSave']);
     $router->get('/espace/prestations/{id}/modifier', [AccountController::class, 'prestationEdit']);
     $router->post('/espace/prestations/{id}/modifier', [AccountController::class, 'prestationEditSave']);
+    $router->post('/espace/prestations/{id}/supprimer', [AccountController::class, 'prestationDelete']);
     $router->get('/espace/messages', [AccountController::class, 'messages']);
     $router->get('/espace/messages/{id}', [AccountController::class, 'messageShow']);
     $router->post('/espace/messages/{id}', [AccountController::class, 'messageSend']);

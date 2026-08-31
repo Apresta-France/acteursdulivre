@@ -15,11 +15,7 @@ if ($trades !== [] && !in_array($selected, $trades, true)) {
 }
 $packages = is_array($old['packages'] ?? null) ? $old['packages'] : [];
 if ($packages === []) {
-    $packages = [$emptyPackage, $emptyPackage, $emptyPackage];
-} else {
-    while (count($packages) < 3) {
-        $packages[] = $emptyPackage;
-    }
+    $packages = [$emptyPackage];
 }
 $options = is_array($old['options'] ?? null) ? $old['options'] : [];
 if ($options === []) {
@@ -42,6 +38,7 @@ $noTrades = $trades === [];
   <?php require ADL_ROOT . '/app/Views/partials/billing-banner.php'; ?>
 
   <div class="publish-grid">
+    <div>
     <form class="param-form publish-form" method="post" action="<?= e(url(!empty($editing) ? '/espace/prestations/' . (int) ($serviceId ?? 0) . '/modifier' : '/espace/prestations/creer')) ?>" enctype="multipart/form-data" data-service-cover>
       <?= csrf_field() ?>
 
@@ -114,15 +111,21 @@ $noTrades = $trades === [];
 
       <div>
         <span class="field">Formules (optionnel)</span>
-        <p class="field-help" style="margin-top: 0; margin-bottom: 12px;">Laissez vides les lignes inutilisées : elles ne sont pas enregistrées. Le prix « à partir de » reprend la formule la moins chère si vous le laissez vide.</p>
-        <?php foreach ($packages as $i => $package): ?>
-          <div class="form-grid-3" style="margin-bottom: 12px;">
-            <input class="input" name="packages[<?= (int) $i ?>][name]" value="<?= e((string) ($package['name'] ?? '')) ?>" placeholder="Nom">
-            <input class="input" name="packages[<?= (int) $i ?>][price]" value="<?= e((string) ($package['price'] ?? '')) ?>" placeholder="Prix €" inputmode="numeric">
-            <input class="input" name="packages[<?= (int) $i ?>][delay]" value="<?= e((string) ($package['delay'] ?? '')) ?>" placeholder="Délai">
-          </div>
-          <input class="input" name="packages[<?= (int) $i ?>][description]" value="<?= e((string) ($package['description'] ?? '')) ?>" placeholder="Ce que comprend cette formule" style="margin-bottom: 16px;">
-        <?php endforeach; ?>
+        <p class="field-help" style="margin-top: 0; margin-bottom: 12px;">Ajoutez autant de formules que nécessaire. Chaque formule enregistrée doit avoir un nom et un prix. Le prix « à partir de » reprend la moins chère si vous le laissez vide.</p>
+        <div class="repeat-list" data-repeat="packages">
+          <?php foreach ($packages as $i => $package): ?>
+            <div class="repeat-package" data-repeat-row>
+              <div class="repeat-row is-formule">
+                <input class="input" name="packages[<?= (int) $i ?>][name]" value="<?= e((string) ($package['name'] ?? '')) ?>" placeholder="Nom">
+                <input class="input" name="packages[<?= (int) $i ?>][price]" value="<?= e((string) ($package['price'] ?? '')) ?>" placeholder="Prix €" inputmode="numeric">
+                <input class="input" name="packages[<?= (int) $i ?>][delay]" value="<?= e((string) ($package['delay'] ?? '')) ?>" placeholder="Délai">
+                <button type="button" class="icon-btn" data-repeat-remove aria-label="Retirer">✕</button>
+              </div>
+              <input class="input" name="packages[<?= (int) $i ?>][description]" value="<?= e((string) ($package['description'] ?? '')) ?>" placeholder="Ce que comprend cette formule">
+            </div>
+          <?php endforeach; ?>
+        </div>
+        <button type="button" class="btn-ghost" data-repeat-add="packages">Ajouter une formule</button>
       </div>
 
       <div>
@@ -171,6 +174,17 @@ $noTrades = $trades === [];
       </div>
     </form>
 
+    <?php if (!empty($editing) && !empty($serviceId)): ?>
+      <form class="param-danger" method="post" action="<?= e(url('/espace/prestations/' . (int) $serviceId . '/supprimer')) ?>" onsubmit="return confirm('Supprimer cette prestation ? Elle disparaîtra de l’annuaire.');">
+        <?= csrf_field() ?>
+        <input type="hidden" name="from" value="edit">
+        <p class="field">Supprimer la prestation</p>
+        <p class="field-help">Elle disparaîtra de l’annuaire. Les commandes déjà passées sont conservées.</p>
+        <button class="btn-ghost btn-danger" type="submit">Supprimer cette prestation</button>
+      </form>
+    <?php endif; ?>
+    </div>
+
     <aside class="publish-side">
       <div class="side-card">
         <div class="side-kicker">Avant publication</div>
@@ -192,6 +206,17 @@ $noTrades = $trades === [];
     </aside>
   </div>
 </div>
+<template id="tpl-packages">
+  <div class="repeat-package" data-repeat-row>
+    <div class="repeat-row is-formule">
+      <input class="input" name="packages[__i__][name]" placeholder="Nom">
+      <input class="input" name="packages[__i__][price]" placeholder="Prix €" inputmode="numeric">
+      <input class="input" name="packages[__i__][delay]" placeholder="Délai">
+      <button type="button" class="icon-btn" data-repeat-remove aria-label="Retirer">✕</button>
+    </div>
+    <input class="input" name="packages[__i__][description]" placeholder="Ce que comprend cette formule">
+  </div>
+</template>
 <template id="tpl-options">
   <div class="repeat-row is-price" data-repeat-row>
     <input class="input" name="options[__i__][name]" placeholder="Livraison accélérée">

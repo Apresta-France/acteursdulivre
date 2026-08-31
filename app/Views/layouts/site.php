@@ -52,7 +52,7 @@
   <?php if (!empty($isAccueil)): ?>
   <link rel="preload" as="image" href="<?= e(photo(0)) ?>">
   <?php endif; ?>
-  <link rel="stylesheet" href="<?= e(asset('css/app.css')) ?>?v=m50">
+  <link rel="stylesheet" href="<?= e(asset('css/app.css')) ?>?v=m52">
   <link rel="icon" href="<?= e(asset('img/favicon.ico')) ?>?v=3" sizes="any">
   <link rel="icon" type="image/png" href="<?= e(asset('img/favicon-32x32.png')) ?>?v=3" sizes="32x32">
   <link rel="apple-touch-icon" href="<?= e(asset('img/apple-touch-icon.png')) ?>?v=3">
@@ -301,6 +301,6 @@
       </footer>
     </div>
   </div>
-  <script src="<?= e(asset('js/app.js')) ?>?v=m34"></script>
+  <script src="<?= e(asset('js/app.js')) ?>?v=m35"></script>
 </body>
 </html>

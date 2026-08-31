@@ -232,6 +232,54 @@ final class Service
         return self::find($id) ?? $service;
     }
 
+    public static function deleteForUser(int $id, int $userId): void
+    {
+        $service = self::find($id);
+        if (!$service || (int) ($service['user_id'] ?? 0) !== $userId) {
+            throw new \RuntimeException('Cette prestation est introuvable.');
+        }
+
+        $open = Database::fetch(
+            'SELECT id FROM orders
+             WHERE service_id = ?
+               AND status IN ("pending", "in_progress", "delivered", "dispute")
+             LIMIT 1',
+            [$id]
+        );
+        if ($open) {
+            throw new \RuntimeException(
+                'Cette prestation a une commande en cours. Terminez le suivi avant de la supprimer, ou enregistrez-la en brouillon pour la retirer de l\'annuaire.'
+            );
+        }
+
+        Database::transaction(static function () use ($id, $userId): void {
+            Database::query('DELETE FROM favorites WHERE service_id = ?', [$id]);
+            Database::query('UPDATE orders SET service_id = NULL WHERE service_id = ?', [$id]);
+            try {
+                Database::query('UPDATE conversations SET service_id = NULL WHERE service_id = ?', [$id]);
+            } catch (\Throwable) {
+            }
+            Database::query('DELETE FROM services WHERE id = ? AND user_id = ?', [$id, $userId]);
+        });
+
+        self::deleteImageFile((string) ($service['image_path'] ?? ''));
+    }
+
+    private static function deleteImageFile(string $path): void
+    {
+        $path = trim(str_replace(['\\', "\0"], '/', $path));
+        if ($path === '' || str_contains($path, '..')) {
+            return;
+        }
+        $full = ADL_ROOT . '/public/uploads/' . ltrim($path, '/');
+        $root = realpath(ADL_ROOT . '/public/uploads');
+        $real = realpath($full);
+        if ($root === false || $real === false || !str_starts_with($real, $root) || !is_file($real)) {
+            return;
+        }
+        @unlink($real);
+    }
+
     /** @param list<array<string, mixed>> $packages */
     public static function replacePackages(int $serviceId, array $packages): void
     {

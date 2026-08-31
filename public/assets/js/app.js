@@ -577,7 +577,11 @@
       var list = document.querySelector('[data-repeat="' + name + '"]');
       var tpl = document.getElementById('tpl-' + name);
       if (!list || !tpl) return;
-      var index = list.querySelectorAll('[data-repeat-row]').length;
+      var index = 0;
+      list.querySelectorAll('[name]').forEach(function (input) {
+        var match = (input.getAttribute('name') || '').match(/\[(\d+)\]/);
+        if (match) index = Math.max(index, parseInt(match[1], 10) + 1);
+      });
       var html = tpl.innerHTML.replace(/__i__/g, String(index));
       list.insertAdjacentHTML('beforeend', html);
       bindFilePicks(list.lastElementChild);
@@ -1014,17 +1018,82 @@
 
   document.querySelectorAll('[data-order-total]').forEach(function (root) {
     var base = parseInt(root.getAttribute('data-base') || '0', 10) || 0;
-    var out = root.querySelector('[data-order-total-value]');
+    var orderHref = root.getAttribute('data-order-href') || '';
     function formatEuros(n) {
       return n.toLocaleString('fr-FR') + ' €';
     }
-    function syncTotal() {
+    function currentTotal() {
       var total = base;
       root.querySelectorAll('input[type="checkbox"][data-price]:checked').forEach(function (box) {
         total += parseInt(box.getAttribute('data-price') || '0', 10) || 0;
       });
-      if (out) out.textContent = formatEuros(total);
+      return total;
     }
+    function withOptions(href) {
+      if (!href) return href;
+      var url;
+      try {
+        url = new URL(href, window.location.origin);
+      } catch (err) {
+        return href;
+      }
+      url.searchParams.delete('options[]');
+      url.searchParams.delete('options');
+      root.querySelectorAll('input[type="checkbox"][data-price]:checked').forEach(function (box) {
+        url.searchParams.append('options[]', box.value);
+      });
+      return url.pathname + url.search;
+    }
+    function syncTotal() {
+      var total = currentTotal();
+      var label = 'Commander — ' + formatEuros(total);
+      root.querySelectorAll('[data-order-total-value]').forEach(function (el) {
+        el.textContent = formatEuros(total);
+      });
+      root.querySelectorAll('[data-order-cta-label]').forEach(function (el) {
+        el.textContent = label;
+      });
+      var href = withOptions(orderHref);
+      if (href) {
+        root.querySelectorAll('[data-order-cta]').forEach(function (el) {
+          el.setAttribute('href', href);
+        });
+      }
+    }
+    root.querySelectorAll('[data-order-formule]').forEach(function (tab) {
+      tab.addEventListener('click', function () {
+        root.querySelectorAll('[data-order-formule]').forEach(function (other) {
+          var on = other === tab;
+          other.classList.toggle('is-on', on);
+          other.setAttribute('aria-selected', on ? 'true' : 'false');
+        });
+        base = parseInt(tab.getAttribute('data-price') || '0', 10) || 0;
+        root.setAttribute('data-base', String(base));
+        var nameEl = root.querySelector('[data-order-formule-name]');
+        var delayEl = root.querySelector('[data-order-formule-delay]');
+        var descEl = root.querySelector('[data-order-formule-desc]');
+        var priceEl = root.querySelector('[data-order-formule-price]');
+        var desc = tab.getAttribute('data-desc') || '';
+        if (nameEl) nameEl.textContent = tab.getAttribute('data-name') || '';
+        if (delayEl) delayEl.textContent = tab.getAttribute('data-delay') || 'Délai à convenir';
+        if (descEl) {
+          descEl.textContent = desc;
+          descEl.hidden = desc === '';
+        }
+        if (priceEl) priceEl.textContent = formatEuros(base);
+        if (orderHref) {
+          try {
+            var next = new URL(orderHref, window.location.origin);
+            var packageId = tab.getAttribute('data-id') || '';
+            if (packageId && packageId !== '0') next.searchParams.set('formule', packageId);
+            else next.searchParams.delete('formule');
+            orderHref = next.pathname + next.search;
+            root.setAttribute('data-order-href', orderHref);
+          } catch (err) {}
+        }
+        syncTotal();
+      });
+    });
     root.addEventListener('change', syncTotal);
     syncTotal();
   });

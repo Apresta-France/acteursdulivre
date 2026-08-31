@@ -307,7 +307,7 @@ final class AccountController
 
     public function commande(Request $request): void
     {
-        $user = Auth::requireSeeker();
+        $user = Auth::requireUser();
         $slug = $request->string('prestation');
         $service = null;
         if ($slug !== '') {
@@ -371,7 +371,7 @@ final class AccountController
 
     public function commandeSave(Request $request): void
     {
-        $user = Auth::requireSeeker();
+        $user = Auth::requireUser();
         $service = Service::find((int) $request->string('service_id'));
         if (
             !$service
@@ -552,7 +552,7 @@ final class AccountController
 
     public function commandes(Request $request): void
     {
-        $user = Auth::requireSeeker();
+        $user = Auth::requireUser();
         try {
             $orders = Order::forBuyer((int) $user['id']);
         } catch (\Throwable) {
@@ -606,6 +606,7 @@ final class AccountController
             'title' => 'Mes prestations',
             'myServices' => $services,
             'saved' => flash('saved'),
+            'error' => flash('error'),
             'billingBlock' => $billing['block'],
             'billingWarning' => $billing['warning'],
         ]);
@@ -707,6 +708,11 @@ final class AccountController
 
         $packages = self::packagesFromInput($packagesInput);
         $options = self::optionsFromInput($optionsInput);
+        if (self::incompletePricedRows($packagesInput, ['description', 'delay'])) {
+            flash('error', 'Chaque formule doit avoir un nom et un prix.');
+            flash('old', $old);
+            redirect('/espace/prestations/creer');
+        }
 
         try {
             $service = Service::create((int) $user['id'], [
@@ -847,6 +853,11 @@ final class AccountController
 
         $packages = self::packagesFromInput($packagesInput);
         $options = self::optionsFromInput($optionsInput);
+        if (self::incompletePricedRows($packagesInput, ['description', 'delay'])) {
+            flash('error', 'Chaque formule doit avoir un nom et un prix.');
+            flash('old', $old);
+            redirect('/espace/prestations/' . (int) $id . '/modifier');
+        }
 
         try {
             $updated = Service::update((int) $id, (int) $user['id'], [
@@ -867,6 +878,28 @@ final class AccountController
 
         flash('saved', $draft ? 'Brouillon enregistré.' : 'Prestation mise à jour.');
         redirect(!empty($updated['slug']) ? '/prestations/' . $updated['slug'] : '/espace/prestations');
+    }
+
+    public function prestationDelete(Request $request, string $id): void
+    {
+        $user = Auth::requireOfferer();
+        $service = Service::find((int) $id);
+        if (!$service || (int) ($service['user_id'] ?? 0) !== (int) $user['id']) {
+            not_found('Cette prestation est introuvable.');
+        }
+
+        try {
+            Service::deleteForUser((int) $id, (int) $user['id']);
+        } catch (\RuntimeException $e) {
+            flash('error', $e->getMessage());
+            $from = $request->string('from');
+            redirect($from === 'edit'
+                ? '/espace/prestations/' . (int) $id . '/modifier'
+                : '/espace/prestations');
+        }
+
+        flash('saved', 'Prestation supprimée.');
+        redirect('/espace/prestations');
     }
 
     public function messages(Request $request): void
@@ -1581,7 +1614,7 @@ final class AccountController
     {
         $packages = [];
         foreach ($input as $row) {
-            $name = $row['name'] ?? '';
+            $name = trim((string) ($row['name'] ?? ''));
             $price = self::money((string) ($row['price'] ?? ''));
             if ($name === '' || $price === null) {
                 continue;
@@ -1594,6 +1627,29 @@ final class AccountController
             ];
         }
         return $packages;
+    }
+
+    /**
+     * @param list<array<string, string>> $input
+     * @param list<string> $extraKeys
+     */
+    private static function incompletePricedRows(array $input, array $extraKeys = []): bool
+    {
+        foreach ($input as $row) {
+            $name = trim((string) ($row['name'] ?? ''));
+            $priceRaw = trim((string) ($row['price'] ?? ''));
+            $extra = '';
+            foreach ($extraKeys as $key) {
+                $extra .= trim((string) ($row[$key] ?? ''));
+            }
+            if ($name === '' && $priceRaw === '' && $extra === '') {
+                continue;
+            }
+            if ($name === '' || self::money($priceRaw) === null) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**

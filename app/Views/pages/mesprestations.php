@@ -14,6 +14,9 @@ $online = count(array_filter($services, static fn (array $s): bool => ($s['statu
   <?php if (!empty($saved)): ?>
     <div class="flash flash-ok"><?= e(is_string($saved) ? $saved : 'Enregistré.') ?></div>
   <?php endif; ?>
+  <?php if (!empty($error)): ?>
+    <div class="flash flash-error"><?= e((string) $error) ?></div>
+  <?php endif; ?>
   <?php require ADL_ROOT . '/app/Views/partials/billing-banner.php'; ?>
 
   <?php if ($services === []): ?>
@@ -41,6 +44,10 @@ $online = count(array_filter($services, static fn (array $s): bool => ($s['statu
           <div class="auth-actions" style="margin-top: 14px;">
             <a class="btn-ghost" href="<?= e(url((string) $s['href'])) ?>">Voir la fiche</a>
             <a class="btn-navy" href="<?= e(url('/espace/prestations/' . (int) $s['id'] . '/modifier')) ?>">Modifier</a>
+            <form method="post" action="<?= e(url('/espace/prestations/' . (int) $s['id'] . '/supprimer')) ?>" onsubmit="return confirm('Supprimer cette prestation ? Elle disparaîtra de l’annuaire.');">
+              <?= csrf_field() ?>
+              <button class="btn-ghost btn-danger" type="submit">Supprimer</button>
+            </form>
           </div>
         </article>
       <?php endforeach; ?>

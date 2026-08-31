@@ -539,7 +539,7 @@ final class Order
     private static function present(array $row): array
     {
         $status = (string) ($row['status'] ?? 'pending');
-        $title = (string) ($row['service_title'] ?: $row['mission_title'] ?: 'Commande');
+        $title = (string) ($row['service_title'] ?: $row['mission_title'] ?: $row['package_name'] ?: 'Commande');
         $buyer = trim(($row['buyer_first'] ?? '') . ' ' . ($row['buyer_last'] ?? ''));
         $seller = trim(($row['seller_first'] ?? '') . ' ' . ($row['seller_last'] ?? ''));
         $row['title'] = $title;
