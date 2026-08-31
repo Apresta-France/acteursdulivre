@@ -82,11 +82,11 @@ $mine = !empty($action['mine']);
               </div>
               <div>
                 <label class="field" for="jalon-delay">Délai</label>
-                <input class="input" id="jalon-delay" name="delay" value="<?= e((string) ($order['quote_delay'] ?? '')) ?>" placeholder="3 semaines">
+                <input class="input" id="jalon-delay" name="delay" value="<?= e((string) ($order['quote_form_delay'] ?? '')) ?>" placeholder="3 semaines">
               </div>
               <div>
                 <label class="field" for="jalon-note">Précisions (périmètre, formats, allers-retours)</label>
-                <textarea class="textarea" id="jalon-note" name="note" rows="4" placeholder="Ce qui est inclus, ce qui ne l’est pas…"><?= e((string) ($order['quote_note'] ?? '')) ?></textarea>
+                <textarea class="textarea" id="jalon-note" name="note" rows="8" placeholder="Ce qui est inclus, ce qui ne l’est pas…"><?= e((string) ($order['quote_form_note'] ?? '')) ?></textarea>
               </div>
               <div>
                 <span class="field" id="jalon-doc-quote-label">Devis PDF (facultatif)</span>
@@ -298,10 +298,10 @@ $mine = !empty($action['mine']);
       <div class="jalon-aside">
         <div class="side-kicker">Règlements</div>
         <p>Client et prestataire se règlent <strong>entre eux</strong>. La plateforme n’encaisse rien : elle suit les jalons, puis facture sa commission au prestataire à la validation.</p>
-        <div class="jalon-recap">
-          <div class="jalon-recap-row"><span>Mission</span><strong><?= e((string) ($order['amount_label'] ?? '')) ?></strong></div>
-          <div class="jalon-recap-row"><span>Acompte</span><strong><?= (int) ($order['deposit_amount'] ?? 0) > 0 ? e((string) $order['deposit_label']) : '—' ?></strong></div>
-          <div class="jalon-recap-row"><span>Solde</span><strong><?= e((string) ($order['balance_label'] ?? '—')) ?></strong></div>
+        <div class="jalon-recap" data-quote-recap>
+          <div class="jalon-recap-row"><span>Mission</span><strong data-quote-recap-amount><?= e((string) ($order['amount_label'] ?? '')) ?></strong></div>
+          <div class="jalon-recap-row"><span>Acompte</span><strong data-quote-recap-deposit><?= (int) ($order['deposit_amount'] ?? 0) > 0 ? e((string) $order['deposit_label']) : '—' ?></strong></div>
+          <div class="jalon-recap-row"><span>Solde</span><strong data-quote-recap-balance><?= e((string) ($order['balance_label'] ?? '—')) ?></strong></div>
           <?php if (!empty($order['commission_label'])): ?>
             <div class="jalon-recap-row"><span>Commission</span><strong><?= e((string) $order['commission_label']) ?></strong></div>
           <?php endif; ?>

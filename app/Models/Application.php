@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Adl\Models;
 
 use Adl\Core\Database;
+use Adl\Core\Mailer;
 
 final class Application
 {
@@ -104,6 +105,11 @@ final class Application
             'application',
             (int) ($application['id'] ?? 0)
         );
+        Mailer::notify(User::find((int) $mission['user_id']), 'missions', 'nouvelle-candidature', [
+            'qui' => $who,
+            'titre' => (string) $mission['title'],
+            'lien' => url('/missions/' . $mission['slug'] . '#candidatures'),
+        ]);
 
         return $application;
     }
@@ -139,6 +145,10 @@ final class Application
             'application',
             $id
         );
+        Mailer::notify(User::find((int) $application['user_id']), 'missions', 'candidature-refusee', [
+            'titre' => (string) $application['title'],
+            'lien' => url((string) ($application['href'] ?? '/espace/candidatures')),
+        ]);
     }
 
     public static function accept(int $id, int $ownerId): array
@@ -194,6 +204,10 @@ final class Application
                     'application',
                     (int) $other['id']
                 );
+                Mailer::notify(User::find((int) $other['user_id']), 'missions', 'candidature-refusee', [
+                    'titre' => (string) $mission['title'],
+                    'lien' => url((string) ($other['href'] ?? '/espace/candidatures')),
+                ]);
             }
 
             Notification::create(

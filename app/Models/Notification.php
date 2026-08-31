@@ -38,14 +38,7 @@ final class Notification
 
     public static function hasUnread(int $userId, string $kind, ?string $subjectType = null, ?int $subjectId = null): bool
     {
-        $row = Database::fetch(
-            'SELECT id FROM notifications
-             WHERE user_id = ? AND kind = ? AND read_at IS NULL
-               AND (subject_type <=> ?) AND (subject_id <=> ?)
-             LIMIT 1',
-            [$userId, $kind, $subjectType, $subjectId]
-        );
-        return $row !== null;
+        return self::findUnread($userId, $kind, $subjectType, $subjectId) !== null;
     }
 
     public static function create(
@@ -63,6 +56,26 @@ final class Notification
             [$userId, $kind, $subjectType, $subjectId, $title, $body, $link]
         );
         return (int) Database::lastId();
+    }
+
+    public static function upsertUnread(
+        int $userId,
+        string $title,
+        string $body,
+        string $link,
+        string $kind,
+        ?string $subjectType = null,
+        ?int $subjectId = null
+    ): int {
+        $existing = self::findUnread($userId, $kind, $subjectType, $subjectId);
+        if ($existing) {
+            Database::query(
+                'UPDATE notifications SET title = ?, body = ?, link = ?, created_at = NOW() WHERE id = ?',
+                [$title, $body, $link, (int) $existing['id']]
+            );
+            return (int) $existing['id'];
+        }
+        return self::create($userId, $title, $body, $link, $kind, $subjectType, $subjectId);
     }
 
     public static function markRead(int $id, int $userId): ?array
@@ -85,6 +98,28 @@ final class Notification
         Database::query(
             'UPDATE notifications SET read_at = NOW() WHERE user_id = ? AND read_at IS NULL',
             [$userId]
+        );
+    }
+
+    public static function markSubjectRead(int $userId, string $kind, ?string $subjectType = null, ?int $subjectId = null): void
+    {
+        Database::query(
+            'UPDATE notifications SET read_at = NOW()
+             WHERE user_id = ? AND kind = ? AND read_at IS NULL
+               AND (subject_type <=> ?) AND (subject_id <=> ?)',
+            [$userId, $kind, $subjectType, $subjectId]
+        );
+    }
+
+    /** @return array<string, mixed>|null */
+    private static function findUnread(int $userId, string $kind, ?string $subjectType, ?int $subjectId): ?array
+    {
+        return Database::fetch(
+            'SELECT id FROM notifications
+             WHERE user_id = ? AND kind = ? AND read_at IS NULL
+               AND (subject_type <=> ?) AND (subject_id <=> ?)
+             ORDER BY id DESC LIMIT 1',
+            [$userId, $kind, $subjectType, $subjectId]
         );
     }
 

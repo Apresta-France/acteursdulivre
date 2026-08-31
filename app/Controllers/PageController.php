@@ -588,7 +588,7 @@ final class PageController
         }
 
         try {
-            Mailer::sendTemplate('contact-interne', \Adl\Core\Env::get('MAIL_FROM_ADDRESS', 'bonjour@acteursdulivre.fr'), [
+            Mailer::sendTemplate('contact-interne', Mailer::fromAddress(), [
                 'nom' => $name !== '' ? $name : 'Visiteur',
                 'email' => $email,
                 'message' => nl2br(e($message)),
@@ -599,7 +599,7 @@ final class PageController
         } catch (\Throwable $e) {
             try {
                 Mailer::send(
-                    \Adl\Core\Env::get('MAIL_FROM_ADDRESS', 'bonjour@acteursdulivre.fr'),
+                    Mailer::fromAddress(),
                     'Message de contact',
                     '<p><strong>' . e($name) . '</strong> (' . e($email) . ')</p><p>' . nl2br(e($message)) . '</p>'
                 );

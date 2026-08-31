@@ -82,10 +82,10 @@ $oauthProviders = OAuth::enabledProviders();
   <form method="post" action="<?= e(url('/espace/parametres/notifications')) ?>" class="param-form" style="margin-top: 36px;">
     <?= csrf_field() ?>
     <p class="field">Notifications</p>
-    <p class="espace-page-lead" style="margin-top: 0;">Les messages restent visibles ici. Ces cases concernent les e-mails de relance.</p>
-    <label class="check-row"><input type="checkbox" name="notify_messages" value="1"<?= !empty($notifyMessages) ? ' checked' : '' ?>> Relances si un message reste sans réponse</label>
-    <label class="check-row"><input type="checkbox" name="notify_jalons" value="1"<?= !empty($notifyJalons) ? ' checked' : '' ?>> Jalons : livraison à valider, projet en cours, facture échue</label>
-    <label class="check-row"><input type="checkbox" name="notify_missions" value="1"<?= !empty($notifyMissions) ? ' checked' : '' ?>> Missions : candidature en attente, vitrine incomplète</label>
+    <p class="espace-page-lead" style="margin-top: 0;">Les messages restent visibles ici. Ces cases concernent les e-mails (à l’instant et les relances).</p>
+    <label class="check-row"><input type="checkbox" name="notify_messages" value="1"<?= !empty($notifyMessages) ? ' checked' : '' ?>> Nouveau message et relances si une conversation reste sans réponse</label>
+    <label class="check-row"><input type="checkbox" name="notify_jalons" value="1"<?= !empty($notifyJalons) ? ' checked' : '' ?>> Commandes : acceptation, livraison, facture de commission, facture échue</label>
+    <label class="check-row"><input type="checkbox" name="notify_missions" value="1"<?= !empty($notifyMissions) ? ' checked' : '' ?>> Missions : nouvelle candidature, réponse, vitrine incomplète</label>
     <label class="check-row"><input type="checkbox" name="notify_newsletter" value="1"<?= !empty($notifyNewsletter) ? ' checked' : '' ?>> Lettre d'information mensuelle</label>
     <div class="auth-actions">
       <button class="btn-navy" type="submit">Enregistrer les notifications</button>

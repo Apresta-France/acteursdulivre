@@ -537,7 +537,7 @@ final class AdminController
     public function smtp(Request $request): void
     {
         $this->page('smtp', 'admin/smtp', [
-            'settings' => Setting::all(),
+            'settings' => Mailer::config(),
             'tested' => flash('tested'),
         ]);
     }
@@ -545,8 +545,12 @@ final class AdminController
     public function smtpSave(Request $request): void
     {
         Auth::requireAdmin();
-        foreach (['mail_host', 'mail_port', 'mail_username', 'mail_password', 'mail_encryption', 'mail_from_address', 'mail_from_name'] as $key) {
+        foreach (['mail_host', 'mail_port', 'mail_username', 'mail_encryption', 'mail_from_address', 'mail_from_name'] as $key) {
             Setting::set($key, $request->string($key, ''));
+        }
+        $password = $request->string('mail_password', '');
+        if ($password !== '') {
+            Setting::set('mail_password', $password);
         }
         flash('saved', true);
         redirect('/admin/smtp');
@@ -556,9 +560,17 @@ final class AdminController
     {
         Auth::requireAdmin();
         $to = $request->string('test_email', Auth::user()['email'] ?? '');
+        if (!filter_var($to, FILTER_VALIDATE_EMAIL)) {
+            flash('error', 'Indiquez une adresse e-mail valide pour le test.');
+            redirect('/admin/smtp');
+        }
         try {
             Mailer::send($to, 'Test SMTP — Acteurs du Livre', '<p>Ceci est un e-mail de test envoyé depuis l\'administration.</p>');
-            flash('tested', 'E-mail de test envoyé vers ' . $to . '.');
+            if (!Mailer::usesSmtp()) {
+                flash('error', 'Aucun hôte SMTP n\'est configuré : le message a été écrit dans storage/mail, il n\'a pas été envoyé.');
+            } else {
+                flash('tested', 'E-mail de test envoyé vers ' . $to . '. Vérifiez la boîte de réception (et les indésirables).');
+            }
         } catch (Throwable $e) {
             flash('error', $e->getMessage());
         }

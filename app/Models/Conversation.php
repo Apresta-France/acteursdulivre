@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Adl\Models;
 
 use Adl\Core\Database;
+use Adl\Core\Mailer;
 use RuntimeException;
 
 final class Conversation
@@ -150,15 +151,27 @@ final class Conversation
             : 'Pièce jointe : ' . (string) ($attachment['name'] ?? 'fichier');
         $otherId = (int) ($thread['other']['id'] ?? 0);
         if ($otherId > 0) {
-            Notification::create(
+            $senderName = User::displayName(User::find($userId) ?? []);
+            $unread = self::unreadFromSender($conversationId, $otherId, $userId);
+            $title = $unread > 1
+                ? $unread . ' nouveaux messages de ' . $senderName
+                : 'Nouveau message de ' . $senderName;
+            $hadUnread = Notification::hasUnread($otherId, 'message', 'conversation', $conversationId);
+            Notification::upsertUnread(
                 $otherId,
-                'Nouveau message de ' . User::displayName(User::find($userId) ?? []),
+                $title,
                 mb_strlen($preview) > 140 ? mb_substr($preview, 0, 137) . '…' : $preview,
                 '/espace/messages/' . $conversationId,
                 'message',
                 'conversation',
                 $conversationId
             );
+            if (!$hadUnread) {
+                Mailer::notify(User::find($otherId), 'messages', 'nouveau-message', [
+                    'sujet' => (string) ($thread['subject'] ?? 'votre conversation'),
+                    'lien' => url('/espace/messages/' . $conversationId),
+                ]);
+            }
         }
 
         return Database::fetch('SELECT * FROM messages WHERE id = ?', [$messageId]) ?? [];
@@ -228,6 +241,22 @@ final class Conversation
              WHERE conversation_id = ? AND user_id = ?',
             [$conversationId, $userId]
         );
+        Notification::markSubjectRead($userId, 'message', 'conversation', $conversationId);
+    }
+
+    private static function unreadFromSender(int $conversationId, int $recipientId, int $senderId): int
+    {
+        $row = Database::fetch(
+            'SELECT COUNT(*) AS n
+             FROM messages m
+             JOIN conversation_participants p
+               ON p.conversation_id = m.conversation_id AND p.user_id = ?
+             WHERE m.conversation_id = ?
+               AND m.user_id = ?
+               AND (p.last_read_at IS NULL OR m.created_at > p.last_read_at)',
+            [$recipientId, $conversationId, $senderId]
+        );
+        return max(1, (int) ($row['n'] ?? 1));
     }
 
     /** @return list<array<string, mixed>> */

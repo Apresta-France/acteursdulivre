@@ -1016,6 +1016,43 @@
     });
   });
 
+  function initQuoteRecap() {
+    var amountInput = document.getElementById('jalon-amount');
+    var depositInput = document.getElementById('jalon-deposit');
+    var recap = document.querySelector('[data-quote-recap]');
+    if (!amountInput || !recap) return;
+
+    function parseEuros(value) {
+      var s = String(value || '').trim().replace(/\s/g, '').replace(',', '.');
+      if (!s) return 0;
+      var n = parseFloat(s);
+      if (isNaN(n) || n < 0) return 0;
+      return Math.floor(n);
+    }
+
+    function formatEuros(n) {
+      return n.toLocaleString('fr-FR') + ' €';
+    }
+
+    function sync() {
+      var amount = parseEuros(amountInput.value);
+      var deposit = depositInput ? parseEuros(depositInput.value) : 0;
+      var amountEl = recap.querySelector('[data-quote-recap-amount]');
+      var depositEl = recap.querySelector('[data-quote-recap-deposit]');
+      var balanceEl = recap.querySelector('[data-quote-recap-balance]');
+      if (amountEl) amountEl.textContent = amount > 0 ? formatEuros(amount) : '—';
+      if (depositEl) depositEl.textContent = deposit > 0 ? formatEuros(deposit) : '—';
+      if (balanceEl) {
+        balanceEl.textContent = amount > 0 ? formatEuros(Math.max(0, amount - deposit)) : '—';
+      }
+    }
+
+    amountInput.addEventListener('input', sync);
+    if (depositInput) depositInput.addEventListener('input', sync);
+    sync();
+  }
+  initQuoteRecap();
+
   document.querySelectorAll('[data-order-total]').forEach(function (root) {
     var base = parseInt(root.getAttribute('data-base') || '0', 10) || 0;
     var orderHref = root.getAttribute('data-order-href') || '';

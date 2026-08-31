@@ -2,6 +2,7 @@
 $threads = $threads ?? [];
 $thread = $thread ?? null;
 $messages = $messages ?? [];
+$quoteHref = trim((string) ($quoteHref ?? ''));
 ?>
 <div class="espace-page">
   <div class="espace-page-head">
@@ -58,7 +59,8 @@ $messages = $messages ?? [];
                   <p><?= nl2br(e((string) $msg['body'])) ?></p>
                 <?php endif; ?>
                 <?php if (!empty($msg['has_file'])): ?>
-                  <a class="msg-file" href="<?= e(url((string) $msg['file_href'])) ?>">
+                  <a class="msg-file" href="<?= e(url((string) $msg['file_href'])) ?>" title="Télécharger">
+                    <?= icon('download', 16) ?>
                     <?= e((string) $msg['file_label']) ?><?= !empty($msg['file_size']) ? ' · ' . e((string) $msg['file_size']) : '' ?>
                   </a>
                 <?php endif; ?>
@@ -73,7 +75,12 @@ $messages = $messages ?? [];
               <span class="btn-ghost file-pick-btn">Joindre un fichier</span>
               <span data-dropzone-label>Glissez-déposez ou choisissez depuis votre ordinateur</span>
             </label>
-            <button class="btn-orange" type="submit">Envoyer</button>
+            <div class="inbox-compose-actions">
+              <button class="btn-orange" type="submit">Envoyer</button>
+              <?php if ($quoteHref !== ''): ?>
+                <a class="btn-ghost" href="<?= e(url($quoteHref)) ?>">Gérer le devis</a>
+              <?php endif; ?>
+            </div>
           </form>
         <?php endif; ?>
       </div>

@@ -946,6 +946,7 @@ final class AccountController
             'threads' => Conversation::forUser((int) $user['id']),
             'thread' => $thread,
             'messages' => Conversation::messages((int) $id),
+            'quoteHref' => self::quoteManageHref($thread, (int) $user['id']),
             'saved' => flash('saved'),
             'error' => flash('error'),
         ]);
@@ -1534,6 +1535,25 @@ final class AccountController
             'name' => (string) ($file['name'] ?? 'Document'),
             'path' => $stored,
         ];
+    }
+
+    /** @param array<string, mixed> $thread */
+    private static function quoteManageHref(array $thread, int $userId): string
+    {
+        $orderId = (int) ($thread['order_id'] ?? 0);
+        if ($orderId < 1) {
+            return '';
+        }
+        try {
+            $order = Order::findForUser($orderId, $userId);
+        } catch (\Throwable) {
+            return '';
+        }
+        if (!$order || !OrderMilestone::quoteNeedsManagement($order)) {
+            return '';
+        }
+
+        return '/espace/suivi/' . $orderId;
     }
 
     private static function pingJalonThread(int $orderId, int $userId, string $code): void

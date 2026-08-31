@@ -3022,6 +3022,8 @@ img.profile-avatar,
 .msg.is-mine p { background: #FDF3F0; }
 .inbox-compose { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; padding: 14px 18px; border-top: 1px solid var(--line); }
 .inbox-compose .textarea { flex: 1 1 100%; }
+.inbox-compose-actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.inbox-compose-actions .btn-ghost { height: 50px; }
 .dropzone {
   flex: 1 1 100%;
   display: flex;
@@ -3043,7 +3045,9 @@ img.profile-avatar,
 .dropzone.is-over { border-color: var(--orange); background: #FDF3F0; color: var(--navy); }
 .dropzone.has-file { border-style: solid; color: var(--navy); }
 .msg-file {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   margin-top: 8px;
   padding: 8px 12px;
   border-radius: 8px;
@@ -3052,6 +3056,9 @@ img.profile-avatar,
   font-size: 13px;
   color: var(--navy);
 }
+.msg-file .ico { color: #8A9AAB; }
+.msg-file:hover { border-color: var(--navy); }
+.msg-file:hover .ico { color: var(--orange); }
 .check-row { display: flex; gap: 10px; align-items: flex-start; font-size: 15px; color: #4A5A6B; margin: 8px 0; }
 .check-row input { margin-top: 3px; }
 .param-danger { border-top: 1px solid #F4DFD8; padding-top: 28px; }
@@ -3199,6 +3206,9 @@ img.profile-avatar,
 @media (max-width: 900px) {
   .inbox { grid-template-columns: 1fr; }
   .inbox-list { max-height: 220px; border-right: 0; border-bottom: 1px solid var(--line); }
+  .inbox-compose-actions { width: 100%; }
+  .inbox-compose-actions .btn-orange,
+  .inbox-compose-actions .btn-ghost { flex: 1 1 auto; justify-content: center; }
   .help-cats { grid-template-columns: 1fr 1fr; }
 }
 @media (max-width: 640px) {

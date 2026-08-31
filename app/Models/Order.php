@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Adl\Models;
 
 use Adl\Core\Database;
+use Adl\Core\Mailer;
 
 final class Order
 {
@@ -65,6 +66,11 @@ final class Order
             'order',
             (int) $order['id']
         );
+        Mailer::notify(User::find($sellerId), 'transactional', 'nouvelle-commande', [
+            'numero' => (string) $order['num'],
+            'titre' => (string) $order['title'],
+            'lien' => url('/espace/suivi/' . (int) $order['id']),
+        ]);
 
         return $order;
     }
@@ -88,6 +94,11 @@ final class Order
             'order',
             $id
         );
+        Mailer::notify(User::find((int) $order['buyer_id']), 'jalons', 'commande-acceptee', [
+            'numero' => (string) $order['num'],
+            'titre' => (string) $order['title'],
+            'lien' => url('/espace/suivi/' . $id),
+        ]);
         return self::find($id) ?? $order;
     }
 
@@ -110,6 +121,11 @@ final class Order
             'order',
             $id
         );
+        Mailer::notify(User::find((int) $order['buyer_id']), 'jalons', 'commande-livree', [
+            'numero' => (string) $order['num'],
+            'titre' => (string) $order['title'],
+            'lien' => url('/espace/suivi/' . $id),
+        ]);
         return self::find($id) ?? $order;
     }
 
@@ -138,6 +154,12 @@ final class Order
             'order',
             $id
         );
+        Mailer::notify(User::find($otherId), 'transactional', 'commande-litige', [
+            'numero' => (string) $order['num'],
+            'titre' => (string) $order['title'],
+            'motif' => $reason,
+            'lien' => url('/espace/suivi/' . $id),
+        ]);
         return self::find($id) ?? $order;
     }
 
@@ -330,6 +352,12 @@ final class Order
                 'invoice',
                 (int) ($invoice['id'] ?? 0)
             );
+            Mailer::notify(User::find((int) $order['seller_id']), 'jalons', 'facture-commission', [
+                'numero' => (string) ($invoice['number'] ?? ''),
+                'montant' => (string) ($invoice['amount_label'] ?? ''),
+                'echeance' => (string) ($invoice['due_label'] ?? ''),
+                'lien' => url('/espace/facturation'),
+            ]);
         } else {
             Notification::create(
                 (int) $order['seller_id'],
@@ -522,6 +550,14 @@ final class Order
         return Database::fetch(
             'SELECT o.*,
                     s.title AS service_title,
+                    s.excerpt AS service_excerpt,
+                    s.delay AS service_delay,
+                    (SELECT sp.delay FROM service_packages sp
+                     WHERE o.service_id IS NOT NULL
+                       AND sp.service_id = o.service_id
+                       AND o.package_name IS NOT NULL
+                       AND sp.name = o.package_name
+                     LIMIT 1) AS package_delay,
                     m.title AS mission_title,
                     b.first_name AS buyer_first, b.last_name AS buyer_last,
                     sl.first_name AS seller_first, sl.last_name AS seller_last
@@ -569,7 +605,32 @@ final class Order
         $row['commission_label'] = !empty($row['confirmed_at']) || ($row['commission_percent'] ?? null) !== null
             ? format_euros((int) ($row['commission_amount'] ?? 0))
             : '';
+        $row['service_excerpt'] = self::htmlToQuoteNote((string) ($row['service_excerpt'] ?? ''));
+        $row['service_delay'] = trim((string) ($row['service_delay'] ?? ''));
+        $row['package_delay'] = trim((string) ($row['package_delay'] ?? ''));
+        $row['quote_form_delay'] = trim((string) ($row['quote_delay'] ?? ''))
+            ?: ($row['package_delay'] !== '' ? $row['package_delay'] : $row['service_delay']);
+        $row['quote_form_note'] = trim((string) ($row['quote_note'] ?? ''))
+            ?: $row['service_excerpt'];
         return $row;
+    }
+
+    private static function htmlToQuoteNote(string $html): string
+    {
+        $html = trim($html);
+        if ($html === '') {
+            return '';
+        }
+        $html = preg_replace('/<br\s*\/?>/i', "\n", $html) ?? $html;
+        $html = preg_replace('/<\/(p|div|h3|h4|li)>/i', "\n", $html) ?? $html;
+        $html = preg_replace('/<li[^>]*>/i', '• ', $html) ?? $html;
+        $text = html_entity_decode(strip_tags($html), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $text = str_replace("\xc2\xa0", ' ', $text);
+        $text = preg_replace("/[ \t]+/u", ' ', $text) ?? $text;
+        $text = preg_replace("/ ?\n ?/", "\n", $text) ?? $text;
+        $text = preg_replace("/\n{3,}/", "\n\n", $text) ?? $text;
+
+        return trim($text);
     }
 
     /**

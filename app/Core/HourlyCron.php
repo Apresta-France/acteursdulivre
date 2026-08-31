@@ -538,6 +538,10 @@ final class HourlyCron
                     'invoice',
                     (int) $invoice['id']
                 );
+                Mailer::notify($seller, 'jalons', 'facture-echue', [
+                    'numero' => (string) ($invoice['number'] ?? ''),
+                    'lien' => url('/espace/facturation'),
+                ]);
                 $stats['invoices_overdue']++;
             }
         } catch (Throwable $e) {

@@ -471,6 +471,24 @@ final class OrderMilestone
         self::refreshCurrent($orderId);
     }
 
+    /**
+     * Devis pas encore accepté : à envoyer ou en attente de validation client.
+     *
+     * @param array<string, mixed> $order
+     */
+    public static function quoteNeedsManagement(array $order): bool
+    {
+        if (in_array((string) ($order['status'] ?? ''), ['cancelled', 'dispute'], true)) {
+            return false;
+        }
+        $current = $order['current_milestone'] ?? null;
+        if (!is_array($current)) {
+            return false;
+        }
+
+        return in_array((string) ($current['code'] ?? ''), ['quote', 'quote_accept'], true);
+    }
+
     public static function flashFor(string $code): string
     {
         return match ($code) {
