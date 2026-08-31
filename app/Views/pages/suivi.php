@@ -27,7 +27,10 @@
             <?= e((string) $order['num']) ?> · <?= e((string) $order['by']) ?> · <?= e((string) $order['when']) ?>
           </div>
           <div class="side-foot">
-            <span><?= e((string) (($order['next_jalon_label'] ?? '') !== '' ? $order['next_jalon_label'] : $order['status_label'])) ?></span>
+            <span><?= e((string) (($order['next_jalon_label'] ?? '') !== '' ? $order['next_jalon_label'] : $order['status_label'])) ?><?php
+              $fileCount = (int) ($order['file_count'] ?? 0);
+              if (!empty($order['depot_open']) || $fileCount > 0):
+            ?> · <?= $fileCount > 0 ? $fileCount . ' fichier' . ($fileCount > 1 ? 's' : '') : 'espace fichiers ouvert' ?><?php endif; ?></span>
             <strong><?= e((string) $order['amount_label']) ?></strong>
           </div>
           <div class="auth-actions" style="margin-top: 14px;">

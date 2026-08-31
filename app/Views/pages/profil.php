@@ -22,8 +22,35 @@ $isOwnProfile = $viewer && (int) ($viewer['id'] ?? 0) === (int) ($p['user_id'] ?
         <span class="profile-badge profile-badge-avail<?= !empty($p['is_busy']) ? ' is-busy' : ' is-available' ?>"><?= e((string) ($p['availability_label'] ?? (!empty($p['is_busy']) ? 'Occupé' : 'Disponible'))) ?></span>
       </div>
       <div class="profile-hero-sub">
-        <?= e(trim(($p['title'] ?? '') . ($p['city'] ? ' · ' . $p['city'] : '') . ($p['languages'] ? ' · ' . $p['languages'] : ''))) ?>
+        <?= e(trim(($p['title'] ?? '') . (!empty($p['location_label']) ? ' · ' . $p['location_label'] : ($p['city'] ? ' · ' . $p['city'] : '')) . ($p['languages'] ? ' · ' . $p['languages'] : ''))) ?>
       </div>
+      <?php
+        $reviewStats = $p['review_stats'] ?? ['avg' => '', 'count' => 0];
+        $reviewCount = (int) ($reviewStats['count'] ?? 0);
+        $hasHeroStats = $reviewCount > 0 || ($p['response_time_label'] ?? '') !== '' || ($p['member_since_label'] ?? '') !== '';
+      ?>
+      <?php if ($hasHeroStats): ?>
+        <div class="profile-hero-stats">
+          <?php if ($reviewCount > 0): ?>
+            <div>
+              <strong><?= e((string) $reviewStats['avg']) ?></strong>
+              <span><?= $reviewCount > 1 ? $reviewCount . ' avis' : '1 avis' ?></span>
+            </div>
+          <?php endif; ?>
+          <?php if (($p['response_time_label'] ?? '') !== ''): ?>
+            <div>
+              <strong><?= e((string) $p['response_time_label']) ?></strong>
+              <span>délai de réponse</span>
+            </div>
+          <?php endif; ?>
+          <?php if (($p['member_since_label'] ?? '') !== ''): ?>
+            <div>
+              <strong><?= e(preg_replace('/^Membre depuis /', '', (string) $p['member_since_label'])) ?></strong>
+              <span>membre depuis</span>
+            </div>
+          <?php endif; ?>
+        </div>
+      <?php endif; ?>
       <?php if (!empty($p['trades']) || !empty($p['tags'])): ?>
         <div class="chip-row">
           <?php foreach (array_slice($p['tags'] ?: $p['trades'], 0, 8) as $tag): ?>
@@ -73,6 +100,35 @@ $isOwnProfile = $viewer && (int) ($viewer['id'] ?? 0) === (int) ($p['user_id'] ?
       <?php if ($p['presentation'] !== ''): ?>
         <h2>À propos</h2>
         <p class="profile-text"><?= nl2br(e((string) $p['presentation'])) ?></p>
+      <?php endif; ?>
+
+      <?php
+        $doesLines = \Adl\Models\Profile::scopeLines($p['does'] ?? '');
+        $doesNotLines = \Adl\Models\Profile::scopeLines($p['does_not'] ?? '');
+      ?>
+      <?php if ($doesLines !== [] || $doesNotLines !== []): ?>
+        <div class="profile-scope<?= ($doesLines === [] || $doesNotLines === []) ? ' is-single' : '' ?>">
+          <?php if ($doesLines !== []): ?>
+            <div class="profile-scope-card">
+              <div class="side-kicker">Ce que je fais</div>
+              <ul>
+                <?php foreach ($doesLines as $line): ?>
+                  <li><?= e($line) ?></li>
+                <?php endforeach; ?>
+              </ul>
+            </div>
+          <?php endif; ?>
+          <?php if ($doesNotLines !== []): ?>
+            <div class="profile-scope-card is-not">
+              <div class="side-kicker">Ce que je ne fais pas</div>
+              <ul>
+                <?php foreach ($doesNotLines as $line): ?>
+                  <li><?= e($line) ?></li>
+                <?php endforeach; ?>
+              </ul>
+            </div>
+          <?php endif; ?>
+        </div>
       <?php endif; ?>
 
       <?php if (!empty($p['skills'])): ?>
@@ -177,10 +233,37 @@ $isOwnProfile = $viewer && (int) ($viewer['id'] ?? 0) === (int) ($p['user_id'] ?
           <?php if ($p['rate_note'] !== ''): ?><div class="side-sub"><?= e((string) $p['rate_note']) ?></div><?php endif; ?>
         <?php endif; ?>
         <div class="info-list">
-          <?php if ($p['city'] !== ''): ?><div><span>Localisation</span><strong><?= e((string) $p['city']) ?></strong></div><?php endif; ?>
+          <?php if (($p['location_label'] ?? '') !== '' || $p['city'] !== ''): ?>
+            <div><span>Localisation</span><strong><?= e((string) (($p['location_label'] ?? '') !== '' ? $p['location_label'] : $p['city'])) ?></strong></div>
+          <?php endif; ?>
           <div><span>Disponibilité</span><strong><?= e((string) ($p['availability_summary'] ?? ($p['availability'] !== '' ? $p['availability'] : 'Disponible'))) ?></strong></div>
-          <?php if ($p['languages'] !== ''): ?><div><span>Langues</span><strong><?= e((string) $p['languages']) ?></strong></div><?php endif; ?>
+          <?php if (($p['response_time_label'] ?? '') !== ''): ?>
+            <div><span>Réponse</span><strong><?= e((string) $p['response_time_label']) ?></strong></div>
+          <?php endif; ?>
+          <?php
+            $langLines = [];
+            foreach ($p['languages_list'] ?? [] as $lang) {
+                $label = trim((string) ($lang['langue'] ?? ''));
+                if ($label === '') {
+                    continue;
+                }
+                $level = trim((string) ($lang['niveau'] ?? ''));
+                $langLines[] = $level !== '' ? $label . ' · ' . $level : $label;
+            }
+          ?>
+          <?php if ($langLines !== []): ?>
+            <div>
+              <span>Langues</span>
+              <strong><?= implode('<br>', array_map('e', $langLines)) ?></strong>
+            </div>
+          <?php elseif ($p['languages'] !== ''): ?>
+            <div><span>Langues</span><strong><?= e((string) $p['languages']) ?></strong></div>
+          <?php endif; ?>
           <?php if (!empty($p['trades'])): ?><div><span>Métiers</span><strong><?= e(implode(', ', $p['trades'])) ?></strong></div><?php endif; ?>
+          <?php if (!empty($p['genres'])): ?><div><span>Spécialités</span><strong><?= e(implode(', ', $p['genres'])) ?></strong></div><?php endif; ?>
+          <?php if (($p['member_since_label'] ?? '') !== ''): ?>
+            <div><span>Sur la plateforme</span><strong><?= e((string) $p['member_since_label']) ?></strong></div>
+          <?php endif; ?>
           <?php if ($p['website'] !== ''): ?>
             <?php $website = (string) $p['website']; ?>
             <div><span>Site</span><?php if (preg_match('#^https?://#i', $website)): ?><a href="<?= e($website) ?>" target="_blank" rel="noopener noreferrer"><?= e($website) ?></a><?php else: ?><strong><?= e($website) ?></strong><?php endif; ?></div>

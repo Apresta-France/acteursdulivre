@@ -6,7 +6,7 @@ $tarifsFaq = $tarifsFaq ?? [];
 ?>
 <div class="mk-page mk-pad tarif-page">
   <h1>Tarifs et commission</h1>
-  <p class="mk-lead">Aucun abonnement. Publier une recherche, créer une vitrine et proposer des fiches sont libres. Le client règle le prestataire hors plateforme. La première mission est offerte ; ensuite, 8&nbsp;% de commission sur le montant hors taxes (hors TVA) des missions réalisées.</p>
+  <p class="mk-lead">Aucun abonnement. Publier une recherche, créer une vitrine et proposer des fiches sont libres. Le client règle le prestataire hors plateforme. La première mission est offerte ; ensuite 8&nbsp;% hors taxes, ou 6&nbsp;% pour les 100 premiers inscrits et dès 12 missions réalisées. Votre taux s’affiche dans votre espace, à Facturation.</p>
 
   <div class="tarif-grid">
     <?php foreach ($niveaux as $i => $n): ?>

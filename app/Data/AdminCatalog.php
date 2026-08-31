@@ -6,6 +6,7 @@ namespace Adl\Data;
 
 use Adl\Core\Auth;
 use Adl\Models\Article;
+use Adl\Models\Commission;
 use Adl\Models\Invoice;
 use Adl\Models\Mission;
 use Adl\Models\Order;
@@ -162,6 +163,8 @@ final class AdminCatalog
             'commissionRows' => [
                 ['niveau' => 'Première mission', 'pct' => '0 %', 'seuil' => 'offerte'],
                 ['niveau' => 'Missions suivantes', 'pct' => '8 %', 'seuil' => 'à partir de la 2ᵉ'],
+                ['niveau' => 'Membres fondateurs', 'pct' => '6 %', 'seuil' => '100 premiers inscrits'],
+                ['niveau' => 'Fidélité', 'pct' => '6 %', 'seuil' => 'dès 12 missions'],
             ],
             'iaReglages' => self::iaReglages(),
             'metiersReglage' => self::metiersReglage(),
@@ -498,6 +501,8 @@ final class AdminCatalog
                 'commissionRows' => [
                     ['niveau' => 'Première mission', 'pct' => '0 %', 'seuil' => 'offerte'],
                     ['niveau' => 'Missions suivantes', 'pct' => $commission . ' %', 'seuil' => 'à partir de la 2ᵉ'],
+                    ['niveau' => 'Membres fondateurs', 'pct' => (string) Commission::founderPercent() . ' %', 'seuil' => Commission::founderLimit() . ' premiers inscrits'],
+                    ['niveau' => 'Fidélité', 'pct' => (string) Commission::founderPercent() . ' %', 'seuil' => 'dès ' . Commission::loyaltyThreshold() . ' missions'],
                 ],
                 'dashSubtitle' => self::weekLabel() . ' · fuseau Europe/Paris',
                 'verifSubtitle' => 'Aucun dossier en attente.',

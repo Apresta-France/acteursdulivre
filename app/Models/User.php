@@ -97,7 +97,8 @@ final class User
             'seeks_services', 'offers_services', 'google_id', 'facebook_id',
             'avatar_url', 'onboarding_done_at', 'founder',
             'notify_messages', 'notify_jalons', 'notify_missions', 'notify_newsletter',
-            'company_name', 'siret', 'vat_number', 'billing_address', 'iban',
+            'company_name', 'siren', 'siret', 'vat_number', 'vat_exempt',
+            'legal_form', 'einvoice_routing', 'billing_address', 'iban',
             'deleted_at',
         ];
         $fields = [];
@@ -193,7 +194,7 @@ final class User
     /** @return list<array<string, mixed>> */
     public static function search(string $query = '', string $filter = 'tous'): array
     {
-        $sql = 'SELECT id, email, first_name, last_name, role, seeks_services, offers_services, status, last_login_at, created_at, avatar_url
+        $sql = 'SELECT id, email, first_name, last_name, role, seeks_services, offers_services, status, last_login_at, created_at, avatar_url, deleted_at
                 FROM users WHERE 1=1';
         $params = [];
         $query = trim($query);
@@ -202,14 +203,19 @@ final class User
             $like = '%' . $query . '%';
             $params = [$like, $like, $like, $like];
         }
-        if ($filter === 'prestataires') {
-            $sql .= ' AND offers_services = 1';
-        } elseif ($filter === 'porteurs') {
-            $sql .= ' AND seeks_services = 1';
-        } elseif ($filter === 'admins') {
-            $sql .= ' AND role = "admin"';
-        } elseif ($filter === 'suspendus') {
-            $sql .= ' AND status = "suspended"';
+        if ($filter === 'clotures') {
+            $sql .= ' AND deleted_at IS NOT NULL';
+        } else {
+            $sql .= ' AND deleted_at IS NULL';
+            if ($filter === 'prestataires') {
+                $sql .= ' AND offers_services = 1';
+            } elseif ($filter === 'porteurs') {
+                $sql .= ' AND seeks_services = 1';
+            } elseif ($filter === 'admins') {
+                $sql .= ' AND role = "admin"';
+            } elseif ($filter === 'suspendus') {
+                $sql .= ' AND status = "suspended"';
+            }
         }
         $sql .= ' ORDER BY id DESC';
         return Database::fetchAll($sql, $params);
@@ -217,8 +223,21 @@ final class User
 
     public static function countAdmins(): int
     {
-        $row = Database::fetch('SELECT COUNT(*) AS n FROM users WHERE role = "admin"');
+        $row = Database::fetch('SELECT COUNT(*) AS n FROM users WHERE role = "admin" AND deleted_at IS NULL');
         return (int) ($row['n'] ?? 0);
+    }
+
+    public static function isClosed(array $user): bool
+    {
+        return !empty($user['deleted_at']);
+    }
+
+    public static function accountStatusLabel(array $user): string
+    {
+        if (self::isClosed($user)) {
+            return 'Clôturé';
+        }
+        return self::statusLabel((string) ($user['status'] ?? 'active'));
     }
 
     public static function roleLabel(string $role): string
@@ -250,6 +269,9 @@ final class User
         $user = self::find($id);
         if (!$user) {
             throw new \RuntimeException('Utilisateur introuvable.');
+        }
+        if (self::isClosed($user)) {
+            throw new \RuntimeException('Ce compte est clôturé et ne peut plus être modifié.');
         }
 
         $wasAdmin = ($user['role'] ?? '') === 'admin';
@@ -474,6 +496,16 @@ final class User
 
     public static function assertCanClose(int $id): void
     {
+        $user = self::find($id);
+        if (!$user) {
+            throw new \RuntimeException('Utilisateur introuvable.');
+        }
+        if (self::isClosed($user)) {
+            throw new \RuntimeException('Ce compte est déjà clôturé.');
+        }
+        if (($user['role'] ?? '') === 'admin' && self::countAdmins() <= 1) {
+            throw new \RuntimeException('Impossible de supprimer le dernier administrateur.');
+        }
         $open = Database::fetch(
             'SELECT COUNT(*) AS n FROM orders
              WHERE (buyer_id = ? OR seller_id = ?)
@@ -515,6 +547,16 @@ final class User
             'google_id' => null,
             'facebook_id' => null,
             'iban' => null,
+            'siren' => null,
+            'siret' => null,
+            'vat_number' => null,
+            'einvoice_routing' => null,
+            'company_name' => null,
+            'legal_form' => null,
+            'billing_address' => null,
+            'role' => 'client',
+            'seeks_services' => 0,
+            'offers_services' => 0,
             'status' => 'suspended',
             'deleted_at' => date('Y-m-d H:i:s'),
         ]);
@@ -553,6 +595,7 @@ final class User
             'invoices' => $safe(static fn () => Invoice::forSeller($id)),
             'missions' => $safe(static fn () => Mission::forUser($id)),
             'messages_sent' => $safe(static fn () => Conversation::exportForUser($id)),
+            'order_files' => $safe(static fn () => OrderFile::exportForUser($id)),
             'reviews_received' => $safe(static fn () => Review::forTarget($id, 200)),
             'legal' => $safe(static fn () => LegalAcceptance::forUser($id)),
         ];
@@ -587,6 +630,31 @@ final class User
             static fn (string $candidate): bool => Database::fetch('SELECT id FROM profiles WHERE slug = ?', [$candidate]) !== null
         );
         Database::query('INSERT INTO profiles (user_id, slug) VALUES (?, ?)', [$userId, $slug]);
+    }
+
+    /** @return array<string, string> */
+    public static function legalForms(): array
+    {
+        return [
+            'micro' => 'Micro-entrepreneur',
+            'ei' => 'Entreprise individuelle',
+            'eurl' => 'EURL',
+            'sarl' => 'SARL',
+            'sasu' => 'SASU',
+            'sas' => 'SAS',
+            'sa' => 'SA',
+            'scop' => 'SCOP',
+            'asso' => 'Association',
+            'autre' => 'Autre',
+        ];
+    }
+
+    public static function legalFormLabel(?string $code): string
+    {
+        if ($code === null || $code === '') {
+            return '';
+        }
+        return self::legalForms()[$code] ?? '';
     }
 
     private static function normalizeFlag(mixed $value, bool $fallback): int

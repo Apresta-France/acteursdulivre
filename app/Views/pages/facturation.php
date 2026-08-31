@@ -13,6 +13,11 @@ $due = (int) ($dueAmount ?? 0);
   </div>
 
   <?php require ADL_ROOT . '/app/Views/partials/billing-banner.php'; ?>
+  <?php require ADL_ROOT . '/app/Views/partials/commission-rate.php'; ?>
+
+  <?php if (!empty($needsSiren)): ?>
+    <p class="espace-page-lead">Pour la facturation électronique, renseignez votre <a href="<?= e(url('/espace/parametres')) ?>">SIREN dans Paramètres</a> — 9 chiffres, sur votre Kbis ou avis INSEE.</p>
+  <?php endif; ?>
 
   <?php if ($invoices !== []): ?>
     <h2 class="espace-section-title">Factures de commission</h2>
@@ -31,8 +36,8 @@ $due = (int) ($dueAmount ?? 0);
             <?php endif; ?>
           </div>
           <div class="side-foot">
-            <span><?= (int) ($invoice['amount'] ?? 0) === 0 ? 'Première mission offerte' : rtrim(rtrim((string) ($invoice['commission_percent'] ?? '8'), '0'), '.') . ' %' ?></span>
-            <strong><?= e((string) $invoice['amount_label']) ?></strong>
+            <span><?= (int) ($invoice['amount'] ?? 0) === 0 ? 'Première mission offerte' : rtrim(rtrim((string) ($invoice['commission_percent'] ?? '8'), '0'), '.') . ' % HT' ?></span>
+            <strong><?= e((string) ($invoice['amount_due_label'] ?? $invoice['amount_label'])) ?></strong>
           </div>
           <div class="auth-actions" style="margin-top: 12px;">
             <a class="btn-ghost" href="<?= e(url((string) ($invoice['pdf_href'] ?? '/espace/facturation/' . (int) $invoice['id'] . '/pdf'))) ?>">Télécharger / imprimer en PDF</a>

@@ -126,7 +126,10 @@ function user_avatar_src(?array $user): string
 function avatar_html(?array $person, int $size = 34, string $class = 'avatar'): string
 {
     $src = user_avatar_src($person);
-    $initials = \Adl\Models\User::initials($person ?? []);
+    $initials = trim((string) ($person['initials'] ?? ''));
+    if ($initials === '') {
+        $initials = \Adl\Models\User::initials($person ?? []);
+    }
     if ($src !== '') {
         return '<img class="' . e(trim($class . ' avatar-photo')) . '" src="' . e($src) . '" alt="" width="' . $size . '" height="' . $size . '">';
     }
@@ -571,9 +574,9 @@ function copy_any_upload_to_private(string $relative, string $subdir, string $or
     ];
 }
 
-function send_any_upload(string $relative, string $downloadName, string $mime = 'application/octet-stream'): never
+function send_any_upload(string $relative, string $downloadName, string $mime = 'application/octet-stream', bool $inline = false): never
 {
-    send_stored_upload($relative, $downloadName, $mime, false);
+    send_stored_upload($relative, $downloadName, $mime, false, $inline);
 }
 
 function delete_upload(string $relative): void
@@ -584,7 +587,7 @@ function delete_upload(string $relative): void
     }
 }
 
-function send_stored_upload(string $relative, string $downloadName, string $mime, bool $privateOnly): never
+function send_stored_upload(string $relative, string $downloadName, string $mime, bool $privateOnly, bool $inline = false): never
 {
     $real = resolve_upload_path($relative, $privateOnly);
     if ($real === null) {
@@ -592,8 +595,9 @@ function send_stored_upload(string $relative, string $downloadName, string $mime
     }
 
     $name = upload_safe_name($downloadName) ?: 'piece-jointe';
+    $disposition = $inline ? 'inline' : 'attachment';
     header('Content-Type: ' . $mime);
-    header('Content-Disposition: attachment; filename="' . $name . '"');
+    header('Content-Disposition: ' . $disposition . '; filename="' . $name . '"');
     header('Content-Length: ' . (string) filesize($real));
     header('X-Content-Type-Options: nosniff');
     header('Cache-Control: private, no-store');

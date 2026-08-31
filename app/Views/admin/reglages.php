@@ -21,6 +21,12 @@ $s = $settings ?? [];
     <div>
       <label class="field" for="founder_limit">Plafond de membres fondateurs</label>
       <input class="input" id="founder_limit" name="founder_limit" type="number" min="0" value="<?= e((string) ($s['founder_limit'] ?? '100')) ?>">
+      <p class="field-help">Les premiers inscrits restent à ce taux. Les autres y passent aussi dès le seuil de missions ci-dessous.</p>
+    </div>
+    <div>
+      <label class="field" for="loyalty_order_threshold">Missions pour passer au taux fondateur</label>
+      <input class="input" id="loyalty_order_threshold" name="loyalty_order_threshold" type="number" min="0" value="<?= e((string) ($s['loyalty_order_threshold'] ?? '12')) ?>">
+      <p class="field-help">Dès ce nombre de missions réalisées (validées par le client). 0 pour désactiver.</p>
     </div>
     <div>
       <label class="field" for="invoice_due_days">Délai de règlement des factures (jours)</label>

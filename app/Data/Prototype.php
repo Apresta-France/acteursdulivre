@@ -52,7 +52,7 @@ final class Prototype
             'accueil' => 'isAccueil', 'resultats' => 'isResultats', 'fiche' => 'isFiche',
             'commande' => 'isCommande', 'profil' => 'isProfil', 'publier' => 'isPublier',
             'messagerie' => 'isMessagerie', 'dashboard' => 'isDashboard', 'missions' => 'isMissions',
-            'mission' => 'isMission', 'suivi' => 'isSuivi', 'commandes' => 'isCommandes',
+            'mission' => 'isMission', 'suivi' => 'isSuivi', 'suivi-detail' => 'isSuivi', 'suivi-depot' => 'isSuivi', 'suivi-depot-list' => 'isSuivi', 'commandes' => 'isCommandes',
             'creer' => 'isCreer', 'inscription' => 'isInscription', 'inscription-sso' => 'isInscription', 'comment' => 'isComment',
             'tarifs' => 'isTarifs', 'confiance' => 'isConfiance', 'aide' => 'isAide',
             'metier' => 'isMetier', 'apropos' => 'isApropos', 'journal' => 'isJournal',
@@ -575,8 +575,10 @@ final class Prototype
             'exemple' => [
                 ['k' => 'Prestation vendue (montant HT)', 'v' => '780 €', 'style' => 'color: #14202C;'],
                 ['k' => '1ʳᵉ mission : commission', 'v' => '0 €', 'style' => 'color: #2E6B45;'],
-                ['k' => 'À partir de la 2ᵉ : 8 % sur le HT', 'v' => '− 62 €', 'style' => 'color: #D85D3F;'],
-                ['k' => 'Le prestataire conserve (dès la 2ᵉ)', 'v' => '718 €', 'style' => 'color: #022746; font-weight: 700; font-family: \'Space Grotesk\', sans-serif;'],
+                ['k' => 'À partir de la 2ᵉ : 8 % HT', 'v' => '− 62 € HT', 'style' => 'color: #D85D3F;'],
+                ['k' => 'TVA 20 % sur la commission', 'v' => '− 12,40 €', 'style' => 'color: #D85D3F;'],
+                ['k' => 'Commission TTC à régler', 'v' => '74,40 €', 'style' => 'color: #022746; font-weight: 700; font-family: \'Space Grotesk\', sans-serif;'],
+                ['k' => 'Le prestataire conserve (dès la 2ᵉ, hors sa TVA)', 'v' => '718 € HT', 'style' => 'color: #022746; font-weight: 700; font-family: \'Space Grotesk\', sans-serif;'],
             ],
             'gratuit' => [
                 'Créer un compte, une vitrine et autant de fiches que nécessaire — aucun abonnement',
@@ -1348,6 +1350,7 @@ final class Prototype
         return [
             ['kicker' => 'Pour commencer', 'name' => 'Première mission', 'pct' => '0 %', 'items' => ['Aucun abonnement', 'Compte, vitrine et fiches libres', 'Candidatures et devis gratuits', 'Commission plateforme offerte'], 'card' => 'border-radius: 14px; padding: 26px; background: #022746; color: #E4EDF5; border: 1px solid #022746;', 'kickerColor' => '#E8845F'],
             ['kicker' => 'Ensuite', 'name' => 'À partir de la 2ᵉ', 'pct' => '8 %', 'items' => ['Calculée sur le montant hors taxes (hors TVA)', 'Uniquement sur les missions réalisées', 'Le client règle le prestataire hors plateforme', 'Facturée au prestataire à la validation (dernier jalon)', '15 jours pour régler, sinon les offres sont suspendues'], 'card' => 'border-radius: 14px; padding: 26px; background: #FFF; color: #022746; border: 1px solid #E8ECF1;', 'kickerColor' => self::ORANGE],
+            ['kicker' => 'Taux réduit', 'name' => 'Fondateurs et fidélité', 'pct' => '6 %', 'items' => ['100 premiers inscrits : membre fondateur dès l’inscription', 'Les autres y passent dès 12 missions réalisées', 'Même calcul hors taxes, même facturation à la validation', 'Votre taux s’affiche dans Facturation'], 'card' => 'border-radius: 14px; padding: 26px; background: #FFF; color: #022746; border: 1px solid #E8ECF1;', 'kickerColor' => self::ORANGE],
         ];
     }
 
@@ -1471,7 +1474,7 @@ final class Prototype
     private static function isEspaceScreen(string $screen): bool
     {
         return in_array($screen, [
-            'dashboard', 'publier', 'commande', 'suivi', 'suivi-detail', 'commandes', 'mesmissions',
+            'dashboard', 'publier', 'commande', 'suivi', 'suivi-detail', 'suivi-depot', 'suivi-depot-list', 'commandes', 'mesmissions',
             'candidatures', 'mesprestations', 'creer', 'messagerie', 'notifications',
             'favoris', 'avis', 'vitrine', 'parametres', 'facturation',
         ], true);
@@ -1530,7 +1533,7 @@ final class Prototype
     private static function espaceNav(string $screen, bool $seeks, bool $offers, array $badges = []): array
     {
         $item = static function (string $label, string $href, string $key, string $icon = 'dot') use ($screen, $badges): array {
-            $aliases = ['suivi' => ['suivi', 'suivi-detail']];
+            $aliases = ['suivi' => ['suivi', 'suivi-detail', 'suivi-depot', 'suivi-depot-list']];
             $active = $screen === $key || in_array($screen, $aliases[$key] ?? [], true);
             $badge = $badges[$key] ?? '';
             $badgeAria = match ($key) {

@@ -126,7 +126,13 @@ if ((int) $bmin !== \Adl\Data\Catalog::BUDGET_MIN || (int) $bmax !== \Adl\Data\C
                 <div class="search-card-title"><?= e((string) $item['title']) ?></div>
                 <div class="search-card-sub"><?= e((string) $item['subtitle']) ?></div>
                 <div class="search-card-meta">
-                  <span><?= e((string) $item['meta']) ?></span>
+                  <span><?php
+                    $metaBits = array_filter([
+                        (string) $item['meta'],
+                        !empty($item['rating']) ? '★ ' . $item['rating'] : '',
+                    ]);
+                    echo e(implode(' · ', $metaBits));
+                  ?></span>
                   <?php if (!empty($item['price'])): ?><strong><?= e((string) $item['price']) ?></strong><?php endif; ?>
                 </div>
               </div>

@@ -45,6 +45,28 @@ final class Profile
         'mastodon' => 'Mastodon',
     ];
 
+    public const WORK_MODES = [
+        'remote' => 'À distance',
+        'onsite' => 'Sur place',
+        'both' => 'À distance ou sur place',
+    ];
+
+    public const RESPONSE_TIMES = [
+        '24h' => 'Sous 24 h',
+        '48h' => 'Sous 48 h',
+        'week' => 'Sous une semaine',
+    ];
+
+    public const NAME_FULL = 'full';
+    public const NAME_FIRST = 'first';
+    public const NAME_CUSTOM = 'custom';
+
+    public const NAME_MODES = [
+        self::NAME_FULL => 'Prénom et nom',
+        self::NAME_FIRST => 'Prénom seul',
+        self::NAME_CUSTOM => 'Nom de structure',
+    ];
+
     public const STATUS_AVAILABLE = 'available';
     public const STATUS_BUSY = 'busy';
 
@@ -138,7 +160,8 @@ final class Profile
     public static function findByUser(int $userId): ?array
     {
         $row = Database::fetch(
-            'SELECT p.*, u.first_name, u.last_name, u.avatar_url, u.offers_services, u.founder
+            'SELECT p.*, u.first_name, u.last_name, u.avatar_url, u.offers_services, u.founder,
+                    u.created_at AS member_since
              FROM profiles p
              JOIN users u ON u.id = p.user_id
              WHERE p.user_id = ?',
@@ -150,7 +173,8 @@ final class Profile
     public static function findBySlug(string $slug): ?array
     {
         $row = Database::fetch(
-            'SELECT p.*, u.first_name, u.last_name, u.avatar_url, u.offers_services, u.founder
+            'SELECT p.*, u.first_name, u.last_name, u.avatar_url, u.offers_services, u.founder,
+                    u.created_at AS member_since
              FROM profiles p
              JOIN users u ON u.id = p.user_id
              WHERE p.slug = ?',
@@ -183,10 +207,17 @@ final class Profile
             );
         }
 
+        $languagesList = is_array($data['languages_list'] ?? null) ? $data['languages_list'] : [];
+        $languages = self::summarizeLanguages($languagesList);
+        if ($languages === '') {
+            $languages = self::normalizeText($data['languages'] ?? ($profile['languages'] ?? null));
+        }
+
         Database::query(
             'UPDATE profiles SET
-                slug = ?, title = ?, presentation = ?, city = ?, availability = ?,
-                availability_status = ?,
+                slug = ?, title = ?, name_mode = ?, public_name = ?, presentation = ?, does = ?, does_not = ?,
+                city = ?, work_mode = ?, availability = ?,
+                availability_status = ?, response_time = ?,
                 languages = ?, hourly_rate = ?, rate_note = ?, website = ?, socials_json = ?,
                 trades_json = ?, skills_json = ?, tools_json = ?, genres_json = ?,
                 languages_json = ?, experiences_json = ?, education_json = ?,
@@ -195,11 +226,17 @@ final class Profile
             [
                 $slug,
                 $data['title'] ?? null,
+                self::normalizeNameMode($data['name_mode'] ?? null),
+                self::normalizeText($data['public_name'] ?? null),
                 $data['presentation'] ?? null,
+                self::normalizeText($data['does'] ?? null),
+                self::normalizeText($data['does_not'] ?? null),
                 $data['city'] ?? null,
+                self::normalizeWorkMode($data['work_mode'] ?? null) ?: null,
                 $data['availability'] ?? null,
                 self::normalizeStatus($data['availability_status'] ?? null),
-                $data['languages'] ?? null,
+                self::normalizeResponseTime($data['response_time'] ?? null) ?: null,
+                $languages,
                 self::normalizeRate((string) ($data['hourly_rate'] ?? ''), (string) ($data['rate_kind'] ?? ''), $data['trades'] ?? []),
                 $data['rate_note'] ?? null,
                 self::normalizeSocialUrl(trim((string) ($data['website'] ?? '')), 'website') ?: null,
@@ -230,12 +267,18 @@ final class Profile
             'first_name' => $data['first_name'] ?? ($current['first_name'] ?? ''),
             'last_name' => $data['last_name'] ?? ($current['last_name'] ?? ''),
             'title' => array_key_exists('title', $data) ? $data['title'] : ($current['title'] ?? ''),
+            'name_mode' => array_key_exists('name_mode', $data) ? $data['name_mode'] : ($current['name_mode'] ?? self::NAME_FULL),
+            'public_name' => array_key_exists('public_name', $data) ? $data['public_name'] : ($current['public_name'] ?? ''),
             'presentation' => array_key_exists('presentation', $data) ? $data['presentation'] : ($current['presentation'] ?? ''),
+            'does' => array_key_exists('does', $data) ? $data['does'] : ($current['does'] ?? ''),
+            'does_not' => array_key_exists('does_not', $data) ? $data['does_not'] : ($current['does_not'] ?? ''),
             'city' => array_key_exists('city', $data) ? $data['city'] : ($current['city'] ?? ''),
+            'work_mode' => array_key_exists('work_mode', $data) ? $data['work_mode'] : ($current['work_mode'] ?? ''),
             'availability' => array_key_exists('availability', $data) ? $data['availability'] : ($current['availability'] ?? ''),
             'availability_status' => array_key_exists('availability_status', $data)
                 ? $data['availability_status']
                 : ($current['availability_status'] ?? self::STATUS_AVAILABLE),
+            'response_time' => array_key_exists('response_time', $data) ? $data['response_time'] : ($current['response_time'] ?? ''),
             'languages' => array_key_exists('languages', $data) ? $data['languages'] : ($current['languages'] ?? ''),
             'hourly_rate' => array_key_exists('hourly_rate', $data) ? $data['hourly_rate'] : ($current['hourly_rate'] ?? ''),
             'rate_kind' => array_key_exists('rate_kind', $data) ? $data['rate_kind'] : ($current['rate_kind'] ?? ''),
@@ -295,7 +338,7 @@ final class Profile
     public static function searchPublished(): array
     {
         $rows = Database::fetchAll(
-            'SELECT p.*, u.first_name, u.last_name, u.avatar_url
+            'SELECT p.*, u.first_name, u.last_name, u.avatar_url, u.created_at AS member_since
              FROM profiles p
              JOIN users u ON u.id = p.user_id
              WHERE u.offers_services = 1
@@ -320,6 +363,7 @@ final class Profile
     public static function completeness(array $profile): int
     {
         $checks = [
+            user_avatar_src($profile) !== '',
             trim((string) ($profile['title'] ?? '')) !== '',
             mb_strlen(trim((string) ($profile['presentation'] ?? ''))) >= 80,
             trim((string) ($profile['city'] ?? '')) !== '',
@@ -339,6 +383,7 @@ final class Profile
     public static function missingLabels(array $profile): array
     {
         $checks = [
+            'une photo' => user_avatar_src($profile) !== '',
             'un titre' => trim((string) ($profile['title'] ?? '')) !== '',
             'une présentation' => mb_strlen(trim((string) ($profile['presentation'] ?? ''))) >= 80,
             'une ville' => trim((string) ($profile['city'] ?? '')) !== '',
@@ -361,6 +406,21 @@ final class Profile
 
     public static function initials(array $profile): string
     {
+        $mode = self::normalizeNameMode($profile['name_mode'] ?? null);
+        if ($mode === self::NAME_CUSTOM) {
+            $custom = trim((string) ($profile['public_name'] ?? ''));
+            if ($custom !== '') {
+                $parts = preg_split('/\s+/u', $custom) ?: [];
+                $a = mb_strtoupper(mb_substr((string) ($parts[0] ?? ''), 0, 1));
+                $b = mb_strtoupper(mb_substr((string) ($parts[1] ?? ''), 0, 1));
+                $letters = $a . $b;
+                return $letters !== '' ? $letters : 'AD';
+            }
+        }
+        if ($mode === self::NAME_FIRST) {
+            $a = mb_strtoupper(mb_substr((string) ($profile['first_name'] ?? ''), 0, 1));
+            return $a !== '' ? $a : 'AD';
+        }
         if (!empty($profile['first_name']) || !empty($profile['last_name'])) {
             return User::initials($profile);
         }
@@ -369,8 +429,86 @@ final class Profile
 
     public static function displayName(array $profile): string
     {
+        $mode = self::normalizeNameMode($profile['name_mode'] ?? null);
+        if ($mode === self::NAME_FIRST) {
+            $first = trim((string) ($profile['first_name'] ?? ''));
+            if ($first !== '') {
+                return $first;
+            }
+        }
+        if ($mode === self::NAME_CUSTOM) {
+            $custom = trim((string) ($profile['public_name'] ?? ''));
+            if ($custom !== '') {
+                return $custom;
+            }
+        }
         $name = trim(($profile['first_name'] ?? '') . ' ' . ($profile['last_name'] ?? ''));
         return $name !== '' ? $name : 'Profil';
+    }
+
+    public static function normalizeNameMode(mixed $value): string
+    {
+        $mode = (string) $value;
+        return isset(self::NAME_MODES[$mode]) ? $mode : self::NAME_FULL;
+    }
+
+    public static function normalizeWorkMode(mixed $value): string
+    {
+        $mode = (string) $value;
+        return isset(self::WORK_MODES[$mode]) ? $mode : '';
+    }
+
+    public static function normalizeResponseTime(mixed $value): string
+    {
+        $time = (string) $value;
+        return isset(self::RESPONSE_TIMES[$time]) ? $time : '';
+    }
+
+    public static function workModeLabel(array $profile): string
+    {
+        return self::WORK_MODES[self::normalizeWorkMode($profile['work_mode'] ?? null)] ?? '';
+    }
+
+    public static function responseTimeLabel(array $profile): string
+    {
+        return self::RESPONSE_TIMES[self::normalizeResponseTime($profile['response_time'] ?? null)] ?? '';
+    }
+
+    public static function locationLabel(array $profile): string
+    {
+        $city = trim((string) ($profile['city'] ?? ''));
+        $mode = self::workModeLabel($profile);
+        if ($city !== '' && $mode !== '') {
+            return $city . ' · ' . mb_strtolower($mode);
+        }
+        return $city !== '' ? $city : $mode;
+    }
+
+    public static function memberSinceLabel(mixed $createdAt): string
+    {
+        $dt = app_datetime(is_string($createdAt) ? $createdAt : null);
+        if (!$dt) {
+            return '';
+        }
+        return 'Membre depuis ' . $dt->format('Y');
+    }
+
+    /**
+     * @param list<mixed> $list
+     */
+    public static function summarizeLanguages(array $list): string
+    {
+        $names = [];
+        foreach ($list as $row) {
+            if (!is_array($row)) {
+                continue;
+            }
+            $name = trim((string) ($row['langue'] ?? ''));
+            if ($name !== '' && !in_array($name, $names, true)) {
+                $names[] = $name;
+            }
+        }
+        return implode(', ', $names);
     }
 
     public static function publicHref(array $profile): string
@@ -429,6 +567,31 @@ final class Profile
     public static function rateKicker(array $profile): string
     {
         return self::isPercentRate($profile) ? 'Commission' : 'À partir de';
+    }
+
+    public static function normalizeText(mixed $value): ?string
+    {
+        $text = trim((string) $value);
+        return $text !== '' ? $text : null;
+    }
+
+    /** @return list<string> */
+    public static function scopeLines(mixed $value): array
+    {
+        $text = trim((string) $value);
+        if ($text === '') {
+            return [];
+        }
+        $lines = preg_split('/\R/u', $text) ?: [];
+        $out = [];
+        foreach ($lines as $line) {
+            $line = trim((string) $line);
+            $line = preg_replace('/^[-–—*•]\s+/u', '', $line) ?? $line;
+            if ($line !== '') {
+                $out[] = $line;
+            }
+        }
+        return $out;
     }
 
     public static function formatRateSearch(array $profile): string
@@ -522,6 +685,17 @@ final class Profile
     /** @param array<string, mixed> $row */
     private static function hydrate(array $row): array
     {
+        $row['does'] = (string) ($row['does'] ?? '');
+        $row['does_not'] = (string) ($row['does_not'] ?? '');
+        $row['name_mode'] = self::normalizeNameMode($row['name_mode'] ?? null);
+        $row['public_name'] = (string) ($row['public_name'] ?? '');
+        $row['work_mode'] = self::normalizeWorkMode($row['work_mode'] ?? null);
+        $row['response_time'] = self::normalizeResponseTime($row['response_time'] ?? null);
+        $row['work_mode_label'] = self::workModeLabel($row);
+        $row['response_time_label'] = self::responseTimeLabel($row);
+        $row['location_label'] = self::locationLabel($row);
+        $row['member_since'] = (string) ($row['member_since'] ?? '');
+        $row['member_since_label'] = self::memberSinceLabel($row['member_since']);
         $row['socials'] = self::normalizeSocials(self::decode($row['socials_json'] ?? null));
         $row['trades'] = self::decode($row['trades_json'] ?? null);
         $row['skills'] = self::decode($row['skills_json'] ?? null);
@@ -537,6 +711,7 @@ final class Profile
         $row['availability_summary'] = self::availabilitySummary($row);
         $row['completion'] = self::completeness($row);
         $row['avatar_src'] = user_avatar_src($row);
+        $row['initials'] = self::initials($row);
         $row['is_founder'] = (int) ($row['founder'] ?? 0) === 1;
         $row['verification_status'] = (string) ($row['verification_status'] ?? '');
         $row['is_verified'] = $row['verification_status'] === self::VERIFY_VERIFIED;

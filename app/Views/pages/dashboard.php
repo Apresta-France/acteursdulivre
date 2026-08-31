@@ -140,6 +140,15 @@ if ($offers && $profileCompletion < 80) {
           <em>Complétée à <?= $profileCompletion ?> %</em>
         </span>
       </a>
+      <?php if (!empty($commissionRate)): ?>
+        <a class="dash-stat" href="<?= e(url('/espace/facturation')) ?>">
+          <span class="dash-ico dash-ico-accent"><?= icon('invoice', 18) ?></span>
+          <span>
+            <strong>Commission <?= e((string) ($commissionRate['label'] ?? '')) ?></strong>
+            <em><?= e((string) (($commissionRate['progress'] ?? '') !== '' ? $commissionRate['progress'] : ($commissionRate['first_free'] ? 'Première mission offerte' : 'sur le hors-taxe'))) ?></em>
+          </span>
+        </a>
+      <?php endif; ?>
     <?php endif; ?>
   </div>
 

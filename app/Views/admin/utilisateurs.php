@@ -30,8 +30,9 @@ $filters = $userFilters ?? [];
       <p class="admin-users-empty">Aucun utilisateur pour ce filtre.</p>
     <?php endif; ?>
     <?php foreach ($accounts as $u):
+        $closed = User::isClosed($u);
         $status = (string) ($u['status'] ?? 'active');
-        $tone = $status === 'active' ? 'green' : ($status === 'suspended' ? 'orange' : 'navy');
+        $tone = $closed ? 'navy' : ($status === 'active' ? 'green' : ($status === 'suspended' ? 'orange' : 'navy'));
         $role = (string) ($u['role'] ?? 'client');
         ?>
       <a class="admin-users-row" href="<?= e(url('/admin/utilisateurs/' . (int) $u['id'])) ?>">
@@ -44,7 +45,7 @@ $filters = $userFilters ?? [];
         </div>
         <span><?= e(User::usageLabel($u)) ?></span>
         <span><?= e(User::roleLabel($role)) ?></span>
-        <span><span class="admin-pill" style="<?= e(AdminCatalog::pill($tone)) ?>"><?= e(User::statusLabel($status)) ?></span></span>
+        <span><span class="admin-pill" style="<?= e(AdminCatalog::pill($tone)) ?>"><?= e(User::accountStatusLabel($u)) ?></span></span>
       </a>
     <?php endforeach; ?>
   </div>

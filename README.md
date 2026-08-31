@@ -6,7 +6,7 @@ Site local prévu : `https://acteursdulivre.test`.
 
 ## Modèle
 
-Aucun abonnement. La première mission réalisée par un prestataire est offerte. Ensuite, une commission (8 %, 6 % pour les membres fondateurs) est facturée **au prestataire** lorsque le client valide et note la mission.
+Aucun abonnement. La première mission réalisée par un prestataire est offerte. Ensuite, une commission (8 %, 6 % pour les 100 premiers inscrits et dès 12 missions réalisées) est facturée **au prestataire** lorsque le client valide et note la mission.
 
 La plateforme **n’encaisse pas** le prix des missions. Client et prestataire se règlent hors site. Les déclarations de règlement dans le suivi valent engagement sur l’honneur.
 
@@ -75,7 +75,7 @@ Pièces jointes : PDF, images, Word/ODT/texte, 8 Mo maximum. Stockage hors web p
 
 ## Compte
 
-Dans `/espace/parametres` : usages, mot de passe, notifications e-mail, mentions de facturation (SIRET, TVA, IBAN facultatif), export JSON RGPD, clôture du compte (bloquée s’il reste une commande ou une facture ouverte).
+Dans `/espace/parametres` : usages, mot de passe, notifications e-mail, mentions de facturation (SIREN, SIRET, TVA, code de routage facultatif, IBAN facultatif), export JSON RGPD, clôture du compte (bloquée s’il reste une commande ou une facture ouverte).
 
 ## Licence et contact
 

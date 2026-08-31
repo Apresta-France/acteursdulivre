@@ -19,6 +19,7 @@ use Adl\Models\Mission;
 use Adl\Models\Newsletter;
 use Adl\Models\Notification;
 use Adl\Models\Order;
+use Adl\Models\OrderFile;
 use Adl\Models\OrderMilestone;
 use Adl\Models\PortfolioItem;
 use Adl\Models\Profile;
@@ -52,6 +53,7 @@ final class AccountController
         $availabilityNote = '';
         $profile = null;
         $billing = ['block' => null, 'warning' => null];
+        $commissionRate = null;
 
         try {
             if (User::offersServices($user)) {
@@ -63,6 +65,7 @@ final class AccountController
                     $availabilityNote = trim((string) ($profile['availability'] ?? ''));
                 }
                 $billing = self::billingState((int) $user['id']);
+                $commissionRate = Commission::accountState((int) $user['id']);
             }
         } catch (\Throwable) {
         }
@@ -84,6 +87,7 @@ final class AccountController
             'billingBlock' => $billing['block'],
             'billingWarning' => $billing['warning'],
             'isFounder' => User::isFounder($user),
+            'commissionRate' => $commissionRate,
             'jalonTodos' => self::jalonTodos((int) $user['id']),
         ]);
     }
@@ -632,6 +636,17 @@ final class AccountController
         } catch (\Throwable) {
             $orders = [];
         }
+        try {
+            $counts = OrderFile::countsByOrderIds(array_map(static fn (array $o): int => (int) ($o['id'] ?? 0), $orders));
+        } catch (\Throwable) {
+            $counts = [];
+        }
+        foreach ($orders as &$order) {
+            $oid = (int) ($order['id'] ?? 0);
+            $order['file_count'] = $counts[$oid] ?? 0;
+            $order['depot_open'] = OrderFile::canDeposit($order);
+        }
+        unset($order);
         View::page('suivi', [
             'title' => 'Suivi de commande',
             'orders' => $orders,
@@ -643,31 +658,175 @@ final class AccountController
     public function suiviShow(Request $request, string $id): void
     {
         $user = Auth::requireUser();
-        $order = Order::findForUser((int) $id, (int) $user['id']);
-        if (!$order && ($user['role'] ?? '') === 'admin') {
-            $order = Order::find((int) $id);
-        }
-        if (!$order) {
-            not_found('Cette commande est introuvable.');
-        }
-        $thread = null;
-        try {
-            $thread = Conversation::open((int) $order['buyer_id'], (int) $order['seller_id'], [
-                'order_id' => (int) $order['id'],
-            ]);
-        } catch (\Throwable) {
-        }
+        $order = self::requireSuiviOrder((int) $id, $user);
+        $uid = (int) $user['id'];
+        $tabs = self::suiviTabs($order);
         View::page('suivi-detail', [
             'title' => 'Suivi ' . $order['num'],
             'order' => $order,
             'milestones' => $order['milestones'] ?? [],
-            'action' => OrderMilestone::actionFor($order, (int) $user['id']),
-            'isBuyer' => (int) $order['buyer_id'] === (int) $user['id'],
-            'isSeller' => (int) $order['seller_id'] === (int) $user['id'],
-            'threadHref' => $thread['href'] ?? '/espace/messages',
+            'action' => OrderMilestone::actionFor($order, $uid),
+            'isBuyer' => (int) $order['buyer_id'] === $uid,
+            'isSeller' => (int) $order['seller_id'] === $uid,
+            'threadHref' => $tabs['threadHref'],
+            'depotCount' => $tabs['depotCount'],
+            'depotOpen' => $tabs['depotOpen'],
+            'suiviTab' => 'jalons',
             'saved' => flash('saved'),
             'error' => flash('error'),
         ]);
+    }
+
+    public function suiviDepotIndex(Request $request, string $id): void
+    {
+        $user = Auth::requireUser();
+        $order = self::requireSuiviOrder((int) $id, $user);
+        $uid = (int) $user['id'];
+        $tabs = self::suiviTabs($order);
+        $depotFiles = [];
+        try {
+            $depotFiles = OrderFile::forOrder((int) $order['id'], $uid, $order);
+        } catch (\Throwable) {
+        }
+        View::page('suivi-depot-list', [
+            'title' => 'Fichiers ' . $order['num'],
+            'order' => $order,
+            'threadHref' => $tabs['threadHref'],
+            'depotCount' => $tabs['depotCount'],
+            'depotOpen' => $tabs['depotOpen'],
+            'depotFiles' => $depotFiles,
+            'suiviTab' => 'fichiers',
+            'saved' => flash('saved'),
+            'error' => flash('error'),
+        ]);
+    }
+
+    public function suiviDepotStore(Request $request, string $id): void
+    {
+        $user = Auth::requireUser();
+        $order = self::requireSuiviOrder((int) $id, $user);
+        try {
+            $file = OrderFile::create((int) $order['id'], (int) $user['id'], $order, $request->file('document'), $request->string('note'));
+            $ping = Conversation::jalonPings()['vault'] ?? 'Nouveau fichier dans l’espace de dépôt.';
+            self::pingOrderThread((int) $order['id'], (int) $user['id'], $ping . ' ' . (string) ($file['file_name'] ?? ''), false);
+            flash('saved', 'Fichier déposé. L’autre partie a été prévenue.');
+        } catch (\Throwable $e) {
+            flash('error', user_error_message($e));
+        }
+        redirect('/espace/suivi/' . (int) $id . '/depot');
+    }
+
+    public function suiviDepotShow(Request $request, string $id, string $fid): void
+    {
+        $user = Auth::requireUser();
+        $order = self::requireSuiviOrder((int) $id, $user);
+        $file = OrderFile::findForParty((int) $order['id'], (int) $fid, (int) $user['id'], $order);
+        if (!$file) {
+            not_found('Ce fichier est introuvable.');
+        }
+        if (empty($file['is_withdrawn'])) {
+            OrderFile::recordAccess((int) $file['id'], (int) $user['id'], 'view');
+            $file = OrderFile::findForParty((int) $order['id'], (int) $fid, (int) $user['id'], $order) ?? $file;
+        }
+        $tabs = self::suiviTabs($order);
+        View::page('suivi-depot', [
+            'title' => (string) ($file['file_name'] ?? 'Fichier'),
+            'order' => $order,
+            'file' => $file,
+            'clicks' => OrderFile::clicks((int) $file['id']),
+            'isBuyer' => (int) $order['buyer_id'] === (int) $user['id'],
+            'threadHref' => $tabs['threadHref'],
+            'depotCount' => $tabs['depotCount'],
+            'depotOpen' => $tabs['depotOpen'],
+            'suiviTab' => 'fichiers',
+            'error' => flash('error'),
+            'saved' => flash('saved'),
+        ]);
+    }
+
+    public function suiviDepotView(Request $request, string $id, string $fid): void
+    {
+        $file = self::requireSuiviDepotFile((int) $id, (int) $fid);
+        if (empty($file['can_preview']) || ($file['file_path'] ?? '') === '') {
+            not_found('Ce fichier ne peut pas être prévisualisé.');
+        }
+        send_any_upload((string) $file['file_path'], (string) $file['file_name'], (string) $file['mime'], true);
+    }
+
+    public function suiviDepotDownload(Request $request, string $id, string $fid): void
+    {
+        $user = Auth::requireUser();
+        $file = self::requireSuiviDepotFile((int) $id, (int) $fid, $user);
+        if (($file['file_path'] ?? '') === '' || !empty($file['is_withdrawn'])) {
+            not_found('Ce fichier n’est plus disponible.');
+        }
+        OrderFile::recordAccess((int) $file['id'], (int) $user['id'], 'download');
+        send_any_upload((string) $file['file_path'], (string) $file['file_name'], (string) $file['mime']);
+    }
+
+    public function suiviDepotWithdraw(Request $request, string $id, string $fid): void
+    {
+        $user = Auth::requireUser();
+        $order = self::requireSuiviOrder((int) $id, $user);
+        try {
+            OrderFile::withdraw((int) $order['id'], (int) $fid, (int) $user['id'], $order);
+            flash('saved', 'Fichier retiré. L’historique du dépôt est conservé.');
+        } catch (\Throwable $e) {
+            flash('error', user_error_message($e));
+        }
+        redirect('/espace/suivi/' . (int) $id . '/depot');
+    }
+
+    /**
+     * @param array<string, mixed> $order
+     * @return array{threadHref: string, depotCount: int, depotOpen: bool}
+     */
+    private static function suiviTabs(array $order): array
+    {
+        $threadHref = '/espace/messages';
+        try {
+            $thread = Conversation::open((int) $order['buyer_id'], (int) $order['seller_id'], [
+                'order_id' => (int) $order['id'],
+            ]);
+            $threadHref = (string) ($thread['href'] ?? $threadHref);
+        } catch (\Throwable) {
+        }
+        $depotCount = 0;
+        try {
+            $depotCount = OrderFile::countForOrder((int) $order['id']);
+        } catch (\Throwable) {
+        }
+
+        return [
+            'threadHref' => $threadHref,
+            'depotCount' => $depotCount,
+            'depotOpen' => OrderFile::canDeposit($order),
+        ];
+    }
+
+    /** @param array<string, mixed> $user */
+    private static function requireSuiviOrder(int $id, array $user): array
+    {
+        $order = Order::findForUser($id, (int) $user['id']);
+        if (!$order && ($user['role'] ?? '') === 'admin') {
+            $order = Order::find($id);
+        }
+        if (!$order) {
+            not_found('Cette commande est introuvable.');
+        }
+        return $order;
+    }
+
+    /** @param array<string, mixed>|null $user */
+    private static function requireSuiviDepotFile(int $orderId, int $fileId, ?array $user = null): array
+    {
+        $user ??= Auth::requireUser();
+        $order = self::requireSuiviOrder($orderId, $user);
+        $file = OrderFile::findForParty((int) $order['id'], $fileId, (int) $user['id'], $order);
+        if (!$file) {
+            not_found('Ce fichier est introuvable.');
+        }
+        return $file;
     }
 
     public function suiviAccept(Request $request, string $id): void
@@ -1531,11 +1690,16 @@ final class AccountController
                 'first_name' => $first,
                 'last_name' => $last,
                 'title' => $request->string('title'),
+                'name_mode' => $request->string('name_mode'),
+                'public_name' => $request->string('public_name'),
                 'presentation' => $request->string('presentation'),
+                'does' => $request->string('does'),
+                'does_not' => $request->string('does_not'),
                 'city' => $request->string('city'),
+                'work_mode' => $request->string('work_mode'),
                 'availability' => $request->string('availability'),
                 'availability_status' => $request->string('availability_status'),
-                'languages' => $request->string('languages'),
+                'response_time' => $request->string('response_time'),
                 'hourly_rate' => $request->string('hourly_rate'),
                 'rate_kind' => $request->string('rate_kind'),
                 'rate_note' => $request->string('rate_note'),
@@ -1632,8 +1796,13 @@ final class AccountController
                 || (($sub = Newsletter::findByEmail((string) ($user['email'] ?? '')))
                     && ($sub['status'] ?? '') === Newsletter::STATUS_CONFIRMED),
             'companyName' => (string) ($user['company_name'] ?? ''),
+            'legalForm' => (string) ($user['legal_form'] ?? ''),
+            'legalForms' => User::legalForms(),
+            'siren' => (string) ($user['siren'] ?? ''),
             'siret' => (string) ($user['siret'] ?? ''),
             'vatNumber' => (string) ($user['vat_number'] ?? ''),
+            'vatExempt' => !empty($user['vat_exempt']),
+            'einvoiceRouting' => (string) ($user['einvoice_routing'] ?? ''),
             'billingAddress' => (string) ($user['billing_address'] ?? ''),
             'iban' => (string) ($user['iban'] ?? ''),
             'linkedProviders' => [
@@ -1733,11 +1902,25 @@ final class AccountController
     public function parametresBilling(Request $request): void
     {
         $user = Auth::requireUser();
-        $siret = preg_replace('/\s+/', '', $request->string('siret')) ?? '';
+        $siren = preg_replace('/\D+/', '', $request->string('siren')) ?? '';
+        $siret = preg_replace('/\D+/', '', $request->string('siret')) ?? '';
         $vat = strtoupper(preg_replace('/\s+/', '', $request->string('vat_number')) ?? '');
         $iban = strtoupper(preg_replace('/\s+/', '', $request->string('iban')) ?? '');
+        $routing = strtoupper(preg_replace('/\s+/', '', $request->string('einvoice_routing')) ?? '');
+        $legalForm = $request->string('legal_form');
+        if ($siren === '' && strlen($siret) === 14) {
+            $siren = substr($siret, 0, 9);
+        }
+        if ($siren !== '' && !preg_match('/^\d{9}$/', $siren)) {
+            flash('error', 'Le SIREN doit contenir 9 chiffres.');
+            redirect('/espace/parametres');
+        }
         if ($siret !== '' && !preg_match('/^\d{14}$/', $siret)) {
             flash('error', 'Le SIRET doit contenir 14 chiffres.');
+            redirect('/espace/parametres');
+        }
+        if ($siren !== '' && $siret !== '' && !str_starts_with($siret, $siren)) {
+            flash('error', 'Le SIRET doit commencer par le SIREN.');
             redirect('/espace/parametres');
         }
         if ($vat !== '' && !preg_match('/^[A-Z]{2}[A-Z0-9]{2,13}$/', $vat)) {
@@ -1748,10 +1931,22 @@ final class AccountController
             flash('error', 'L\'IBAN n\'est pas au bon format.');
             redirect('/espace/parametres');
         }
+        if ($routing !== '' && !preg_match('/^[A-Z0-9._-]{1,50}$/', $routing)) {
+            flash('error', 'Le code de routage n\'est pas au bon format.');
+            redirect('/espace/parametres');
+        }
+        if ($legalForm !== '' && !isset(User::legalForms()[$legalForm])) {
+            flash('error', 'La forme juridique n\'est pas reconnue.');
+            redirect('/espace/parametres');
+        }
         User::update((int) $user['id'], [
             'company_name' => $request->string('company_name') ?: null,
+            'legal_form' => $legalForm !== '' ? $legalForm : null,
+            'siren' => $siren !== '' ? $siren : null,
             'siret' => $siret !== '' ? $siret : null,
             'vat_number' => $vat !== '' ? $vat : null,
+            'vat_exempt' => $request->bool('vat_exempt') ? 1 : 0,
+            'einvoice_routing' => $routing !== '' ? $routing : null,
             'billing_address' => $request->string('billing_address') ?: null,
             'iban' => $iban !== '' ? $iban : null,
         ]);
@@ -1851,6 +2046,11 @@ final class AccountController
             }
         }
         $billing = self::billingState((int) $user['id']);
+        $commissionRate = null;
+        try {
+            $commissionRate = Commission::accountState((int) $user['id']);
+        } catch (\Throwable) {
+        }
         View::page('facturation', [
             'title' => 'Facturation',
             'orders' => $orders,
@@ -1859,6 +2059,9 @@ final class AccountController
             'dueAmount' => $due,
             'billingBlock' => $billing['block'],
             'billingWarning' => $billing['warning'],
+            'commissionRate' => $commissionRate,
+            'needsSiren' => trim((string) ($user['siren'] ?? '')) === ''
+                && trim((string) ($user['siret'] ?? '')) === '',
         ]);
     }
 

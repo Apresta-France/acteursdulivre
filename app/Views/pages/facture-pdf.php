@@ -1,8 +1,16 @@
 <?php
+use Adl\Models\User;
+
 $invoice = $invoice ?? [];
 $seller = $seller ?? [];
 $company = trim((string) ($seller['company_name'] ?? ''));
+$legalForm = User::legalFormLabel((string) ($seller['legal_form'] ?? ''));
 $who = $company !== '' ? $company : trim(($seller['first_name'] ?? '') . ' ' . ($seller['last_name'] ?? ''));
+$siren = preg_replace('/\D+/', '', (string) ($seller['siren'] ?? '')) ?: '';
+$siret = preg_replace('/\D+/', '', (string) ($seller['siret'] ?? '')) ?: '';
+if ($siren === '' && strlen($siret) === 14) {
+    $siren = substr($siret, 0, 9);
+}
 ?>
 <!DOCTYPE html>
 <html lang="fr">
@@ -27,7 +35,7 @@ $who = $company !== '' ? $company : trim(($seller['first_name'] ?? '') . ' ' . (
     <button type="button" onclick="window.print()">Imprimer ou enregistrer en PDF</button>
     <a href="<?= e(url('/espace/facturation')) ?>">Retour à la facturation</a>
   </div>
-  <p class="muted">EDITIONS TESSERACT · SAS · 486 rue Sadi Carnot, 59184 Sainghin-en-Weppes<br>RCS Lille Métropole 980 005 292 · TVA FR14 980 005 292</p>
+  <p class="muted">EDITIONS TESSERACT · SAS · 486 rue Sadi Carnot, 59184 Sainghin-en-Weppes<br>RCS Lille Métropole 980 005 292 · SIREN 980 005 292 · SIRET 980 005 292 00019 · TVA FR14 980 005 292</p>
   <h1>Facture <?= e((string) ($invoice['number'] ?? '')) ?></h1>
   <p class="muted">Commission d'intermédiation · émise le <?= e((string) ($invoice['issued_label'] ?? '')) ?><?php if (!empty($invoice['is_open']) && !empty($invoice['due_label'])): ?> · à régler avant le <?= e((string) $invoice['due_label']) ?><?php elseif (empty($invoice['is_open']) && !empty($invoice['status_label'])): ?> · <?= e((string) $invoice['status_label']) ?><?php endif; ?></p>
   <div class="grid">
@@ -38,11 +46,14 @@ $who = $company !== '' ? $company : trim(($seller['first_name'] ?? '') . ' ' . (
     <div>
       <strong>Destinataire</strong>
       <p>
-        <?= e($who) ?><br>
+        <?= e($who) ?><?php if ($legalForm !== ''): ?> · <?= e($legalForm) ?><?php endif; ?><br>
         <?= e((string) ($seller['email'] ?? '')) ?><br>
         <?php if (!empty($seller['billing_address'])): ?><?= nl2br(e((string) $seller['billing_address'])) ?><br><?php endif; ?>
-        <?php if (!empty($seller['siret'])): ?>SIRET <?= e((string) $seller['siret']) ?><br><?php endif; ?>
-        <?php if (!empty($seller['vat_number'])): ?>TVA <?= e((string) $seller['vat_number']) ?><?php endif; ?>
+        <?php if ($siren !== ''): ?>SIREN <?= e($siren) ?><br><?php endif; ?>
+        <?php if ($siret !== ''): ?>SIRET <?= e($siret) ?><br><?php endif; ?>
+        <?php if (!empty($seller['einvoice_routing'])): ?>Code de routage <?= e((string) $seller['einvoice_routing']) ?><br><?php endif; ?>
+        <?php if (!empty($seller['vat_exempt'])): ?>TVA non applicable, art. 293 B du CGI
+        <?php elseif (!empty($seller['vat_number'])): ?>TVA <?= e((string) $seller['vat_number']) ?><?php endif; ?>
       </p>
     </div>
   </div>
@@ -54,16 +65,24 @@ $who = $company !== '' ? $company : trim(($seller['first_name'] ?? '') . ' ' . (
       <tr>
         <td>Commission plateforme<?= !empty($invoice['is_open']) || ($invoice['status'] ?? '') === 'waived' && (int) ($invoice['amount'] ?? 0) === 0 ? '' : '' ?></td>
         <td><?= e((string) ($invoice['order_number'] ?? '')) ?></td>
-        <td><?= (int) ($invoice['amount'] ?? 0) === 0 ? '0 % (1ʳᵉ mission)' : e(rtrim(rtrim((string) ($invoice['commission_percent'] ?? '8'), '0'), '.') . ' %') ?></td>
-        <td><?= e((string) ($invoice['amount_label'] ?? '0 €')) ?></td>
+        <td><?= (int) ($invoice['amount'] ?? 0) === 0 ? '0 % HT (1ʳᵉ mission)' : e(rtrim(rtrim((string) ($invoice['commission_percent'] ?? '8'), '0'), '.') . ' % HT') ?></td>
+        <td><?= e((string) ($invoice['amount_ht_label'] ?? $invoice['amount_label'] ?? '0 €')) ?></td>
       </tr>
+      <?php if ((int) ($invoice['amount'] ?? 0) > 0): ?>
+      <tr>
+        <td>TVA <?= (int) round(\Adl\Models\Commission::VAT_RATE * 100) ?> %</td>
+        <td></td>
+        <td></td>
+        <td><?= e((string) ($invoice['vat_label'] ?? '')) ?></td>
+      </tr>
+      <?php endif; ?>
     </tbody>
   </table>
   <?php if (!empty($invoice['is_open'])): ?>
-    <p class="total">Net à payer : <?= e((string) ($invoice['amount_label'] ?? '0 €')) ?></p>
+    <p class="total">Net à payer : <?= e((string) ($invoice['amount_due_label'] ?? $invoice['amount_ttc_label'] ?? $invoice['amount_label'] ?? '0 €')) ?></p>
   <?php else: ?>
     <p class="total"><?= e((string) ($invoice['status_label'] ?? '')) ?></p>
   <?php endif; ?>
-  <p class="muted">Cette facture porte uniquement sur la commission due à EDITIONS TESSERACT, calculée sur le montant hors taxes (hors TVA) de la mission. Le prix de la mission se règle hors plateforme, entre le client et le prestataire. Mentions de facture du prestataire : à sa charge.</p>
+  <p class="muted">Cette facture porte uniquement sur la commission due à EDITIONS TESSERACT. Le taux s’applique au montant hors taxes (HT) de la mission ; la commission est elle-même facturée HT, majorée de la TVA. Le prix de la mission se règle hors plateforme, entre le client et le prestataire. Mentions de facture du prestataire : à sa charge.</p>
 </body>
 </html>
