@@ -287,7 +287,7 @@ final class LegalPages
             [
                 'title' => '5. Prix de la mission et commission',
                 'blocks' => [
-                    ['p' => 'Le prix de la mission est celui affiché sur la formule ou celui du devis accepté, en euros, hors options ultérieures. Sauf mention contraire, les prix des prestataires s\'entendent selon le régime fiscal qu\'ils déclarent (TVA applicable ou franchise en base).'],
+                    ['p' => 'Le prix de la mission est celui affiché sur la formule ou celui du devis accepté, en euros TTC, hors options ultérieures. Les prix des fiches de prestation s\'affichent TTC. Selon le régime fiscal du Prestataire, la TVA est incluse ou non applicable (franchise en base).'],
                     ['p' => 'La Plateforme se rémunère uniquement sur les missions attribuées et réalisées, par une commission due par le Prestataire :'],
                     ['html' => '<ul><li>0&nbsp;% sur la première mission réalisée par le Prestataire via la Plateforme : elle est entièrement gratuite ;</li><li>8&nbsp;% à partir de la deuxième mission réalisée.</li></ul>'],
                     ['p' => 'Exemple : une formule à 780 € au taux de 8 % donne une commission de 62 €. Sur la première mission, la commission est de 0 €.'],

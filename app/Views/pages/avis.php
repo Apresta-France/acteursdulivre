@@ -56,10 +56,10 @@ $criteria = $criteria ?? \Adl\Models\Review::CRITERIA;
               <textarea class="input textarea" id="review-body-<?= (int) $order['id'] ?>" name="body" rows="3" placeholder="Ce qui a bien fonctionné, ce qui pourrait être amélioré…"></textarea>
             </div>
 
-            <label class="auth-legal">
-              <input type="checkbox" name="accept_cgv" value="1" required>
-              J'accepte les <a href="<?= e(url('/cgv')) ?>">conditions générales de vente</a> et je confirme que la mission est finalisée.
-            </label>
+            <div class="auth-legal">
+              <input id="accept-cgv-<?= (int) $order['id'] ?>" type="checkbox" name="accept_cgv" value="1" required>
+              <label class="auth-legal-text" for="accept-cgv-<?= (int) $order['id'] ?>">J'accepte les <a href="<?= e(url('/cgv')) ?>">conditions générales de vente</a> et je confirme que la mission est finalisée.</label>
+            </div>
 
             <div class="auth-actions">
               <button class="btn-orange" type="submit">Valider la mission et publier l'avis</button>

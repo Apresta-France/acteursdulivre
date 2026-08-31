@@ -410,7 +410,7 @@ final class Service
             [(int) $row['id']]
         );
         foreach ($packages as &$package) {
-            $package['price_label'] = format_euros((int) ($package['price'] ?? 0));
+            $package['price_label'] = format_euros_ttc((int) ($package['price'] ?? 0));
         }
         unset($package);
 
@@ -423,14 +423,14 @@ final class Service
         } catch (\Throwable) {
         }
         foreach ($options as &$option) {
-            $option['price_label'] = format_euros((int) ($option['price'] ?? 0));
+            $option['price_label'] = format_euros_ttc((int) ($option['price'] ?? 0));
         }
         unset($option);
 
         $row['by'] = User::displayName($row);
         $row['initials'] = User::initials($row);
         $row['avatar'] = avatar_style($row['initials'], 26);
-        $row['price'] = isset($row['price_from']) ? format_euros((int) $row['price_from']) : 'sur devis';
+        $row['price'] = isset($row['price_from']) ? format_euros_ttc((int) $row['price_from']) : 'sur devis';
         $row['rating'] = $reviews['avg'];
         $row['reviews'] = $reviews['count'];
         $row['status_label'] = self::STATUSES[$row['status'] ?? 'draft'] ?? 'Brouillon';

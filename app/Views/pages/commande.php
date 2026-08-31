@@ -49,7 +49,7 @@ $baseAmount = $package
                          data-price="<?= (int) ($option['price'] ?? 0) ?>"
                          <?= in_array($optionId, $selectedOptionIds, true) ? ' checked' : '' ?>>
                   <span><?= e((string) ($option['name'] ?? '')) ?></span>
-                  <strong>+<?= e((string) ($option['price_label'] ?? format_euros((int) ($option['price'] ?? 0)))) ?></strong>
+                  <strong>+<?= e((string) ($option['price_label'] ?? format_euros_ttc((int) ($option['price'] ?? 0)))) ?></strong>
                 </label>
               <?php endforeach; ?>
             </div>
@@ -79,7 +79,7 @@ $baseAmount = $package
           <?php if ($serviceOptions !== []): ?>
             <div class="side-foot">
               <span>Total</span>
-              <strong data-order-total-value><?= e(format_euros($baseAmount)) ?></strong>
+              <strong data-order-total-value><?= e(format_euros_ttc($baseAmount)) ?></strong>
             </div>
           <?php endif; ?>
         </div>

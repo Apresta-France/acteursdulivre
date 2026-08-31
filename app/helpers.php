@@ -370,6 +370,12 @@ function format_euros(?int $amount): string
     return format_int($amount) . ' €';
 }
 
+function format_euros_ttc(?int $amount): string
+{
+    $label = format_euros($amount);
+    return $label === 'sur devis' ? $label : $label . ' TTC';
+}
+
 function format_bytes(int $bytes): string
 {
     if ($bytes < 1024) {

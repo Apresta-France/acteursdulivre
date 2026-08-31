@@ -38,14 +38,14 @@ $providerLabel = OAuth::label((string) ($pending['provider'] ?? 'google'));
         <p>Obligatoire pour proposer vos services. Les outils de métier — correcteur orthographique, mémoire de traduction — restent autorisés.</p>
         <label class="ia-box-check">
           <input type="checkbox" name="charte_ia" value="1"<?= $offersOn ? ' required' : '' ?>>
-          Je m'engage à ne fournir aucun livrable produit par une IA générative.
+          <span>Je m'engage à ne fournir aucun livrable produit par une IA générative.</span>
         </label>
         <a class="ia-box-cta" href="<?= e(url('/regles-ia')) ?>">Lire nos règles d'intelligence artificielle →</a>
       </div>
-      <label class="auth-legal">
-        <input type="checkbox" name="charte" value="1" required>
-        J'accepte la charte qualité, les <a href="<?= e(url('/cgu')) ?>">CGU</a>, les <a href="<?= e(url('/cgv')) ?>">CGV</a>, la <a href="<?= e(url('/confidentialite')) ?>">politique de confidentialité</a> et les <a href="<?= e(url('/regles-ia')) ?>">règles IA</a>.
-      </label>
+      <div class="auth-legal">
+        <input id="charte" type="checkbox" name="charte" value="1" required>
+        <label class="auth-legal-text" for="charte">J'accepte la charte qualité, les <a href="<?= e(url('/cgu')) ?>">CGU</a>, les <a href="<?= e(url('/cgv')) ?>">CGV</a>, la <a href="<?= e(url('/confidentialite')) ?>">politique de confidentialité</a> et les <a href="<?= e(url('/regles-ia')) ?>">règles IA</a>.</label>
+      </div>
       <div class="auth-actions">
         <button class="btn-orange" type="submit">Créer mon compte</button>
         <span>ou <a href="<?= e(url('/connexion')) ?>">annuler</a></span>

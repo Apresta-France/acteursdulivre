@@ -100,8 +100,9 @@ $noTrades = $trades === [];
 
       <div class="form-grid-2">
         <div>
-          <label class="field" for="service-price">Prix à partir de (€)</label>
+          <label class="field" for="service-price">Prix à partir de (€ TTC)</label>
           <input class="input" id="service-price" name="price_from" inputmode="numeric" value="<?= e((string) ($old['price_from'] ?? '')) ?>" placeholder="420">
+          <p class="field-help">Montant affiché au client, toutes taxes comprises.</p>
         </div>
         <div>
           <label class="field" for="service-delay">Délai annoncé</label>
@@ -111,14 +112,14 @@ $noTrades = $trades === [];
 
       <div>
         <span class="field">Formules (optionnel)</span>
-        <p class="field-help" style="margin-top: 0; margin-bottom: 12px;">Ajoutez autant de formules que nécessaire. Chaque formule enregistrée doit avoir un nom et un prix. Le prix « à partir de » reprend la moins chère si vous le laissez vide.</p>
+        <p class="field-help" style="margin-top: 0; margin-bottom: 12px;">Ajoutez autant de formules que nécessaire. Chaque formule enregistrée doit avoir un nom et un prix TTC. Le prix « à partir de » reprend la moins chère si vous le laissez vide.</p>
         <div class="repeat-list" data-repeat="packages">
           <?php foreach ($packages as $i => $package): ?>
             <div class="repeat-package" data-repeat-row>
               <input type="hidden" name="packages[<?= (int) $i ?>][id]" value="<?= e((string) ($package['id'] ?? '')) ?>">
               <div class="repeat-row is-formule">
                 <input class="input" name="packages[<?= (int) $i ?>][name]" value="<?= e((string) ($package['name'] ?? '')) ?>" placeholder="Nom" maxlength="80">
-                <input class="input" name="packages[<?= (int) $i ?>][price]" value="<?= e((string) ($package['price'] ?? '')) ?>" placeholder="Prix €" inputmode="numeric">
+                <input class="input" name="packages[<?= (int) $i ?>][price]" value="<?= e((string) ($package['price'] ?? '')) ?>" placeholder="Prix € TTC" inputmode="numeric">
                 <input class="input" name="packages[<?= (int) $i ?>][delay]" value="<?= e((string) ($package['delay'] ?? '')) ?>" placeholder="Délai">
                 <button type="button" class="icon-btn" data-repeat-remove aria-label="Retirer">✕</button>
               </div>
@@ -131,13 +132,13 @@ $noTrades = $trades === [];
 
       <div>
         <span class="field">Options (optionnel)</span>
-        <p class="field-help" style="margin-top: 0; margin-bottom: 12px;">Le client peut les ajouter à la formule ou au prix de base. Leur montant s'ajoute au total.</p>
+        <p class="field-help" style="margin-top: 0; margin-bottom: 12px;">Le client peut les ajouter à la formule ou au prix de base. Leur montant TTC s'ajoute au total.</p>
         <div class="repeat-list" data-repeat="options">
           <?php foreach ($options as $i => $option): ?>
             <div class="repeat-row is-price" data-repeat-row>
               <input type="hidden" name="options[<?= (int) $i ?>][id]" value="<?= e((string) ($option['id'] ?? '')) ?>">
               <input class="input" name="options[<?= (int) $i ?>][name]" value="<?= e((string) ($option['name'] ?? '')) ?>" placeholder="Livraison accélérée">
-              <input class="input" name="options[<?= (int) $i ?>][price]" value="<?= e((string) ($option['price'] ?? '')) ?>" placeholder="Prix €" inputmode="numeric">
+              <input class="input" name="options[<?= (int) $i ?>][price]" value="<?= e((string) ($option['price'] ?? '')) ?>" placeholder="Prix € TTC" inputmode="numeric">
               <button type="button" class="icon-btn" data-repeat-remove aria-label="Retirer">✕</button>
             </div>
           <?php endforeach; ?>
@@ -203,7 +204,7 @@ $noTrades = $trades === [];
     <input type="hidden" name="packages[__i__][id]" value="">
     <div class="repeat-row is-formule">
       <input class="input" name="packages[__i__][name]" placeholder="Nom" maxlength="80">
-      <input class="input" name="packages[__i__][price]" placeholder="Prix €" inputmode="numeric">
+      <input class="input" name="packages[__i__][price]" placeholder="Prix € TTC" inputmode="numeric">
       <input class="input" name="packages[__i__][delay]" placeholder="Délai">
       <button type="button" class="icon-btn" data-repeat-remove aria-label="Retirer">✕</button>
     </div>
@@ -214,7 +215,7 @@ $noTrades = $trades === [];
   <div class="repeat-row is-price" data-repeat-row>
     <input type="hidden" name="options[__i__][id]" value="">
     <input class="input" name="options[__i__][name]" placeholder="Livraison accélérée">
-    <input class="input" name="options[__i__][price]" placeholder="Prix €" inputmode="numeric">
+    <input class="input" name="options[__i__][price]" placeholder="Prix € TTC" inputmode="numeric">
     <button type="button" class="icon-btn" data-repeat-remove aria-label="Retirer">✕</button>
   </div>
 </template>

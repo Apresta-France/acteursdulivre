@@ -16,7 +16,7 @@ $orderHref = '/espace/commande?prestation=' . rawurlencode((string) $service['sl
 if ($selectedPackage) {
     $orderHref .= '&formule=' . (int) ($selectedPackage['id'] ?? 0);
 }
-$ctaLabel = 'Commander — ' . format_euros($baseAmount);
+$ctaLabel = 'Commander — ' . format_euros_ttc($baseAmount);
 $formulePriceLabel = is_array($selectedPackage)
     ? (string) ($selectedPackage['price_label'] ?? $service['price'])
     : (string) $service['price'];
@@ -36,7 +36,7 @@ $formulePriceLabel = is_array($selectedPackage)
           '<p>Prestation proposée par ' . e((string) $service['by']) . '.</p>'
       ) ?></div>
       <div class="facts">
-        <div><span>Prix</span><strong><?= e((string) $service['price']) ?></strong></div>
+        <div><span>Prix TTC</span><strong><?= e((string) $service['price']) ?></strong></div>
         <div><span>Délai</span><strong><?= e((string) ($service['delay'] ?: 'à convenir')) ?></strong></div>
         <div><span>Métier</span><strong><?= e((string) ($service['cat'] ? \Adl\Data\Catalog::tradeTitle((string) $service['cat']) : '—')) ?></strong></div>
         <?php if (!empty($service['specialty'])): ?>
@@ -71,7 +71,7 @@ $formulePriceLabel = is_array($selectedPackage)
             <article class="side-card">
               <div class="side-foot" style="margin-top: 0; border-top: 0; padding-top: 0;">
                 <span><?= e((string) ($option['name'] ?? '')) ?></span>
-                <strong>+<?= e((string) ($option['price_label'] ?? format_euros((int) ($option['price'] ?? 0)))) ?></strong>
+                <strong>+<?= e((string) ($option['price_label'] ?? format_euros_ttc((int) ($option['price'] ?? 0)))) ?></strong>
               </div>
             </article>
           <?php endforeach; ?>
@@ -118,15 +118,15 @@ $formulePriceLabel = is_array($selectedPackage)
                            data-price="<?= (int) ($option['price'] ?? 0) ?>"
                            <?= $isOwner ? ' disabled' : '' ?>>
                     <span><?= e((string) ($option['name'] ?? '')) ?></span>
-                    <strong>+<?= e((string) ($option['price_label'] ?? format_euros((int) ($option['price'] ?? 0)))) ?></strong>
+                    <strong>+<?= e((string) ($option['price_label'] ?? format_euros_ttc((int) ($option['price'] ?? 0)))) ?></strong>
                   </label>
                 <?php endforeach; ?>
               </div>
             </div>
           <?php endif; ?>
           <div class="fiche-order-total">
-            <span>Total</span>
-            <strong data-order-total-value><?= e(format_euros($baseAmount)) ?></strong>
+            <span>Total TTC</span>
+            <strong data-order-total-value><?= e(format_euros_ttc($baseAmount)) ?></strong>
           </div>
           <?php if ($canOrder): ?>
             <a class="btn-orange" data-order-cta data-order-cta-label href="<?= e(url($orderHref)) ?>"><?= e($ctaLabel) ?></a>
@@ -167,7 +167,7 @@ $formulePriceLabel = is_array($selectedPackage)
       </div>
       <?php if ($canOrder): ?>
         <div class="fiche-buy-bar">
-          <strong data-order-total-value><?= e(format_euros($baseAmount)) ?></strong>
+          <strong data-order-total-value><?= e(format_euros_ttc($baseAmount)) ?></strong>
           <a class="btn-orange" data-order-cta data-order-cta-label href="<?= e(url($orderHref)) ?>"><?= e($ctaLabel) ?></a>
         </div>
       <?php endif; ?>

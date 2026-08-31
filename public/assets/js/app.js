@@ -1203,7 +1203,7 @@
     var base = parseInt(root.getAttribute('data-base') || '0', 10) || 0;
     var orderHref = root.getAttribute('data-order-href') || '';
     function formatEuros(n) {
-      return n.toLocaleString('fr-FR') + ' €';
+      return n.toLocaleString('fr-FR') + ' € TTC';
     }
     function currentTotal() {
       var total = base;

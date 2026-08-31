@@ -58,7 +58,7 @@
   <?php if (!empty($isArticle) && !empty($article['img'])): ?>
   <link rel="preload" as="image" href="<?= e((string) $article['img']) ?>">
   <?php endif; ?>
-  <link rel="stylesheet" href="<?= e(asset('css/app.css')) ?>?v=m78">
+  <link rel="stylesheet" href="<?= e(asset('css/app.css')) ?>?v=m82">
   <link rel="icon" href="<?= e(asset('img/favicon.ico')) ?>?v=3" sizes="any">
   <link rel="icon" type="image/png" href="<?= e(asset('img/favicon-32x32.png')) ?>?v=3" sizes="32x32">
   <link rel="apple-touch-icon" href="<?= e(asset('img/apple-touch-icon.png')) ?>?v=3">
@@ -136,22 +136,8 @@
               <span class="user-chip-name"><?= e($userFirst ?? '') ?></span>
             </button>
             <div class="user-menu-panel" id="user-menu-panel" hidden>
-              <a href="<?= e(url('/espace')) ?>">Tableau de bord</a>
-              <?php foreach ($espaceNav ?? [] as $group): ?>
-                <?php
-                  $groupItems = array_values(array_filter($group['items'] ?? [], static fn (array $item): bool => ($item['href'] ?? '') !== '/espace'));
-                ?>
-                <?php if ($groupItems !== []): ?>
-                  <?php if (($group['title'] ?? '') !== '' && ($group['title'] ?? '') !== 'Espace'): ?>
-                    <div class="user-menu-title"><?= e($group['title']) ?></div>
-                  <?php else: ?>
-                    <div class="user-menu-sep"></div>
-                  <?php endif; ?>
-                  <?php foreach ($groupItems as $item): ?>
-                    <a href="<?= e(url($item['href'])) ?>"<?= !empty($item['active']) ? ' class="is-active"' : '' ?>><?= e($item['label']) ?></a>
-                  <?php endforeach; ?>
-                <?php endif; ?>
-              <?php endforeach; ?>
+              <a href="<?= e(url('/espace')) ?>"<?= !empty($isDashboard) ? ' class="is-active"' : '' ?>>Tableau de bord</a>
+              <a href="<?= e(url('/espace/parametres')) ?>"<?= !empty($isParametres) ? ' class="is-active"' : '' ?>>Paramètres</a>
               <?php if (!empty($isAdmin)): ?>
                 <div class="user-menu-sep"></div>
                 <a href="<?= e(url('/admin')) ?>">Administration</a>
@@ -322,6 +308,6 @@
       </footer>
     </div>
   </div>
-  <script src="<?= e(asset('js/app.js')) ?>?v=m45"></script>
+  <script src="<?= e(asset('js/app.js')) ?>?v=m46"></script>
 </body>
 </html>

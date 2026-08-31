@@ -330,7 +330,7 @@ $presHint = $presentationHints[$selectedTrades[0] ?? ''] ?? 'Votre parcours, vos
         </div>
       <?php endif; ?>
 
-      <form method="post" action="<?= e(url('/espace/bienvenue')) ?>">
+      <form class="onboard-later-form" method="post" action="<?= e(url('/espace/bienvenue')) ?>">
         <?= csrf_field() ?>
         <input type="hidden" name="etape" value="<?= e($step) ?>">
         <button class="onboard-later" type="submit" name="intent" value="later" formnovalidate>Je termine plus tard, aller à l’espace</button>

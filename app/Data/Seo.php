@@ -554,6 +554,12 @@ final class Seo
                 'price' => $price,
                 'url' => $url,
                 'availability' => 'https://schema.org/InStock',
+                'priceSpecification' => [
+                    '@type' => 'PriceSpecification',
+                    'price' => $price,
+                    'priceCurrency' => 'EUR',
+                    'valueAddedTaxIncluded' => true,
+                ],
             ];
         }
         return $out;
