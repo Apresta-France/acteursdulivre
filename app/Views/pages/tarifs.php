@@ -4,7 +4,7 @@ $exemple = $exemple ?? [];
 $gratuit = $gratuit ?? [];
 $tarifsFaq = $tarifsFaq ?? [];
 ?>
-<div class="mk-page mk-pad">
+<div class="mk-page mk-pad tarif-page">
   <h1>Tarifs et commission</h1>
   <p class="mk-lead">Aucun abonnement. Publier une recherche, créer une vitrine et proposer des fiches sont libres. Le client règle le prestataire hors plateforme. La première mission est offerte ; ensuite, 8&nbsp;% de commission sur les missions réalisées.</p>
 
@@ -45,7 +45,7 @@ $tarifsFaq = $tarifsFaq ?? [];
     </div>
   </div>
 
-  <section>
+  <section class="tarif-faq">
     <h2>Questions fréquentes</h2>
     <div class="mk-faq-list">
       <?php foreach ($tarifsFaq as $f): ?>

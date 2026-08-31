@@ -4031,6 +4031,13 @@ img.profile-avatar,
 .tarif-exemple { border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
 .tarif-exemple-head { padding: 16px 18px; background: #FBFCFE; border-bottom: 1px solid #EEF1F5; font-family: var(--display); font-weight: 500; color: var(--navy); }
 .tarif-row { display: flex; justify-content: space-between; padding: 14px 18px; border-bottom: 1px solid #F2F5F8; font-size: 15px; }
+.tarif-page > h1 { margin: 0 0 12px; }
+.tarif-page > .mk-lead { margin: 0 0 34px; }
+.tarif-page .tarif-grid { margin: 0 0 40px; }
+.tarif-page .mk-split { padding: 0; }
+.tarif-page .mk-split > div > h2 { margin: 0 0 16px; }
+.tarif-page .tarif-faq { margin-top: 40px; }
+.tarif-page .tarif-faq > h2 { margin: 0 0 16px; }
 .mk-banner { background: #022746; color: #A9C0D5; padding: 48px 44px; }
 .mk-banner h1 { color: #fff; }
 .mk-charte, .mk-litige { display: flex; flex-direction: column; gap: 14px; }
