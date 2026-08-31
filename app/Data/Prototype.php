@@ -374,9 +374,9 @@ final class Prototype
             ],
             'contactMotifs' => self::chips(['Question générale', 'Problème sur une commande', 'Presse & partenariats', 'Signaler un abus'], 0, false, true),
             'contactCanaux' => [
-                ['k' => 'E-mail', 'v' => 'bonjour@acteursdulivre.fr', 'href' => 'mailto:bonjour@acteursdulivre.fr'],
-                ['k' => 'Litiges', 'v' => 'mediation@acteursdulivre.fr', 'href' => 'mailto:mediation@acteursdulivre.fr'],
-                ['k' => 'Presse', 'v' => 'presse@acteursdulivre.fr', 'href' => 'mailto:presse@acteursdulivre.fr'],
+                ['k' => 'E-mail', 'v' => 'guillaume@editions-tesseract.fr', 'href' => 'mailto:guillaume@editions-tesseract.fr'],
+                ['k' => 'Litiges', 'v' => 'olivier@editions-tesseract.fr', 'href' => 'mailto:olivier@editions-tesseract.fr'],
+                ['k' => 'Presse', 'v' => 'contact@editions-tesseract.fr', 'href' => 'mailto:contact@editions-tesseract.fr'],
                 ['k' => 'Facebook', 'v' => 'acteursdulivre', 'href' => Socials::FACEBOOK],
                 ['k' => 'Instagram', 'v' => '@acteursdulivre.fr', 'href' => Socials::INSTAGRAM],
                 ['k' => 'Adresse', 'v' => '486 rue Sadi Carnot, Sainghin-en-Weppes'],
