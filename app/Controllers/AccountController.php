@@ -423,7 +423,7 @@ final class AccountController
                     'order_id' => (int) $order['id'],
                     'service_id' => (int) $service['id'],
                 ]);
-                Conversation::send((int) $thread['id'], (int) $user['id'], $brief);
+                Conversation::send((int) $thread['id'], (int) $user['id'], $brief, notify: false);
             }
         } catch (\Throwable $e) {
             flash('error', $e->getMessage());
@@ -892,10 +892,7 @@ final class AccountController
             Service::deleteForUser((int) $id, (int) $user['id']);
         } catch (\RuntimeException $e) {
             flash('error', $e->getMessage());
-            $from = $request->string('from');
-            redirect($from === 'edit'
-                ? '/espace/prestations/' . (int) $id . '/modifier'
-                : '/espace/prestations');
+            redirect('/espace/prestations');
         }
 
         flash('saved', 'Prestation supprimée.');

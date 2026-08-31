@@ -44,6 +44,20 @@ final class Application
         return $row ? self::present($row) : null;
     }
 
+    public static function countUnreviewedForOwner(int $ownerId): int
+    {
+        $row = Database::fetch(
+            'SELECT COUNT(*) AS n
+             FROM applications a
+             JOIN missions m ON m.id = a.mission_id
+             WHERE m.user_id = ?
+               AND m.status = "open"
+               AND a.status = "sent"',
+            [$ownerId]
+        );
+        return (int) ($row['n'] ?? 0);
+    }
+
     public static function countForMission(int $missionId): int
     {
         $row = Database::fetch(

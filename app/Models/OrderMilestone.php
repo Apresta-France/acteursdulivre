@@ -295,6 +295,23 @@ final class OrderMilestone
         return $out;
     }
 
+    public static function countDueActions(int $userId): int
+    {
+        $row = Database::fetch(
+            'SELECT COUNT(*) AS n
+             FROM order_milestones om
+             JOIN orders o ON o.id = om.order_id
+             WHERE om.status = ?
+               AND o.status NOT IN ("cancelled", "dispute")
+               AND (
+                    (om.actor = "seller" AND o.seller_id = ?)
+                 OR (om.actor = "buyer" AND o.buyer_id = ?)
+               )',
+            [self::STATUS_CURRENT, $userId, $userId]
+        );
+        return (int) ($row['n'] ?? 0);
+    }
+
     public static function canValidate(array $order): bool
     {
         $id = (int) ($order['id'] ?? 0);

@@ -109,7 +109,8 @@ final class Conversation
         int $userId,
         string $body,
         ?array $file = null,
-        ?array $publicUpload = null
+        ?array $publicUpload = null,
+        bool $notify = true
     ): array {
         $thread = self::findForUser($conversationId, $userId);
         if (!$thread) {
@@ -166,7 +167,7 @@ final class Conversation
             ? $body
             : 'Pièce jointe : ' . (string) ($attachment['name'] ?? 'fichier');
         $otherId = (int) ($thread['other']['id'] ?? 0);
-        if ($otherId > 0) {
+        if ($notify && $otherId > 0) {
             $senderName = User::displayName(User::find($userId) ?? []);
             $unread = self::unreadFromSender($conversationId, $otherId, $userId);
             $title = $unread > 1

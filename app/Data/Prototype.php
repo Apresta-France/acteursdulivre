@@ -6,8 +6,11 @@ namespace Adl\Data;
 
 use Adl\Core\Auth;
 use Adl\Core\DcEngine;
+use Adl\Models\Application;
+use Adl\Models\Invoice;
 use Adl\Models\Mission;
 use Adl\Models\Notification;
+use Adl\Models\OrderMilestone;
 use Adl\Models\Service;
 use Adl\Models\User;
 
@@ -96,6 +99,10 @@ final class Prototype
         }
 
         $mega = Catalog::megaGroups();
+        $seeks = User::seeksServices($user);
+        $offers = User::offersServices($user);
+        $unreadMessages = self::liveUnreadMessages($user);
+        $unreadAlerts = self::liveUnreadAlerts($user);
 
         $footerCols = [
             ['title' => 'Porteurs de projet', 'links' => [
@@ -146,14 +153,19 @@ final class Prototype
             'userFirst' => $first,
             'userName' => $user ? User::displayName($user) : '',
             'isAdmin' => ($user['role'] ?? '') === 'admin',
-            'seeksServices' => User::seeksServices($user),
-            'offersServices' => User::offersServices($user),
+            'seeksServices' => $seeks,
+            'offersServices' => $offers,
             'inEspace' => $logged && self::isEspaceScreen($screen),
-            'espaceNav' => $logged ? self::espaceNav($screen, User::seeksServices($user), User::offersServices($user)) : [],
-            'headerCta' => self::headerCta(User::seeksServices($user), User::offersServices($user)),
+            'espaceNav' => $logged ? self::espaceNav(
+                $screen,
+                $seeks,
+                $offers,
+                self::espaceNavBadges($user, $unreadMessages, $unreadAlerts, $seeks, $offers)
+            ) : [],
+            'headerCta' => self::headerCta($seeks, $offers),
             'routes' => DcEngine::routes(),
-            'unreadMessages' => self::liveUnreadMessages($user),
-            'unreadAlerts' => self::liveUnreadAlerts($user),
+            'unreadMessages' => $unreadMessages,
+            'unreadAlerts' => $unreadAlerts,
         ];
     }
 
@@ -1471,16 +1483,63 @@ final class Prototype
         return null;
     }
 
-    private static function espaceNav(string $screen, bool $seeks, bool $offers): array
+    /** @return array<string, string> */
+    private static function espaceNavBadges(?array $user, int $unreadMessages, int $unreadAlerts, bool $seeks, bool $offers): array
     {
-        $item = static function (string $label, string $href, string $key, string $icon = 'dot') use ($screen): array {
+        $badges = [
+            'messagerie' => self::navBadge($unreadMessages),
+            'notifications' => self::navBadge($unreadAlerts),
+        ];
+        if (!$user) {
+            return $badges;
+        }
+        $userId = (int) $user['id'];
+        if ($seeks || $offers) {
+            $badges['suivi'] = self::safeNavBadge(static fn (): int => OrderMilestone::countDueActions($userId));
+        }
+        if ($seeks) {
+            $badges['mesmissions'] = self::safeNavBadge(static fn (): int => Application::countUnreviewedForOwner($userId));
+        }
+        if ($offers) {
+            $badges['facturation'] = self::safeNavBadge(static fn (): int => Invoice::countOpenForSeller($userId));
+        }
+
+        return $badges;
+    }
+
+    private static function safeNavBadge(callable $count): string
+    {
+        try {
+            return self::navBadge((int) $count());
+        } catch (\Throwable) {
+            return '';
+        }
+    }
+
+    private static function navBadge(int $n): string
+    {
+        return $n > 0 ? (string) $n : '';
+    }
+
+    /** @param array<string, string> $badges */
+    private static function espaceNav(string $screen, bool $seeks, bool $offers, array $badges = []): array
+    {
+        $item = static function (string $label, string $href, string $key, string $icon = 'dot') use ($screen, $badges): array {
             $aliases = ['suivi' => ['suivi', 'suivi-detail']];
             $active = $screen === $key || in_array($screen, $aliases[$key] ?? [], true);
+            $badge = $badges[$key] ?? '';
+            $badgeAria = match ($key) {
+                'messagerie' => $badge . ' non lus',
+                'notifications' => $badge . ' nouvelles',
+                default => $badge . ' en attente',
+            };
             return [
                 'label' => $label,
                 'href' => $href,
                 'active' => $active,
                 'icon' => $icon,
+                'badge' => $badge,
+                'badge_aria' => $badge !== '' ? $badgeAria : '',
             ];
         };
 

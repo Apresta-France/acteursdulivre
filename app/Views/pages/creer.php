@@ -173,16 +173,6 @@ $noTrades = $trades === [];
         <button class="btn-ghost" type="submit" name="intent" value="draft"<?= $noTrades ? ' disabled' : '' ?>>Enregistrer le brouillon</button>
       </div>
     </form>
-
-    <?php if (!empty($editing) && !empty($serviceId)): ?>
-      <form class="param-danger" method="post" action="<?= e(url('/espace/prestations/' . (int) $serviceId . '/supprimer')) ?>" onsubmit="return confirm('Supprimer cette prestation ? Elle disparaîtra de l’annuaire.');">
-        <?= csrf_field() ?>
-        <input type="hidden" name="from" value="edit">
-        <p class="field">Supprimer la prestation</p>
-        <p class="field-help">Elle disparaîtra de l’annuaire. Les commandes déjà passées sont conservées.</p>
-        <button class="btn-ghost btn-danger" type="submit">Supprimer cette prestation</button>
-      </form>
-    <?php endif; ?>
     </div>
 
     <aside class="publish-side">

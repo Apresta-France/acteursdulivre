@@ -58,6 +58,17 @@ final class Invoice
         return (int) ($row['n'] ?? 0);
     }
 
+    public static function countOpenForSeller(int $sellerId): int
+    {
+        $row = Database::fetch(
+            'SELECT COUNT(*) AS n FROM invoices
+             WHERE seller_id = ?
+               AND status IN ("issued", "overdue")',
+            [$sellerId]
+        );
+        return (int) ($row['n'] ?? 0);
+    }
+
     public static function forOrder(int $orderId): ?array
     {
         $row = Database::fetch('SELECT * FROM invoices WHERE order_id = ? ORDER BY id DESC LIMIT 1', [$orderId]);
