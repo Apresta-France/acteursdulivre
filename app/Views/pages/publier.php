@@ -16,6 +16,17 @@ $formAction = $editing && $missionId > 0 ? '/espace/publier/' . $missionId : '/e
       <h1><?= $editing ? 'Modifier la recherche' : 'Décrivez votre recherche' ?></h1>
       <p>Plus le brief est précis, plus les devis sont justes. Trois minutes suffisent.</p>
     </div>
+    <?php if ($editing && $missionId > 0 && in_array($missionStatus, ['draft', 'open'], true)): ?>
+      <?php
+        $deleteConfirm = $missionStatus === 'draft'
+            ? 'Supprimer ce brouillon ? Cette action est irréversible.'
+            : 'Supprimer cette recherche ? Elle disparaîtra des appels d’offres. Les candidatures en attente seront clôturées.';
+      ?>
+      <form method="post" action="<?= e(url('/espace/missions/' . $missionId . '/supprimer')) ?>" onsubmit="return confirm(<?= json_encode($deleteConfirm, JSON_UNESCAPED_UNICODE) ?>);">
+        <?= csrf_field() ?>
+        <button class="btn-ghost btn-danger" type="submit">Supprimer</button>
+      </form>
+    <?php endif; ?>
   </div>
 
   <?php if (!empty($error)): ?>

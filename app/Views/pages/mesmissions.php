@@ -55,6 +55,17 @@ $open = count(array_filter($missions, static fn (array $m): bool => ($m['status'
             <?php if ((int) ($m['applicants'] ?? 0) > 0): ?>
               <a class="btn-navy" href="<?= e(url((string) $m['href'] . '#candidatures')) ?>">Voir les candidatures</a>
             <?php endif; ?>
+            <?php if (!empty($m['can_delete'])): ?>
+              <?php
+                $deleteConfirm = ($m['status'] ?? '') === 'draft'
+                    ? 'Supprimer ce brouillon ? Cette action est irréversible.'
+                    : 'Supprimer cette recherche ? Elle disparaîtra des appels d’offres. Les candidatures en attente seront clôturées.';
+              ?>
+              <form method="post" action="<?= e(url('/espace/missions/' . (int) $m['id'] . '/supprimer')) ?>" onsubmit="return confirm(<?= json_encode($deleteConfirm, JSON_UNESCAPED_UNICODE) ?>);">
+                <?= csrf_field() ?>
+                <button class="btn-ghost btn-danger" type="submit">Supprimer</button>
+              </form>
+            <?php endif; ?>
           </div>
         </article>
       <?php endforeach; ?>

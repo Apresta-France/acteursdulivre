@@ -14,6 +14,17 @@ if (!$live) {
         <?php if (!empty($isOwner) && in_array((string) ($live['status'] ?? ''), ['draft', 'open'], true)): ?>
           <a class="btn-ghost" href="<?= e(url('/espace/publier/' . (int) $live['id'])) ?>">Modifier</a>
         <?php endif; ?>
+        <?php if (!empty($isOwner) && !empty($live['can_delete'])): ?>
+          <?php
+            $deleteConfirm = ($live['status'] ?? '') === 'draft'
+                ? 'Supprimer ce brouillon ? Cette action est irréversible.'
+                : 'Supprimer cette recherche ? Elle disparaîtra des appels d’offres. Les candidatures en attente seront clôturées.';
+          ?>
+          <form method="post" action="<?= e(url('/espace/missions/' . (int) $live['id'] . '/supprimer')) ?>" onsubmit="return confirm(<?= json_encode($deleteConfirm, JSON_UNESCAPED_UNICODE) ?>);">
+            <?= csrf_field() ?>
+            <button class="btn-ghost btn-danger" type="submit">Supprimer</button>
+          </form>
+        <?php endif; ?>
       </div>
       <h1 class="mission-title"><?= e((string) $live['title']) ?></h1>
       <div class="facts">

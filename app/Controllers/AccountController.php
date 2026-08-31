@@ -981,6 +981,25 @@ final class AccountController
         ]);
     }
 
+    public function missionDelete(Request $request, string $id): void
+    {
+        $user = Auth::requireUser();
+        $mission = Mission::findForUser((int) $id, (int) $user['id']);
+        if (!$mission) {
+            not_found('Cette recherche est introuvable.');
+        }
+
+        try {
+            Mission::deleteForUser((int) $id, (int) $user['id']);
+        } catch (\RuntimeException $e) {
+            flash('error', user_error_message($e));
+            redirect('/espace/missions');
+        }
+
+        flash('saved', 'Recherche supprimée.');
+        redirect('/espace/missions');
+    }
+
     public function candidatures(Request $request): void
     {
         $user = Auth::requireOfferer();

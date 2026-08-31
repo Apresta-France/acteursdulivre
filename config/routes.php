@@ -95,6 +95,7 @@ return static function (Router $router): void {
     $router->post('/espace/suivi/{id}/litige', [AccountController::class, 'suiviDispute']);
     $router->get('/espace/commandes', [AccountController::class, 'commandes']);
     $router->get('/espace/missions', [AccountController::class, 'missions']);
+    $router->post('/espace/missions/{id}/supprimer', [AccountController::class, 'missionDelete']);
     $router->get('/espace/candidatures', [AccountController::class, 'candidatures']);
     $router->post('/espace/candidatures/{id}/accepter', [AccountController::class, 'applicationAccept']);
     $router->post('/espace/candidatures/{id}/refuser', [AccountController::class, 'applicationReject']);
