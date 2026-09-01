@@ -1716,6 +1716,12 @@
     p: true, br: true, strong: true, b: true, em: true, i: true,
     ul: true, ol: true, li: true, a: true
   };
+  var EDITOR_DROP = {
+    script: true, style: true, iframe: true, object: true, embed: true, svg: true, math: true,
+    video: true, audio: true, canvas: true, template: true, noscript: true, link: true, meta: true, base: true,
+    input: true, button: true, select: true, option: true, optgroup: true, textarea: true,
+    label: true, fieldset: true, legend: true
+  };
 
   function escapeEditorText(text) {
     return String(text)
@@ -1738,7 +1744,7 @@
     if (node.nodeType === 3) return escapeEditorText(node.nodeValue || '');
     if (node.nodeType !== 1) return '';
     var tag = (node.tagName || '').toLowerCase();
-    if (tag === 'script' || tag === 'style') return '';
+    if (EDITOR_DROP[tag]) return '';
     var inner = '';
     Array.prototype.forEach.call(node.childNodes, function (child) {
       inner += serializeEditorNode(child);

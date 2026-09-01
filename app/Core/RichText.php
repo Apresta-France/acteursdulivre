@@ -139,6 +139,8 @@ final class RichText
     private const DROP = [
         'script', 'style', 'iframe', 'object', 'embed', 'svg', 'math',
         'video', 'audio', 'canvas', 'template', 'noscript', 'link', 'meta', 'base',
+        'input', 'button', 'select', 'option', 'optgroup', 'textarea',
+        'label', 'fieldset', 'legend',
     ];
 
     /** @param array<string, list<string>> $allowed */
