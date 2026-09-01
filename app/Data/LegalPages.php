@@ -98,7 +98,7 @@ final class LegalPages
             [
                 'title' => 'Contact',
                 'blocks' => [
-                    ['html' => '<ul><li>Contact général : <a href="mailto:bonjour@acteursdulivre.fr">bonjour@acteursdulivre.fr</a></li><li>Litiges et médiation : <a href="mailto:mediation@acteursdulivre.fr">mediation@acteursdulivre.fr</a></li><li>Presse : <a href="mailto:presse@acteursdulivre.fr">presse@acteursdulivre.fr</a></li><li>Facebook : <a href="' . e(Socials::FACEBOOK) . '" target="_blank" rel="noopener noreferrer">facebook.com/acteursdulivre</a></li><li>Instagram : <a href="' . e(Socials::INSTAGRAM) . '" target="_blank" rel="noopener noreferrer">instagram.com/acteursdulivre.fr</a></li><li>Formulaire : <a href="' . e(url('/contact')) . '">page Contact</a></li></ul>'],
+                    ['html' => '<ul><li>Contact général : <a href="mailto:guillaume@editions-tesseract.fr">guillaume@editions-tesseract.fr</a></li><li>Litiges et médiation : <a href="mailto:mediation@acteursdulivre.fr">mediation@acteursdulivre.fr</a></li><li>Presse : <a href="mailto:presse@acteursdulivre.fr">presse@acteursdulivre.fr</a></li><li>Facebook : <a href="' . e(Socials::FACEBOOK) . '" target="_blank" rel="noopener noreferrer">facebook.com/acteursdulivre</a></li><li>Instagram : <a href="' . e(Socials::INSTAGRAM) . '" target="_blank" rel="noopener noreferrer">instagram.com/acteursdulivre.fr</a></li><li>Formulaire : <a href="' . e(url('/contact')) . '">page Contact</a></li></ul>'],
                 ],
             ],
             [
@@ -263,7 +263,7 @@ final class LegalPages
             [
                 'title' => '2. Identité du prestataire d\'intermédiation',
                 'blocks' => [
-                    ['html' => '<p><strong>EDITIONS TESSERACT</strong>, SAS au capital de 6&nbsp;100&nbsp;€, 486 rue Sadi Carnot, 59184 Sainghin-en-Weppes, RCS Lille Métropole 980&nbsp;005&nbsp;292, TVA FR14&nbsp;980&nbsp;005&nbsp;292. Contact : <a href="mailto:bonjour@acteursdulivre.fr">bonjour@acteursdulivre.fr</a>.</p>'],
+                    ['html' => '<p><strong>EDITIONS TESSERACT</strong>, SAS au capital de 6&nbsp;100&nbsp;€, 486 rue Sadi Carnot, 59184 Sainghin-en-Weppes, RCS Lille Métropole 980&nbsp;005&nbsp;292, TVA FR14&nbsp;980&nbsp;005&nbsp;292. Contact : <a href="mailto:guillaume@editions-tesseract.fr">guillaume@editions-tesseract.fr</a>.</p>'],
                 ],
             ],
             [
@@ -359,7 +359,7 @@ final class LegalPages
                 'title' => '13. Garanties',
                 'blocks' => [
                     ['p' => 'EDITIONS TESSERACT garantit que le service d\'intermédiation est fourni avec la diligence raisonnable d\'un professionnel. Elle ne garantit pas le résultat d\'une mission réalisée par un tiers.'],
-                    ['p' => 'Le Client consommateur bénéficie de la garantie légale de conformité pour le service fourni par EDITIONS TESSERACT, dans les conditions du Code de la consommation. Les réclamations se font à bonjour@acteursdulivre.fr.'],
+                    ['p' => 'Le Client consommateur bénéficie de la garantie légale de conformité pour le service fourni par EDITIONS TESSERACT, dans les conditions du Code de la consommation. Les réclamations se font à guillaume@editions-tesseract.fr.'],
                 ],
             ],
             [
@@ -384,7 +384,7 @@ final class LegalPages
             [
                 'title' => '1. Responsable de traitement',
                 'blocks' => [
-                    ['html' => '<p>Le responsable de traitement est <strong>EDITIONS TESSERACT</strong>, SAS, 486 rue Sadi Carnot, 59184 Sainghin-en-Weppes, RCS Lille Métropole 980&nbsp;005&nbsp;292. Contact : <a href="mailto:bonjour@acteursdulivre.fr">bonjour@acteursdulivre.fr</a>.</p>'],
+                    ['html' => '<p>Le responsable de traitement est <strong>EDITIONS TESSERACT</strong>, SAS, 486 rue Sadi Carnot, 59184 Sainghin-en-Weppes, RCS Lille Métropole 980&nbsp;005&nbsp;292. Contact : <a href="mailto:guillaume@editions-tesseract.fr">guillaume@editions-tesseract.fr</a>.</p>'],
                     ['p' => 'Aucun délégué à la protection des données n\'est désigné à ce jour. Les demandes s\'adressent à l\'e-mail ci-dessus, objet « Données personnelles ».'],
                 ],
             ],
@@ -431,7 +431,7 @@ final class LegalPages
                 'title' => '7. Vos droits',
                 'blocks' => [
                     ['p' => 'Vous pouvez demander l\'accès, la rectification, l\'effacement, la limitation, la portabilité lorsque le traitement repose sur le contrat ou le consentement, et vous opposer aux traitements fondés sur l\'intérêt légitime, dans les conditions du RGPD et de la loi Informatique et Libertés.'],
-                    ['html' => '<p>Écrivez à <a href="mailto:bonjour@acteursdulivre.fr">bonjour@acteursdulivre.fr</a> ou utilisez les <a href="' . e(url('/espace/parametres')) . '">paramètres du compte</a>. Une pièce d\'identité peut être demandée en cas de doute. Vous pouvez introduire une réclamation auprès de la CNIL (cnil.fr).</p>'],
+                    ['html' => '<p>Écrivez à <a href="mailto:guillaume@editions-tesseract.fr">guillaume@editions-tesseract.fr</a> ou utilisez les <a href="' . e(url('/espace/parametres')) . '">paramètres du compte</a>. Une pièce d\'identité peut être demandée en cas de doute. Vous pouvez introduire une réclamation auprès de la CNIL (cnil.fr).</p>'],
                     ['p' => 'La suppression du compte n\'efface pas nécessairement les factures ni les contenus qu\'un cocontractant doit conserver, ni les avis liés à une mission réalisée, qui peuvent être conservés de façon minimisée.'],
                 ],
             ],
@@ -444,7 +444,7 @@ final class LegalPages
             [
                 'title' => '9. Sécurité',
                 'blocks' => [
-                    ['p' => 'Les mots de passe sont hachés. Les sessions et les formulaires sensibles sont protégés par un jeton CSRF. La connexion Google ou Facebook s\'appuie sur un jeton d\'état à usage unique. L\'accès administration est réservé aux comptes de rôle administrateur. Aucun dispositif n\'étant infaillible, l\'Utilisateur signale tout accès anormal à bonjour@acteursdulivre.fr.'],
+                    ['p' => 'Les mots de passe sont hachés. Les sessions et les formulaires sensibles sont protégés par un jeton CSRF. La connexion Google ou Facebook s\'appuie sur un jeton d\'état à usage unique. L\'accès administration est réservé aux comptes de rôle administrateur. Aucun dispositif n\'étant infaillible, l\'Utilisateur signale tout accès anormal à guillaume@editions-tesseract.fr.'],
                 ],
             ],
             [
@@ -491,7 +491,7 @@ final class LegalPages
                 'title' => '5. Gérer les cookies',
                 'blocks' => [
                     ['p' => 'Vous pouvez supprimer les cookies du site via les paramètres de votre navigateur. La suppression du cookie de session vous déconnecte.'],
-                    ['html' => '<p>Pour en savoir plus sur les données personnelles : <a href="' . e(url('/confidentialite')) . '">politique de confidentialité</a>. Contact : <a href="mailto:bonjour@acteursdulivre.fr">bonjour@acteursdulivre.fr</a>.</p>'],
+                    ['html' => '<p>Pour en savoir plus sur les données personnelles : <a href="' . e(url('/confidentialite')) . '">politique de confidentialité</a>. Contact : <a href="mailto:guillaume@editions-tesseract.fr">guillaume@editions-tesseract.fr</a>.</p>'],
                 ],
             ],
         ];
@@ -566,7 +566,7 @@ final class LegalPages
                 'title' => '9. Documents liés',
                 'blocks' => [
                     ['html' => '<p>Ces règles précisent le périmètre du moratoire. Elles s\'articulent avec la <a href="' . e(url('/cgu')) . '">charte qualité et l\'interdiction d\'IA générative des CGU</a> (article 7), la <a href="' . e(url('/confiance')) . '">page Confiance</a> et la <a href="' . e(url('/confidentialite')) . '">politique de confidentialité</a>.</p>'],
-                    ['html' => '<p>Question ou signalement : <a href="' . e(url('/contact')) . '">nous écrire</a> ou <a href="mailto:bonjour@acteursdulivre.fr">bonjour@acteursdulivre.fr</a>.</p>'],
+                    ['html' => '<p>Question ou signalement : <a href="' . e(url('/contact')) . '">nous écrire</a> ou <a href="mailto:guillaume@editions-tesseract.fr">guillaume@editions-tesseract.fr</a>.</p>'],
                 ],
             ],
         ];

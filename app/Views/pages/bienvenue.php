@@ -111,7 +111,19 @@ $presHint = $presentationHints[$selectedTrades[0] ?? ''] ?? 'Votre parcours, vos
           </div>
           <div>
             <label class="field" for="onboard-city">Ville</label>
-            <input class="input" id="onboard-city" name="city" value="<?= e($cityValue) ?>" placeholder="Nantes" data-preview-city>
+            <?php
+              $cityField = [
+                  'mode' => 'profile',
+                  'id' => 'onboard-city',
+                  'name' => 'city',
+                  'value' => $cityValue,
+                  'slug' => (string) ($old['city_slug'] ?? $profile['city_slug'] ?? ''),
+                  'insee' => (string) ($old['city_insee'] ?? $profile['city_insee'] ?? ''),
+                  'placeholder' => 'Commencez à taper une ville',
+                  'extra' => 'data-preview-city',
+              ];
+              require ADL_ROOT . '/app/Views/partials/city-field.php';
+            ?>
           </div>
           <div>
             <label class="field" for="onboard-pres">Présentation</label>

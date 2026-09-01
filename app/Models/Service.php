@@ -16,7 +16,7 @@ final class Service
     public static function find(int $id): ?array
     {
         $row = Database::fetch(
-            'SELECT s.*, u.first_name, u.last_name, p.slug AS profile_slug
+            'SELECT s.*, u.first_name, u.last_name, p.slug AS profile_slug, p.city AS seller_city
              FROM services s
              JOIN users u ON u.id = s.user_id
              LEFT JOIN profiles p ON p.user_id = u.id
@@ -29,7 +29,7 @@ final class Service
     public static function findBySlug(string $slug): ?array
     {
         $row = Database::fetch(
-            'SELECT s.*, u.first_name, u.last_name, p.slug AS profile_slug
+            'SELECT s.*, u.first_name, u.last_name, p.slug AS profile_slug, p.city AS seller_city
              FROM services s
              JOIN users u ON u.id = s.user_id
              LEFT JOIN profiles p ON p.user_id = u.id
@@ -43,7 +43,7 @@ final class Service
     public static function published(): array
     {
         $rows = Database::fetchAll(
-            'SELECT s.*, u.first_name, u.last_name, p.slug AS profile_slug
+            'SELECT s.*, u.first_name, u.last_name, p.slug AS profile_slug, p.city AS seller_city
              FROM services s
              JOIN users u ON u.id = s.user_id
              LEFT JOIN profiles p ON p.user_id = u.id
@@ -65,7 +65,7 @@ final class Service
     public static function all(): array
     {
         $rows = Database::fetchAll(
-            'SELECT s.*, u.first_name, u.last_name, p.slug AS profile_slug
+            'SELECT s.*, u.first_name, u.last_name, p.slug AS profile_slug, p.city AS seller_city
              FROM services s
              JOIN users u ON u.id = s.user_id
              LEFT JOIN profiles p ON p.user_id = u.id
@@ -78,7 +78,7 @@ final class Service
     public static function forUser(int $userId): array
     {
         $rows = Database::fetchAll(
-            'SELECT s.*, u.first_name, u.last_name, p.slug AS profile_slug
+            'SELECT s.*, u.first_name, u.last_name, p.slug AS profile_slug, p.city AS seller_city
              FROM services s
              JOIN users u ON u.id = s.user_id
              LEFT JOIN profiles p ON p.user_id = u.id
@@ -446,11 +446,22 @@ final class Service
         $row['kind_label'] = 'Prestation';
         $row['cat'] = (string) ($row['category_name'] ?? '');
         $row['specialty'] = (string) ($row['specialty'] ?? '');
-        $row['subtitle'] = $row['by'];
+        $city = trim((string) ($row['seller_city'] ?? $row['city'] ?? ''));
+        $citySlug = trim((string) ($row['seller_city_slug'] ?? $row['city_slug'] ?? ''));
+        $cityArea = trim((string) ($row['seller_city_area_slug'] ?? $row['city_area_slug'] ?? ''));
+        if ($city !== '' && ($citySlug === '' || $cityArea === '')) {
+            $norm = \Adl\Data\Cities::fromFreeText($city);
+            $citySlug = $citySlug !== '' ? $citySlug : $norm['slug'];
+            $cityArea = $cityArea !== '' ? $cityArea : $norm['area_slug'];
+        }
+        $row['city'] = $city;
+        $row['city_slug'] = $citySlug;
+        $row['city_area_slug'] = $cityArea;
+        $row['subtitle'] = $row['by'] . ($city !== '' ? ' · ' . $city : '');
         $row['meta'] = trim(($row['delay'] ?? '') . ($reviews['avg'] !== '' ? ' · ★ ' . $reviews['avg'] : ''));
         $row['thumb'] = $row['has_image'] ? $row['img'] : '';
         $row['cover'] = $row['has_image'] ? '' : $row['img'];
-        $row['search'] = $row['cat'] . ' ' . $row['specialty'] . ' ' . $row['title'] . ' ' . $row['by'] . ' ' . plain_text((string) ($row['excerpt'] ?? ''));
+        $row['search'] = $row['cat'] . ' ' . $row['specialty'] . ' ' . $row['title'] . ' ' . $row['by'] . ' ' . $city . ' ' . plain_text((string) ($row['excerpt'] ?? ''));
         return $row;
     }
 }

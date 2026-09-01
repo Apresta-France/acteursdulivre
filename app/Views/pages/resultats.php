@@ -6,7 +6,12 @@ $results = $searchResults ?? [];
 $count = (int) ($searchCount ?? count($results));
 $heading = (string) ($catalogHeading ?? ($q !== '' ? $q : ($cat !== '' ? $cat : 'Tous les métiers du livre')));
 $typeHub = \Adl\Data\Catalog::typePath($type);
-$filters = $searchFilters ?? ['kinds' => [], 'metiers' => [], 'specs' => [], 'delays' => [], 'levels' => [], 'trust' => [], 'bmin' => null, 'bmax' => null];
+$filters = $searchFilters ?? ['kinds' => [], 'metiers' => [], 'specs' => [], 'delays' => [], 'levels' => [], 'trust' => [], 'bmin' => null, 'bmax' => null, 'city' => ''];
+$searchCity = (string) ($searchCity ?? ($filters['city'] ?? ''));
+$searchCityLabel = (string) ($searchCityLabel ?? '');
+if ($searchCityLabel === '' && $searchCity !== '') {
+    $searchCityLabel = \Adl\Data\Cities::labelForSlug($searchCity);
+}
 $facets = $searchFacets ?? [];
 $bmin = $filters['bmin'] ?? \Adl\Data\Catalog::BUDGET_MIN;
 $bmax = $filters['bmax'] ?? \Adl\Data\Catalog::BUDGET_MAX;
@@ -40,11 +45,14 @@ foreach ($groups as $group) {
 if ((int) $bmin !== \Adl\Data\Catalog::BUDGET_MIN || (int) $bmax !== \Adl\Data\Catalog::BUDGET_MAX) {
     $active[] = ['name' => 'budget', 'value' => '', 'label' => format_int((int) $bmin) . ' € — ' . format_int((int) $bmax) . ' €'];
 }
+if ($searchCity !== '') {
+    $active[] = ['name' => 'ville', 'value' => $searchCity, 'label' => $searchCityLabel !== '' ? $searchCityLabel : $searchCity];
+}
 ?>
 <div class="search-page" data-search-page
      data-api="<?= e(url('/api/recherche')) ?>"
      data-type="<?= e($type) ?>"
-     data-initial="<?= e(json_encode($searchState ?? ['results' => $results, 'count' => $count, 'query' => $q, 'type' => $type, 'cat' => $cat, 'available_only' => !empty($availableOnly)], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)) ?>">
+     data-initial="<?= e(json_encode($searchState ?? ['results' => $results, 'count' => $count, 'query' => $q, 'type' => $type, 'cat' => $cat, 'city' => $searchCity, 'available_only' => !empty($availableOnly)], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)) ?>">
   <div class="search-banner">
     <span class="search-banner-badge">Annuaire</span>
     Les résultats se mettent à jour pendant que vous tapez — prestations, profils et recherches au même endroit.
@@ -66,6 +74,19 @@ if ((int) $bmin !== \Adl\Data\Catalog::BUDGET_MIN || (int) $bmax !== \Adl\Data\C
         <?php if ($cat !== ''): ?>
           <input type="hidden" name="cat" value="<?= e($cat) ?>">
         <?php endif; ?>
+        <div class="sf-group">
+          <div class="sf-group-label">Ville</div>
+          <?php
+            $cityField = [
+                'mode' => 'search',
+                'id' => 'filter-city',
+                'value' => $searchCityLabel,
+                'slug' => $searchCity,
+                'placeholder' => 'Toutes les villes',
+            ];
+            require ADL_ROOT . '/app/Views/partials/city-field.php';
+          ?>
+        </div>
         <?php foreach ($groups as $group): ?>
           <?php if (!empty($facets[$group['facet']])): ?>
             <?= search_filter_group($group['name'], $group['label'], $facets[$group['facet']], $filters[$group['key']] ?? []) ?>

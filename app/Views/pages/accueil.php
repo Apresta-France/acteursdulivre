@@ -23,6 +23,18 @@ $query = (string) ($query ?? '');
       <p class="mk-lead">Dix-huit métiers, de l'écriture au salon : trouvez les bonnes personnes, comparez des prestations à prix affichés, ou publiez votre recherche.</p>
       <form class="mk-search" method="get" action="<?= e(url('/recherche')) ?>" role="search" data-live-search data-api="<?= e(url('/api/recherche')) ?>" autocomplete="off">
         <input name="q" value="<?= e($query) ?>" placeholder="De quoi votre livre a-t-il besoin ?" aria-label="Recherche" data-live-input autocomplete="off">
+        <?php
+          $cityField = [
+              'mode' => 'search',
+              'id' => 'home-city',
+              'input_class' => '',
+              'placeholder' => 'Ville',
+              'compact' => true,
+              'value' => (string) ($searchCityLabel ?? ''),
+              'slug' => (string) ($searchCity ?? ''),
+          ];
+          require ADL_ROOT . '/app/Views/partials/city-field.php';
+        ?>
         <button class="btn-orange" type="submit">Chercher</button>
         <div class="search-suggest" data-live-panel hidden></div>
       </form>

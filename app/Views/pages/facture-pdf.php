@@ -41,7 +41,7 @@ if ($siren === '' && strlen($siret) === 14) {
   <div class="grid">
     <div>
       <strong>Émetteur</strong>
-      <p>EDITIONS TESSERACT<br>bonjour@acteursdulivre.fr</p>
+      <p>EDITIONS TESSERACT<br>guillaume@editions-tesseract.fr</p>
     </div>
     <div>
       <strong>Destinataire</strong>

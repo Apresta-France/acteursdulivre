@@ -134,7 +134,19 @@ if ($rateKind === 'percent') {
       <div class="form-grid-2">
         <div>
           <label class="field" for="city">Ville</label>
-          <input class="input" id="city" name="city" value="<?= e((string) ($p['city'] ?? '')) ?>" placeholder="Nantes">
+          <?php
+            $cityField = [
+                'mode' => 'profile',
+                'id' => 'city',
+                'name' => 'city',
+                'value' => (string) ($p['city'] ?? ''),
+                'slug' => (string) ($p['city_slug'] ?? ''),
+                'insee' => (string) ($p['city_insee'] ?? ''),
+                'placeholder' => 'Commencez à taper une ville',
+            ];
+            require ADL_ROOT . '/app/Views/partials/city-field.php';
+          ?>
+          <p class="field-help">Choisissez une commune dans la liste : elle sert aux pages locales (ex. correctrice à Paris).</p>
         </div>
         <div>
           <label class="field" for="availability">Précision (optionnel)</label>

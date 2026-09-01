@@ -192,6 +192,56 @@ final class Seo
         return $row;
     }
 
+    /** @return array{h1: string, lead: string, description: string, crumb_trade: string} */
+    public static function tradeCityCopy(string $trade, string $cityName): array
+    {
+        $who = Catalog::tradeGeoLabel($trade);
+        $article = Catalog::tradeGeoArticle($trade);
+        $title = Catalog::tradeTitle($trade);
+        $h1 = $who . ' à ' . $cityName;
+        $lead = 'Trouvez ' . $article . ' ' . mb_strtolower($who) . ' à ' . $cityName
+            . ' : profils publics et prestations à prix affiché. Travail humain, sans IA générative.';
+        $national = self::tradeCopy($trade);
+
+        return [
+            'h1' => $h1,
+            'lead' => $lead,
+            'description' => self::clip($h1 . ' — ' . $lead, 160),
+            'crumb_trade' => $national['h1'] ?? $title,
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public static function tradeCityPage(string $trade, string $cityName, string $path, int $count): array
+    {
+        $copy = self::tradeCityCopy($trade, $cityName);
+        $url = Share::absolute($path);
+        return [
+            '@type' => 'CollectionPage',
+            '@id' => $url . '#page',
+            'name' => $copy['h1'],
+            'description' => $copy['description'],
+            'url' => $url,
+            'isPartOf' => ['@id' => Share::absolute('/') . '#website'],
+            'about' => [
+                '@type' => 'City',
+                'name' => $cityName,
+                'containedInPlace' => [
+                    '@type' => 'Country',
+                    'name' => 'France',
+                ],
+            ],
+            'mainEntity' => [
+                '@type' => 'ItemList',
+                'name' => $copy['h1'],
+                'numberOfItems' => max(0, $count),
+                'itemListOrder' => 'https://schema.org/ItemListUnordered',
+            ],
+        ];
+    }
+
     /**
      * @param array<string, mixed> $data
      * @return array<string, mixed>
@@ -385,7 +435,7 @@ final class Seo
             ],
             [
                 'q' => 'Comment vous écrire ?',
-                'a' => 'Par le formulaire de contact, ou à bonjour@acteursdulivre.fr. L\'équipe répond en jours ouvrés, du lundi au vendredi, 9 h – 18 h. Pour un litige : mediation@acteursdulivre.fr.',
+                'a' => 'Par le formulaire de contact, ou à guillaume@editions-tesseract.fr. L\'équipe répond en jours ouvrés, du lundi au vendredi, 9 h – 18 h. Pour un litige : mediation@acteursdulivre.fr.',
             ],
         ];
     }
@@ -409,7 +459,7 @@ final class Seo
             'image' => self::defaultImage(),
             'description' => self::DEFAULT_DESC,
             'foundingDate' => '2026',
-            'email' => 'bonjour@acteursdulivre.fr',
+            'email' => 'guillaume@editions-tesseract.fr',
             'address' => [
                 '@type' => 'PostalAddress',
                 'streetAddress' => '486 rue Sadi Carnot',
@@ -427,7 +477,7 @@ final class Seo
             'contactPoint' => [
                 '@type' => 'ContactPoint',
                 'contactType' => 'customer support',
-                'email' => 'bonjour@acteursdulivre.fr',
+                'email' => 'guillaume@editions-tesseract.fr',
                 'url' => Share::absolute('/contact'),
                 'availableLanguage' => 'French',
             ],
@@ -570,10 +620,16 @@ final class Seo
             'description' => self::clip((string) ($profile['presentation'] ?? $job), 200),
         ];
         if (!empty($profile['city'])) {
-            $out['homeLocation'] = [
+            $place = [
                 '@type' => 'Place',
                 'name' => (string) $profile['city'],
+                'address' => [
+                    '@type' => 'PostalAddress',
+                    'addressLocality' => (string) $profile['city'],
+                    'addressCountry' => 'FR',
+                ],
             ];
+            $out['homeLocation'] = $place;
         }
         $sameAs = [];
         $website = trim((string) ($profile['website'] ?? ''));
@@ -737,12 +793,13 @@ acteursdulivre.fr met en relation des porteurs de projet (auteurs, éditeurs, co
 - Prestations : {$home}prestations
 - Appels d'offres : {$home}missions
 - Métiers : {$home}metiers/correction
+- Pages locales (uniquement s'il y a des résultats) : {$home}correctrice/paris
 - Journal (30 articles — métiers, tarifs, contrats, diffusion) : {$home}journal
 - Contact : {$home}contact
 - Mentions légales : {$home}mentions-legales
 
 ## Contact
-bonjour@acteursdulivre.fr — médiation@acteursdulivre.fr — presse@acteursdulivre.fr
+guillaume@editions-tesseract.fr — médiation@acteursdulivre.fr — presse@acteursdulivre.fr
 Facebook : https://www.facebook.com/acteursdulivre/
 Instagram : https://www.instagram.com/acteursdulivre.fr/
 MD;

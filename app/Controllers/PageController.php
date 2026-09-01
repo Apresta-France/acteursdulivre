@@ -9,6 +9,7 @@ use Adl\Core\Mailer;
 use Adl\Core\Request;
 use Adl\Core\View;
 use Adl\Data\Catalog;
+use Adl\Data\Cities;
 use Adl\Data\LegalPages;
 use Adl\Data\Seo;
 use Adl\Data\Share;
@@ -96,7 +97,17 @@ final class PageController
             }
         }
         $found['cat'] = $cat;
+        $found['city'] = (string) ($filters['city'] ?? '');
         json_response($found);
+    }
+
+    public function citiesApi(Request $request): void
+    {
+        $q = $request->string('q');
+        json_response([
+            'query' => $q,
+            'results' => Cities::suggest($q, max(1, min(12, $request->int('limit', 8) ?? 8))),
+        ]);
     }
 
     public function metier(Request $request, string $slug): void
@@ -151,6 +162,8 @@ final class PageController
             'volumeHint' => Catalog::volumeHint($trade),
             'briefHint' => Catalog::briefHint($trade),
             'otherTrades' => $otherTrades,
+            'tradeCities' => Catalog::citiesForTrade($trade),
+            'cityPage' => null,
             'heroImg' => photo(abs(crc32($canonicalSlug)) % 6),
             'meta' => Seo::build(
                 $geo['h1'],
@@ -167,6 +180,89 @@ final class PageController
                             ['name' => 'Métiers', 'url' => '/recherche'],
                             ['name' => $geo['h1'], 'url' => $path],
                         ]),
+                    ],
+                ]
+            ),
+        ]);
+    }
+
+    public function metierVille(Request $request, string $slug, string $city): void
+    {
+        $trade = Catalog::tradeFromSlug($slug);
+        if ($trade === null) {
+            not_found('Cette page n\'existe pas.');
+        }
+
+        $citySlug = Cities::normalizeSlug($city);
+        if ($citySlug === '' || !Catalog::tradeCityHasResults($trade, $citySlug)) {
+            not_found('Aucun prestataire référencé pour cette ville.');
+        }
+
+        $canonical = Catalog::tradeCityPath($trade, $citySlug);
+        if ($request->path() !== $canonical) {
+            redirect($canonical, 301);
+        }
+
+        $cityMeta = Cities::resolveSlug($citySlug);
+        $cityName = $cityMeta['name'] ?? Cities::labelForSlug($citySlug);
+        $geo = Seo::tradeCityCopy($trade, $cityName);
+        $label = Catalog::TRADE_LABELS[$trade] ?? $trade;
+        $filters = ['city' => $citySlug];
+        $preview = 12;
+        $providers = Catalog::search('', 'prestataires', $trade, $preview, false, $filters);
+        $services = Catalog::search('', 'prestations', $trade, $preview, false, $filters);
+        $path = $canonical;
+        $otherTrades = [];
+        foreach (Catalog::trades() as $other) {
+            if ($other === $trade || !Catalog::tradeCityHasResults($other, $citySlug)) {
+                continue;
+            }
+            $otherTrades[] = [
+                'label' => Catalog::tradeGeoLabel($other),
+                'href' => Catalog::tradeCityPath($other, $citySlug),
+            ];
+        }
+
+        View::page('metier', [
+            'title' => $geo['h1'],
+            'slug' => Catalog::tradeGeoSlug($trade),
+            'trade' => $trade,
+            'tradeLabel' => $label,
+            'tradeTitle' => Catalog::tradeTitle($trade),
+            'tradeGeo' => $geo,
+            'providers' => $providers['results'],
+            'services' => $services['results'],
+            'missions' => [],
+            'providerCount' => (int) ($providers['count'] ?? 0),
+            'serviceCount' => (int) ($services['count'] ?? 0),
+            'missionCount' => 0,
+            'tradeSpecs' => [],
+            'volumeHint' => Catalog::volumeHint($trade),
+            'briefHint' => Catalog::briefHint($trade),
+            'otherTrades' => $otherTrades,
+            'tradeCities' => Catalog::citiesForTrade($trade),
+            'cityPage' => [
+                'slug' => $citySlug,
+                'name' => $cityName,
+                'national_href' => Catalog::tradePath($trade),
+            ],
+            'heroImg' => photo(abs(crc32($canonical)) % 6),
+            'meta' => Seo::build(
+                $geo['h1'],
+                $geo['description'],
+                Share::absolute($path),
+                'website',
+                null,
+                [
+                    'json_ld' => [
+                        Seo::organization(),
+                        Seo::website(),
+                        Seo::breadcrumb([
+                            ['name' => 'Acteurs du Livre', 'url' => '/'],
+                            ['name' => $geo['crumb_trade'] ?? Catalog::tradeTitle($trade), 'url' => Catalog::tradePath($trade)],
+                            ['name' => $cityName, 'url' => $path],
+                        ]),
+                        Seo::tradeCityPage($trade, $cityName, $path, (int) ($providers['count'] ?? 0) + (int) ($services['count'] ?? 0)),
                     ],
                 ]
             ),
@@ -706,6 +802,12 @@ final class PageController
         }
         $availableOnly = $request->bool('dispo');
         $filters = self::searchFilters($request);
+        if ($filters['city'] === '' && $query !== '') {
+            $guess = Catalog::cityFromQuery($query, Catalog::resolveTrade($cat) ?? Catalog::resolveTrade($query));
+            if ($guess !== '') {
+                $filters['city'] = $guess;
+            }
+        }
         $target = Catalog::redirectPath($request->path(), $query, $type, $cat, $availableOnly, $filters);
         if ($target !== null) {
             redirect($target, 301);
@@ -713,7 +815,9 @@ final class PageController
 
         $found = Catalog::search($query, $type, $cat, 48, $availableOnly, $filters);
         $hub = Catalog::typePath($type);
-        $indexable = $query === '' && $cat === '' && !$availableOnly && !Catalog::hasFacetFilters($filters);
+        $citySlug = (string) ($filters['city'] ?? '');
+        $cityLabel = $citySlug !== '' ? Cities::labelForSlug($citySlug) : '';
+        $indexable = $query === '' && $cat === '' && $citySlug === '' && !$availableOnly && !Catalog::hasFacetFilters($filters);
         $copy = match ($type) {
             'prestations' => [
                 'title' => 'Prestations des métiers du livre',
@@ -732,6 +836,9 @@ final class PageController
             ],
         };
         $heading = $query !== '' ? $query : ($cat !== '' ? $cat : $copy['heading']);
+        if ($cityLabel !== '' && $query === '') {
+            $heading = ($cat !== '' ? $cat : $copy['heading']) . ' à ' . $cityLabel;
+        }
 
         View::page('resultats', [
             'title' => $query !== '' ? 'Recherche : ' . $query : $copy['title'],
@@ -747,6 +854,8 @@ final class PageController
             'trades' => Catalog::trades(),
             'searchTypes' => Catalog::TYPES,
             'catalogHeading' => $heading,
+            'searchCity' => $citySlug,
+            'searchCityLabel' => $cityLabel,
             'meta' => Seo::build(
                 $query !== '' ? 'Recherche : ' . $heading : $copy['title'],
                 $copy['description'],
@@ -823,6 +932,20 @@ final class PageController
             'trust' => $request->strings('trust'),
             'bmin' => $request->int('bmin'),
             'bmax' => $request->int('bmax'),
+            'city' => self::requestCity($request),
         ];
+    }
+
+    private static function requestCity(Request $request): string
+    {
+        $slug = Cities::normalizeSlug($request->string('ville') !== '' ? $request->string('ville') : $request->string('city'));
+        if ($slug !== '') {
+            return $slug;
+        }
+        $label = $request->string('ville_label');
+        if ($label === '') {
+            return '';
+        }
+        return Cities::fromFreeText($label)['area_slug'];
     }
 }

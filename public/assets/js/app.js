@@ -474,6 +474,101 @@
       .catch(function () {});
   }
 
+  function bindCityAutocomplete(root) {
+    var input = root.querySelector('[data-city-input]');
+    var slug = root.querySelector('[data-city-slug]');
+    var insee = root.querySelector('[data-city-insee]');
+    var panel = root.querySelector('[data-city-panel]');
+    var api = root.getAttribute('data-city-api') || '/api/villes';
+    if (!input || !panel) return;
+
+    function emit() {
+      root.dispatchEvent(new CustomEvent('city-change', { bubbles: true, detail: {
+        slug: slug ? slug.value : '',
+        name: input.value.trim()
+      }}));
+    }
+
+    function setCity(item) {
+      input.value = item && item.name ? item.name : '';
+      if (slug) slug.value = item && item.area_slug ? item.area_slug : (item && item.slug ? item.slug : '');
+      if (insee) insee.value = item && item.insee ? item.insee : '';
+      panel.hidden = true;
+      panel.innerHTML = '';
+      input.setAttribute('aria-expanded', 'false');
+      emit();
+    }
+
+    function render(items) {
+      if (!items || !items.length) {
+        panel.innerHTML = '<div class="search-suggest-empty">Aucune ville pour cette saisie.</div>';
+        panel.hidden = false;
+        return;
+      }
+      panel.innerHTML = items.map(function (item) {
+        return '<button type="button" class="city-ac-item" data-city-pick>' +
+          '<strong>' + escapeHtml(item.name || item.label || '') + '</strong>' +
+          (item.hint ? '<em>' + escapeHtml(item.hint) + '</em>' : '') +
+          '</button>';
+      }).join('');
+      panel.querySelectorAll('[data-city-pick]').forEach(function (btn, i) {
+        btn.addEventListener('click', function () { setCity(items[i]); });
+      });
+      panel.hidden = false;
+      input.setAttribute('aria-expanded', 'true');
+    }
+
+    var run = debounce(function () {
+      var q = input.value.trim();
+      if (slug && q === '') {
+        slug.value = '';
+        if (insee) insee.value = '';
+        panel.hidden = true;
+        emit();
+        return;
+      }
+      if (q.length < 2) {
+        panel.hidden = true;
+        return;
+      }
+      if (slug && slug.value && input.dataset.cityLocked === q) {
+        return;
+      }
+      if (slug) slug.value = '';
+      if (insee) insee.value = '';
+      fetchSearch(api, new URLSearchParams({ q: q, limit: '8' }), function (data) {
+        render(data.results || []);
+      });
+    }, 180);
+
+    input.addEventListener('input', function () {
+      delete input.dataset.cityLocked;
+      run();
+    });
+    input.addEventListener('focus', function () {
+      if (panel.innerHTML) panel.hidden = false;
+    });
+    input.addEventListener('keydown', function (event) {
+      if (event.key === 'Escape') panel.hidden = true;
+      if (event.key === 'Enter' && !panel.hidden && panel.querySelector('[data-city-pick]')) {
+        event.preventDefault();
+        var first = panel.querySelector('[data-city-pick]');
+        if (first) first.click();
+      }
+    });
+    document.addEventListener('click', function (event) {
+      if (!root.contains(event.target)) panel.hidden = true;
+    });
+    root.addEventListener('submit', function () {
+      if (slug && !slug.value && input.value.trim()) {
+        slug.value = input.value.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+      }
+    });
+    if (input.value.trim()) input.dataset.cityLocked = input.value.trim();
+  }
+
+  document.querySelectorAll('[data-city-ac]').forEach(bindCityAutocomplete);
+
   document.querySelectorAll('[data-live-search]').forEach(function (form) {
     var input = form.querySelector('[data-live-input]');
     var panel = form.querySelector('[data-live-panel]');
@@ -561,6 +656,8 @@
         try { cat = (new URLSearchParams(window.location.search).get('cat') || '').trim(); } catch (e) {}
       }
       if (cat) params.set('cat', cat);
+      var ville = (data.get('ville') || '').toString().trim();
+      if (ville) params.set('ville', ville);
       ['kind', 'metier', 'spec', 'delay', 'level', 'trust'].forEach(function (key) {
         data.getAll(key + '[]').forEach(function (value) {
           if (value) params.append(key + '[]', value);
@@ -590,6 +687,11 @@
       if (min !== BUDGET_DEFAULT_MIN || max !== BUDGET_DEFAULT_MAX) {
         chips.push({ name: 'budget', value: '', label: formatBudget(min) + ' — ' + formatBudget(max) });
       }
+      var cityInput = filters.querySelector('[data-city-input]');
+      var citySlug = filters.querySelector('[data-city-slug]');
+      if (citySlug && citySlug.value) {
+        chips.push({ name: 'ville', value: citySlug.value, label: cityInput && cityInput.value ? cityInput.value : citySlug.value });
+      }
       activeBox.hidden = chips.length === 0;
       activeBox.innerHTML = chips.map(function (chip) {
         return '<button type="button" class="sf-chip" data-clear-name="' + escapeHtml(chip.name) + '" data-clear-value="' + escapeHtml(chip.value) + '">' + escapeHtml(chip.label) + ' ✕</button>';
@@ -601,6 +703,13 @@
         if (budgetMin) budgetMin.value = BUDGET_DEFAULT_MIN;
         if (budgetMax) budgetMax.value = BUDGET_DEFAULT_MAX;
         syncBudget();
+        return;
+      }
+      if (name === 'ville') {
+        var cityInput = filters.querySelector('[data-city-input]');
+        var citySlug = filters.querySelector('[data-city-slug]');
+        if (cityInput) cityInput.value = '';
+        if (citySlug) citySlug.value = '';
         return;
       }
       filters.querySelectorAll('input[name="' + name + '[]"]').forEach(function (input) {
@@ -615,6 +724,10 @@
         var n = data.count || 0;
         if (countEl) countEl.textContent = '· ' + n + ' résultat' + (n > 1 ? 's' : '');
         var label = data.query || data.cat || '';
+        var cityName = (filters.querySelector('[data-city-input]') || {}).value || '';
+        if (cityName && !data.query) {
+          label = (label ? label + ' à ' : '') + cityName;
+        }
         if (!label) {
           var hubType = data.type || searchPage.getAttribute('data-type') || '';
           if (hubType === 'prestations') label = 'Prestations à prix affiché';
@@ -640,11 +753,31 @@
 
     syncBudget();
     syncActive();
-    filters.addEventListener('input', function () {
+    filters.addEventListener('input', function (event) {
       syncBudget();
+      if (event.target && event.target.closest && event.target.closest('[data-city-ac]')) {
+        return;
+      }
       update();
     });
     filters.addEventListener('change', update);
+    filters.addEventListener('city-change', function (event) {
+      var headerInput = document.querySelector('.site-header [data-city-input]');
+      var headerSlug = document.querySelector('.site-header [data-city-slug]');
+      if (headerInput) headerInput.value = (event.detail && event.detail.name) || '';
+      if (headerSlug) headerSlug.value = (event.detail && event.detail.slug) || '';
+      update();
+    });
+    var headerCity = document.querySelector('.site-header [data-city-ac]');
+    if (headerCity) {
+      headerCity.addEventListener('city-change', function (event) {
+        var filterCity = filters.querySelector('[data-city-input]');
+        var filterSlug = filters.querySelector('[data-city-slug]');
+        if (filterCity) filterCity.value = (event.detail && event.detail.name) || '';
+        if (filterSlug) filterSlug.value = (event.detail && event.detail.slug) || '';
+        update();
+      });
+    }
     if (headerInput) {
       headerInput.addEventListener('input', function () {
         if (hiddenQ) hiddenQ.value = headerInput.value;
@@ -668,6 +801,10 @@
       if (budgetMax) budgetMax.value = BUDGET_DEFAULT_MAX;
       if (hiddenQ) hiddenQ.value = '';
       if (headerInput) headerInput.value = '';
+      var cityInput = filters.querySelector('[data-city-input]');
+      var citySlug = filters.querySelector('[data-city-slug]');
+      if (cityInput) cityInput.value = '';
+      if (citySlug) citySlug.value = '';
       syncBudget();
       syncActive();
       update();

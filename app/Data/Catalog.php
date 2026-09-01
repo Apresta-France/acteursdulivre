@@ -165,6 +165,33 @@ final class Catalog
         'ecrivain' => ['ecriture'],
     ];
 
+    /**
+     * Slug d’intention de recherche (souvent au féminin) pour les pages ville.
+     * Ex. /correctrice/paris
+     *
+     * @var array<string, array{slug: string, one: string, many: string, article: string}>
+     */
+    public const TRADE_GEO = [
+        'Écriture' => ['slug' => 'auteure', 'one' => 'Auteure', 'many' => 'Auteures', 'article' => 'une'],
+        'Correction' => ['slug' => 'correctrice', 'one' => 'Correctrice', 'many' => 'Correctrices', 'article' => 'une'],
+        'Bêta-lecture' => ['slug' => 'beta-lectrice', 'one' => 'Bêta-lectrice', 'many' => 'Bêta-lectrices', 'article' => 'une'],
+        'Illustration' => ['slug' => 'illustratrice', 'one' => 'Illustratrice', 'many' => 'Illustratrices', 'article' => 'une'],
+        'Traduction' => ['slug' => 'traductrice', 'one' => 'Traductrice', 'many' => 'Traductrices', 'article' => 'une'],
+        'Maquette' => ['slug' => 'maquettiste', 'one' => 'Maquettiste', 'many' => 'Maquettistes', 'article' => 'un'],
+        'Édition' => ['slug' => 'editrice', 'one' => 'Éditrice', 'many' => 'Éditrices', 'article' => 'une'],
+        'Impression' => ['slug' => 'imprimeur', 'one' => 'Imprimeur', 'many' => 'Imprimeurs', 'article' => 'un'],
+        'Presse & com' => ['slug' => 'attachee-de-presse', 'one' => 'Attachée de presse', 'many' => 'Attachées de presse', 'article' => 'une'],
+        'Librairie' => ['slug' => 'libraire', 'one' => 'Libraire', 'many' => 'Libraires', 'article' => 'un'],
+        'Audio' => ['slug' => 'narratrice-audio', 'one' => 'Narratrice audio', 'many' => 'Narratrices audio', 'article' => 'une'],
+        'Agent littéraire' => ['slug' => 'agente-litteraire', 'one' => 'Agente littéraire', 'many' => 'Agentes littéraires', 'article' => 'une'],
+        'Salons' => ['slug' => 'salon-du-livre', 'one' => 'Salon du livre', 'many' => 'Salons du livre', 'article' => 'un'],
+        'Iconographie' => ['slug' => 'iconographe', 'one' => 'Iconographe', 'many' => 'Iconographes', 'article' => 'un'],
+        'Lecture éditoriale' => ['slug' => 'lectrice-editoriale', 'one' => 'Lectrice éditoriale', 'many' => 'Lectrices éditoriales', 'article' => 'une'],
+        'Photographie' => ['slug' => 'photographe', 'one' => 'Photographe', 'many' => 'Photographes', 'article' => 'un'],
+        'Reliure' => ['slug' => 'relieuse', 'one' => 'Relieuse', 'many' => 'Relieuses', 'article' => 'une'],
+        'Juridique' => ['slug' => 'juriste', 'one' => 'Juriste', 'many' => 'Juristes', 'article' => 'un'],
+    ];
+
     public const TRADE_TITLES = [
         'Écriture' => 'Écriture & prête-plume',
         'Correction' => 'Correction & relecture',
@@ -242,6 +269,35 @@ final class Catalog
         return '/metiers/' . slugify($trade);
     }
 
+    public static function tradeGeoSlug(string $trade): string
+    {
+        return self::TRADE_GEO[$trade]['slug'] ?? slugify($trade);
+    }
+
+    public static function tradeGeoLabel(string $trade): string
+    {
+        return self::TRADE_GEO[$trade]['one'] ?? (self::TRADE_LABELS[$trade] ?? $trade);
+    }
+
+    public static function tradeGeoLabelPlural(string $trade): string
+    {
+        return self::TRADE_GEO[$trade]['many'] ?? (self::TRADE_LABELS[$trade] ?? $trade);
+    }
+
+    public static function tradeGeoArticle(string $trade): string
+    {
+        return self::TRADE_GEO[$trade]['article'] ?? 'un';
+    }
+
+    public static function tradeCityPath(string $trade, string $citySlug): string
+    {
+        $citySlug = Cities::normalizeSlug($citySlug);
+        if ($citySlug === '') {
+            return self::tradePath($trade);
+        }
+        return '/' . self::tradeGeoSlug($trade) . '/' . $citySlug;
+    }
+
     public static function typePath(string $type): string
     {
         return match ($type) {
@@ -257,29 +313,41 @@ final class Catalog
     {
         return [
             'Auteur' => 'Écriture',
+            'Auteure' => 'Écriture',
             'Auteurs' => 'Écriture',
+            'Auteures' => 'Écriture',
             'Auteurs & prête-plume' => 'Écriture',
             'Prête-plume' => 'Écriture',
             'Réécriture' => 'Écriture',
             'Correcteur' => 'Correction',
+            'Correctrice' => 'Correction',
             'Correcteurs' => 'Correction',
+            'Correctrices' => 'Correction',
             'Correction orthotypo' => 'Correction',
             'Préparation de copie' => 'Correction',
             'Bêta-lecteur' => 'Bêta-lecture',
+            'Bêta-lectrice' => 'Bêta-lecture',
             'Bêta-lecteurs' => 'Bêta-lecture',
+            'Bêta-lectrices' => 'Bêta-lecture',
             'Illustrateur' => 'Illustration',
+            'Illustratrice' => 'Illustration',
             'Illustrateurs' => 'Illustration',
+            'Illustratrices' => 'Illustration',
             'Illustration & couverture' => 'Illustration',
             'Couverture' => 'Illustration',
             'Traducteur' => 'Traduction',
+            'Traductrice' => 'Traduction',
             'Traducteurs' => 'Traduction',
+            'Traductrices' => 'Traduction',
             'Traduction littéraire' => 'Traduction',
             'Maquettiste' => 'Maquette',
             'Maquettistes' => 'Maquette',
             'Maquette intérieure' => 'Maquette',
             'Direction artistique' => 'Maquette',
             'Éditeur' => 'Édition',
+            'Éditrice' => 'Édition',
             'Éditeurs' => 'Édition',
+            'Éditrices' => 'Édition',
             'Édition & direction de collection' => 'Édition',
             'Dépôt légal & ISBN' => 'Édition',
             'Imprimeur' => 'Impression',
@@ -293,14 +361,18 @@ final class Catalog
             'Iconographes' => 'Iconographie',
             'Recherche iconographique' => 'Iconographie',
             'Lecteur éditorial' => 'Lecture éditoriale',
+            'Lectrice éditoriale' => 'Lecture éditoriale',
             'Lecteurs éditoriaux' => 'Lecture éditoriale',
+            'Lectrices éditoriales' => 'Lecture éditoriale',
             'Comité de lecture' => 'Lecture éditoriale',
             'Évaluation de manuscrit' => 'Lecture éditoriale',
             'Photographe' => 'Photographie',
             'Photographes' => 'Photographie',
             'Photo d\'auteur' => 'Photographie',
             'Relieur' => 'Reliure',
+            'Relieuse' => 'Reliure',
             'Relieurs' => 'Reliure',
+            'Relieuses' => 'Reliure',
             'Reliure & finitions' => 'Reliure',
             'Reliure d\'art' => 'Reliure',
             'Juriste' => 'Juridique',
@@ -310,20 +382,29 @@ final class Catalog
             'Contrats éditoriaux' => 'Juridique',
             'Presse' => 'Presse & com',
             'Attaché de presse' => 'Presse & com',
+            'Attachée de presse' => 'Presse & com',
             'Attachés de presse' => 'Presse & com',
+            'Attachées de presse' => 'Presse & com',
             'Réseaux sociaux & communauté' => 'Presse & com',
             'Libraire' => 'Librairie',
             'Libraires' => 'Librairie',
             'Diffusion en librairie' => 'Librairie',
             'Vente en ligne' => 'Librairie',
             'Narrateur' => 'Audio',
+            'Narratrice' => 'Audio',
             'Narrateurs' => 'Audio',
+            'Narratrices' => 'Audio',
             'Narrateurs audio' => 'Audio',
+            'Narratrice audio' => 'Audio',
+            'Narratrices audio' => 'Audio',
             'Livre audio' => 'Audio',
             'Livre audio & narration' => 'Audio',
             'Agent littéraire' => 'Agent littéraire',
+            'Agente littéraire' => 'Agent littéraire',
             'Agents littéraires' => 'Agent littéraire',
+            'Agentes littéraires' => 'Agent littéraire',
             'Salon' => 'Salons',
+            'Salon du livre' => 'Salons',
             'Salons & événements' => 'Salons',
             'Salons & rencontres' => 'Salons',
             'Ateliers & médiation' => 'Salons',
@@ -398,6 +479,7 @@ final class Catalog
                 slugify($trade),
                 slugify(self::TRADE_LABELS[$trade] ?? $trade),
                 slugify(self::TRADE_TITLES[$trade] ?? $trade),
+                self::tradeGeoSlug($trade),
             ]);
             foreach ($candidates as $candidate) {
                 if ($candidate === $slug || str_replace('-', '', $candidate) === $want) {
@@ -437,16 +519,60 @@ final class Catalog
             return null;
         }
         $type = ($type === '' || !array_key_exists($type, self::TYPES)) ? 'all' : $type;
-        $trade = self::resolveTrade($q !== '' ? $q : $cat);
-        if ($type === 'all' && $trade !== null && ($q === '' || self::resolveTrade($q) === $trade)) {
+        $city = Cities::normalizeSlug((string) ($filters['city'] ?? ''));
+        $trade = self::resolveTrade($cat);
+        if ($trade === null && $q !== '') {
+            $trade = self::resolveTrade($q);
+        }
+        if ($city === '' && $q !== '') {
+            $city = self::cityFromQuery($q, $trade);
+        }
+        if ($trade !== null && $city !== '' && self::tradeCityHasResults($trade, $city)) {
+            $target = self::tradeCityPath($trade, $city);
+            return $target !== $currentPath ? $target : null;
+        }
+        if ($type === 'all' && $trade !== null && $city === '' && ($q === '' || self::resolveTrade($q) === $trade)) {
             $target = self::tradePath($trade);
             return $target !== $currentPath ? $target : null;
         }
-        if ($q !== '' || $cat !== '') {
+        if ($q !== '' || $cat !== '' || $city !== '') {
             return null;
         }
         $hub = self::typePath($type);
         return $hub !== $currentPath ? $hub : null;
+    }
+
+    public static function cityFromQuery(string $q, ?string $knownTrade = null): string
+    {
+        $q = trim($q);
+        if ($q === '') {
+            return '';
+        }
+        $rest = $q;
+        $trades = $knownTrade !== null ? [$knownTrade] : self::queryTrades($q);
+        foreach ($trades as $trade) {
+            foreach ([
+                $trade,
+                self::TRADE_LABELS[$trade] ?? '',
+                self::TRADE_TITLES[$trade] ?? '',
+                self::tradeGeoLabel($trade),
+                self::tradeGeoLabelPlural($trade),
+            ] as $label) {
+                if ($label === '') {
+                    continue;
+                }
+                $pattern = '/' . preg_quote((string) $label, '/') . '/iu';
+                $rest = trim((string) preg_replace($pattern, ' ', $rest));
+            }
+        }
+        $rest = trim((string) preg_replace('/\s+/', ' ', $rest));
+        if ($rest === '' || self::resolveTrade($rest) !== null) {
+            return '';
+        }
+        if (self::resolveTrade($q) !== null && $rest === $q) {
+            return '';
+        }
+        return Cities::guessFromQuery($rest);
     }
 
     /**
@@ -461,7 +587,8 @@ final class Catalog
      *   suggestions: list<array<string, mixed>>,
      *   available_only: bool,
      *   filters: array<string, mixed>,
-     *   facets: array<string, list<array{v: string, l: string, n: int}>>
+     *   facets: array<string, list<array{v: string, l: string, n: int}>>,
+     *   city: string
      * }
      */
     public static function search(string $q, string $type = 'all', string $cat = '', int $limit = 48, bool $availableOnly = false, array $filters = []): array
@@ -524,12 +651,13 @@ final class Catalog
             'available_only' => $availableOnly || in_array('available', $filters['trust'], true),
             'filters' => $filters,
             'facets' => $facets,
+            'city' => (string) ($filters['city'] ?? ''),
         ];
     }
 
     /**
      * @param array<string, mixed> $raw
-     * @return array{kinds: list<string>, metiers: list<string>, specs: list<string>, delays: list<string>, levels: list<string>, trust: list<string>, bmin: ?int, bmax: ?int}
+     * @return array{kinds: list<string>, metiers: list<string>, specs: list<string>, delays: list<string>, levels: list<string>, trust: list<string>, bmin: ?int, bmax: ?int, city: string}
      */
     public static function normalizeFilters(array $raw, bool $availableOnly = false): array
     {
@@ -561,6 +689,7 @@ final class Catalog
             'trust' => $trust,
             'bmin' => $bmin,
             'bmax' => $bmax,
+            'city' => Cities::normalizeSlug((string) ($raw['city'] ?? '')),
         ];
     }
 
@@ -613,6 +742,8 @@ final class Catalog
                     'initials' => Profile::initials($profile),
                     'excerpt' => (string) ($profile['presentation'] ?? ''),
                     'city' => (string) ($profile['city'] ?? ''),
+                    'city_slug' => (string) ($profile['city_slug'] ?? ''),
+                    'city_area_slug' => (string) ($profile['city_area_slug'] ?? ''),
                     'genres' => $profile['genres'] ?? [],
                     'level' => (string) ($profile['level'] ?? 'Nouveau'),
                     'verified' => ($profile['verification_status'] ?? '') === Profile::VERIFY_VERIFIED,
@@ -750,6 +881,90 @@ final class Catalog
         return $out;
     }
 
+    public static function tradeCityHasResults(string $trade, string $citySlug): bool
+    {
+        $citySlug = Cities::normalizeSlug($citySlug);
+        if ($trade === '' || $citySlug === '') {
+            return false;
+        }
+        $pairs = self::tradeCityPairs($trade);
+        return isset($pairs[$trade][$citySlug]);
+    }
+
+    /**
+     * Couples métier × ville (aire) qui ont au moins un prestataire ou une prestation.
+     *
+     * @return array<string, array<string, array{slug: string, label: string, n: int}>>
+     */
+    public static function tradeCityPairs(?string $onlyTrade = null): array
+    {
+        static $all = null;
+        if ($all === null) {
+            $all = self::buildTradeCityPairs();
+        }
+        if ($onlyTrade === null) {
+            return $all;
+        }
+        return isset($all[$onlyTrade]) ? [$onlyTrade => $all[$onlyTrade]] : [];
+    }
+
+    /**
+     * @return array<string, array<string, array{slug: string, label: string, n: int}>>
+     */
+    private static function buildTradeCityPairs(): array
+    {
+        $out = [];
+        $add = static function (string $trade, array $item) use (&$out): void {
+            $area = Cities::itemAreaSlug($item);
+            if ($trade === '' || $area === '') {
+                return;
+            }
+            $label = Cities::labelForSlug($area, false);
+            if (!isset($out[$trade][$area])) {
+                $out[$trade][$area] = ['slug' => $area, 'label' => $label, 'n' => 0];
+            }
+            $out[$trade][$area]['n']++;
+        };
+
+        foreach (self::providers() as $provider) {
+            foreach ($provider['trades'] ?? [] as $trade) {
+                $add((string) $trade, $provider);
+            }
+        }
+        foreach (self::services() as $service) {
+            $trade = self::resolveTrade((string) ($service['cat'] ?? ''));
+            if ($trade === null) {
+                continue;
+            }
+            $add($trade, $service);
+        }
+
+        foreach ($out as $trade => $cities) {
+            uasort($out[$trade], static function (array $a, array $b): int {
+                return ($b['n'] <=> $a['n']) ?: strcasecmp($a['label'], $b['label']);
+            });
+        }
+
+        return $out;
+    }
+
+    /**
+     * @return list<array{slug: string, label: string, n: int, href: string}>
+     */
+    public static function citiesForTrade(string $trade): array
+    {
+        $out = [];
+        foreach (self::tradeCityPairs($trade)[$trade] ?? [] as $row) {
+            $out[] = [
+                'slug' => $row['slug'],
+                'label' => $row['label'],
+                'n' => $row['n'],
+                'href' => self::tradeCityPath($trade, $row['slug']),
+            ];
+        }
+        return $out;
+    }
+
     /** @return array<string, int> */
     public static function tradeCounts(): array
     {
@@ -877,6 +1092,8 @@ final class Catalog
             'avatar_src' => user_avatar_src($profile),
             'title' => (string) ($profile['title'] ?? 'Prestataire'),
             'city' => (string) ($profile['city'] ?? ''),
+            'city_slug' => (string) ($profile['city_slug'] ?? ''),
+            'city_area_slug' => (string) ($profile['city_area_slug'] ?? ''),
             'location_label' => (string) ($profile['location_label'] ?? Profile::locationLabel($profile)),
             'work_mode' => (string) ($profile['work_mode'] ?? ''),
             'work_mode_label' => (string) ($profile['work_mode_label'] ?? Profile::workModeLabel($profile)),
@@ -950,6 +1167,15 @@ final class Catalog
     /** @param array<string, mixed> $item */
     private static function matchesFacets(array $item, array $filters): bool
     {
+        $city = (string) ($filters['city'] ?? '');
+        if ($city !== '') {
+            if ((string) ($item['kind'] ?? '') === 'missions') {
+                return false;
+            }
+            if (!Cities::itemMatches($item, $city)) {
+                return false;
+            }
+        }
         if ($filters['kinds'] !== [] && !in_array((string) ($item['kind'] ?? ''), $filters['kinds'], true)) {
             return false;
         }

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Adl\Models;
 
 use Adl\Core\Database;
+use Adl\Data\Cities;
 
 final class Profile
 {
@@ -213,10 +214,13 @@ final class Profile
             $languages = self::normalizeText($data['languages'] ?? ($profile['languages'] ?? null));
         }
 
+        $geo = self::normalizeCity($data);
+
         Database::query(
             'UPDATE profiles SET
                 slug = ?, title = ?, name_mode = ?, public_name = ?, presentation = ?, does = ?, does_not = ?,
-                city = ?, work_mode = ?, availability = ?,
+                city = ?, city_slug = ?, city_area_slug = ?, city_insee = ?, city_postcode = ?, city_dept = ?,
+                work_mode = ?, availability = ?,
                 availability_status = ?, response_time = ?,
                 languages = ?, hourly_rate = ?, rate_note = ?, website = ?, socials_json = ?,
                 trades_json = ?, skills_json = ?, tools_json = ?, genres_json = ?,
@@ -231,7 +235,12 @@ final class Profile
                 $data['presentation'] ?? null,
                 self::normalizeText($data['does'] ?? null),
                 self::normalizeText($data['does_not'] ?? null),
-                $data['city'] ?? null,
+                $geo['name'] !== '' ? $geo['name'] : null,
+                $geo['slug'] !== '' ? $geo['slug'] : null,
+                $geo['area_slug'] !== '' ? $geo['area_slug'] : null,
+                $geo['insee'] !== '' ? $geo['insee'] : null,
+                $geo['postcode'] !== '' ? $geo['postcode'] : null,
+                $geo['dept'] !== '' ? $geo['dept'] : null,
                 self::normalizeWorkMode($data['work_mode'] ?? null) ?: null,
                 $data['availability'] ?? null,
                 self::normalizeStatus($data['availability_status'] ?? null),
@@ -273,6 +282,8 @@ final class Profile
             'does' => array_key_exists('does', $data) ? $data['does'] : ($current['does'] ?? ''),
             'does_not' => array_key_exists('does_not', $data) ? $data['does_not'] : ($current['does_not'] ?? ''),
             'city' => array_key_exists('city', $data) ? $data['city'] : ($current['city'] ?? ''),
+            'city_slug' => array_key_exists('city_slug', $data) ? $data['city_slug'] : ($current['city_slug'] ?? ''),
+            'city_insee' => array_key_exists('city_insee', $data) ? $data['city_insee'] : ($current['city_insee'] ?? ''),
             'work_mode' => array_key_exists('work_mode', $data) ? $data['work_mode'] : ($current['work_mode'] ?? ''),
             'availability' => array_key_exists('availability', $data) ? $data['availability'] : ($current['availability'] ?? ''),
             'availability_status' => array_key_exists('availability_status', $data)
@@ -472,6 +483,19 @@ final class Profile
     public static function responseTimeLabel(array $profile): string
     {
         return self::RESPONSE_TIMES[self::normalizeResponseTime($profile['response_time'] ?? null)] ?? '';
+    }
+
+    /**
+     * @param array<string, mixed> $data
+     * @return array{name: string, slug: string, area_slug: string, insee: string, postcode: string, dept: string}
+     */
+    public static function normalizeCity(array $data): array
+    {
+        return Cities::resolveInput(
+            (string) ($data['city'] ?? ''),
+            (string) ($data['city_slug'] ?? ''),
+            (string) ($data['city_insee'] ?? '')
+        );
     }
 
     public static function locationLabel(array $profile): string
@@ -687,6 +711,21 @@ final class Profile
     {
         $row['does'] = (string) ($row['does'] ?? '');
         $row['does_not'] = (string) ($row['does_not'] ?? '');
+        $row['city'] = (string) ($row['city'] ?? '');
+        $row['city_slug'] = (string) ($row['city_slug'] ?? '');
+        $row['city_area_slug'] = (string) ($row['city_area_slug'] ?? '');
+        $row['city_insee'] = (string) ($row['city_insee'] ?? '');
+        $row['city_postcode'] = (string) ($row['city_postcode'] ?? '');
+        $row['city_dept'] = (string) ($row['city_dept'] ?? '');
+        if ($row['city'] !== '' && ($row['city_slug'] === '' || $row['city_area_slug'] === '')) {
+            $norm = Cities::fromFreeText($row['city']);
+            if ($row['city_slug'] === '') {
+                $row['city_slug'] = $norm['slug'];
+            }
+            if ($row['city_area_slug'] === '') {
+                $row['city_area_slug'] = $norm['area_slug'];
+            }
+        }
         $row['name_mode'] = self::normalizeNameMode($row['name_mode'] ?? null);
         $row['public_name'] = (string) ($row['public_name'] ?? '');
         $row['work_mode'] = self::normalizeWorkMode($row['work_mode'] ?? null);

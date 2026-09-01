@@ -25,6 +25,10 @@ final class Sitemap
             self::push($urls, $seen, $path, null, '0.8');
         }
 
+        foreach (self::tradeCityPaths() as $path) {
+            self::push($urls, $seen, $path, null, '0.7');
+        }
+
         foreach (self::rows(
             'SELECT s.slug, s.created_at AS lastmod
              FROM services s
@@ -157,6 +161,26 @@ final class Sitemap
             $slug = slugify($trade);
             if ($slug !== '') {
                 $paths[] = '/metiers/' . $slug;
+            }
+        }
+        return $paths;
+    }
+
+    /** @return list<string> */
+    private static function tradeCityPaths(): array
+    {
+        try {
+            $pairs = Catalog::tradeCityPairs();
+        } catch (\Throwable) {
+            return [];
+        }
+        $paths = [];
+        foreach ($pairs as $trade => $cities) {
+            foreach ($cities as $row) {
+                $path = Catalog::tradeCityPath((string) $trade, (string) ($row['slug'] ?? ''));
+                if ($path !== '' && substr_count($path, '/') >= 2) {
+                    $paths[] = $path;
+                }
             }
         }
         return $paths;

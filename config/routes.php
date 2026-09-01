@@ -21,9 +21,11 @@ return static function (Router $router): void {
     $router->get('/', [PageController::class, 'home']);
     $router->get('/recherche', [PageController::class, 'search']);
     $router->get('/api/recherche', [PageController::class, 'searchApi']);
+    $router->get('/api/villes', [PageController::class, 'citiesApi']);
     $router->get('/api/journal', [PageController::class, 'journalApi']);
     $router->get('/cron', [CronController::class, 'index']);
     $router->get('/cron/{task}', [CronController::class, 'run']);
+    $router->get('/metiers/{slug}/{city}', [PageController::class, 'metierVille']);
     $router->get('/metiers/{slug}', [PageController::class, 'metier']);
     $router->get('/prestations', [PageController::class, 'prestationsIndex']);
     $router->get('/prestations/{slug}', [PageController::class, 'fiche']);
@@ -181,4 +183,6 @@ return static function (Router $router): void {
     $router->get('/admin/emails', [AdminController::class, 'emails']);
     $router->get('/admin/emails/{id}', [AdminController::class, 'emailEdit']);
     $router->post('/admin/emails/{id}', [AdminController::class, 'emailSave']);
+
+    $router->get('/{slug}/{city}', [PageController::class, 'metierVille']);
 };

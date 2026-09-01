@@ -80,4 +80,4 @@ Dans `/espace/parametres` : usages, mot de passe, notifications e-mail, mentions
 ## Licence et contact
 
 EDITIONS TESSERACT — 486 rue Sadi Carnot, 59184 Sainghin-en-Weppes.  
-bonjour@acteursdulivre.fr
+guillaume@editions-tesseract.fr

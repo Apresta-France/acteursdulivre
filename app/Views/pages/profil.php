@@ -234,7 +234,27 @@ $isOwnProfile = $viewer && (int) ($viewer['id'] ?? 0) === (int) ($p['user_id'] ?
         <?php endif; ?>
         <div class="info-list">
           <?php if (($p['location_label'] ?? '') !== '' || $p['city'] !== ''): ?>
-            <div><span>Localisation</span><strong><?= e((string) (($p['location_label'] ?? '') !== '' ? $p['location_label'] : $p['city'])) ?></strong></div>
+            <div>
+              <span>Localisation</span>
+              <strong><?php
+                $loc = (string) (($p['location_label'] ?? '') !== '' ? $p['location_label'] : $p['city']);
+                $area = (string) ($p['city_area_slug'] ?? '');
+                $geoLinks = [];
+                if ($area !== '') {
+                    foreach ($p['trades'] ?? [] as $tradeName) {
+                        $tradeName = (string) $tradeName;
+                        if ($tradeName === '') {
+                            continue;
+                        }
+                        $geoLinks[] = '<a href="' . e(url(\Adl\Data\Catalog::tradeCityPath($tradeName, $area))) . '">' . e(\Adl\Data\Catalog::tradeGeoLabel($tradeName) . ' à ' . ($p['city'] ?? $area)) . '</a>';
+                    }
+                }
+                echo e($loc);
+                if ($geoLinks !== []) {
+                    echo '<span class="profile-geo-links">' . implode(' · ', $geoLinks) . '</span>';
+                }
+              ?></strong>
+            </div>
           <?php endif; ?>
           <div><span>Disponibilité</span><strong><?= e((string) ($p['availability_summary'] ?? ($p['availability'] !== '' ? $p['availability'] : 'Disponible'))) ?></strong></div>
           <?php if (($p['response_time_label'] ?? '') !== ''): ?>

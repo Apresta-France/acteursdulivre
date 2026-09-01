@@ -208,6 +208,8 @@ final class AccountController
             'title' => $request->string('title'),
             'presentation' => $request->string('presentation'),
             'city' => $request->string('city'),
+            'city_slug' => $request->string('city_slug'),
+            'city_insee' => $request->string('city_insee'),
             'trades' => $trades,
         ]);
     }
@@ -1715,6 +1717,8 @@ final class AccountController
                 'does' => $request->string('does'),
                 'does_not' => $request->string('does_not'),
                 'city' => $request->string('city'),
+                'city_slug' => $request->string('city_slug'),
+                'city_insee' => $request->string('city_insee'),
                 'work_mode' => $request->string('work_mode'),
                 'availability' => $request->string('availability'),
                 'availability_status' => $request->string('availability_status'),
