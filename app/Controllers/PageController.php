@@ -354,17 +354,13 @@ final class PageController
         }
 
         $public = Catalog::profileToPublic($profile);
-        $excerpt = trim((string) ($public['presentation'] ?? ''));
-        $desc = $excerpt !== ''
-            ? $excerpt
-            : trim($public['title'] . ($public['city'] ? ' · ' . $public['city'] : '') . ' · prestataire sur acteursdulivre.fr');
         View::page('profil', [
             'title' => $public['name'],
             'slug' => $slug,
             'liveProfile' => $public,
             'meta' => Seo::build(
-                $public['name'] . ' — ' . ($public['title'] ?: 'Prestataire'),
-                $desc,
+                Seo::profileTitle($public),
+                Seo::profileDescription($public),
                 Share::absolute((string) $public['href']),
                 'website',
                 null,
@@ -454,11 +450,25 @@ final class PageController
         }
         $brief = trim((string) ($mission['brief'] ?? ''));
         $isDraft = ($mission['status'] ?? '') === 'draft';
+        $trade = (string) ($mission['category_name'] ?? '');
+        $volume = Catalog::formatVolume($trade, (string) ($mission['volume'] ?? ''));
+        $mission['volume_label'] = $volume['label'] ?? 'Volume';
+        $mission['volume_display'] = $volume['value'] ?? '';
+        $ownerCity = '';
+        try {
+            $ownerProfile = Profile::findByUser((int) ($mission['user_id'] ?? 0));
+            if ($ownerProfile) {
+                $ownerCity = trim((string) ($ownerProfile['city'] ?? ''));
+            }
+        } catch (\Throwable) {
+        }
         View::page('mission', [
             'title' => $mission['title'],
             'slug' => $slug,
             'liveMission' => $mission,
             'isOwner' => $isOwner,
+            'ownerCity' => $ownerCity,
+            'relatedMissions' => Catalog::relatedMissions((string) ($mission['href'] ?? ''), $trade),
             'canApply' => $viewer && User::offersServices($viewer) && !$isOwner && !$myApplication && ($mission['status'] ?? '') === 'open' && !Invoice::sellerIsBlocked((int) $viewer['id']),
             'offersServices' => $viewer && User::offersServices($viewer),
             'myApplication' => $myApplication,
@@ -466,7 +476,7 @@ final class PageController
             'old' => flash('old') ?: [],
             'error' => flash('error'),
             'saved' => flash('saved'),
-            'suggestions' => Catalog::suggestionsForTrade((string) ($mission['category_name'] ?? '')),
+            'suggestions' => Catalog::suggestionsForTrade($trade),
             'meta' => Seo::build(
                 (string) $mission['title'],
                 $brief !== '' ? $brief : ('Appel d\'offres ' . ($mission['category_name'] ?? '') . ' sur acteursdulivre.fr.'),

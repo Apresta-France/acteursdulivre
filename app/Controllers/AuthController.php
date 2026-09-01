@@ -68,6 +68,10 @@ final class AuthController
         if (Auth::check()) {
             redirect(Onboarding::homePath(Auth::user() ?? []));
         }
+        $next = safe_internal_path($request->string('next'));
+        if ($next !== null) {
+            $_SESSION['_intended'] = $next;
+        }
         View::page('inscription', [
             'title' => 'Créer un compte professionnel',
             'error' => flash('error'),

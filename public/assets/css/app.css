@@ -1783,6 +1783,7 @@ main, main > * { min-width: 0; }
   .notif-when { grid-column: 2; }
   .dash-cards, .intent-grid, .auth-name-grid { grid-template-columns: 1fr; }
   .search-layout, .publish-grid, .profile-body, .missions-layout { grid-template-columns: 1fr; }
+  .mission-page .publish-side { position: static; }
   .search-aside { border-right: 0; padding-right: 0; }
   .form-grid-2, .form-grid-3, .search-grid, .portfolio-grid, .profile-scope { grid-template-columns: 1fr; }
   .profile-hero { flex-direction: column; align-items: flex-start; }
@@ -1862,6 +1863,8 @@ main, main > * { min-width: 0; }
   text-transform: uppercase;
   color: #8496A8;
 }
+.search-crumb a { color: inherit; }
+.search-crumb a:hover { color: var(--orange); }
 .search-aside-head a { font-size: 13px; color: var(--orange); }
 .search-filters { display: flex; flex-direction: column; gap: 0; }
 .search-aside-card, .side-card {
@@ -2900,14 +2903,83 @@ a.tab {
 .facts { display: flex; gap: 34px; padding: 18px 0; border-top: 1px solid #EEF1F5; border-bottom: 1px solid #EEF1F5; flex-wrap: wrap; }
 .facts span { display: block; font-size: 13px; color: #8496A8; }
 .facts strong { font-family: var(--display); font-size: 17px; color: var(--navy); font-weight: 500; }
+.facts strong a { color: inherit; }
+.facts strong a:hover { color: var(--orange); }
 .file-chip {
   display: inline-flex;
   align-items: center;
+  gap: 10px;
   border: 1px solid var(--line);
   border-radius: 10px;
   padding: 14px 16px;
   color: #14202C;
 }
+.file-chip:hover { border-color: var(--navy); color: #14202C; }
+.file-chip-ext {
+  font-family: var(--display);
+  font-size: 11px;
+  letter-spacing: .04em;
+  color: #fff;
+  background: var(--navy);
+  padding: 4px 7px;
+  border-radius: 4px;
+}
+.file-chip-name { font-size: 14px; }
+.mission-page .mission-title { margin: 0 0 18px; line-height: 1.2; }
+.mission-page .facts {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  padding: 0;
+  border: 0;
+  margin: 0 0 8px;
+}
+.mission-page .facts > div {
+  border: 1px solid #E8ECF1;
+  border-radius: 12px;
+  padding: 14px 16px;
+}
+.mission-page .publish-side { position: sticky; top: 20px; }
+.mission-page .publish-side .auth-actions {
+  flex-direction: column;
+  align-items: stretch;
+}
+.mission-page .publish-side .btn-orange,
+.mission-page .publish-side .btn-ghost {
+  width: 100%;
+  justify-content: center;
+}
+.mission-page .side-card > p {
+  font-size: 14px;
+  color: #4A5A6B;
+  line-height: 1.6;
+  margin: 0 0 14px;
+}
+.mission-share { margin-top: 22px; }
+.mission-related-block { margin-top: 28px; }
+.mission-related-block h2 { margin-top: 0; }
+.mission-related {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 10px;
+}
+.mission-related-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  border: 1px solid #E8ECF1;
+  border-radius: 12px;
+  padding: 14px 16px;
+  color: inherit;
+}
+.mission-related-item:hover { border-color: var(--navy); color: inherit; }
+.mission-related-item strong {
+  font-family: var(--display);
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--navy);
+}
+.mission-related-item span { font-size: 13px; color: #8496A8; }
 
 .search-head { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 16px 24px; }
 .article-share-wrap { padding: 28px 44px 0; }
@@ -2933,6 +3005,7 @@ a.tab {
 
 @media (max-width: 768px) {
   .search-banner, .search-layout, .publish-page, .missions-page, .mission-page, .profile-body { padding-left: 20px; padding-right: 20px; }
+  .mission-page .facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .profile-hero { padding: 24px 20px; }
   .repeat-row,
   .repeat-row.is-price,

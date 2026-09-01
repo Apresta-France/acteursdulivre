@@ -244,6 +244,83 @@ final class Seo
     }
 
     /**
+     * @param array<string, mixed> $profile
+     */
+    public static function profileTitle(array $profile): string
+    {
+        $name = trim((string) ($profile['name'] ?? ''));
+        $role = self::profileRole($profile);
+        if ($name !== '' && $role !== '') {
+            return $name . ' — ' . $role;
+        }
+        $fallback = trim((string) ($profile['title'] ?? ''));
+        if ($fallback === '' || mb_strtolower($fallback) === 'prestataire') {
+            $fallback = 'Prestataire du livre';
+        }
+        $city = trim((string) ($profile['city'] ?? ''));
+        if ($city !== '' && !str_contains(mb_strtolower($fallback), mb_strtolower($city))) {
+            $fallback .= ' ' . Cities::placeAt($city);
+        }
+        if ($name !== '') {
+            return $name . ' — ' . $fallback;
+        }
+        return $fallback;
+    }
+
+    /**
+     * @param array<string, mixed> $profile
+     */
+    public static function profileDescription(array $profile): string
+    {
+        $pres = trim((string) ($profile['presentation'] ?? ''));
+        $custom = trim((string) ($profile['title'] ?? ''));
+        if ($custom !== '' && mb_strtolower($custom) === 'prestataire') {
+            $custom = '';
+        }
+        $city = trim((string) ($profile['city'] ?? ''));
+        if ($pres !== '') {
+            if ($custom !== '' && !str_contains(mb_strtolower($pres), mb_strtolower($custom))) {
+                return $custom . '. ' . $pres;
+            }
+            return $pres;
+        }
+        $role = self::profileRole($profile);
+        return trim(implode(' · ', array_filter([
+            $custom !== '' ? $custom : $role,
+            $city !== '' ? $city : '',
+            'prestataire sur acteursdulivre.fr',
+        ], static fn (string $bit): bool => $bit !== '')));
+    }
+
+    /**
+     * @param array<string, mixed> $profile
+     */
+    public static function profileRole(array $profile): string
+    {
+        $labels = [];
+        foreach ($profile['trades'] ?? [] as $trade) {
+            $resolved = Catalog::resolveTrade((string) $trade) ?? trim((string) $trade);
+            if ($resolved === '') {
+                continue;
+            }
+            $label = Catalog::tradeGeoLabel($resolved);
+            if ($label !== '' && !in_array($label, $labels, true)) {
+                $labels[] = $label;
+            }
+        }
+        $who = '';
+        if ($labels !== []) {
+            $last = array_pop($labels);
+            $who = $labels === [] ? $last : implode(', ', $labels) . ' et ' . $last;
+        }
+        $city = trim((string) ($profile['city'] ?? ''));
+        if ($who !== '' && $city !== '') {
+            return $who . ' ' . Cities::placeAt($city);
+        }
+        return $who;
+    }
+
+    /**
      * @param array<string, mixed> $data
      * @return array<string, mixed>
      */
@@ -611,14 +688,20 @@ final class Seo
     public static function person(array $profile): array
     {
         $url = Share::absolute((string) ($profile['href'] ?? '/'));
-        $job = trim((string) ($profile['title'] ?? 'Prestataire des métiers du livre'));
+        $job = trim((string) ($profile['title'] ?? ''));
+        if ($job === '' || mb_strtolower($job) === 'prestataire') {
+            $job = self::profileRole($profile);
+        }
+        if ($job === '') {
+            $job = 'Prestataire des métiers du livre';
+        }
         $out = [
             '@type' => 'Person',
             '@id' => $url . '#person',
             'name' => (string) ($profile['name'] ?? ''),
             'url' => $url,
-            'jobTitle' => $job !== '' ? $job : 'Prestataire des métiers du livre',
-            'description' => self::clip((string) ($profile['presentation'] ?? $job), 200),
+            'jobTitle' => $job,
+            'description' => self::clip(self::profileDescription($profile), 200),
         ];
         if (!empty($profile['city'])) {
             $place = [

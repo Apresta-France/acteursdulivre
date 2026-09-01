@@ -25,15 +25,15 @@ final class Catalog
 
     /** Volume utile pour les métiers quantifiables ; absent = champ masqué (le brief suffit). */
     public const VOLUME_HINTS = [
-        'Correction' => ['label' => 'Volume', 'placeholder' => '420 000 signes'],
-        'Bêta-lecture' => ['label' => 'Volume', 'placeholder' => '240 pages'],
-        'Traduction' => ['label' => 'Volume', 'placeholder' => '80 000 mots'],
-        'Maquette' => ['label' => 'Volume', 'placeholder' => '256 pages'],
-        'Impression' => ['label' => 'Tirage', 'placeholder' => '500 exemplaires'],
-        'Audio' => ['label' => 'Durée', 'placeholder' => '6 heures'],
-        'Lecture éditoriale' => ['label' => 'Volume', 'placeholder' => '240 pages'],
-        'Iconographie' => ['label' => 'Volume', 'placeholder' => '40 visuels'],
-        'Reliure' => ['label' => 'Tirage', 'placeholder' => '30 exemplaires'],
+        'Correction' => ['label' => 'Volume', 'placeholder' => '420 000 signes', 'unit' => 'signes'],
+        'Bêta-lecture' => ['label' => 'Volume', 'placeholder' => '240 pages', 'unit' => 'pages'],
+        'Traduction' => ['label' => 'Volume', 'placeholder' => '80 000 mots', 'unit' => 'mots'],
+        'Maquette' => ['label' => 'Volume', 'placeholder' => '256 pages', 'unit' => 'pages'],
+        'Impression' => ['label' => 'Tirage', 'placeholder' => '500 exemplaires', 'unit' => 'exemplaires'],
+        'Audio' => ['label' => 'Durée', 'placeholder' => '6 heures', 'unit' => 'heures'],
+        'Lecture éditoriale' => ['label' => 'Volume', 'placeholder' => '240 pages', 'unit' => 'pages'],
+        'Iconographie' => ['label' => 'Volume', 'placeholder' => '40 visuels', 'unit' => 'visuels'],
+        'Reliure' => ['label' => 'Tirage', 'placeholder' => '30 exemplaires', 'unit' => 'exemplaires'],
     ];
 
     public const BRIEF_HINTS = [
@@ -253,10 +253,49 @@ final class Catalog
         return Taxonomy::names(Taxonomy::KIND_SPECIALTY);
     }
 
-    /** @return array{label: string, placeholder: string}|null */
+    /** @return array{label: string, placeholder: string, unit?: string}|null */
     public static function volumeHint(string $trade): ?array
     {
         return self::VOLUME_HINTS[$trade] ?? null;
+    }
+
+    /**
+     * Libellé + valeur prête à afficher (ajoute l'unité si le porteur n'a saisi qu'un nombre).
+     *
+     * @return array{label: string, value: string}|null
+     */
+    public static function formatVolume(string $trade, string $volume): ?array
+    {
+        $volume = trim(preg_replace('/\s+/u', ' ', $volume) ?? $volume);
+        if ($volume === '') {
+            return null;
+        }
+        $hint = self::volumeHint($trade);
+        $label = $hint['label'] ?? 'Volume';
+        $unit = trim((string) ($hint['unit'] ?? ''));
+        $digits = preg_replace('/[\s\x{00A0}]+/u', '', $volume) ?? '';
+        if ($unit !== '' && $digits !== '' && ctype_digit($digits)) {
+            $volume .= ' ' . $unit;
+        }
+        return ['label' => $label, 'value' => $volume];
+    }
+
+    /** @return list<array<string, mixed>> */
+    public static function relatedMissions(string $excludeHref, string $trade, int $limit = 3): array
+    {
+        $same = [];
+        $other = [];
+        foreach (self::missions() as $item) {
+            if (($item['href'] ?? '') === $excludeHref) {
+                continue;
+            }
+            if ($trade !== '' && ($item['cat'] ?? '') === $trade) {
+                $same[] = $item;
+            } else {
+                $other[] = $item;
+            }
+        }
+        return array_slice(array_merge($same, $other), 0, $limit);
     }
 
     public static function briefHint(string $trade): string
@@ -825,6 +864,10 @@ final class Catalog
         $out = [];
         try {
             foreach (Mission::open() as $mission) {
+                $volume = self::formatVolume(
+                    (string) ($mission['category_name'] ?? ''),
+                    (string) ($mission['volume'] ?? '')
+                );
                 $out[] = [
                     'kind' => 'missions',
                     'kind_label' => 'Recherche',
@@ -840,11 +883,11 @@ final class Catalog
                     'thumb' => '',
                     'initials' => $mission['initials'],
                     'excerpt' => (string) ($mission['brief'] ?? ''),
-                    'tags' => array_values(array_filter([(string) ($mission['volume'] ?? '')])),
+                    'tags' => array_values(array_filter([$volume['value'] ?? ''])),
                     'deadline' => $mission['deadline_label'],
                     'when' => $mission['when'],
                     'applicants' => (int) ($mission['applicants'] ?? 0),
-                    'volume' => (string) ($mission['volume'] ?? ''),
+                    'volume' => $volume['value'] ?? (string) ($mission['volume'] ?? ''),
                     'by' => $mission['by'],
                     'live' => true,
                     'search' => $mission['title'] . ' ' . $mission['by'] . ' ' . ($mission['category_name'] ?? '') . ' ' . ($mission['brief'] ?? '') . ' ' . ($mission['volume'] ?? ''),

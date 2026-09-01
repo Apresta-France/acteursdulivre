@@ -3,20 +3,39 @@ $live = $liveMission ?? null;
 if (!$live) {
     not_found('Cette recherche n\'est plus disponible.');
 }
+$trade = (string) ($live['category_name'] ?? '');
+$tradeHref = $trade !== '' ? '/missions?metier=' . rawurlencode($trade) : '/missions';
+$applicants = (int) ($live['applicants'] ?? 0);
+$isDraft = ($live['status'] ?? '') === 'draft';
+$whenBits = [($isDraft ? 'enregistrée' : 'publiée') . ' ' . (string) ($live['when'] ?? '')];
+if (!empty($isOwner) || $applicants > 0) {
+    $whenBits[] = $applicants === 0
+        ? 'aucune candidature'
+        : ($applicants === 1 ? '1 candidature' : $applicants . ' candidatures');
+}
+$volumeLabel = (string) ($live['volume_label'] ?? 'Volume');
+$volumeValue = (string) ($live['volume_display'] ?? $live['volume'] ?? '');
+$loginNext = rawurlencode((string) ($live['href'] ?? '/missions'));
+$ownerCity = trim((string) ($ownerCity ?? ''));
+$attachmentName = trim((string) ($live['attachment_name'] ?? 'Document'));
+$attachmentExt = strtoupper((string) pathinfo($attachmentName, PATHINFO_EXTENSION));
 ?>
 <div class="mission-page">
-  <div class="search-crumb">Appels d'offres · <?= e((string) ($live['category_name'] ?? 'Recherche')) ?></div>
+  <nav class="search-crumb" aria-label="Fil d'Ariane">
+    <a href="<?= e(url('/missions')) ?>">Appels d'offres</a>
+    · <?php if ($trade !== ''): ?><a href="<?= e(url($tradeHref)) ?>"><?= e($trade) ?></a><?php else: ?>Recherche<?php endif; ?>
+  </nav>
   <div class="publish-grid">
     <div>
       <div class="mission-row-title" style="margin-bottom: 10px;">
         <span class="status-pill status-<?= e((string) $live['status']) ?>"><?= e((string) $live['status_label']) ?></span>
-        <span class="mission-row-sub"><?= ($live['status'] ?? '') === 'draft' ? 'enregistrée' : 'publiée' ?> <?= e((string) $live['when']) ?></span>
+        <span class="mission-row-sub"><?= e(implode(' · ', $whenBits)) ?></span>
         <?php if (!empty($isOwner) && in_array((string) ($live['status'] ?? ''), ['draft', 'open'], true)): ?>
           <a class="btn-ghost" href="<?= e(url('/espace/publier/' . (int) $live['id'])) ?>">Modifier</a>
         <?php endif; ?>
         <?php if (!empty($isOwner) && !empty($live['can_delete'])): ?>
           <?php
-            $deleteConfirm = ($live['status'] ?? '') === 'draft'
+            $deleteConfirm = $isDraft
                 ? 'Supprimer ce brouillon ? Cette action est irréversible.'
                 : 'Supprimer cette recherche ? Elle disparaîtra des appels d’offres. Les candidatures en attente seront clôturées.';
           ?>
@@ -28,10 +47,13 @@ if (!$live) {
       </div>
       <h1 class="mission-title"><?= e((string) $live['title']) ?></h1>
       <div class="facts">
-        <div><span>Métier</span><strong><?= e((string) ($live['category_name'] ?: '—')) ?></strong></div>
+        <div>
+          <span>Métier</span>
+          <strong><?php if ($trade !== ''): ?><a href="<?= e(url($tradeHref)) ?>"><?= e($trade) ?></a><?php else: ?>—<?php endif; ?></strong>
+        </div>
         <div><span>Budget</span><strong><?= e((string) $live['budget']) ?></strong></div>
-        <?php if (trim((string) ($live['volume'] ?? '')) !== ''): ?>
-          <div><span>Volume</span><strong><?= e((string) $live['volume']) ?></strong></div>
+        <?php if ($volumeValue !== ''): ?>
+          <div><span><?= e($volumeLabel) ?></span><strong><?= e($volumeValue) ?></strong></div>
         <?php endif; ?>
         <div><span>Échéance</span><strong><?= e((string) $live['deadline_label']) ?></strong></div>
       </div>
@@ -40,9 +62,22 @@ if (!$live) {
       <?php if (!empty($live['attachment_href'])): ?>
         <h2>Pièce jointe</h2>
         <a class="file-chip" href="<?= e((string) $live['attachment_href']) ?>">
-          <?= e((string) ($live['attachment_name'] ?? 'Document')) ?>
+          <span class="file-chip-ext"><?= e($attachmentExt !== '' ? $attachmentExt : 'DOC') ?></span>
+          <span class="file-chip-name"><?= e($attachmentName) ?></span>
         </a>
       <?php endif; ?>
+
+      <div class="mission-share">
+        <?php
+          $shareUrl = $meta['url'] ?? \Adl\Data\Share::current();
+          $shareTitle = $meta['title'] ?? (string) ($live['title'] ?? 'Recherche');
+          $shareText = $meta['description'] ?? (string) ($live['brief'] ?? '');
+          $shareLabel = 'Partager';
+          $shareCompact = true;
+          $shareNative = false;
+          require ADL_ROOT . '/app/Views/partials/share.php';
+        ?>
+      </div>
 
       <?php if (!empty($isOwner)): ?>
         <h2 id="candidatures">Candidatures (<?= count($applications ?? []) ?>)</h2>
@@ -92,7 +127,7 @@ if (!$live) {
           <span class="avatar" style="<?= e(avatar_style((string) $live['initials'], 46)) ?>"><?= e((string) $live['initials']) ?></span>
           <span>
             <strong><?= e((string) $live['by']) ?></strong>
-            <em>Recherche publiée sur la plateforme</em>
+            <em><?= $ownerCity !== '' ? e($ownerCity) : 'Recherche publiée sur la plateforme' ?></em>
           </span>
         </div>
       </div>
@@ -102,12 +137,19 @@ if (!$live) {
           <?php if (!empty($error)): ?><div class="flash flash-error"><?= e((string) $error) ?></div><?php endif; ?>
           <form method="post" action="<?= e(url('/missions/' . ($live['slug'] ?? '') . '/candidater')) ?>">
             <?= csrf_field() ?>
-            <label class="field" for="price">Votre tarif (€)</label>
-            <input class="input" id="price" name="price" inputmode="numeric" value="<?= e((string) ($old['price'] ?? '')) ?>" placeholder="780">
-            <label class="field" for="delay" style="margin-top: 12px;">Délai</label>
-            <input class="input" id="delay" name="delay" value="<?= e((string) ($old['delay'] ?? '')) ?>" placeholder="12 jours">
+            <div class="form-grid-2">
+              <div>
+                <label class="field" for="price">Votre tarif (€)</label>
+                <input class="input" id="price" name="price" inputmode="numeric" value="<?= e((string) ($old['price'] ?? '')) ?>" placeholder="780">
+              </div>
+              <div>
+                <label class="field" for="delay">Délai</label>
+                <input class="input" id="delay" name="delay" value="<?= e((string) ($old['delay'] ?? '')) ?>" placeholder="12 jours">
+              </div>
+            </div>
             <label class="field" for="message" style="margin-top: 12px;">Votre approche</label>
             <textarea class="textarea" id="message" name="message" rows="5" required placeholder="Ce que vous proposez, le calendrier, les questions."><?= e((string) ($old['message'] ?? '')) ?></textarea>
+            <p class="field-help">Gratuit · aucune commission sur la candidature.</p>
             <div class="auth-actions" style="margin-top: 14px;">
               <button class="btn-orange" type="submit">Envoyer ma candidature</button>
             </div>
@@ -122,8 +164,11 @@ if (!$live) {
       <?php elseif (!\Adl\Core\Auth::check() && ($live['status'] ?? '') === 'open'): ?>
         <div class="side-card">
           <div class="side-kicker">Prestataire ?</div>
-          <p>Connectez-vous pour envoyer un devis. Aucune commission sur la candidature.</p>
-          <a class="btn-orange" href="<?= e(url('/connexion?next=' . rawurlencode((string) ($live['href'] ?? '/missions')))) ?>">Se connecter</a>
+          <p>Envoyez un devis — gratuit, sans commission à la candidature.</p>
+          <div class="auth-actions">
+            <a class="btn-orange" href="<?= e(url('/connexion?next=' . $loginNext)) ?>">Se connecter</a>
+            <a class="btn-ghost" href="<?= e(url('/inscription?next=' . $loginNext)) ?>">Créer un compte</a>
+          </div>
         </div>
       <?php elseif (\Adl\Core\Auth::check() && empty($isOwner) && empty($offersServices) && ($live['status'] ?? '') === 'open'): ?>
         <div class="side-card">
@@ -145,6 +190,38 @@ if (!$live) {
           <?php endforeach; ?>
         </div>
       <?php endif; ?>
+      <?php if (empty($isOwner)): ?>
+        <details class="profile-report">
+          <summary>Signaler cette recherche</summary>
+          <form method="post" action="<?= e(url('/signaler')) ?>">
+            <?= csrf_field() ?>
+            <input type="hidden" name="type" value="mission">
+            <input type="hidden" name="id" value="<?= (int) ($live['id'] ?? 0) ?>">
+            <input type="hidden" name="back" value="<?= e((string) ($live['href'] ?? '/missions')) ?>">
+            <label class="field" for="report-reason">Motif</label>
+            <select class="input" id="report-reason" name="reason" required>
+              <?php foreach (\Adl\Models\Report::REASONS as $value => $label): ?>
+                <option value="<?= e($value) ?>"><?= e($label) ?></option>
+              <?php endforeach; ?>
+            </select>
+            <textarea class="textarea" name="body" rows="2" placeholder="Précision (optionnel)"></textarea>
+            <button class="btn-ghost" type="submit">Envoyer le signalement</button>
+          </form>
+        </details>
+      <?php endif; ?>
     </aside>
   </div>
+  <?php if (!empty($relatedMissions)): ?>
+    <section class="mission-related-block">
+      <h2>Autres recherches</h2>
+      <div class="mission-related">
+        <?php foreach ($relatedMissions as $rel): ?>
+          <a class="mission-related-item" href="<?= e(url((string) $rel['href'])) ?>">
+            <strong><?= e((string) $rel['title']) ?></strong>
+            <span><?= e(trim((string) ($rel['cat'] ?? '') . ' · ' . (string) ($rel['price'] ?? ''))) ?></span>
+          </a>
+        <?php endforeach; ?>
+      </div>
+    </section>
+  <?php endif; ?>
 </div>
