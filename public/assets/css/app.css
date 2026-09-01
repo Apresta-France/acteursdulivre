@@ -2279,6 +2279,7 @@ main, main > * { min-width: 0; }
   text-decoration: none;
 }
 .chip input { position: absolute; opacity: 0; pointer-events: none; }
+.chip[hidden] { display: none !important; }
 .chip.is-on, a.chip.is-on { background: var(--navy); border-color: var(--navy); color: #fff; }
 .chip-static { cursor: default; padding: 6px 11px; font-size: 13px; background: rgba(255,255,255,.1); border-color: rgba(255,255,255,.2); color: #E4EDF5; }
 .chip-static.dark { background: #F4F6F9; border-color: transparent; color: #4A5A6B; }
@@ -5314,6 +5315,12 @@ img.profile-avatar,
 .stats-rank-top em { font-style: normal; font-family: var(--display); color: var(--navy); font-weight: 600; }
 .stats-rank .admin-bar { margin-top: 6px; }
 .stats-rank small { display: inline-block; margin-top: 4px; }
+
+.offer-stats-page .dash-stat small.stats-delta { display: block; margin-top: 4px; }
+.offer-stats-page .stats-grid { margin-top: 8px; }
+.offer-stats-page .stats-grid .side-card { padding: 20px; }
+.offer-stats-page .stats-rank .mission-row-sub { margin-top: 4px; }
+.offer-stats-page .stats-rank .stats-delta { font-style: normal; }
 
 @media (max-width: 960px) {
   .stats-live-kpis, .stats-live-grid, .stats-grid { grid-template-columns: 1fr; }

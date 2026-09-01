@@ -1325,6 +1325,40 @@
     syncRateUi(currentKind(), false);
   }
 
+  (function bindVitrineSpecialties() {
+    var box = document.querySelector('[data-vitrine-specialties]');
+    if (!box) return;
+    var textTrades = (box.getAttribute('data-text-trades') || '').split(',').filter(Boolean);
+    function selectedTrades() {
+      return Array.prototype.slice.call(document.querySelectorAll('[data-trades] input[type="checkbox"]:checked'))
+        .map(function (el) { return el.value; });
+    }
+    function sync() {
+      var trades = selectedTrades();
+      var hasText = trades.some(function (trade) { return textTrades.indexOf(trade) !== -1; });
+      var hasOther = trades.some(function (trade) { return textTrades.indexOf(trade) === -1; });
+      var help = box.querySelector('[data-specialty-help]');
+      if (help) {
+        var key = 'data-help-none';
+        if (trades.length && hasText && hasOther) key = 'data-help-both';
+        else if (trades.length && hasOther) key = 'data-help-other';
+        else if (trades.length && hasText) key = 'data-help-text';
+        help.textContent = box.getAttribute(key) || help.textContent;
+      }
+      box.querySelectorAll('[data-specialty-chip]').forEach(function (chip) {
+        var forTrades = (chip.getAttribute('data-for-trades') || '').split(',').filter(Boolean);
+        var input = chip.querySelector('input');
+        var match = trades.some(function (trade) { return forTrades.indexOf(trade) !== -1; });
+        var keep = !!(input && input.checked);
+        chip.hidden = !(match || keep);
+      });
+    }
+    document.querySelectorAll('[data-trades] input[type="checkbox"]').forEach(function (input) {
+      input.addEventListener('change', sync);
+    });
+    sync();
+  })();
+
   document.querySelectorAll('[data-name-mode]').forEach(function (box) {
     function syncNameMode() {
       var on = box.querySelector('input[name="name_mode"]:checked');
@@ -1377,6 +1411,34 @@
       });
     }
   }
+
+  (function bindTradeSpecialties() {
+    var form = document.querySelector('[data-service-cover]');
+    if (!form) return;
+    var tradeSelect = form.querySelector('[data-cover-trade]');
+    var specSelect = form.querySelector('[data-trade-specialty]');
+    if (!tradeSelect || !specSelect) return;
+    var byTrade = {};
+    var helps = {};
+    try { byTrade = JSON.parse(form.getAttribute('data-specialties-by-trade') || '{}'); } catch (e) {}
+    try { helps = JSON.parse(form.getAttribute('data-specialty-helps') || '{}'); } catch (e) {}
+    function fill() {
+      var trade = tradeSelect.value;
+      var options = byTrade[trade] || [];
+      var current = specSelect.value;
+      var html = '<option value="">Choisir une spécialité</option>';
+      options.forEach(function (opt) {
+        var value = opt && opt.v ? opt.v : opt;
+        var label = opt && opt.l ? opt.l : value;
+        html += '<option value="' + escapeHtml(value) + '"' + (value === current ? ' selected' : '') + '>' + escapeHtml(label) + '</option>';
+      });
+      specSelect.innerHTML = html;
+      var help = form.querySelector('[data-specialty-help]');
+      if (help) help.textContent = helps[trade] || helps[''] || help.textContent;
+    }
+    tradeSelect.addEventListener('change', fill);
+    fill();
+  })();
 
   document.querySelectorAll('[data-avatar-field]').forEach(function (field) {
     var input = field.querySelector('[data-avatar-input]');

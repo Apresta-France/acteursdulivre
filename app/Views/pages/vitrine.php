@@ -12,6 +12,13 @@ $selectedTrades = $p['trades'] ?? [];
 $selectedGenres = $p['genres'] ?? [];
 $trades = $trades ?? \Adl\Data\Catalog::trades();
 $genres = $genres ?? \Adl\Data\Catalog::specialties();
+$specialtyTradeIndex = \Adl\Data\Catalog::specialtyTradeIndex();
+$displayGenres = \Adl\Data\Catalog::mappedSpecialtyNames();
+foreach (array_merge($genres, $selectedGenres) as $genre) {
+    if (is_string($genre) && $genre !== '' && !in_array($genre, $displayGenres, true)) {
+        $displayGenres[] = $genre;
+    }
+}
 $tools = implode(', ', $p['tools'] ?? []);
 $socials = !empty($p['socials']) ? $p['socials'] : [['network' => '', 'url' => '']];
 $socialNetworks = $socialNetworks ?? \Adl\Models\Profile::SOCIAL_NETWORKS;
@@ -31,6 +38,7 @@ if ($rateKind === \Adl\Models\Profile::RATE_PERCENT || str_contains($rateValue, 
       <p>Profil complété à <?= $completion ?> %. Les vitrines précises reçoivent nettement plus de demandes.<?php if (!empty($p['is_founder'])): ?> <span class="profile-badge profile-badge-founder">Membre fondateur</span><?php endif; ?></p>
     </div>
     <div class="vitrine-head-actions">
+      <a class="btn-ghost" href="<?= e(url('/espace/statistiques')) ?>">Statistiques</a>
       <?php if ($publicHref): ?>
         <a class="btn-ghost" href="<?= e($publicHref) ?>">Voir en public</a>
       <?php endif; ?>
@@ -341,13 +349,23 @@ if ($rateKind === \Adl\Models\Profile::RATE_PERCENT || str_contains($rateValue, 
         <button type="button" class="btn-ghost" data-repeat-add="languages_list">Ajouter une langue</button>
       </div>
 
-      <div>
+      <div data-vitrine-specialties
+           data-help-none="<?= e(\Adl\Data\Catalog::specialtyHelp('')) ?>"
+           data-help-text="<?= e(\Adl\Data\Catalog::specialtyHelpForTrades(['Correction'])) ?>"
+           data-help-other="<?= e(\Adl\Data\Catalog::specialtyHelpForTrades(['Illustration'])) ?>"
+           data-help-both="<?= e(\Adl\Data\Catalog::specialtyHelpForTrades(['Correction', 'Illustration'])) ?>"
+           data-text-trades="<?= e(implode(',', \Adl\Data\Catalog::TEXT_TRADES)) ?>">
         <span class="field">Spécialités</span>
-        <p class="field-help">Types de textes que vous travaillez. Choisissez Global si vous intervenez sur tous les genres.</p>
-        <div class="chip-row">
-          <?php foreach ($genres as $genre): ?>
-            <label class="chip<?= in_array($genre, $selectedGenres, true) ? ' is-on' : '' ?>">
-              <input type="checkbox" name="genres[]" value="<?= e($genre) ?>"<?= in_array($genre, $selectedGenres, true) ? ' checked' : '' ?>>
+        <p class="field-help" data-specialty-help><?= e(\Adl\Data\Catalog::specialtyHelpForTrades($selectedTrades)) ?></p>
+        <div class="chip-row" data-specialty-chips>
+          <?php foreach ($displayGenres as $genre): ?>
+            <?php
+              $forTrades = $specialtyTradeIndex[$genre] ?? [];
+              $checked = in_array($genre, $selectedGenres, true);
+              $visible = $checked || array_intersect($selectedTrades, $forTrades) !== [];
+            ?>
+            <label class="chip<?= $checked ? ' is-on' : '' ?>" data-specialty-chip data-for-trades="<?= e(implode(',', $forTrades)) ?>"<?= $visible ? '' : ' hidden' ?>>
+              <input type="checkbox" name="genres[]" value="<?= e($genre) ?>"<?= $checked ? ' checked' : '' ?>>
               <?= e($genre) ?>
             </label>
           <?php endforeach; ?>

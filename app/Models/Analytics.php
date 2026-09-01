@@ -99,6 +99,9 @@ final class Analytics
             if ($classified === null) {
                 return;
             }
+            if (self::isOwnEntity($classified['entity'])) {
+                return;
+            }
             $visitor = self::visitorId();
             if (!self::touchLive($visitor, $classified['path'])) {
                 return;
@@ -262,6 +265,184 @@ final class Analytics
         ];
     }
 
+    /**
+     * @return array{
+     *     period: array<string, mixed>,
+     *     compare: bool,
+     *     periods: array<string, string>,
+     *     kpis: list<array<string, mixed>>,
+     *     series: list<array<string, mixed>>,
+     *     profile: array<string, mixed>,
+     *     services: list<array<string, mixed>>,
+     *     tips: list<array<string, string>>,
+     *     empty: bool
+     * }
+     */
+    public static function providerDashboard(int $userId, Request $request): array
+    {
+        $period = self::resolvePeriod($request, '30j');
+        $compare = $request->string('compare', '1') !== '0';
+        $owned = self::providerEntities($userId);
+        $profileSlug = $owned['profile_slug'];
+        $services = $owned['services'];
+        $serviceSlugs = array_values(array_filter(array_map(
+            static fn (array $row): string => (string) ($row['slug'] ?? ''),
+            $services
+        )));
+
+        $currentProfile = $profileSlug !== ''
+            ? self::dimHits('profile', [$profileSlug], $period['from'], $period['to'])
+            : [];
+        $previousProfile = $compare && $profileSlug !== ''
+            ? self::dimHits('profile', [$profileSlug], $period['prev_from'], $period['prev_to'])
+            : [];
+        $currentServices = $serviceSlugs !== []
+            ? self::dimHits('service', $serviceSlugs, $period['from'], $period['to'])
+            : [];
+        $previousServices = $compare && $serviceSlugs !== []
+            ? self::dimHits('service', $serviceSlugs, $period['prev_from'], $period['prev_to'])
+            : [];
+
+        $profileN = (int) ($currentProfile[$profileSlug] ?? 0);
+        $profileP = (int) ($previousProfile[$profileSlug] ?? 0);
+        $serviceN = (int) array_sum($currentServices);
+        $serviceP = (int) array_sum($previousServices);
+        $seenN = count(array_filter($currentServices, static fn (int $n): bool => $n > 0));
+        $seenP = count(array_filter($previousServices, static fn (int $n): bool => $n > 0));
+
+        $published = 0;
+        foreach ($services as $service) {
+            if (($service['status'] ?? '') === 'published') {
+                $published++;
+            }
+        }
+
+        $kpis = [];
+        foreach ([
+            ['k' => 'Vitrine', 'n' => $profileN, 'p' => $profileP, 'unit' => 'vue'],
+            ['k' => 'Prestations', 'n' => $serviceN, 'p' => $serviceP, 'unit' => 'vue'],
+            ['k' => 'Total', 'n' => $profileN + $serviceN, 'p' => $profileP + $serviceP, 'unit' => 'vue'],
+            ['k' => 'Fiches vues', 'n' => $seenN, 'p' => $seenP, 'unit' => 'fiche'],
+        ] as $item) {
+            $kpis[] = [
+                'k' => $item['k'],
+                'v' => format_int($item['n']),
+                'n' => $item['n'],
+                'unit' => $item['unit'],
+                'delta' => $compare ? self::delta($item['n'], $item['p']) : null,
+            ];
+        }
+
+        $maxService = max(1, ...array_values($currentServices + [0]));
+        $serviceRows = [];
+        foreach ($services as $service) {
+            $slug = (string) ($service['slug'] ?? '');
+            if ($slug === '') {
+                continue;
+            }
+            $hits = (int) ($currentServices[$slug] ?? 0);
+            $prev = (int) ($previousServices[$slug] ?? 0);
+            $publishedRow = ($service['status'] ?? '') === 'published';
+            $serviceRows[] = [
+                'id' => (int) ($service['id'] ?? 0),
+                'key' => $slug,
+                'label' => (string) ($service['title'] ?? $slug),
+                'n' => $hits,
+                'v' => format_int($hits),
+                'pct' => (int) round(100 * $hits / $maxService),
+                'delta' => $compare ? self::delta($hits, $prev) : null,
+                'href' => $publishedRow ? '/prestations/' . $slug : '/espace/prestations/' . (int) ($service['id'] ?? 0) . '/modifier',
+                'edit_href' => '/espace/prestations/' . (int) ($service['id'] ?? 0) . '/modifier',
+                'status' => (string) ($service['status'] ?? 'draft'),
+                'status_label' => Service::STATUSES[$service['status'] ?? 'draft'] ?? 'Brouillon',
+                'published' => $publishedRow,
+            ];
+        }
+        usort($serviceRows, static function (array $a, array $b): int {
+            return $b['n'] <=> $a['n'] ?: strcasecmp((string) $a['label'], (string) $b['label']);
+        });
+
+        $profileHref = $profileSlug !== '' ? '/prestataires/' . $profileSlug : '';
+
+        return [
+            'period' => $period,
+            'compare' => $compare,
+            'periods' => self::PERIODS,
+            'kpis' => $kpis,
+            'series' => self::ownedSeries($period, $compare, $profileSlug, $serviceSlugs),
+            'profile' => [
+                'slug' => $profileSlug,
+                'n' => $profileN,
+                'v' => format_int($profileN),
+                'delta' => $compare ? self::delta($profileN, $profileP) : null,
+                'href' => $profileHref,
+                'completion' => (int) ($owned['profile']['completion'] ?? 0),
+            ],
+            'services' => $serviceRows,
+            'published_count' => $published,
+            'tips' => self::providerTips($owned['profile'], $services, $profileN, $serviceRows),
+            'empty' => $profileSlug === '' && $serviceSlugs === [],
+        ];
+    }
+
+    /**
+     * @return array{
+     *     days: int,
+     *     profile_views: int,
+     *     service_views: int,
+     *     total: int,
+     *     by_service: array<string, int>,
+     *     top_service: ?array{title: string, n: int, href: string}
+     * }
+     */
+    public static function providerSummary(int $userId, int $days = 7): array
+    {
+        $days = max(1, min(366, $days));
+        $to = self::now()->setTime(0, 0);
+        $from = $to->modify('-' . ($days - 1) . ' days');
+        $fromS = $from->format('Y-m-d');
+        $toS = $to->format('Y-m-d');
+        $owned = self::providerEntities($userId);
+        $profileSlug = $owned['profile_slug'];
+        $serviceSlugs = [];
+        $titles = [];
+        foreach ($owned['services'] as $service) {
+            $slug = (string) ($service['slug'] ?? '');
+            if ($slug === '') {
+                continue;
+            }
+            $serviceSlugs[] = $slug;
+            $titles[$slug] = (string) ($service['title'] ?? $slug);
+        }
+        $profileViews = $profileSlug !== ''
+            ? (int) (self::dimHits('profile', [$profileSlug], $fromS, $toS)[$profileSlug] ?? 0)
+            : 0;
+        $byService = $serviceSlugs !== []
+            ? self::dimHits('service', $serviceSlugs, $fromS, $toS)
+            : [];
+        $top = null;
+        $topN = 0;
+        foreach ($byService as $slug => $hits) {
+            if ($hits > $topN) {
+                $topN = $hits;
+                $top = [
+                    'title' => $titles[$slug] ?? $slug,
+                    'n' => $hits,
+                    'href' => '/prestations/' . $slug,
+                ];
+            }
+        }
+
+        return [
+            'days' => $days,
+            'profile_views' => $profileViews,
+            'service_views' => (int) array_sum($byService),
+            'total' => $profileViews + (int) array_sum($byService),
+            'by_service' => $byService,
+            'top_service' => $top,
+        ];
+    }
+
     /** @return array<string, mixed> */
     public static function liveSnapshot(): array
     {
@@ -316,7 +497,7 @@ final class Analytics
         ];
     }
 
-    public static function periodQuery(array $keep, array $override = []): string
+    public static function periodQuery(array $keep, array $override = [], string $base = '/admin/statistiques'): string
     {
         $params = array_merge($keep, $override);
         foreach ($params as $key => $value) {
@@ -324,7 +505,290 @@ final class Analytics
                 unset($params[$key]);
             }
         }
-        return $params === [] ? '/admin/statistiques' : '/admin/statistiques?' . http_build_query($params);
+        return $params === [] ? $base : $base . '?' . http_build_query($params);
+    }
+
+    /** @param ?array{0: string, 1: string} $entity */
+    private static function isOwnEntity(?array $entity): bool
+    {
+        if ($entity === null) {
+            return false;
+        }
+        $uid = (int) ($_SESSION['user_id'] ?? 0);
+        if ($uid <= 0) {
+            $cached = $_SESSION['_user_cache'] ?? null;
+            if (is_array($cached)) {
+                $uid = (int) ($cached['id'] ?? 0);
+            }
+        }
+        if ($uid <= 0) {
+            return false;
+        }
+        [$kind, $slug] = $entity;
+        if ($slug === '') {
+            return false;
+        }
+        try {
+            if ($kind === 'profile') {
+                return Database::fetch(
+                    'SELECT 1 FROM profiles WHERE user_id = ? AND slug = ?',
+                    [$uid, $slug]
+                ) !== null;
+            }
+            if ($kind === 'service') {
+                return Database::fetch(
+                    'SELECT 1 FROM services WHERE user_id = ? AND slug = ?',
+                    [$uid, $slug]
+                ) !== null;
+            }
+        } catch (Throwable) {
+            return false;
+        }
+        return false;
+    }
+
+    /**
+     * @return array{profile_slug: string, profile: ?array<string, mixed>, services: list<array<string, mixed>>}
+     */
+    private static function providerEntities(int $userId): array
+    {
+        $profile = null;
+        $profileSlug = '';
+        try {
+            $profile = Profile::findByUser($userId);
+            $profileSlug = trim((string) ($profile['slug'] ?? ''));
+        } catch (Throwable) {
+        }
+        $services = [];
+        try {
+            $services = Database::fetchAll(
+                'SELECT id, slug, title, status FROM services WHERE user_id = ? ORDER BY created_at DESC',
+                [$userId]
+            );
+        } catch (Throwable) {
+        }
+
+        return [
+            'profile_slug' => $profileSlug,
+            'profile' => $profile,
+            'services' => $services,
+        ];
+    }
+
+    /**
+     * @param list<string> $dims
+     * @return array<string, int>
+     */
+    private static function dimHits(string $kind, array $dims, string $from, string $to): array
+    {
+        $dims = array_values(array_unique(array_filter($dims, static fn (string $d): bool => $d !== '')));
+        if ($dims === []) {
+            return [];
+        }
+        $out = array_fill_keys($dims, 0);
+        try {
+            $placeholders = implode(',', array_fill(0, count($dims), '?'));
+            $rows = Database::fetchAll(
+                "SELECT dim, SUM(hits) AS hits
+                 FROM stats_daily
+                 WHERE day BETWEEN ? AND ? AND kind = ? AND dim IN ({$placeholders})
+                 GROUP BY dim",
+                array_merge([$from, $to, $kind], $dims)
+            );
+            foreach ($rows as $row) {
+                $out[(string) $row['dim']] = (int) $row['hits'];
+            }
+        } catch (Throwable) {
+        }
+        return $out;
+    }
+
+    /**
+     * @param list<string> $serviceSlugs
+     * @return array<string, int>
+     */
+    private static function ownedHitsByDay(string $from, string $to, string $profileSlug, array $serviceSlugs): array
+    {
+        [$sql, $params] = self::ownedEntitySql($profileSlug, $serviceSlugs);
+        if ($sql === '') {
+            return [];
+        }
+        $out = [];
+        try {
+            $rows = Database::fetchAll(
+                "SELECT day, SUM(hits) AS hits FROM stats_daily
+                 WHERE day BETWEEN ? AND ? AND {$sql}
+                 GROUP BY day",
+                array_merge([$from, $to], $params)
+            );
+            foreach ($rows as $row) {
+                $out[(string) $row['day']] = (int) $row['hits'];
+            }
+        } catch (Throwable) {
+        }
+        return $out;
+    }
+
+    /**
+     * @param list<string> $serviceSlugs
+     * @return array{0: string, 1: list<string>}
+     */
+    private static function ownedEntitySql(string $profileSlug, array $serviceSlugs): array
+    {
+        $parts = [];
+        $params = [];
+        if ($profileSlug !== '') {
+            $parts[] = '(kind = ? AND dim = ?)';
+            $params[] = 'profile';
+            $params[] = $profileSlug;
+        }
+        $serviceSlugs = array_values(array_unique(array_filter($serviceSlugs, static fn (string $s): bool => $s !== '')));
+        if ($serviceSlugs !== []) {
+            $placeholders = implode(',', array_fill(0, count($serviceSlugs), '?'));
+            $parts[] = '(kind = ? AND dim IN (' . $placeholders . '))';
+            $params[] = 'service';
+            array_push($params, ...$serviceSlugs);
+        }
+        if ($parts === []) {
+            return ['', []];
+        }
+        return ['(' . implode(' OR ', $parts) . ')', $params];
+    }
+
+    /**
+     * @param array<string, mixed> $period
+     * @param list<string> $serviceSlugs
+     * @return list<array{label: string, current: int, previous: int, uniques: int, day?: string}>
+     */
+    private static function ownedSeries(array $period, bool $compare, string $profileSlug, array $serviceSlugs): array
+    {
+        $from = (string) $period['from'];
+        $to = (string) $period['to'];
+        $days = (int) $period['days'];
+        $weekly = $days > 90;
+        $current = self::ownedHitsByDay($from, $to, $profileSlug, $serviceSlugs);
+        $previous = $compare
+            ? self::ownedHitsByDay((string) $period['prev_from'], (string) $period['prev_to'], $profileSlug, $serviceSlugs)
+            : [];
+
+        $start = self::parseDay($from) ?? self::now();
+        $end = self::parseDay($to) ?? $start;
+        $cursor = $start;
+        $out = [];
+        $i = 0;
+        while ($cursor <= $end) {
+            $key = $cursor->format('Y-m-d');
+            $prevKey = (self::parseDay((string) $period['prev_from']) ?? $cursor)
+                ->modify('+' . $i . ' days')
+                ->format('Y-m-d');
+            $out[] = [
+                'label' => $weekly ? $cursor->format('W') : ((int) $cursor->format('j') . '/' . $cursor->format('n')),
+                'current' => (int) ($current[$key] ?? 0),
+                'previous' => (int) ($previous[$prevKey] ?? 0),
+                'uniques' => 0,
+                'day' => $key,
+            ];
+            $cursor = $cursor->modify('+1 day');
+            $i++;
+        }
+
+        if ($weekly) {
+            $grouped = [];
+            foreach ($out as $row) {
+                $week = 'S' . (self::parseDay((string) $row['day'])?->format('W') ?? '');
+                if (!isset($grouped[$week])) {
+                    $grouped[$week] = [
+                        'label' => $week,
+                        'current' => 0,
+                        'previous' => 0,
+                        'uniques' => 0,
+                    ];
+                }
+                $grouped[$week]['current'] += $row['current'];
+                $grouped[$week]['previous'] += $row['previous'];
+            }
+            return array_values($grouped);
+        }
+
+        return $out;
+    }
+
+    /**
+     * @param ?array<string, mixed> $profile
+     * @param list<array<string, mixed>> $services
+     * @param list<array<string, mixed>> $serviceRows
+     * @return list<array{title: string, body: string, href: string, cta: string}>
+     */
+    private static function providerTips(?array $profile, array $services, int $profileViews, array $serviceRows): array
+    {
+        $tips = [];
+        $completion = (int) ($profile['completion'] ?? 0);
+        $published = array_values(array_filter(
+            $services,
+            static fn (array $s): bool => ($s['status'] ?? '') === 'published'
+        ));
+        $publishedHits = array_values(array_filter(
+            $serviceRows,
+            static fn (array $row): bool => !empty($row['published'])
+        ));
+        $serviceViews = 0;
+        foreach ($publishedHits as $row) {
+            $serviceViews += (int) ($row['n'] ?? 0);
+        }
+
+        if ($completion < 80) {
+            $tips[] = [
+                'title' => 'Compléter la vitrine',
+                'body' => 'Profil à ' . $completion . ' %. Titre, présentation, métiers et tarif aident l’annuaire à vous trouver.',
+                'href' => '/espace/vitrine',
+                'cta' => 'Éditer la vitrine',
+            ];
+        }
+        if ($published === []) {
+            $tips[] = [
+                'title' => 'Publier une prestation',
+                'body' => 'Une offre à prix et délai affichés apparaît dans le catalogue, pas seulement sur votre fiche.',
+                'href' => '/espace/prestations/creer',
+                'cta' => 'Composer une offre',
+            ];
+        } elseif ($serviceViews === 0) {
+            $tips[] = [
+                'title' => 'Rendre les fiches plus claires',
+                'body' => 'Un titre concret, un métier exact et un prix visible se trouvent plus facilement dans l’annuaire.',
+                'href' => '/espace/prestations',
+                'cta' => 'Revoir les prestations',
+            ];
+        }
+        if ($profileViews > 0 && $serviceViews === 0 && $published !== []) {
+            $tips[] = [
+                'title' => 'Les visiteurs s’arrêtent à la vitrine',
+                'body' => 'Ils ouvrent votre fiche sans cliquer une prestation. Un extrait net et un prix affiché aident à passer le cap.',
+                'href' => '/espace/prestations',
+                'cta' => 'Ajuster les offres',
+            ];
+        }
+        $best = $publishedHits[0] ?? null;
+        $second = $publishedHits[1] ?? null;
+        if (is_array($best) && (int) ($best['n'] ?? 0) > 0 && is_array($second)
+            && (int) ($best['n'] ?? 0) >= 3 * max(1, (int) ($second['n'] ?? 0))) {
+            $tips[] = [
+                'title' => 'Une prestation attire nettement plus',
+                'body' => '« ' . (string) $best['label'] . ' » concentre les vues. Alignez les autres titres sur ce que les visiteurs cherchent déjà.',
+                'href' => (string) ($best['edit_href'] ?? '/espace/prestations'),
+                'cta' => 'Ouvrir cette fiche',
+            ];
+        }
+        $slug = trim((string) ($profile['slug'] ?? ''));
+        if ($slug !== '' && count($tips) < 3) {
+            $tips[] = [
+                'title' => 'Partager le lien public',
+                'body' => 'Ajoutez le lien de votre vitrine à votre site, votre signature ou vos réseaux.',
+                'href' => '/prestataires/' . $slug,
+                'cta' => 'Voir en public',
+            ];
+        }
+
+        return array_slice($tips, 0, 4);
     }
 
     private static function shouldCollect(): bool
@@ -657,13 +1121,13 @@ final class Analytics
      *     prev_label: string
      * }
      */
-    private static function resolvePeriod(Request $request): array
+    private static function resolvePeriod(Request $request, string $default = '7j'): array
     {
         $tz = self::tz();
         $today = new DateTimeImmutable('today', $tz);
-        $id = $request->string('periode', '7j');
+        $id = $request->string('periode', $default);
         if (!isset(self::PERIODS[$id])) {
-            $id = '7j';
+            $id = isset(self::PERIODS[$default]) ? $default : '7j';
         }
         $jours = max(1, min(366, $request->int('jours', 21) ?? 21));
         $du = $request->string('du');

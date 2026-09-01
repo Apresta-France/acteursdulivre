@@ -40,7 +40,7 @@ final class Prototype
             'Missions', 'Mission', 'Suivi', 'Commandes', 'Creer', 'Inscription', 'Comment', 'Tarifs',
             'Confiance', 'Aide', 'Questions', 'Metier', 'Apropos', 'Journal', 'Article', 'Contact', 'Legal',
             'Connexion', 'Notifications', 'MesPrestations', 'MesMissions', 'Candidatures', 'Favoris',
-            'Avis', 'Vitrine', 'Parametres', 'Facturation', 'Bienvenue',
+            'Avis', 'Vitrine', 'Parametres', 'Facturation', 'Bienvenue', 'Statistiques',
         ] as $name) {
             $key = 'is' . $name;
             if (!isset($data[$key])) {
@@ -62,7 +62,7 @@ final class Prototype
             'mesprestations' => 'isMesPrestations', 'mesmissions' => 'isMesMissions',
             'candidatures' => 'isCandidatures', 'favoris' => 'isFavoris', 'avis' => 'isAvis',
             'vitrine' => 'isVitrine', 'parametres' => 'isParametres', 'facturation' => 'isFacturation',
-            'bienvenue' => 'isBienvenue',
+            'bienvenue' => 'isBienvenue', 'statistiques' => 'isStatistiques',
         ];
         if (isset($map[$screen])) {
             $data[$map[$screen]] = true;
@@ -120,6 +120,7 @@ final class Prototype
                 ['label' => 'Appels d\'offres', 'href' => '/missions'],
                 ['label' => 'Commission', 'href' => '/tarifs'],
                 ['label' => 'Ma vitrine & mon CV', 'href' => '/espace/vitrine'],
+                ['label' => 'Statistiques de vues', 'href' => '/espace/statistiques'],
             ]],
             ['title' => 'La plateforme', 'links' => [
                 ['label' => 'Comment ça marche', 'href' => '/comment-ca-marche'],
@@ -259,8 +260,9 @@ final class Prototype
     {
         try {
             $stats = Catalog::homeStats();
-            $featured = Catalog::featuredServices(3);
-            $entry = Catalog::featuredServices(3, 3);
+            $homeRails = Catalog::homeServiceRails(3, 3);
+            $featured = $homeRails['featured'];
+            $entry = $homeRails['entry'];
             $pros = User::countOfferers();
             $services = Service::countPublished();
             $openMissions = Mission::countOpen();
@@ -1018,6 +1020,7 @@ final class Prototype
             ['La plateforme prend-elle une commission sur les appels d\'offres ?', 'Publier et candidater sont gratuits, sans abonnement. La commission de 8 % s\'applique uniquement à partir de la deuxième mission réalisée, sur le montant hors taxes.'],
             ['L\'IA générative est-elle autorisée sur la plateforme ?', 'Non, pour les missions entre acteurs du livre : aucun livrable ne peut être produit par une IA générative. Le moratoire ne s\'applique pas à la fabrication de la plateforme. Le détail figure dans les règles IA.'],
             ['Y a-t-il un contrat type ?', 'Non. L\'acceptation du devis dans le suivi vaut accord entre les parties. La plateforme ne génère ni contrat type ni NDA.'],
+            ['Puis-je voir qui consulte ma vitrine ?', 'Vous voyez le nombre de vues de votre fiche et de chaque prestation, dans l\'espace, à Statistiques. Les visiteurs ne sont pas identifiés : ce sont des compteurs anonymes, sans cookie dédié. Vos propres consultations ne sont pas comptées.'],
         ];
         return self::faqItems($items);
     }
@@ -1483,7 +1486,7 @@ final class Prototype
         return in_array($screen, [
             'dashboard', 'publier', 'commande', 'suivi', 'suivi-detail', 'suivi-depot', 'suivi-depot-list', 'commandes', 'mesmissions',
             'candidatures', 'mesprestations', 'creer', 'messagerie', 'notifications',
-            'favoris', 'avis', 'vitrine', 'parametres', 'facturation',
+            'favoris', 'avis', 'vitrine', 'parametres', 'facturation', 'statistiques',
         ], true);
     }
 
@@ -1584,6 +1587,7 @@ final class Prototype
                     $item('Ma vitrine', '/espace/vitrine', 'vitrine', 'id'),
                     $item('Proposer une prestation', '/espace/prestations/creer', 'creer', 'plus-box'),
                     $item('Mes prestations', '/espace/prestations', 'mesprestations', 'grid'),
+                    $item('Statistiques', '/espace/statistiques', 'statistiques', 'chart'),
                     $item('Appels d\'offres', '/missions', '', 'megaphone'),
                     $item('Mes candidatures', '/espace/candidatures', 'candidatures', 'send'),
                     ...($seeks ? [] : [$item('Suivi', '/espace/suivi', 'suivi', 'clipboard')]),

@@ -66,7 +66,7 @@
   <?php if (!empty($isArticle) && !empty($article['img'])): ?>
   <link rel="preload" as="image" href="<?= e((string) $article['img']) ?>">
   <?php endif; ?>
-  <link rel="stylesheet" href="<?= e(asset('css/app.css')) ?>?v=m118">
+  <link rel="stylesheet" href="<?= e(asset('css/app.css')) ?>?v=m119">
   <link rel="icon" href="<?= e(asset('img/favicon.ico')) ?>?v=3" sizes="any">
   <link rel="icon" type="image/png" href="<?= e(asset('img/favicon-32x32.png')) ?>?v=3" sizes="32x32">
   <link rel="apple-touch-icon" href="<?= e(asset('img/apple-touch-icon.png')) ?>?v=3">
@@ -333,6 +333,6 @@
       <?php endif; ?>
     </div>
   <?php endif; ?>
-  <script src="<?= e(asset('js/app.js')) ?>?v=m60"></script>
+  <script src="<?= e(asset('js/app.js')) ?>?v=m61"></script>
 </body>
 </html>

@@ -4,7 +4,7 @@ $specialties = $specialties ?? [];
 ?>
 <div class="admin-page">
   <h1>Métiers &amp; spécialités</h1>
-  <p class="admin-lead">Ces listes alimentent les menus déroulants Métier et Spécialité — création de prestation, vitrine et annuaire. Le terme Global sert aux correcteurs (et métiers voisins) qui travaillent sur tout type de texte.</p>
+  <p class="admin-lead">Ces listes alimentent les menus déroulants Métier et Spécialité — création de prestation, vitrine et annuaire. Les spécialités proposées dépendent du métier : genres de textes pour l’écrit, types de prestation pour les autres métiers. Le terme Global reste transversal.</p>
 
   <?php if (!empty($saved)): ?><div class="flash flash-ok"><?= e(is_string($saved) ? $saved : 'Enregistré.') ?></div><?php endif; ?>
   <?php if (!empty($error)): ?><div class="flash flash-error"><?= e((string) $error) ?></div><?php endif; ?>
@@ -13,7 +13,7 @@ $specialties = $specialties ?? [];
     <?php
     $sections = [
         ['kind' => 'trade', 'title' => 'Métiers', 'help' => 'Correction, illustration, traduction…', 'items' => $trades, 'global' => false],
-        ['kind' => 'specialty', 'title' => 'Spécialités', 'help' => 'Genres et domaines, plus le terme Global.', 'items' => $specialties, 'global' => true],
+        ['kind' => 'specialty', 'title' => 'Spécialités', 'help' => 'Genres littéraires et types de prestation selon les métiers, plus le terme Global.', 'items' => $specialties, 'global' => true],
     ];
     foreach ($sections as $section):
     ?>

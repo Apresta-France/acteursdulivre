@@ -71,6 +71,15 @@ final class AccountController
         } catch (\Throwable) {
         }
 
+        $viewSummary = null;
+        try {
+            if (User::offersServices($user)) {
+                $viewSummary = Analytics::providerSummary((int) $user['id'], 7);
+            }
+        } catch (\Throwable) {
+            $viewSummary = null;
+        }
+
         View::page('dashboard', [
             'title' => 'Tableau de bord',
             'error' => flash('error'),
@@ -79,6 +88,7 @@ final class AccountController
             'openMissionCount' => $openMissionCount,
             'profileCompletion' => $profileCompletion,
             'profileHref' => $profileHref,
+            'viewSummary' => $viewSummary,
             'availabilityStatus' => $availabilityStatus,
             'availabilityNote' => $availabilityNote,
             'onboardingPending' => Onboarding::isPending($user),
@@ -1027,14 +1037,61 @@ final class AccountController
             $services = [];
         }
         $billing = self::billingState((int) $user['id']);
+        $serviceViews = [];
+        try {
+            $serviceViews = Analytics::providerSummary((int) $user['id'], 30)['by_service'] ?? [];
+        } catch (\Throwable) {
+            $serviceViews = [];
+        }
         View::page('mesprestations', [
             'title' => 'Mes prestations',
             'myServices' => $services,
+            'serviceViews' => $serviceViews,
             'saved' => flash('saved'),
             'error' => flash('error'),
             'billingBlock' => $billing['block'],
             'billingWarning' => $billing['warning'],
         ]);
+    }
+
+    public function statistiques(Request $request): void
+    {
+        $user = Auth::requireOfferer();
+        try {
+            $report = Analytics::providerDashboard((int) $user['id'], $request);
+        } catch (\Throwable) {
+            $report = [
+                'period' => [
+                    'id' => '30j',
+                    'label' => '30 jours',
+                    'range_label' => '—',
+                    'prev_label' => '—',
+                    'jours' => 21,
+                    'du' => '',
+                    'au' => '',
+                    'hourly' => false,
+                ],
+                'compare' => $request->string('compare', '1') !== '0',
+                'periods' => [],
+                'kpis' => [],
+                'series' => [],
+                'profile' => [
+                    'slug' => '',
+                    'n' => 0,
+                    'v' => '0',
+                    'delta' => null,
+                    'href' => '',
+                    'completion' => 0,
+                ],
+                'services' => [],
+                'published_count' => 0,
+                'tips' => [],
+                'empty' => true,
+            ];
+        }
+        View::page('statistiques', array_merge($report, [
+            'title' => 'Statistiques',
+        ]));
     }
 
     public function creer(Request $request): void
@@ -1099,7 +1156,7 @@ final class AccountController
             flash('old', $old);
             redirect('/espace/prestations/creer');
         }
-        if ($specialty !== '' && !in_array($specialty, Catalog::specialties(), true)) {
+        if (!Catalog::isAllowedSpecialty($category, $specialty)) {
             flash('error', 'Choisissez une spécialité dans la liste.');
             flash('old', $old);
             redirect('/espace/prestations/creer');
@@ -1216,10 +1273,10 @@ final class AccountController
             'editing' => true,
             'serviceId' => (int) $service['id'],
             'trades' => self::offererTrades((int) $user['id'], (string) ($service['category_name'] ?? '')),
-            'specialties' => array_values(array_unique(array_filter(array_merge(
-                Catalog::specialties(),
-                [(string) ($service['specialty'] ?? '')]
-            )))),
+            'specialties' => Catalog::specialtiesForTrade(
+                (string) ($old['category_name'] ?? $service['category_name'] ?? ''),
+                (string) ($service['specialty'] ?? '')
+            ),
             'commission' => (string) ($quote['first_free'] ? 0 : $quote['percent']),
             'firstMissionFree' => $quote['first_free'],
             'standardCommission' => (string) Commission::percentForSeller((int) $user['id']),
@@ -1273,11 +1330,7 @@ final class AccountController
             flash('old', $old);
             redirect('/espace/prestations/' . (int) $id . '/modifier');
         }
-        $allowedSpecialties = array_values(array_unique(array_merge(
-            Catalog::specialties(),
-            array_filter([(string) ($service['specialty'] ?? '')])
-        )));
-        if ($specialty !== '' && !in_array($specialty, $allowedSpecialties, true)) {
+        if (!Catalog::isAllowedSpecialty($category, $specialty, (string) ($service['specialty'] ?? ''))) {
             flash('error', 'Choisissez une spécialité dans la liste.');
             flash('old', $old);
             redirect('/espace/prestations/' . (int) $id . '/modifier');
@@ -1691,7 +1744,7 @@ final class AccountController
         try {
             $current = Profile::findByUser((int) $user['id']) ?? [];
             $allowedTrades = array_values(array_unique(array_merge(Catalog::trades(), $current['trades'] ?? [])));
-            $allowedGenres = array_values(array_unique(array_merge(Catalog::specialties(), $current['genres'] ?? [])));
+            $allowedGenres = Catalog::specialtiesForTrades($trades, $current['genres'] ?? []);
             $trades = array_values(array_filter($trades, static fn (string $trade): bool => in_array($trade, $allowedTrades, true)));
             $catalogTrades = Catalog::trades();
             foreach ($current['trades'] ?? [] as $kept) {

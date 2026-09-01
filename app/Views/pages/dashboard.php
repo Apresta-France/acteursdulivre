@@ -149,6 +149,26 @@ if ($offers && $profileCompletion < 80) {
           </span>
         </a>
       <?php endif; ?>
+      <?php
+        $views = $viewSummary ?? null;
+        $viewTotal = is_array($views) ? (int) ($views['total'] ?? 0) : 0;
+        $viewDays = is_array($views) ? (int) ($views['days'] ?? 7) : 7;
+        $viewProfile = is_array($views) ? (int) ($views['profile_views'] ?? 0) : 0;
+        $viewServices = is_array($views) ? (int) ($views['service_views'] ?? 0) : 0;
+      ?>
+      <a class="dash-stat" href="<?= e(url('/espace/statistiques')) ?>">
+        <span class="dash-ico"><?= icon('chart', 18) ?></span>
+        <span>
+          <strong>Vues · <?= $viewDays ?> j.</strong>
+          <em><?php
+            if ($viewTotal === 0) {
+                echo 'Aucune vue pour l’instant';
+            } else {
+                echo $viewProfile . ' vitrine · ' . $viewServices . ' prestation' . ($viewServices > 1 ? 's' : '');
+            }
+          ?></em>
+        </span>
+      </a>
     <?php endif; ?>
   </div>
 
@@ -230,6 +250,12 @@ if ($offers && $profileCompletion < 80) {
           <span>Le suivi des devis que vous avez envoyés.</span>
           <span class="dash-card-cta">Voir les devis <?= icon('arrow', 14) ?></span>
         </a>
+        <a class="dash-card" href="<?= e(url('/espace/statistiques')) ?>">
+          <span class="dash-ico"><?= icon('chart', 20) ?></span>
+          <strong>Statistiques de vues</strong>
+          <span>Combien de fois votre vitrine et chaque prestation ont été ouvertes, pour ajuster le contenu.</span>
+          <span class="dash-card-cta">Voir les vues <?= icon('arrow', 14) ?></span>
+        </a>
       </div>
     </section>
   <?php endif; ?>
@@ -253,6 +279,7 @@ if ($offers && $profileCompletion < 80) {
       <?php endif; ?>
       <?php if ($offers): ?>
         <a class="dash-chip" href="<?= e(url('/espace/prestations')) ?>"><?= icon('grid', 16) ?> Mes prestations</a>
+        <a class="dash-chip" href="<?= e(url('/espace/statistiques')) ?>"><?= icon('chart', 16) ?> Statistiques</a>
         <a class="dash-chip" href="<?= e(url('/espace/facturation')) ?>"><?= icon('invoice', 16) ?> Facturation</a>
         <?php if (($profileHref ?? '') !== '' && $profileHref !== '/recherche'): ?>
           <a class="dash-chip" href="<?= e(url($profileHref)) ?>"><?= icon('store', 16) ?> Voir en public</a>

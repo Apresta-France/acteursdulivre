@@ -18,7 +18,7 @@ final class Seo
     private const PRIVATE_SCREENS = [
         'dashboard', 'publier', 'commande', 'suivi', 'commandes', 'mesmissions',
         'candidatures', 'mesprestations', 'creer', 'messagerie', 'notifications',
-        'favoris', 'avis', 'vitrine', 'parametres', 'facturation', 'bienvenue',
+        'favoris', 'avis', 'vitrine', 'parametres', 'facturation', 'statistiques', 'bienvenue',
         'connexion', 'inscription-sso',
     ];
 
@@ -493,7 +493,7 @@ final class Seo
             ],
             [
                 'q' => 'Comment apparaître et recevoir des demandes ?',
-                'a' => 'Complétez votre vitrine — métier, titre, présentation, tarif — et publiez au moins une fiche. Les vitrines précises reçoivent plus de demandes. Vous pouvez aussi candidater aux recherches ouvertes. Le classement dépend des avis et des délais tenus, pas d\'un budget publicitaire. Un justificatif d\'activité et une référence professionnelle permettent d\'obtenir le badge vérifié.',
+                'a' => 'Complétez votre vitrine — métier, titre, présentation, tarif — et publiez au moins une fiche. Les vitrines précises reçoivent plus de demandes. Dans l\'espace, Statistiques indique le nombre de vues de votre fiche et de chaque prestation, sans identifier les visiteurs. Vous pouvez aussi candidater aux recherches ouvertes. Le classement dépend des avis et des délais tenus, pas d\'un budget publicitaire. Un justificatif d\'activité et une référence professionnelle permettent d\'obtenir le badge vérifié.',
             ],
             [
                 'q' => 'L\'IA générative est-elle autorisée ?',

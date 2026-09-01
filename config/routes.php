@@ -103,6 +103,7 @@ return static function (Router $router): void {
     $router->get('/espace/candidatures', [AccountController::class, 'candidatures']);
     $router->post('/espace/candidatures/{id}/accepter', [AccountController::class, 'applicationAccept']);
     $router->post('/espace/candidatures/{id}/refuser', [AccountController::class, 'applicationReject']);
+    $router->get('/espace/statistiques', [AccountController::class, 'statistiques']);
     $router->get('/espace/prestations', [AccountController::class, 'prestations']);
     $router->get('/espace/prestations/creer', [AccountController::class, 'creer']);
     $router->post('/espace/prestations/creer', [AccountController::class, 'creerSave']);

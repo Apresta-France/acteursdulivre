@@ -8,7 +8,10 @@ $online = count(array_filter($services, static fn (array $s): bool => ($s['statu
       <h1>Mes prestations</h1>
       <p><?= $online ?> en ligne · <?= count($services) ?> au total.</p>
     </div>
-    <a class="btn-navy" href="<?= e(url('/espace/prestations/creer')) ?>">Proposer une prestation</a>
+    <div class="dash-hero-actions">
+      <a class="btn-ghost" href="<?= e(url('/espace/statistiques')) ?>">Statistiques</a>
+      <a class="btn-navy" href="<?= e(url('/espace/prestations/creer')) ?>">Proposer une prestation</a>
+    </div>
   </div>
 
   <?php if (!empty($saved)): ?>
@@ -38,7 +41,11 @@ $online = count(array_filter($services, static fn (array $s): bool => ($s['statu
             <?php if (!empty($s['delay'])): ?> · <?= e((string) $s['delay']) ?><?php endif; ?>
           </div>
           <div class="side-foot">
-            <span><?= (int) ($s['reviews'] ?? 0) ?> avis</span>
+            <?php
+              $views = (int) (($serviceViews ?? [])[$s['slug'] ?? ''] ?? 0);
+              $reviewsN = (int) ($s['reviews'] ?? 0);
+            ?>
+            <span><?= $reviewsN ?> avis · <?= $views === 0 ? 'Aucune vue (30 j.)' : ($views . ' vue' . ($views > 1 ? 's' : '') . ' (30 j.)') ?></span>
             <strong><?= e((string) $s['price']) ?></strong>
           </div>
           <div class="auth-actions" style="margin-top: 14px;">

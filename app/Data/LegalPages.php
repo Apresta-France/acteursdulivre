@@ -153,7 +153,7 @@ final class LegalPages
                 'title' => '3. Description du service',
                 'blocks' => [
                     ['p' => 'La Plateforme permet notamment :'],
-                    ['html' => '<ul><li>de consulter un annuaire de professionnels du livre et des pages métier ;</li><li>de publier une vitrine, un CV, un portfolio et des formules à prix affiché ;</li><li>de commander une prestation packagée ou de publier un appel d\'offres ;</li><li>de candidater, d\'échanger par messagerie, d\'envoyer un devis et de suivre une mission par jalons (factures, déclarations de règlement, livraison, validation) ;</li><li>de laisser un avis après une mission réellement réalisée via la Plateforme ;</li><li>d\'accéder à un centre d\'aide, à un journal et à un formulaire de contact.</li></ul>'],
+                    ['html' => '<ul><li>de consulter un annuaire de professionnels du livre et des pages métier ;</li><li>de publier une vitrine, un CV, un portfolio et des formules à prix affiché ;</li><li>de consulter les compteurs de vues de sa vitrine et de ses prestations ;</li><li>de commander une prestation packagée ou de publier un appel d\'offres ;</li><li>de candidater, d\'échanger par messagerie, d\'envoyer un devis et de suivre une mission par jalons (factures, déclarations de règlement, livraison, validation) ;</li><li>de laisser un avis après une mission réellement réalisée via la Plateforme ;</li><li>d\'accéder à un centre d\'aide, à un journal et à un formulaire de contact.</li></ul>'],
                     ['p' => 'EDITIONS TESSERACT ne choisit pas le prestataire à la place du Client, ne pousse aucun profil contre rémunération publicitaire, et ne prend aucun droit sur les ouvrages. Elle n\'encaisse pas le prix des missions : Client et Prestataire se règlent hors Plateforme. La commission due par le Prestataire est calculée sur le montant hors taxes de la mission, dans les conditions des CGV.'],
                 ],
             ],
@@ -410,6 +410,7 @@ final class LegalPages
                     ['p' => 'Selon le contexte, elles sont également visibles : du Prestataire ou du Client cocontractant (profil public, messages, fichiers de mission, jalons) ; de l\'hébergeur Infomaniak Network SA (Suisse) ; du prestataire d\'envoi d\'e-mails lorsque le SMTP est configuré ; de Google Ireland Limited ou Meta Platforms Ireland Limited lorsque vous choisissez de vous connecter via ces services (ils reçoivent alors la confirmation de votre choix et nous transmettent l\'e-mail, le nom et, le cas échéant, la photo de profil).'],
                     ['p' => 'Aucun prestataire de paiement n\'est aujourd\'hui destinataire de données : la Plateforme n\'encaisse ni le prix des missions ni, à ce jour, la commission par un terminal de paiement en ligne.'],
                     ['p' => 'Les profils publics (vitrine, formules, avis) sont visibles par les visiteurs du site. Les manuscrits et pièces de mission ne sont pas publiés dans l\'annuaire.'],
+                    ['p' => 'Un prestataire connecté voit les compteurs agrégés de vues de sa vitrine et de ses prestations. Il n\'a pas accès à l\'identité des visiteurs.'],
                     ['p' => 'Aucune vente de fichiers n\'est pratiquée. Une autorité (CNIL, justice) peut être destinataire sur réquisition.'],
                 ],
             ],
@@ -463,7 +464,7 @@ final class LegalPages
                 'title' => '1. Ce que nous utilisons aujourd\'hui',
                 'blocks' => [
                     ['p' => 'La Plateforme n\'utilise pas de cookies publicitaires, de mesure d\'audience tierce ni de bandeau de consentement. Seuls des cookies et stockages strictement nécessaires au fonctionnement sont déposés.'],
-                    ['p' => 'Une mesure d\'audience interne, première partie et anonymisée, compte les pages, recherches et actions. Elle ne dépose pas de cookie dédié : un identifiant technique, valable uniquement pour la journée et non réversible, sert à dénombrer les visiteurs sans les suivre dans le temps. Ces statistiques ne sont ni cédées ni croisées avec d\'autres sites. Aucun bandeau n\'est donc affiché pour cet usage.'],
+                    ['p' => 'Une mesure d\'audience interne, première partie et anonymisée, compte les pages, recherches et actions. Elle ne dépose pas de cookie dédié : un identifiant technique, valable uniquement pour la journée et non réversible, sert à dénombrer les visiteurs sans les suivre dans le temps. Ces statistiques ne sont ni cédées ni croisées avec d\'autres sites. Les prestataires voient uniquement les compteurs agrégés de vues de leur vitrine et de leurs prestations, sans accès à l\'identité des visiteurs. Aucun bandeau n\'est donc affiché pour cet usage.'],
                     ['p' => 'Si des traceurs non essentiels étaient ajoutés plus tard (statistiques tierces, lecture vidéo tierce), un recueil de consentement serait mis en place avant leur dépôt, hors cookies indispensables.'],
                 ],
             ],

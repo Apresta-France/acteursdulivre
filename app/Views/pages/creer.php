@@ -3,7 +3,6 @@ $old = is_array($old ?? null) ? $old : [];
 $emptyPackage = ['id' => '', 'name' => '', 'description' => '', 'price' => '', 'delay' => ''];
 $selectedSpecialty = (string) ($old['specialty'] ?? '');
 $trades = is_array($trades ?? null) ? $trades : [];
-$specialties = $specialties ?? \Adl\Data\Catalog::specialties();
 $commission = (string) ($commission ?? '8');
 $firstFree = !empty($firstMissionFree);
 $standardCommission = (string) ($standardCommission ?? '8');
@@ -23,6 +22,13 @@ if ($options === []) {
 }
 $coverLabel = \Adl\Data\Catalog::tradeTitle($selected);
 $noTrades = $trades === [];
+$specialties = \Adl\Data\Catalog::specialtiesForTrade($selected, $selectedSpecialty);
+$specialtyOptionsByTrade = \Adl\Data\Catalog::specialtyOptionsByTrade();
+$specialtyHelps = [];
+foreach ($trades as $trade) {
+    $specialtyHelps[$trade] = \Adl\Data\Catalog::specialtyHelp((string) $trade);
+}
+$specialtyHelps[''] = \Adl\Data\Catalog::specialtyHelp('');
 ?>
 <div class="espace-page publish-page">
   <div class="espace-page-head">
@@ -39,7 +45,9 @@ $noTrades = $trades === [];
 
   <div class="publish-grid">
     <div>
-    <form class="param-form publish-form" method="post" action="<?= e(url(!empty($editing) ? '/espace/prestations/' . (int) ($serviceId ?? 0) . '/modifier' : '/espace/prestations/creer')) ?>" enctype="multipart/form-data" data-service-cover>
+    <form class="param-form publish-form" method="post" action="<?= e(url(!empty($editing) ? '/espace/prestations/' . (int) ($serviceId ?? 0) . '/modifier' : '/espace/prestations/creer')) ?>" enctype="multipart/form-data" data-service-cover
+          data-specialties-by-trade="<?= e(json_encode($specialtyOptionsByTrade, JSON_UNESCAPED_UNICODE)) ?>"
+          data-specialty-helps="<?= e(json_encode($specialtyHelps, JSON_UNESCAPED_UNICODE)) ?>">
       <?= csrf_field() ?>
 
       <div>
@@ -69,15 +77,15 @@ $noTrades = $trades === [];
         </div>
         <div>
           <label class="field" for="service-specialty">Spécialité</label>
-          <select class="input" id="service-specialty" name="specialty">
+          <select class="input" id="service-specialty" name="specialty" data-trade-specialty>
             <option value="">Choisir une spécialité</option>
             <?php foreach ($specialties as $genre): ?>
               <option value="<?= e($genre) ?>"<?= $selectedSpecialty === $genre ? ' selected' : '' ?>>
-                <?= e($genre === \Adl\Models\Taxonomy::GLOBAL_NAME ? 'Global — tous types de textes' : $genre) ?>
+                <?= e(\Adl\Data\Catalog::specialtyLabel($genre, $selected)) ?>
               </option>
             <?php endforeach; ?>
           </select>
-          <p class="field-help">Global convient si vous travaillez sur tous les types de textes.</p>
+          <p class="field-help" data-specialty-help><?= e(\Adl\Data\Catalog::specialtyHelp($selected)) ?></p>
         </div>
       </div>
 

@@ -100,6 +100,51 @@ final class Catalog
         'Juridique' => 'juristes',
     ];
 
+    /** Métiers dont la spécialité reste un genre de texte. */
+    public const TEXT_TRADES = [
+        'Écriture', 'Correction', 'Bêta-lecture', 'Traduction', 'Édition',
+        'Audio', 'Agent littéraire', 'Lecture éditoriale',
+    ];
+
+    /**
+     * Types de prestation propres à un métier (hors genres littéraires).
+     *
+     * @var array<string, list<string>>
+     */
+    public const TRADE_SPECIALTY_EXTRAS = [
+        'Illustration' => [
+            'Couverture', 'Intérieur', 'Album jeunesse', 'BD & graphique', 'Jeunesse',
+            'Personnages', 'Documentaire', 'Scientifique', 'Éditorial',
+        ],
+        'Maquette' => [
+            'Intérieur', 'Couverture', 'EPUB & numérique', 'Mise en pages complexe', 'Identité visuelle',
+        ],
+        'Impression' => [
+            'Offset', 'Numérique', 'Print-on-demand', 'Façonnage', 'Grand format',
+        ],
+        'Presse & com' => [
+            'Relations presse', 'Dossier de presse', 'Relations médias', 'Réseaux sociaux', 'Événementiel',
+        ],
+        'Librairie' => [
+            'Dépôt-vente', 'Conseil', 'Animation', 'Diffusion locale',
+        ],
+        'Salons' => [
+            'Stand', 'Organisation', 'Animation', 'Dédicaces',
+        ],
+        'Iconographie' => [
+            'Recherche d\'images', 'Droits', 'Archives', 'Documentaire', 'Couverture',
+        ],
+        'Photographie' => [
+            'Portrait d\'auteur', 'Reportage', 'Ouvrage', 'Studio', 'Couverture',
+        ],
+        'Reliure' => [
+            'Broché', 'Relié', 'Artisanale', 'Restauration', 'Édition limitée',
+        ],
+        'Juridique' => [
+            'Contrats d\'édition', 'Cession de droits', 'Propriété intellectuelle', 'Autoédition', 'Litiges',
+        ],
+    ];
+
     public const DELAYS = [
         'week' => 'Moins d\'une semaine',
         'mid' => '1 à 3 semaines',
@@ -121,6 +166,9 @@ final class Catalog
 
     public const BUDGET_MIN = 200;
     public const BUDGET_MAX = 4000;
+
+    /** Plafond des formats d'entrée (€ TTC) : au-delà, ce n'est plus un petit volume. */
+    private const ENTRY_PRICE_MAX = 350;
 
     /** @var list<string> */
     public const HOME_QUICK_PREFERRED = [
@@ -251,7 +299,214 @@ final class Catalog
     /** @return list<string> */
     public static function specialties(): array
     {
-        return Taxonomy::names(Taxonomy::KIND_SPECIALTY);
+        $enabled = Taxonomy::names(Taxonomy::KIND_SPECIALTY);
+        $disabled = [];
+        try {
+            foreach (Taxonomy::list(Taxonomy::KIND_SPECIALTY, false) as $row) {
+                if (empty($row['enabled'])) {
+                    $disabled[(string) $row['name']] = true;
+                }
+            }
+        } catch (\Throwable) {
+        }
+
+        $out = $enabled;
+        foreach (self::mappedSpecialtyNames() as $name) {
+            if ($name === '' || isset($disabled[$name]) || in_array($name, $out, true)) {
+                continue;
+            }
+            $out[] = $name;
+        }
+        return $out;
+    }
+
+    public static function tradeUsesTextSpecialties(string $trade): bool
+    {
+        return in_array($trade, self::TEXT_TRADES, true);
+    }
+
+    /** @return list<string> */
+    public static function textSpecialties(): array
+    {
+        return array_values(array_unique(array_merge([Taxonomy::GLOBAL_NAME], Profile::GENRES)));
+    }
+
+    /** @return list<string> */
+    public static function mappedSpecialtyNames(): array
+    {
+        $out = self::textSpecialties();
+        foreach (self::TRADE_SPECIALTY_EXTRAS as $names) {
+            foreach ($names as $name) {
+                if ($name !== '' && !in_array($name, $out, true)) {
+                    $out[] = $name;
+                }
+            }
+        }
+        return $out;
+    }
+
+    /**
+     * @param list<string> $keep
+     * @return list<string>
+     */
+    public static function specialtiesForTrade(string $trade, string $keep = ''): array
+    {
+        $known = array_flip(self::specialties());
+        if (isset(self::TRADE_SPECIALTY_EXTRAS[$trade]) && !self::tradeUsesTextSpecialties($trade)) {
+            $names = array_values(array_unique(array_merge(
+                [Taxonomy::GLOBAL_NAME],
+                self::TRADE_SPECIALTY_EXTRAS[$trade]
+            )));
+        } else {
+            $names = array_values(array_unique(array_merge(
+                self::textSpecialties(),
+                self::TRADE_SPECIALTY_EXTRAS[$trade] ?? []
+            )));
+        }
+
+        $out = [];
+        foreach ($names as $name) {
+            if (isset($known[$name])) {
+                $out[] = $name;
+            }
+        }
+
+        if (self::tradeUsesTextSpecialties($trade) || !isset(self::TRADE_SPECIALTY_EXTRAS[$trade])) {
+            $exclusive = [];
+            foreach (self::TRADE_SPECIALTY_EXTRAS as $extraNames) {
+                foreach ($extraNames as $name) {
+                    if ($name !== Taxonomy::GLOBAL_NAME && !in_array($name, Profile::GENRES, true)) {
+                        $exclusive[$name] = true;
+                    }
+                }
+            }
+            foreach (self::specialties() as $name) {
+                if (isset($exclusive[$name]) || in_array($name, $out, true)) {
+                    continue;
+                }
+                $out[] = $name;
+            }
+        }
+
+        if ($keep !== '' && !in_array($keep, $out, true)) {
+            $out[] = $keep;
+        }
+        return $out;
+    }
+
+    /**
+     * @param list<string> $trades
+     * @param list<string> $keep
+     * @return list<string>
+     */
+    public static function specialtiesForTrades(array $trades, array $keep = []): array
+    {
+        $out = [];
+        foreach ($trades as $trade) {
+            if (!is_string($trade) || $trade === '') {
+                continue;
+            }
+            foreach (self::specialtiesForTrade($trade) as $name) {
+                if (!in_array($name, $out, true)) {
+                    $out[] = $name;
+                }
+            }
+        }
+        foreach ($keep as $name) {
+            $name = is_string($name) ? $name : '';
+            if ($name !== '' && !in_array($name, $out, true)) {
+                $out[] = $name;
+            }
+        }
+        return $out;
+    }
+
+    public static function isAllowedSpecialty(string $trade, string $specialty, string $keep = ''): bool
+    {
+        return $specialty === '' || in_array($specialty, self::specialtiesForTrade($trade, $keep), true);
+    }
+
+    public static function specialtyLabel(string $name, string $trade = ''): string
+    {
+        if ($name !== Taxonomy::GLOBAL_NAME) {
+            return $name;
+        }
+        return self::tradeUsesTextSpecialties($trade)
+            ? 'Global — tous types de textes'
+            : 'Global — tous types de projets';
+    }
+
+    public static function specialtyHelp(string $trade = ''): string
+    {
+        if ($trade === '') {
+            return 'Choisissez d\'abord un métier pour voir les spécialités associées.';
+        }
+        return self::tradeUsesTextSpecialties($trade)
+            ? 'Le genre ou le type de textes concernés. Global si vous intervenez sur tous les genres.'
+            : 'Le type de prestation, en lien avec le métier choisi.';
+    }
+
+    /**
+     * @param list<string> $trades
+     */
+    public static function specialtyHelpForTrades(array $trades): string
+    {
+        $trades = array_values(array_filter($trades, static fn ($trade): bool => is_string($trade) && $trade !== ''));
+        if ($trades === []) {
+            return 'Choisissez d\'abord un métier pour voir les spécialités associées.';
+        }
+        $hasText = false;
+        $hasOther = false;
+        foreach ($trades as $trade) {
+            if (self::tradeUsesTextSpecialties($trade)) {
+                $hasText = true;
+            } else {
+                $hasOther = true;
+            }
+        }
+        if ($hasText && !$hasOther) {
+            return 'Types de textes que vous travaillez. Choisissez Global si vous intervenez sur tous les genres.';
+        }
+        if ($hasOther && !$hasText) {
+            return 'Types de prestations liés à vos métiers.';
+        }
+        return 'Genres ou types de prestations, selon vos métiers. Global si vous couvrez l\'ensemble.';
+    }
+
+    /** @return array<string, list<string>> */
+    public static function specialtiesByTrade(): array
+    {
+        $out = [];
+        foreach (self::trades() as $trade) {
+            $out[$trade] = self::specialtiesForTrade($trade);
+        }
+        return $out;
+    }
+
+    /** @return array<string, list<array{v: string, l: string}>> */
+    public static function specialtyOptionsByTrade(): array
+    {
+        $out = [];
+        foreach (self::specialtiesByTrade() as $trade => $names) {
+            $options = [];
+            foreach ($names as $name) {
+                $options[] = ['v' => $name, 'l' => self::specialtyLabel($name, $trade)];
+            }
+            $out[$trade] = $options;
+        }
+        return $out;
+    }
+
+    /** @return array<string, list<string>> */
+    public static function specialtyTradeIndex(): array
+    {
+        $out = [];
+        foreach (self::specialtiesByTrade() as $trade => $names) {
+            foreach ($names as $name) {
+                $out[$name][] = $trade;
+            }
+        }
+        return $out;
     }
 
     /** @return array{label: string, placeholder: string, unit?: string}|null */
@@ -956,12 +1211,115 @@ final class Catalog
         return $out;
     }
 
-    /** @return list<array<string, mixed>> */
-    public static function featuredServices(int $limit = 3, int $offset = 0): array
+    /**
+     * Accueil — mises en avant : fiches les plus renseignées (tarif, bannière, etc.), puis les plus récentes.
+     *
+     * @param list<array<string, mixed>> $exclude déjà retenues (formats d'entrée)
+     * @return list<array<string, mixed>>
+     */
+    public static function featuredServices(int $limit = 3, int $offset = 0, array $exclude = []): array
     {
-        $unique = [];
-        $seenUsers = [];
+        [$excludeIds, $excludeUsers] = self::homeExcludeMaps($exclude);
+        $picked = self::pickHomeServices('featured', $limit + $offset, $excludeIds, $excludeUsers);
+        return self::decorateHomeServices(array_slice($picked, $offset, $limit), 'home-feat-', $offset);
+    }
+
+    /**
+     * Accueil — formats d'entrée : prix affiché et petit montant ; couverture et fraîcheur en bonus.
+     *
+     * @param list<array<string, mixed>> $exclude déjà retenues
+     * @return list<array<string, mixed>>
+     */
+    public static function entryServices(int $limit = 3, array $exclude = []): array
+    {
+        [$excludeIds, $excludeUsers] = self::homeExcludeMaps($exclude);
+        $picked = self::pickHomeServices('entry', $limit, $excludeIds, $excludeUsers);
+        return self::decorateHomeServices($picked, 'home-entry-');
+    }
+
+    /**
+     * Les formats d'entrée sont choisis d'abord (petits tarifs), puis les mises en avant parmi le reste.
+     *
+     * @return array{featured: list<array<string, mixed>>, entry: list<array<string, mixed>>}
+     */
+    public static function homeServiceRails(int $featuredLimit = 3, int $entryLimit = 3): array
+    {
+        $entry = self::entryServices($entryLimit);
+        return [
+            'featured' => self::featuredServices($featuredLimit, 0, $entry),
+            'entry' => $entry,
+        ];
+    }
+
+    /**
+     * @param list<array<string, mixed>> $exclude
+     * @return array{0: array<int, true>, 1: array<int, true>}
+     */
+    private static function homeExcludeMaps(array $exclude): array
+    {
+        $excludeIds = [];
+        $excludeUsers = [];
+        foreach ($exclude as $service) {
+            if (!is_array($service)) {
+                continue;
+            }
+            $id = (int) ($service['id'] ?? 0);
+            if ($id > 0) {
+                $excludeIds[$id] = true;
+            }
+            $userId = (int) ($service['user_id'] ?? 0);
+            if ($userId > 0) {
+                $excludeUsers[$userId] = true;
+            }
+        }
+        return [$excludeIds, $excludeUsers];
+    }
+
+    /**
+     * @param 'featured'|'entry' $mode
+     * @param array<int, true> $excludeIds
+     * @param array<int, true> $excludeUsers
+     * @return list<array<string, mixed>>
+     */
+    private static function pickHomeServices(
+        string $mode,
+        int $limit,
+        array $excludeIds = [],
+        array $excludeUsers = []
+    ): array {
+        if ($limit < 1) {
+            return [];
+        }
+
+        $candidates = [];
         foreach (self::services() as $service) {
+            $id = (int) ($service['id'] ?? 0);
+            if ($id > 0 && isset($excludeIds[$id])) {
+                continue;
+            }
+            $userId = (int) ($service['user_id'] ?? 0);
+            if ($userId > 0 && isset($excludeUsers[$userId])) {
+                continue;
+            }
+            if ($mode === 'entry') {
+                $price = self::serviceListedPrice($service);
+                if ($price === null || $price > self::ENTRY_PRICE_MAX) {
+                    continue;
+                }
+            }
+            $candidates[] = $service;
+        }
+
+        usort(
+            $candidates,
+            $mode === 'entry'
+                ? [self::class, 'compareEntryServices']
+                : [self::class, 'compareFeaturedServices']
+        );
+
+        $out = [];
+        $seenUsers = [];
+        foreach ($candidates as $service) {
             $userId = (int) ($service['user_id'] ?? 0);
             if ($userId > 0) {
                 if (isset($seenUsers[$userId])) {
@@ -969,16 +1327,169 @@ final class Catalog
                 }
                 $seenUsers[$userId] = true;
             }
-            $unique[] = $service;
+            $out[] = $service;
+            if (count($out) >= $limit) {
+                break;
+            }
         }
+        return $out;
+    }
 
+    /**
+     * @param list<array<string, mixed>> $services
+     * @return list<array<string, mixed>>
+     */
+    private static function decorateHomeServices(array $services, string $slotPrefix, int $offset = 0): array
+    {
         $out = [];
-        foreach (array_slice($unique, $offset, $limit) as $i => $service) {
-            $service['homeSlotId'] = 'home-feat-' . ($offset + $i);
+        foreach (array_values($services) as $i => $service) {
+            $service['homeSlotId'] = $slotPrefix . ($offset + $i);
             $service['go'] = true;
             $out[] = $service;
         }
         return $out;
+    }
+
+    /**
+     * @param array<string, mixed> $a
+     * @param array<string, mixed> $b
+     */
+    private static function compareFeaturedServices(array $a, array $b): int
+    {
+        [$keyA, $extraA] = self::featuredInfoScore($a);
+        [$keyB, $extraB] = self::featuredInfoScore($b);
+        return ($keyB <=> $keyA)
+            ?: ($extraB <=> $extraA)
+            ?: (self::serviceTimestamp($b) <=> self::serviceTimestamp($a))
+            ?: ((int) ($b['id'] ?? 0) <=> (int) ($a['id'] ?? 0));
+    }
+
+    /**
+     * @param array<string, mixed> $a
+     * @param array<string, mixed> $b
+     */
+    private static function compareEntryServices(array $a, array $b): int
+    {
+        $priceA = self::serviceListedPrice($a) ?? PHP_INT_MAX;
+        $priceB = self::serviceListedPrice($b) ?? PHP_INT_MAX;
+        return (self::entryPriceBucket($priceA) <=> self::entryPriceBucket($priceB))
+            ?: ((int) !empty($b['has_image']) <=> (int) !empty($a['has_image']))
+            ?: (self::entryScopeScore($b) <=> self::entryScopeScore($a))
+            ?: (self::serviceTimestamp($b) <=> self::serviceTimestamp($a))
+            ?: ($priceA <=> $priceB)
+            ?: ((int) ($b['id'] ?? 0) <=> (int) ($a['id'] ?? 0));
+    }
+
+    /**
+     * Tarif et bannière pèsent le plus ; le reste (délai, texte, formules) départage.
+     *
+     * @param array<string, mixed> $service
+     * @return array{0: int, 1: int}
+     */
+    private static function featuredInfoScore(array $service): array
+    {
+        $key = (self::serviceListedPrice($service) !== null ? 1 : 0)
+            + (!empty($service['has_image']) ? 1 : 0);
+
+        $extra = 0;
+        if (trim((string) ($service['delay'] ?? '')) !== '') {
+            $extra++;
+        }
+        if (trim((string) ($service['specialty'] ?? '')) !== '') {
+            $extra++;
+        }
+        $excerptLen = mb_strlen(trim(plain_text((string) ($service['excerpt'] ?? ''))));
+        if ($excerptLen >= 120) {
+            $extra += 2;
+        } elseif ($excerptLen >= 40) {
+            $extra++;
+        }
+        if (is_array($service['packages'] ?? null) && $service['packages'] !== []) {
+            $extra++;
+        }
+        if (is_array($service['options'] ?? null) && $service['options'] !== []) {
+            $extra++;
+        }
+
+        return [$key, $extra];
+    }
+
+    /** @param array<string, mixed> $service */
+    private static function serviceListedPrice(array $service): ?int
+    {
+        $amount = self::priceAmount($service);
+        return ($amount !== null && $amount > 0) ? $amount : null;
+    }
+
+    private static function entryPriceBucket(int $price): int
+    {
+        if ($price <= 80) {
+            return 0;
+        }
+        if ($price <= 180) {
+            return 1;
+        }
+        if ($price <= self::ENTRY_PRICE_MAX) {
+            return 2;
+        }
+        return 3;
+    }
+
+    /**
+     * Petit périmètre annoncé (heure, chapitre, diagnostic, volume court).
+     *
+     * @param array<string, mixed> $service
+     */
+    private static function entryScopeScore(array $service): int
+    {
+        $parts = [
+            (string) ($service['title'] ?? ''),
+            plain_text((string) ($service['excerpt'] ?? '')),
+            (string) ($service['delay'] ?? ''),
+        ];
+        foreach ($service['packages'] ?? [] as $package) {
+            if (!is_array($package)) {
+                continue;
+            }
+            $parts[] = (string) ($package['name'] ?? '');
+            $parts[] = (string) ($package['description'] ?? '');
+        }
+        $text = search_norm(implode(' ', $parts));
+        if ($text === '') {
+            return 0;
+        }
+
+        $score = 0;
+        if (preg_match('/par heure|\ba l.heure\b|\bhoraire\b|\bseance\b|\bsession\b/', $text)) {
+            $score += 2;
+        }
+        if (preg_match('/diagnostic|echantillon|extrait|chapitre|avis de lecture|premiere lecture|petit format/', $text)) {
+            $score += 2;
+        }
+        if (preg_match('/(\d[\d ]{0,8}) signes/', $text, $m)) {
+            $n = (int) str_replace(' ', '', $m[1]);
+            if ($n > 0 && $n <= 40000) {
+                $score++;
+            }
+        }
+        if (preg_match('/(\d[\d ]{0,5}) pages/', $text, $m)) {
+            $n = (int) str_replace(' ', '', $m[1]);
+            if ($n > 0 && $n <= 50) {
+                $score++;
+            }
+        }
+        return $score;
+    }
+
+    /** @param array<string, mixed> $service */
+    private static function serviceTimestamp(array $service): int
+    {
+        $raw = trim((string) ($service['created_at'] ?? ''));
+        if ($raw === '') {
+            return 0;
+        }
+        $ts = strtotime($raw);
+        return $ts === false ? 0 : $ts;
     }
 
     /** @return list<array<string, mixed>> */
