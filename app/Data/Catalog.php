@@ -896,8 +896,21 @@ final class Catalog
     /** @return list<array<string, mixed>> */
     public static function featuredServices(int $limit = 3, int $offset = 0): array
     {
+        $unique = [];
+        $seenUsers = [];
+        foreach (self::services() as $service) {
+            $userId = (int) ($service['user_id'] ?? 0);
+            if ($userId > 0) {
+                if (isset($seenUsers[$userId])) {
+                    continue;
+                }
+                $seenUsers[$userId] = true;
+            }
+            $unique[] = $service;
+        }
+
         $out = [];
-        foreach (array_slice(self::services(), $offset, $limit) as $i => $service) {
+        foreach (array_slice($unique, $offset, $limit) as $i => $service) {
             $service['homeSlotId'] = 'home-feat-' . ($offset + $i);
             $service['go'] = true;
             $out[] = $service;
