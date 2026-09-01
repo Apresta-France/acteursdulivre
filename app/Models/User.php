@@ -87,6 +87,12 @@ final class User
         if ($offers) {
             self::ensureProfile($id);
         }
+        if ($role !== 'admin') {
+            try {
+                Analytics::action('inscription');
+            } catch (\Throwable) {
+            }
+        }
         return $id;
     }
 

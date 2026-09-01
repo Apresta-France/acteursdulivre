@@ -237,12 +237,61 @@ function search_card_media(array $item): string
     if (($item['kind'] ?? '') === 'prestations') {
         return service_cover_html((string) ($item['cat'] ?? ''), 'search-card-media');
     }
-    $initials = (string) ($item['initials'] ?? '');
-    if ($initials === '') {
-        $initials = mb_strtoupper(mb_substr((string) ($item['title'] ?? 'AD'), 0, 2));
+    return '';
+}
+
+/** @param array<string, mixed> $item */
+function search_card_html(array $item, bool $showNetwork = false): string
+{
+    $kind = (string) ($item['kind'] ?? '');
+    $isPerson = $kind === 'prestataires';
+    $isBusy = !empty($item['is_busy']);
+    $media = search_card_media($item);
+    $class = 'search-card';
+    if ($isBusy) {
+        $class .= ' is-busy';
     }
-    return '<div class="search-card-media search-card-media-plain"><span class="avatar" style="'
-        . e(avatar_style($initials, 42)) . '">' . e($initials) . '</span></div>';
+    if ($isPerson) {
+        $class .= ' search-card-person';
+    }
+
+    $kicker = '<div class="search-card-kicker"><span>' . e((string) ($item['kind_label'] ?? '')) . '</span>';
+    if (!empty($item['cat'])) {
+        $kicker .= '<span>' . e((string) $item['cat']) . '</span>';
+    }
+    if ($showNetwork && !empty($item['live'])) {
+        $kicker .= '<span class="search-live">Votre réseau</span>';
+    }
+    if ($isPerson && !empty($item['availability_label'])) {
+        $kicker .= '<span class="status-pill' . ($isBusy ? ' is-busy' : ' is-available') . '">'
+            . e((string) $item['availability_label']) . '</span>';
+    }
+    $kicker .= '</div>';
+
+    $title = '<div class="search-card-title">' . e((string) ($item['title'] ?? '')) . '</div>';
+    $sub = '<div class="search-card-sub">' . e((string) ($item['subtitle'] ?? '')) . '</div>';
+    $heading = $isPerson
+        ? '<div class="search-card-heading">' . avatar_html($item, 40, 'avatar search-card-avatar')
+            . '<div class="search-card-who">' . $title . $sub . '</div></div>'
+        : $title . $sub;
+
+    $metaBits = array_filter([
+        (string) ($item['meta'] ?? ''),
+        !empty($item['rating']) ? '★ ' . $item['rating'] : '',
+    ]);
+    $meta = '<div class="search-card-meta"><span>' . e(implode(' · ', $metaBits)) . '</span>';
+    if (!empty($item['price'])) {
+        $meta .= '<strong>' . e((string) $item['price']) . '</strong>';
+    }
+    $meta .= '</div>';
+
+    return '<a class="' . e($class) . '" href="' . e(url((string) ($item['href'] ?? '/'))) . '">'
+        . $media
+        . '<div class="search-card-body">'
+        . $kicker
+        . $heading
+        . $meta
+        . '</div></a>';
 }
 
 function redirect(string $path, int $code = 302): never

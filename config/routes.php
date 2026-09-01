@@ -23,6 +23,7 @@ return static function (Router $router): void {
     $router->get('/api/recherche', [PageController::class, 'searchApi']);
     $router->get('/api/villes', [PageController::class, 'citiesApi']);
     $router->get('/api/journal', [PageController::class, 'journalApi']);
+    $router->post('/api/stats', [PageController::class, 'statsCollect']);
     $router->get('/cron', [CronController::class, 'index']);
     $router->get('/cron/{task}', [CronController::class, 'run']);
     $router->get('/metiers/{slug}/{city}', [PageController::class, 'metierVille']);
@@ -137,6 +138,8 @@ return static function (Router $router): void {
     $router->get('/espace/facturation/{id}/pdf', [AccountController::class, 'facturePdf']);
 
     $router->get('/admin', [AdminController::class, 'dashboard']);
+    $router->get('/admin/statistiques', [AdminController::class, 'statistiques']);
+    $router->get('/admin/statistiques/live', [AdminController::class, 'statistiquesLive']);
     $router->get('/admin/verifications', [AdminController::class, 'verifications']);
     $router->get('/admin/verifications/{id}/justificatif', [AdminController::class, 'verificationFile']);
     $router->post('/admin/verifications/{id}', [AdminController::class, 'verificationSave']);

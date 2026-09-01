@@ -215,6 +215,112 @@
   }
   initHomeVideo();
 
+  function initPortfolioZoom() {
+    var triggers = Array.prototype.slice.call(document.querySelectorAll('[data-zoom]'));
+    var dialog = document.getElementById('portfolio-zoom');
+    if (!triggers.length || !dialog) return;
+
+    var img = dialog.querySelector('[data-zoom-img]');
+    var titleEl = document.getElementById('portfolio-zoom-title');
+    var captionEl = dialog.querySelector('[data-zoom-caption]');
+    var descEl = dialog.querySelector('[data-zoom-desc]');
+    var prevBtn = dialog.querySelector('[data-zoom-prev]');
+    var nextBtn = dialog.querySelector('[data-zoom-next]');
+    var index = 0;
+    var ignoreBackdrop = false;
+
+    function itemData(el) {
+      return {
+        src: el.getAttribute('href') || '',
+        title: el.getAttribute('data-zoom-title') || '',
+        caption: el.getAttribute('data-zoom-caption') || '',
+        desc: el.getAttribute('data-zoom-desc') || ''
+      };
+    }
+
+    function show(i) {
+      index = (i + triggers.length) % triggers.length;
+      var data = itemData(triggers[index]);
+      if (img) {
+        img.src = data.src;
+        img.alt = data.title || 'Exemple agrandi';
+      }
+      if (titleEl) titleEl.textContent = data.title;
+      if (captionEl) {
+        captionEl.textContent = data.caption;
+        captionEl.hidden = !data.caption;
+      }
+      if (descEl) {
+        descEl.textContent = data.desc;
+        descEl.hidden = !data.desc;
+      }
+      var many = triggers.length > 1;
+      if (prevBtn) prevBtn.hidden = !many;
+      if (nextBtn) nextBtn.hidden = !many;
+    }
+
+    function open(i) {
+      show(i);
+      document.body.classList.add('is-zoom-open');
+      ignoreBackdrop = true;
+      if (typeof dialog.showModal === 'function') dialog.showModal();
+      else dialog.setAttribute('open', '');
+      window.setTimeout(function () { ignoreBackdrop = false; }, 250);
+    }
+
+    function close() {
+      if (typeof dialog.close === 'function' && dialog.open) dialog.close();
+      else dialog.removeAttribute('open');
+      document.body.classList.remove('is-zoom-open');
+      if (img) {
+        img.removeAttribute('src');
+        img.alt = '';
+      }
+    }
+
+    function step(delta) {
+      if (triggers.length < 2) return;
+      show(index + delta);
+    }
+
+    triggers.forEach(function (el, i) {
+      el.addEventListener('click', function (event) {
+        event.preventDefault();
+        open(i);
+      });
+    });
+    dialog.querySelectorAll('[data-zoom-close]').forEach(function (btn) {
+      btn.addEventListener('click', function (event) {
+        event.stopPropagation();
+        close();
+      });
+    });
+    if (prevBtn) prevBtn.addEventListener('click', function (event) {
+      event.stopPropagation();
+      step(-1);
+    });
+    if (nextBtn) nextBtn.addEventListener('click', function (event) {
+      event.stopPropagation();
+      step(1);
+    });
+    dialog.addEventListener('click', function (event) {
+      if (ignoreBackdrop) return;
+      if (event.target === dialog) close();
+    });
+    dialog.addEventListener('close', function () {
+      document.body.classList.remove('is-zoom-open');
+      if (img) {
+        img.removeAttribute('src');
+        img.alt = '';
+      }
+    });
+    dialog.addEventListener('keydown', function (event) {
+      if (event.key === 'ArrowLeft') step(-1);
+      if (event.key === 'ArrowRight') step(1);
+    });
+  }
+  initPortfolioZoom();
+
   function initHeroMosaic() {
     var root = document.querySelector('[data-hero-mosaic]');
     if (!root) return;
@@ -460,28 +566,43 @@
     return '<div class="missions-list">' + rows + '</div>';
   }
 
+  function searchCardAvatar(item, size) {
+    var src = item.avatar_src || '';
+    var initials = String(item.initials || item.title || 'AD').slice(0, 2).toUpperCase();
+    if (src) {
+      return '<img class="avatar avatar-photo search-card-avatar" src="' + escapeHtml(src) + '" alt="" width="' + size + '" height="' + size + '">';
+    }
+    var bg = ((initials.charCodeAt(0) || 65) * 7) % 2 === 0 ? '#15212f' : '#D85D3F';
+    return '<span class="avatar search-card-avatar" style="width:' + size + 'px;height:' + size + 'px;min-width:' + size + 'px;border-radius:50%;background:' + bg + ';color:#FFF;display:flex;align-items:center;justify-content:center;font-family:\'Space Grotesk\',monospace;font-size:13px;">' + escapeHtml(initials) + '</span>';
+  }
+
   function renderCards(items) {
     if (!items || !items.length) {
       return '<div class="search-empty"><strong>Aucun résultat pour cette recherche.</strong><span>Essayez un métier (illustration, traduction…) ou publiez une mission.</span></div>';
     }
     return items.map(function (item) {
+      var isPerson = item.kind === 'prestataires';
       var media = item.thumb
         ? '<div class="search-card-media" style="background-image:url(\'' + escapeHtml(item.thumb) + '\')"></div>'
         : (item.kind === 'prestations'
           ? '<div class="search-card-media service-cover"' + (item.cover ? ' style="--service-cover-photo:url(\'' + escapeHtml(item.cover) + '\')"' : '') + ' role="img" aria-label="Visuel ' + escapeHtml(item.cat || 'Prestation') + '"><span class="service-cover-photo" aria-hidden="true"></span><span class="service-cover-kicker">acteursdulivre.fr</span><span class="service-cover-type">' + escapeHtml(item.cat || 'Prestation') + '</span></div>'
-          : '<div class="search-card-media search-card-media-plain"><span class="avatar">' + escapeHtml((item.initials || item.title || 'AD').slice(0, 2).toUpperCase()) + '</span></div>');
-      return '<a class="search-card' + (item.is_busy ? ' is-busy' : '') + '" href="' + escapeHtml(item.href) + '">' + media +
+          : '');
+      var title = '<div class="search-card-title">' + escapeHtml(item.title) + '</div>';
+      var sub = '<div class="search-card-sub">' + escapeHtml(item.subtitle) + '</div>';
+      var heading = isPerson
+        ? '<div class="search-card-heading">' + searchCardAvatar(item, 40) + '<div class="search-card-who">' + title + sub + '</div></div>'
+        : title + sub;
+      return '<a class="search-card' + (item.is_busy ? ' is-busy' : '') + (isPerson ? ' search-card-person' : '') + '" href="' + escapeHtml(item.href) + '">' + media +
         '<div class="search-card-body">' +
           '<div class="search-card-kicker"><span>' + escapeHtml(item.kind_label) + '</span>' +
             (item.cat ? '<span>' + escapeHtml(item.cat) + '</span>' : '') +
             (item.live ? '<span class="search-live">Votre réseau</span>' : '') +
-            (item.kind === 'prestataires' && item.availability_label
+            (isPerson && item.availability_label
               ? '<span class="status-pill' + (item.is_busy ? ' is-busy' : ' is-available') + '">' + escapeHtml(item.availability_label) + '</span>'
               : '') +
           '</div>' +
-          '<div class="search-card-title">' + escapeHtml(item.title) + '</div>' +
-          '<div class="search-card-sub">' + escapeHtml(item.subtitle) + '</div>' +
-          '<div class="search-card-meta"><span>' + escapeHtml(item.meta || '') + '</span>' +
+          heading +
+          '<div class="search-card-meta"><span>' + escapeHtml([item.meta || '', item.rating ? '★ ' + item.rating : ''].filter(Boolean).join(' · ')) + '</span>' +
             (item.price ? '<strong>' + escapeHtml(item.price) + '</strong>' : '') +
           '</div>' +
         '</div></a>';
@@ -809,6 +930,7 @@
     var update = debounce(function () {
       var params = currentParams();
       fetchSearch(api, params, function (data) {
+        if (window.AdlStats) window.AdlStats.action('filtre');
         results.innerHTML = resultsKind === 'rows' ? renderMissionRows(data.results || []) : renderCards(data.results || []);
         var n = data.count || 0;
         if (countEl) countEl.textContent = '· ' + n + ' ' + countUnit + (n > 1 ? 's' : '');
@@ -1108,9 +1230,11 @@
     var data = sharePayload(root);
     if (nativeBtn && navigator.share) {
       navigator.share({ title: data.title, text: data.text, url: data.url }).catch(function () {});
+      if (window.AdlStats) window.AdlStats.action('partage');
       return;
     }
     var network = copyBtn ? copyBtn.getAttribute('data-share-network') : '';
+    if (window.AdlStats) window.AdlStats.action('partage');
     copyText(data.url).then(function () {
       showToast(network === 'instagram'
         ? 'Lien copié. Collez-le dans Instagram (story, message ou bio).'
@@ -1702,5 +1826,77 @@
     observed.forEach(function (item) {
       observer.observe(item.el);
     });
+  }
+
+  var statsEndpoint = document.body.getAttribute('data-stats') || '';
+  window.AdlStats = {
+    action: function (name) {
+      if (!statsEndpoint || !name) return;
+      var body = new URLSearchParams();
+      body.set('a', name);
+      try {
+        if (navigator.sendBeacon) {
+          navigator.sendBeacon(statsEndpoint, body);
+          return;
+        }
+      } catch (e) {}
+      fetch(statsEndpoint, { method: 'POST', body: body, credentials: 'same-origin', keepalive: true }).catch(function () {});
+    }
+  };
+  document.addEventListener('click', function (event) {
+    var el = event.target.closest('[data-stat]');
+    if (!el) return;
+    window.AdlStats.action(el.getAttribute('data-stat') || '');
+  });
+
+  var liveBox = document.querySelector('[data-stats-live]');
+  if (liveBox) {
+    var liveUrl = liveBox.getAttribute('data-live-url');
+    function fmtInt(n) {
+      n = parseInt(n, 10) || 0;
+      return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, '\u00a0');
+    }
+    function fillList(sel, rows, empty) {
+      var ul = liveBox.querySelector(sel);
+      if (!ul) return;
+      if (!rows || !rows.length) {
+        ul.innerHTML = '<li class="admin-muted">' + empty + '</li>';
+        return;
+      }
+      ul.innerHTML = rows.map(function (row) {
+        return '<li><span>' + escapeHtml(row.label || '') + '</span><em>' + fmtInt(row.n) + '</em></li>';
+      }).join('');
+    }
+    function refreshLive() {
+      if (!liveUrl || document.hidden) return;
+      fetch(liveUrl, { credentials: 'same-origin', headers: { Accept: 'application/json' } })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (data) {
+          if (!data) return;
+          var nowEl = liveBox.querySelector('[data-live-now]');
+          var m15 = liveBox.querySelector('[data-live-15]');
+          var m60 = liveBox.querySelector('[data-live-60]');
+          var upd = liveBox.querySelector('[data-live-updated]');
+          if (nowEl) nowEl.textContent = fmtInt(data.now);
+          if (m15) m15.textContent = fmtInt(data.views_15);
+          if (m60) m60.textContent = fmtInt(data.views_60);
+          if (upd) upd.textContent = data.updated || '';
+          var chart = liveBox.querySelector('[data-live-chart]');
+          if (chart && data.minutes) {
+            var max = 1;
+            data.minutes.forEach(function (m) { max = Math.max(max, parseInt(m.n, 10) || 0); });
+            chart.innerHTML = data.minutes.map(function (m) {
+              var h = Math.max(4, Math.round(72 * (parseInt(m.n, 10) || 0) / max));
+              return '<span title="' + escapeHtml((m.t || '') + ' · ' + (m.n || 0)) + '" style="height:' + h + 'px"></span>';
+            }).join('');
+          }
+          fillList('[data-live-pages]', data.pages, 'Aucune visite récente.');
+          fillList('[data-live-profiles]', data.profiles, 'Aucun profil consulté.');
+          fillList('[data-live-searches]', data.searches, 'Aucune recherche récente.');
+          fillList('[data-live-actions]', data.actions, 'Aucune action récente.');
+        })
+        .catch(function () {});
+    }
+    setInterval(refreshLive, 12000);
   }
 })();

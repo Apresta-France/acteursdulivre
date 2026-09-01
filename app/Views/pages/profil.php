@@ -147,20 +147,55 @@ $isOwnProfile = $viewer && (int) ($viewer['id'] ?? 0) === (int) ($p['user_id'] ?
         <h2>Créations et exemples</h2>
         <div class="portfolio-grid">
           <?php foreach ($p['portfolio'] as $item): ?>
+            <?php
+              $itemTitle = (string) ($item['title'] ?? '');
+              $itemCaption = (string) ($item['caption'] ?? $item['kind_label'] ?? '');
+              $itemDesc = (string) ($item['description'] ?? '');
+            ?>
             <figure class="portfolio-item">
               <?php if (!empty($item['img'])): ?>
-                <div class="portfolio-item-media" style="background-image:url('<?= e((string) $item['img']) ?>')"></div>
+                <a
+                  class="portfolio-item-media"
+                  href="<?= e((string) $item['img']) ?>"
+                  style="background-image:url('<?= e((string) $item['img']) ?>')"
+                  data-zoom
+                  data-zoom-title="<?= e($itemTitle) ?>"
+                  data-zoom-caption="<?= e($itemCaption) ?>"
+                  data-zoom-desc="<?= e($itemDesc) ?>"
+                  aria-haspopup="dialog"
+                  aria-controls="portfolio-zoom"
+                  aria-label="<?= e('Agrandir : ' . ($itemTitle !== '' ? $itemTitle : 'exemple')) ?>"
+                >
+                  <span class="portfolio-item-zoom" aria-hidden="true"><?= icon('search', 16) ?></span>
+                </a>
               <?php endif; ?>
               <figcaption>
-                <strong><?= e((string) ($item['title'] ?? '')) ?></strong>
-                <span><?= e((string) ($item['caption'] ?? $item['kind_label'] ?? '')) ?></span>
-                <?php if (!empty($item['description'])): ?>
-                  <p><?= e((string) $item['description']) ?></p>
+                <strong><?= e($itemTitle) ?></strong>
+                <span><?= e($itemCaption) ?></span>
+                <?php if ($itemDesc !== ''): ?>
+                  <p><?= e($itemDesc) ?></p>
                 <?php endif; ?>
               </figcaption>
             </figure>
           <?php endforeach; ?>
         </div>
+        <dialog class="zoom-modal" id="portfolio-zoom" aria-labelledby="portfolio-zoom-title">
+          <div class="zoom-modal-inner">
+            <div class="zoom-modal-bar">
+              <h2 id="portfolio-zoom-title"></h2>
+              <button type="button" class="zoom-modal-close" data-zoom-close aria-label="Fermer">×</button>
+            </div>
+            <figure class="zoom-modal-figure">
+              <img data-zoom-img alt="">
+              <figcaption>
+                <span data-zoom-caption hidden></span>
+                <p data-zoom-desc hidden></p>
+              </figcaption>
+            </figure>
+          </div>
+          <button type="button" class="zoom-modal-nav is-prev" data-zoom-prev aria-label="Exemple précédent" hidden>‹</button>
+          <button type="button" class="zoom-modal-nav is-next" data-zoom-next aria-label="Exemple suivant" hidden>›</button>
+        </dialog>
       <?php endif; ?>
 
       <?php if (!empty($p['experiences'])): ?>
@@ -246,7 +281,7 @@ $isOwnProfile = $viewer && (int) ($viewer['id'] ?? 0) === (int) ($p['user_id'] ?
                         if ($tradeName === '' || !\Adl\Data\Catalog::tradeCityHasResults($tradeName, $area)) {
                             continue;
                         }
-                        $geoLinks[] = '<a href="' . e(url(\Adl\Data\Catalog::tradeCityPath($tradeName, $area))) . '">' . e(\Adl\Data\Catalog::tradeGeoLabel($tradeName) . ' à ' . ($p['city'] ?? $area)) . '</a>';
+                        $geoLinks[] = '<a href="' . e(url(\Adl\Data\Catalog::catalogPath('prestataires', $tradeName, $area))) . '">' . e(\Adl\Data\Catalog::tradeGeoLabel($tradeName) . ' à ' . ($p['city'] ?? $area)) . '</a>';
                     }
                 }
                 echo e($loc);

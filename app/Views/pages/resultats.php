@@ -133,31 +133,7 @@ if ($searchCity !== '') {
           </div>
         <?php else: ?>
           <?php foreach ($results as $item): ?>
-            <a class="search-card<?= !empty($item['is_busy']) ? ' is-busy' : '' ?>" href="<?= e(url((string) $item['href'])) ?>">
-              <?= search_card_media($item) ?>
-              <div class="search-card-body">
-                <div class="search-card-kicker">
-                  <span><?= e((string) $item['kind_label']) ?></span>
-                  <?php if (!empty($item['cat'])): ?><span><?= e((string) $item['cat']) ?></span><?php endif; ?>
-                  <?php if (!empty($item['live'])): ?><span class="search-live">Votre réseau</span><?php endif; ?>
-                  <?php if (($item['kind'] ?? '') === 'prestataires' && !empty($item['availability_label'])): ?>
-                    <span class="status-pill<?= !empty($item['is_busy']) ? ' is-busy' : ' is-available' ?>"><?= e((string) $item['availability_label']) ?></span>
-                  <?php endif; ?>
-                </div>
-                <div class="search-card-title"><?= e((string) $item['title']) ?></div>
-                <div class="search-card-sub"><?= e((string) $item['subtitle']) ?></div>
-                <div class="search-card-meta">
-                  <span><?php
-                    $metaBits = array_filter([
-                        (string) $item['meta'],
-                        !empty($item['rating']) ? '★ ' . $item['rating'] : '',
-                    ]);
-                    echo e(implode(' · ', $metaBits));
-                  ?></span>
-                  <?php if (!empty($item['price'])): ?><strong><?= e((string) $item['price']) ?></strong><?php endif; ?>
-                </div>
-              </div>
-            </a>
+            <?= search_card_html($item, true) ?>
           <?php endforeach; ?>
         <?php endif; ?>
       </div>

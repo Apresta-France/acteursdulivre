@@ -58,7 +58,7 @@
   <?php if (!empty($isArticle) && !empty($article['img'])): ?>
   <link rel="preload" as="image" href="<?= e((string) $article['img']) ?>">
   <?php endif; ?>
-  <link rel="stylesheet" href="<?= e(asset('css/app.css')) ?>?v=m110">
+  <link rel="stylesheet" href="<?= e(asset('css/app.css')) ?>?v=m115">
   <link rel="icon" href="<?= e(asset('img/favicon.ico')) ?>?v=3" sizes="any">
   <link rel="icon" type="image/png" href="<?= e(asset('img/favicon-32x32.png')) ?>?v=3" sizes="32x32">
   <link rel="apple-touch-icon" href="<?= e(asset('img/apple-touch-icon.png')) ?>?v=3">
@@ -69,7 +69,7 @@
   ) ?></script>
   <?php endif; ?>
 </head>
-<body>
+<body data-stats="<?= e(url('/api/stats')) ?>">
   <div class="nav-backdrop" data-nav-close hidden></div>
   <div class="site-shell">
     <div class="site-canvas">
@@ -309,6 +309,6 @@
       </footer>
     </div>
   </div>
-  <script src="<?= e(asset('js/app.js')) ?>?v=m56"></script>
+  <script src="<?= e(asset('js/app.js')) ?>?v=m59"></script>
 </body>
 </html>

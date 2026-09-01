@@ -11,6 +11,12 @@ final class View
 {
     public static function render(string $name, array $data = [], ?string $layout = 'layouts/site'): void
     {
+        if ($layout === 'layouts/site') {
+            try {
+                \Adl\Models\Analytics::hit();
+            } catch (\Throwable) {
+            }
+        }
         $content = self::fetch($name, $data);
         if ($layout === null) {
             echo $content;

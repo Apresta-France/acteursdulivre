@@ -877,7 +877,7 @@ acteursdulivre.fr met en relation des porteurs de projet (auteurs, éditeurs, co
 - Prestations : {$home}prestations
 - Appels d'offres : {$home}missions
 - Métiers : {$home}metiers/correction
-- Pages locales (uniquement s'il y a des résultats) : {$home}correctrice/paris
+- Pages locales (ex. {$home}correctrice/paris) : redirection vers l'annuaire filtré
 - Journal (30 articles — métiers, tarifs, contrats, diffusion) : {$home}journal
 - Contact : {$home}contact
 - Mentions légales : {$home}mentions-legales

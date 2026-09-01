@@ -14,6 +14,7 @@ use Adl\Core\Request;
 use Adl\Core\View;
 use Adl\Data\AdminCatalog;
 use Adl\Data\Catalog;
+use Adl\Models\Analytics;
 use Adl\Models\Article;
 use Adl\Models\Commission;
 use Adl\Models\Conversation;
@@ -102,6 +103,78 @@ final class AdminController
             ],
             'activity' => $activity,
         ]);
+    }
+
+    public function statistiques(Request $request): void
+    {
+        try {
+            $report = Analytics::dashboard($request);
+        } catch (Throwable) {
+            $report = [
+                'period' => [
+                    'id' => '7j',
+                    'label' => '7 jours',
+                    'range_label' => '—',
+                    'prev_label' => '—',
+                    'jours' => 21,
+                    'du' => '',
+                    'au' => '',
+                    'hourly' => false,
+                ],
+                'compare' => $request->string('compare', '1') !== '0',
+                'periods' => [],
+                'kpis' => [],
+                'series' => [],
+                'pages' => [],
+                'paths' => [],
+                'profiles' => [],
+                'services' => [],
+                'missions' => [],
+                'articles' => [],
+                'metiers' => [],
+                'searches' => [],
+                'search_empty' => [],
+                'search_types' => [],
+                'search_cities' => [],
+                'actions' => [],
+                'referrers' => [],
+                'devices' => [],
+                'entries' => [],
+                'hours' => [],
+                'live' => [
+                    'now' => 0,
+                    'views_15' => 0,
+                    'views_60' => 0,
+                    'minutes' => [],
+                    'pages' => [],
+                    'profiles' => [],
+                    'searches' => [],
+                    'actions' => [],
+                    'updated' => '',
+                ],
+            ];
+        }
+        $this->page('stats', 'admin/statistiques', $report);
+    }
+
+    public function statistiquesLive(Request $request): void
+    {
+        Auth::requireAdmin();
+        try {
+            json_response(Analytics::liveSnapshot());
+        } catch (Throwable) {
+            json_response([
+                'now' => 0,
+                'views_15' => 0,
+                'views_60' => 0,
+                'minutes' => [],
+                'pages' => [],
+                'profiles' => [],
+                'searches' => [],
+                'actions' => [],
+                'updated' => '',
+            ]);
+        }
     }
 
     public function verifications(Request $request): void

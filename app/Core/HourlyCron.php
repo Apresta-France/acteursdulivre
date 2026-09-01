@@ -74,6 +74,10 @@ final class HourlyCron
                 'pending_project' => 0,
                 'invoices_overdue' => 0,
                 'delivery_validation' => 0,
+                'stats_pruned_minute' => 0,
+                'stats_pruned_uniques' => 0,
+                'stats_pruned_live' => 0,
+                'stats_pruned_daily' => 0,
             ];
             $errors = [];
 
@@ -93,6 +97,16 @@ final class HourlyCron
                 }
             } catch (Throwable $e) {
                 $errors[] = 'newsletter: ' . $e->getMessage();
+            }
+
+            try {
+                $pruned = \Adl\Models\Analytics::prune();
+                $stats['stats_pruned_minute'] = $pruned['pruned_minute'];
+                $stats['stats_pruned_uniques'] = $pruned['pruned_uniques'];
+                $stats['stats_pruned_live'] = $pruned['pruned_live'];
+                $stats['stats_pruned_daily'] = $pruned['pruned_daily'];
+            } catch (Throwable $e) {
+                $errors[] = 'analytics: ' . $e->getMessage();
             }
 
             Setting::set('cron_hourly_last_run', date('c'));

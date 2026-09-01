@@ -21,7 +21,8 @@ final class App
         $path = $request->path();
         $csrfExempt = $path === '/install'
             || str_starts_with($path, '/install')
-            || str_starts_with($path, '/newsletter/desinscription/');
+            || str_starts_with($path, '/newsletter/desinscription/')
+            || $path === '/api/stats';
         if ($request->isPost() && !$csrfExempt) {
             if (!Csrf::check($request->string('_token'))) {
                 http_response_code(419);

@@ -338,6 +338,21 @@ final class Catalog
         return '/' . self::tradeGeoSlug($trade) . '/' . $citySlug;
     }
 
+    public static function catalogPath(string $type, string $trade = '', string $citySlug = ''): string
+    {
+        $hub = self::typePath($type);
+        $query = [];
+        if ($trade !== '') {
+            $query[] = 'cat=' . rawurlencode($trade);
+        }
+        $citySlug = Cities::canonicalArea($citySlug);
+        if ($citySlug !== '') {
+            $query[] = 'ville=' . rawurlencode($citySlug);
+        }
+
+        return $query === [] ? $hub : $hub . '?' . implode('&', $query);
+    }
+
     public static function typePath(string $type): string
     {
         return match ($type) {
@@ -568,7 +583,7 @@ final class Catalog
             $city = self::cityFromQuery($q, $trade);
         }
         if ($type === 'all' && $trade !== null && $city !== '' && self::tradeCityHasResults($trade, $city)) {
-            $target = self::tradeCityPath($trade, $city);
+            $target = self::catalogPath('prestataires', $trade, $city);
             return $target !== $currentPath ? $target : null;
         }
         if ($type === 'all' && $trade !== null && $city === '' && ($q === '' || self::resolveTrade($q) === $trade)) {
@@ -837,6 +852,7 @@ final class Catalog
                     'hourly_rate' => (string) ($profile['hourly_rate'] ?? ''),
                     'thumb' => '',
                     'initials' => Profile::initials($profile),
+                    'avatar_src' => user_avatar_src($profile),
                     'excerpt' => (string) ($profile['presentation'] ?? ''),
                     'city' => (string) ($profile['city'] ?? ''),
                     'city_slug' => (string) ($profile['city_slug'] ?? ''),
@@ -1080,7 +1096,7 @@ final class Catalog
                 'slug' => $row['slug'],
                 'label' => $row['label'],
                 'n' => $row['n'],
-                'href' => self::tradeCityPath($trade, $row['slug']),
+                'href' => self::catalogPath('prestataires', $trade, $row['slug']),
             ];
         }
         return $out;

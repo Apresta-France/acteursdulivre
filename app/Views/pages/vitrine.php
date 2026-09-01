@@ -146,7 +146,7 @@ if ($rateKind === 'percent') {
             ];
             require ADL_ROOT . '/app/Views/partials/city-field.php';
           ?>
-          <p class="field-help">Choisissez une commune dans la liste : elle sert aux pages locales (ex. correctrice à Paris).</p>
+          <p class="field-help">Choisissez une commune dans la liste : elle sert à filtrer l'annuaire (ex. correctrice à Paris).</p>
         </div>
         <div>
           <label class="field" for="availability">Précision (optionnel)</label>

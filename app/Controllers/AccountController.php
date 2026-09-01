@@ -9,6 +9,7 @@ use Adl\Core\Request;
 use Adl\Core\View;
 use Adl\Data\Catalog;
 use Adl\Data\Onboarding;
+use Adl\Models\Analytics;
 use Adl\Models\Application;
 use Adl\Models\Commission;
 use Adl\Models\Conversation;
@@ -603,6 +604,7 @@ final class AccountController
                 'package_name' => $selected['name'] ?? null,
                 'options' => $pickedOptions,
             ]);
+            Analytics::action('commande');
             Conversation::open((int) $user['id'], (int) $service['user_id'], [
                 'subject' => (string) $service['title'],
                 'order_id' => (int) $order['id'],
@@ -1463,6 +1465,7 @@ final class AccountController
         $user = Auth::requireUser();
         try {
             Conversation::send((int) $id, (int) $user['id'], $request->string('body'), $request->file('attachment'));
+            Analytics::action('message');
         } catch (\Throwable $e) {
             flash('error', user_error_message($e));
         }
@@ -1495,6 +1498,7 @@ final class AccountController
                 $request->string('delay') ?: null,
                 $request->string('message')
             );
+            Analytics::action('candidature');
             flash('saved', 'Candidature envoyée. Le porteur de projet a été prévenu.');
         } catch (\Throwable $e) {
             flash('error', user_error_message($e));
@@ -1537,6 +1541,7 @@ final class AccountController
         $user = Auth::requireSeeker();
         try {
             $on = Favorite::toggle((int) $user['id'], (int) $id);
+            Analytics::action('favori');
             flash('saved', $on ? 'Prestation ajoutée aux favoris.' : 'Prestation retirée des favoris.');
         } catch (\Throwable $e) {
             flash('error', user_error_message($e));

@@ -29,7 +29,7 @@ final class AdminCatalog
         $user = Auth::user();
         $data = array_merge(self::shared($user, $screen, $extra['query'] ?? ''), self::content(), self::liveOverlay(), $extra);
         $data['screen'] = $screen;
-        $flags = ['dash', 'verif', 'moderation', 'users', 'catalogue', 'missions', 'finances', 'litiges', 'avis', 'preouverture', 'cms', 'reglages'];
+        $flags = ['dash', 'verif', 'moderation', 'users', 'catalogue', 'missions', 'finances', 'litiges', 'avis', 'preouverture', 'cms', 'reglages', 'stats'];
         foreach ($flags as $id) {
             $data['is' . ucfirst($id)] = $id === $screen;
         }
@@ -50,6 +50,7 @@ final class AdminCatalog
             ['litiges', 'Litiges', $badges['litiges'], '', '/admin/litiges'],
             ['avis', 'Avis', $badges['avis'], '', '/admin/avis'],
             ['users', 'Utilisateurs', '', 'Données', '/admin/utilisateurs'],
+            ['stats', 'Statistiques', '', '', '/admin/statistiques'],
             ['catalogue', 'Prestations', '', '', '/admin/prestations'],
             ['missions', 'Appels d\'offres', '', '', '/admin/missions'],
             ['finances', 'Commandes & finances', $badges['finances'], '', '/admin/finances'],
@@ -117,6 +118,7 @@ final class AdminCatalog
             'litiges' => 'Litiges',
             'avis' => 'Avis',
             'users' => 'Utilisateurs',
+            'stats' => 'Statistiques',
             'catalogue' => 'Prestations',
             'missions' => 'Appels d\'offres',
             'finances' => 'Commandes & finances',

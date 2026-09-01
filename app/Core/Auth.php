@@ -62,6 +62,12 @@ final class Auth
         if ($remember) {
             self::issueRemember((int) $user['id']);
         }
+        if (($user['role'] ?? '') !== 'admin') {
+            try {
+                \Adl\Models\Analytics::action('connexion');
+            } catch (\Throwable) {
+            }
+        }
     }
 
     public static function logout(): void
