@@ -225,7 +225,19 @@ body.has-founder-banner .share-toast { bottom: 72px; }
   align-items: center;
   gap: 30px;
 }
-.brand img { height: 58px; width: auto; display: block; }
+.brand {
+  flex: 0 0 auto;
+  display: block;
+}
+.brand picture { display: block; }
+.brand img {
+  height: 58px;
+  width: auto;
+  max-width: none;
+  aspect-ratio: auto;
+  object-fit: contain;
+  display: block;
+}
 .search {
   flex: 1 1 280px;
   min-width: 220px;
