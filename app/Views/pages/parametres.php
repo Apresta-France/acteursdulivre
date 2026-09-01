@@ -108,22 +108,52 @@ $oauthProviders = OAuth::enabledProviders();
     </div>
   </form>
 
-  <form method="post" action="<?= e(url('/espace/parametres/facturation')) ?>" class="param-form" style="margin-top: 36px;">
+  <form method="post" action="<?= e(url('/espace/parametres/facturation')) ?>" class="param-form" style="margin-top: 36px;" data-billing-ids>
     <?= csrf_field() ?>
     <p class="field">Facturation</p>
-    <p class="espace-page-lead" style="margin-top: 0;">Mentions reprises sur votre facture de commission. L'IBAN n'est jamais utilisé pour encaisser une mission.</p>
-    <label class="field" for="company_name">Raison sociale</label>
-    <input class="input" id="company_name" name="company_name" value="<?= e((string) ($companyName ?? '')) ?>">
+    <p class="espace-page-lead" style="margin-top: 0;">Mentions reprises sur votre facture de commission. Le SIREN (9 chiffres) est l’identifiant exigé par la facturation électronique française. L'IBAN n'est jamais utilisé pour encaisser une mission.</p>
     <div class="auth-name-grid">
       <div>
-        <label class="field" for="siret">SIRET</label>
-        <input class="input" id="siret" name="siret" inputmode="numeric" autocomplete="off" value="<?= e((string) ($siret ?? '')) ?>">
+        <label class="field" for="company_name">Raison sociale</label>
+        <input class="input" id="company_name" name="company_name" value="<?= e((string) ($companyName ?? '')) ?>">
       </div>
       <div>
-        <label class="field" for="vat_number">N° TVA</label>
-        <input class="input" id="vat_number" name="vat_number" autocomplete="off" value="<?= e((string) ($vatNumber ?? '')) ?>">
+        <label class="field" for="legal_form">Forme juridique</label>
+        <select class="input" id="legal_form" name="legal_form">
+          <option value="">—</option>
+          <?php foreach (($legalForms ?? []) as $code => $label): ?>
+            <option value="<?= e((string) $code) ?>"<?= ($legalForm ?? '') === $code ? ' selected' : '' ?>><?= e((string) $label) ?></option>
+          <?php endforeach; ?>
+        </select>
       </div>
     </div>
+    <div class="auth-name-grid">
+      <div>
+        <label class="field" for="siren">SIREN</label>
+        <input class="input" id="siren" name="siren" inputmode="numeric" autocomplete="off" maxlength="11" value="<?= e((string) ($siren ?? '')) ?>">
+        <p class="field-help">9 chiffres. C’est le numéro de routage de la facture électronique, sur votre Kbis ou avis INSEE.</p>
+      </div>
+      <div>
+        <label class="field" for="siret">SIRET</label>
+        <input class="input" id="siret" name="siret" inputmode="numeric" autocomplete="off" maxlength="17" value="<?= e((string) ($siret ?? '')) ?>">
+        <p class="field-help">14 chiffres. Les 9 premiers remplissent le SIREN s’il est vide.</p>
+      </div>
+    </div>
+    <div class="auth-name-grid">
+      <div>
+        <label class="field" for="vat_number">N° TVA intracommunautaire</label>
+        <input class="input" id="vat_number" name="vat_number" autocomplete="off" value="<?= e((string) ($vatNumber ?? '')) ?>" placeholder="FRXX999999999">
+      </div>
+      <div>
+        <label class="field" for="einvoice_routing">Code de routage (facultatif)</label>
+        <input class="input" id="einvoice_routing" name="einvoice_routing" autocomplete="off" maxlength="50" value="<?= e((string) ($einvoiceRouting ?? '')) ?>">
+        <p class="field-help">Uniquement si votre plateforme de dématérialisation (PDP) vous en a attribué un. Sinon le SIREN suffit.</p>
+      </div>
+    </div>
+    <label class="check-row">
+      <input type="checkbox" name="vat_exempt" value="1"<?= !empty($vatExempt) ? ' checked' : '' ?>>
+      Franchise en base de TVA (art. 293 B du CGI)
+    </label>
     <label class="field" for="billing_address">Adresse de facturation</label>
     <textarea class="textarea" id="billing_address" name="billing_address" rows="3"><?= e((string) ($billingAddress ?? '')) ?></textarea>
     <label class="field" for="iban">IBAN (facultatif, pour vos propres mentions)</label>

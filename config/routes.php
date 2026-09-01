@@ -80,6 +80,12 @@ return static function (Router $router): void {
     $router->post('/espace/commande', [AccountController::class, 'commandeSave']);
     $router->get('/espace/suivi', [AccountController::class, 'suivi']);
     $router->get('/espace/suivi/{id}', [AccountController::class, 'suiviShow']);
+    $router->get('/espace/suivi/{id}/depot', [AccountController::class, 'suiviDepotIndex']);
+    $router->post('/espace/suivi/{id}/depot', [AccountController::class, 'suiviDepotStore']);
+    $router->get('/espace/suivi/{id}/depot/{fid}', [AccountController::class, 'suiviDepotShow']);
+    $router->get('/espace/suivi/{id}/depot/{fid}/voir', [AccountController::class, 'suiviDepotView']);
+    $router->get('/espace/suivi/{id}/depot/{fid}/telecharger', [AccountController::class, 'suiviDepotDownload']);
+    $router->post('/espace/suivi/{id}/depot/{fid}/retirer', [AccountController::class, 'suiviDepotWithdraw']);
     $router->get('/espace/suivi/{id}/fichier/{code}', [AccountController::class, 'suiviFile']);
     $router->post('/espace/suivi/{id}/accepter', [AccountController::class, 'suiviAccept']);
     $router->post('/espace/suivi/{id}/livrer', [AccountController::class, 'suiviDeliver']);
@@ -89,6 +95,7 @@ return static function (Router $router): void {
     $router->post('/espace/suivi/{id}/litige', [AccountController::class, 'suiviDispute']);
     $router->get('/espace/commandes', [AccountController::class, 'commandes']);
     $router->get('/espace/missions', [AccountController::class, 'missions']);
+    $router->post('/espace/missions/{id}/supprimer', [AccountController::class, 'missionDelete']);
     $router->get('/espace/candidatures', [AccountController::class, 'candidatures']);
     $router->post('/espace/candidatures/{id}/accepter', [AccountController::class, 'applicationAccept']);
     $router->post('/espace/candidatures/{id}/refuser', [AccountController::class, 'applicationReject']);
@@ -142,6 +149,7 @@ return static function (Router $router): void {
     $router->get('/admin/utilisateurs', [AdminController::class, 'utilisateurs']);
     $router->get('/admin/utilisateurs/{id}', [AdminController::class, 'utilisateur']);
     $router->post('/admin/utilisateurs/{id}', [AdminController::class, 'utilisateurSave']);
+    $router->post('/admin/utilisateurs/{id}/supprimer', [AdminController::class, 'utilisateurDelete']);
     $router->get('/admin/prestations', [AdminController::class, 'prestations']);
     $router->get('/admin/missions', [AdminController::class, 'missions']);
     $router->get('/admin/finances', [AdminController::class, 'finances']);

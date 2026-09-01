@@ -596,11 +596,13 @@ final class Catalog
                 $name = Profile::displayName($profile);
                 $trades = $profile['trades'] ?: [];
                 $cat = (string) ($trades[0] ?? 'Prestataire');
+                $reviews = Review::statsForUser((int) $profile['user_id']);
+                $location = $profile['location_label'] ?? Profile::locationLabel($profile);
                 $out[] = [
                     'kind' => 'prestataires',
                     'kind_label' => 'Prestataire',
                     'title' => $name,
-                    'subtitle' => trim((string) ($profile['title'] ?? 'Prestataire')) . ($profile['city'] ? ' · ' . $profile['city'] : ''),
+                    'subtitle' => trim((string) ($profile['title'] ?? 'Prestataire') . ($location !== '' ? ' · ' . $location : '')),
                     'href' => Profile::publicHref($profile),
                     'cat' => $cat,
                     'trades' => $trades,
@@ -614,12 +616,13 @@ final class Catalog
                     'genres' => $profile['genres'] ?? [],
                     'level' => (string) ($profile['level'] ?? 'Nouveau'),
                     'verified' => ($profile['verification_status'] ?? '') === Profile::VERIFY_VERIFIED,
-                    'rating' => Review::statsForUser((int) $profile['user_id'])['avg'] ?? '',
+                    'rating' => $reviews['avg'] ?? '',
+                    'rating_count' => (int) ($reviews['count'] ?? 0),
                     'live' => true,
                     'availability_status' => $profile['availability_status'] ?? Profile::STATUS_AVAILABLE,
                     'availability_label' => $profile['availability_label'] ?? Profile::statusLabel($profile),
                     'is_busy' => !empty($profile['is_busy']),
-                    'search' => $name . ' ' . ($profile['title'] ?? '') . ' ' . implode(' ', $trades) . ' ' . ($profile['city'] ?? '') . ' ' . ($profile['presentation'] ?? '') . ' ' . implode(' ', $profile['genres'] ?? []) . ' ' . implode(' ', $profile['tools'] ?? []),
+                    'search' => $name . ' ' . ($profile['title'] ?? '') . ' ' . implode(' ', $trades) . ' ' . $location . ' ' . ($profile['presentation'] ?? '') . ' ' . ($profile['does'] ?? '') . ' ' . ($profile['does_not'] ?? '') . ' ' . implode(' ', $profile['genres'] ?? []) . ' ' . implode(' ', $profile['tools'] ?? []) . ' ' . ($profile['work_mode_label'] ?? '') . ' ' . ($profile['response_time_label'] ?? ''),
                 ];
             }
         } catch (\Throwable) {
@@ -852,8 +855,7 @@ final class Catalog
         $trades = $profile['trades'] ?: [];
         $tags = array_values(array_unique(array_merge(
             $trades,
-            $profile['genres'] ?: [],
-            $profile['tools'] ?: []
+            $profile['genres'] ?: []
         )));
 
         $portfolio = [];
@@ -875,8 +877,17 @@ final class Catalog
             'avatar_src' => user_avatar_src($profile),
             'title' => (string) ($profile['title'] ?? 'Prestataire'),
             'city' => (string) ($profile['city'] ?? ''),
+            'location_label' => (string) ($profile['location_label'] ?? Profile::locationLabel($profile)),
+            'work_mode' => (string) ($profile['work_mode'] ?? ''),
+            'work_mode_label' => (string) ($profile['work_mode_label'] ?? Profile::workModeLabel($profile)),
+            'response_time' => (string) ($profile['response_time'] ?? ''),
+            'response_time_label' => (string) ($profile['response_time_label'] ?? Profile::responseTimeLabel($profile)),
+            'member_since' => (string) ($profile['member_since'] ?? ''),
+            'member_since_label' => (string) ($profile['member_since_label'] ?? Profile::memberSinceLabel($profile['member_since'] ?? null)),
             'level' => (string) ($profile['level'] ?? 'Nouveau'),
             'presentation' => (string) ($profile['presentation'] ?? ''),
+            'does' => (string) ($profile['does'] ?? ''),
+            'does_not' => (string) ($profile['does_not'] ?? ''),
             'availability' => (string) ($profile['availability'] ?? ''),
             'availability_status' => $profile['availability_status'] ?? Profile::STATUS_AVAILABLE,
             'availability_label' => $profile['availability_label'] ?? Profile::statusLabel($profile),

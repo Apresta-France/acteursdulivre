@@ -454,6 +454,7 @@ final class Conversation
             'deliver' => 'Prestation livrée : voir le suivi de commande.',
             'final_invoice' => 'Facture de solde déposée dans le suivi de commande.',
             'final_paid' => 'J’ai réglé le solde hors plateforme : je le confirme dans le suivi.',
+            'vault' => 'Nouveau fichier dans l’espace de dépôt.',
         ];
     }
 
@@ -463,11 +464,19 @@ final class Conversation
             return '';
         }
         $body = trim($body);
-        if ($body === '' || !in_array($body, self::jalonPings(), true)) {
+        if ($body === '') {
             return '';
         }
+        $pings = self::jalonPings();
+        if (in_array($body, $pings, true)) {
+            return '/espace/suivi/' . $orderId;
+        }
+        $vault = (string) ($pings['vault'] ?? '');
+        if ($vault !== '' && str_starts_with($body, $vault)) {
+            return '/espace/suivi/' . $orderId . '/depot';
+        }
 
-        return '/espace/suivi/' . $orderId;
+        return '';
     }
 
     /** @return list<array<string, mixed>> */

@@ -255,7 +255,15 @@ final class Invoice
         $row['status_label'] = $overdue && $status === 'issued'
             ? self::STATUSES['overdue']
             : (self::STATUSES[$status] ?? $status);
-        $row['amount_label'] = format_euros((int) ($row['amount'] ?? 0));
+        $ht = (int) ($row['amount'] ?? 0);
+        $row['amount_ht'] = $ht;
+        $row['vat_amount'] = Commission::vatOn((float) $ht);
+        $row['amount_ttc'] = Commission::ttcOn((float) $ht);
+        $row['amount_label'] = format_euros($ht);
+        $row['amount_ht_label'] = Commission::formatMoney((float) $ht) . ' HT';
+        $row['vat_label'] = Commission::formatMoney((float) $row['vat_amount']);
+        $row['amount_ttc_label'] = Commission::formatMoney((float) $row['amount_ttc']) . ' TTC';
+        $row['amount_due_label'] = $ht <= 0 ? format_euros(0) : $row['amount_ttc_label'];
         $row['due_label'] = $dueAt ? date('d/m/Y', strtotime((string) $dueAt)) : '';
         $row['issued_label'] = !empty($row['issued_at']) ? date('d/m/Y', strtotime((string) $row['issued_at'])) : '';
         $row['is_overdue'] = $overdue;

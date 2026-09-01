@@ -76,6 +76,26 @@ if ($rateKind === 'percent') {
           <input class="input" id="last_name" name="last_name" value="<?= e((string) ($nom ?? '')) ?>" required>
         </div>
       </div>
+      <?php
+        $nameMode = \Adl\Models\Profile::normalizeNameMode($p['name_mode'] ?? null);
+        $nameModes = $nameModes ?? \Adl\Models\Profile::NAME_MODES;
+      ?>
+      <div data-name-mode>
+        <span class="field">Nom affiché sur la vitrine</span>
+        <p class="field-help">Le prénom et le nom du compte restent utilisés pour la facturation et les messages.</p>
+        <div class="chip-row">
+          <?php foreach ($nameModes as $value => $label): ?>
+            <label class="chip<?= $nameMode === $value ? ' is-on' : '' ?>">
+              <input type="radio" name="name_mode" value="<?= e($value) ?>"<?= $nameMode === $value ? ' checked' : '' ?>>
+              <?= e($label) ?>
+            </label>
+          <?php endforeach; ?>
+        </div>
+        <div data-public-name-wrap<?= $nameMode === \Adl\Models\Profile::NAME_CUSTOM ? '' : ' hidden' ?> style="margin-top: 12px;">
+          <label class="field" for="public_name">Nom de structure</label>
+          <input class="input" id="public_name" name="public_name" value="<?= e((string) ($p['public_name'] ?? '')) ?>" placeholder="Atelier Virgule">
+        </div>
+      </div>
       <div>
         <label class="field" for="vitrine-title">Titre de la vitrine</label>
         <input class="input" id="vitrine-title" name="title" value="<?= e((string) ($p['title'] ?? '')) ?>" placeholder="Correctrice-relectrice, romans et essais">
@@ -83,6 +103,18 @@ if ($rateKind === 'percent') {
       <div>
         <label class="field" for="presentation">Présentation</label>
         <textarea class="textarea" id="presentation" name="presentation" rows="6" placeholder="Votre parcours, vos spécialités, votre façon de travailler. Évitez le jargon vide : un client doit comprendre ce que vous faites mieux que d'autres."><?= e((string) ($p['presentation'] ?? '')) ?></textarea>
+      </div>
+      <div class="form-grid-2">
+        <div>
+          <label class="field" for="does">Ce que je fais</label>
+          <textarea class="textarea" id="does" name="does" rows="5" placeholder="Correction de romans et essais, relecture de cohérence, rapport de lecture."><?= e((string) ($p['does'] ?? '')) ?></textarea>
+          <p class="field-help">Une idée par ligne. Visible sur votre profil public.</p>
+        </div>
+        <div>
+          <label class="field" for="does_not">Ce que je ne fais pas</label>
+          <textarea class="textarea" id="does_not" name="does_not" rows="5" placeholder="Ghostwriting, traduction, mise en page, manuscrits techniques."><?= e((string) ($p['does_not'] ?? '')) ?></textarea>
+          <p class="field-help">Les exclusions évitent les demandes hors sujet.</p>
+        </div>
       </div>
       <div>
         <span class="field" id="availability-status-label">Disponibilité</span>
@@ -99,7 +131,7 @@ if ($rateKind === 'percent') {
         </div>
         <p class="field-help">Si votre planning est déjà plein, passez en Occupé : les porteurs de projet voient le statut sur votre vitrine et dans l'annuaire. Vous restez visible et joignable.</p>
       </div>
-      <div class="form-grid-3">
+      <div class="form-grid-2">
         <div>
           <label class="field" for="city">Ville</label>
           <input class="input" id="city" name="city" value="<?= e((string) ($p['city'] ?? '')) ?>" placeholder="Nantes">
@@ -108,9 +140,38 @@ if ($rateKind === 'percent') {
           <label class="field" for="availability">Précision (optionnel)</label>
           <input class="input" id="availability" name="availability" value="<?= e((string) ($p['availability'] ?? '')) ?>" placeholder="<?= $busy ? 'reprend le 15 octobre' : 'dès maintenant, sous 48 h' ?>">
         </div>
-        <div>
-          <label class="field" for="languages">Langues (résumé)</label>
-          <input class="input" id="languages" name="languages" value="<?= e((string) ($p['languages'] ?? '')) ?>" placeholder="FR, EN">
+      </div>
+      <div>
+        <span class="field">Lieu de travail</span>
+        <?php $workMode = (string) ($p['work_mode'] ?? ''); ?>
+        <div class="chip-row">
+          <label class="chip<?= $workMode === '' ? ' is-on' : '' ?>">
+            <input type="radio" name="work_mode" value=""<?= $workMode === '' ? ' checked' : '' ?>>
+            Non précisé
+          </label>
+          <?php foreach (\Adl\Models\Profile::WORK_MODES as $value => $label): ?>
+            <label class="chip<?= $workMode === $value ? ' is-on' : '' ?>">
+              <input type="radio" name="work_mode" value="<?= e($value) ?>"<?= $workMode === $value ? ' checked' : '' ?>>
+              <?= e($label) ?>
+            </label>
+          <?php endforeach; ?>
+        </div>
+      </div>
+      <div>
+        <span class="field">Délai de réponse</span>
+        <p class="field-help">Le temps dans lequel vous répondez habituellement à une première demande.</p>
+        <?php $responseTime = (string) ($p['response_time'] ?? ''); ?>
+        <div class="chip-row">
+          <label class="chip<?= $responseTime === '' ? ' is-on' : '' ?>">
+            <input type="radio" name="response_time" value=""<?= $responseTime === '' ? ' checked' : '' ?>>
+            Non précisé
+          </label>
+          <?php foreach (\Adl\Models\Profile::RESPONSE_TIMES as $value => $label): ?>
+            <label class="chip<?= $responseTime === $value ? ' is-on' : '' ?>">
+              <input type="radio" name="response_time" value="<?= e($value) ?>"<?= $responseTime === $value ? ' checked' : '' ?>>
+              <?= e($label) ?>
+            </label>
+          <?php endforeach; ?>
         </div>
       </div>
       <div data-rate-fields data-bookstore-trade="<?= e(\Adl\Models\Profile::TRADE_BOOKSTORE) ?>">
@@ -211,6 +272,7 @@ if ($rateKind === 'percent') {
 
       <div>
         <span class="field">Langues de travail</span>
+        <p class="field-help">Langue et niveau : ils s’affichent sur votre fiche publique. Le résumé (Français, Anglais…) se construit tout seul.</p>
         <div class="repeat-list" data-repeat="languages_list">
           <?php foreach ($languagesList as $i => $lang): ?>
             <div class="repeat-row" data-repeat-row>

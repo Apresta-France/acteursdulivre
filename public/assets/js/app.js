@@ -932,6 +932,16 @@
     applyRateKind(currentKind(), false);
   }
 
+  document.querySelectorAll('[data-name-mode]').forEach(function (box) {
+    function syncNameMode() {
+      var on = box.querySelector('input[name="name_mode"]:checked');
+      var wrap = box.querySelector('[data-public-name-wrap]');
+      if (wrap) wrap.hidden = !(on && on.value === 'custom');
+    }
+    box.addEventListener('change', syncNameMode);
+    syncNameMode();
+  });
+
   var coverForm = document.querySelector('[data-service-cover]');
   if (coverForm) {
     var coverType = coverForm.querySelector('.service-cover-type');
@@ -1398,6 +1408,32 @@
   setInterval(refreshTimeAgo, 30000);
   initInboxLive();
   initArticleToc();
+  initBillingIds();
+
+  function initBillingIds() {
+    var form = document.querySelector('[data-billing-ids]');
+    if (!form) return;
+    var siret = form.querySelector('#siret');
+    var siren = form.querySelector('#siren');
+    if (!siret || !siren) return;
+    function digits(value) {
+      return String(value || '').replace(/\D+/g, '');
+    }
+    var auto = '';
+    var initialSiren = digits(siren.value);
+    var initialSiret = digits(siret.value);
+    if (initialSiren && initialSiret.indexOf(initialSiren) === 0) {
+      auto = initialSiren;
+    }
+    siret.addEventListener('input', function () {
+      var d = digits(siret.value);
+      var current = digits(siren.value);
+      if (d.length >= 9 && (current === '' || current === auto)) {
+        auto = d.slice(0, 9);
+        siren.value = auto;
+      }
+    });
+  }
 
   function initArticleToc() {
     var toc = document.querySelector('[data-article-toc]');

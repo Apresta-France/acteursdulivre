@@ -276,7 +276,7 @@ final class AdminController
     public function utilisateurs(Request $request): void
     {
         $query = $request->string('q', '');
-        $filtre = $this->filtre($request, ['tous', 'prestataires', 'porteurs', 'admins', 'suspendus'], 'tous');
+        $filtre = $this->filtre($request, ['tous', 'prestataires', 'porteurs', 'admins', 'suspendus', 'clotures'], 'tous');
         $accounts = User::search($query, $filtre);
         $n = count($accounts);
         $subtitle = format_int($n) . ' ' . ($n > 1 ? 'comptes' : 'compte');
@@ -293,6 +293,7 @@ final class AdminController
                 'porteurs' => 'Porteurs de projet',
                 'admins' => 'Administrateurs',
                 'suspendus' => 'Suspendus',
+                'clotures' => 'Clôturés',
             ], $filtre, $query !== '' ? ['q' => $query] : []),
             'usersSubtitle' => $subtitle,
         ]);
@@ -308,7 +309,8 @@ final class AdminController
         }
 
         $isSelf = (int) $account['id'] === (int) (Auth::id() ?? 0);
-        $onlyAdmin = ($account['role'] ?? '') === 'admin' && User::countAdmins() <= 1;
+        $closed = User::isClosed($account);
+        $onlyAdmin = !$closed && ($account['role'] ?? '') === 'admin' && User::countAdmins() <= 1;
         $profile = null;
         try {
             $profile = Profile::findByUser((int) $account['id']);
@@ -321,8 +323,10 @@ final class AdminController
             'account' => $account,
             'profile' => $profile,
             'isSelf' => $isSelf,
-            'lockRole' => $isSelf || $onlyAdmin,
-            'lockStatus' => $isSelf,
+            'closed' => $closed,
+            'lockRole' => $closed || $isSelf || $onlyAdmin,
+            'lockStatus' => $closed || $isSelf,
+            'canDelete' => !$closed && !$isSelf && !$onlyAdmin,
         ]);
     }
 
@@ -336,6 +340,24 @@ final class AdminController
             flash('error', $e->getMessage());
         }
         redirect('/admin/utilisateurs/' . (int) $id);
+    }
+
+    public function utilisateurDelete(Request $request, string $id): void
+    {
+        $actor = Auth::requireAdmin();
+        $accountId = (int) $id;
+        if ($accountId === (int) $actor['id']) {
+            flash('error', 'Vous ne pouvez pas supprimer votre propre compte depuis l’administration.');
+            redirect('/admin/utilisateurs/' . $accountId);
+        }
+        try {
+            User::closeAccount($accountId);
+            flash('saved', 'Compte supprimé. Les données personnelles ont été anonymisées.');
+            redirect('/admin/utilisateurs');
+        } catch (Throwable $e) {
+            flash('error', $e->getMessage());
+            redirect('/admin/utilisateurs/' . $accountId);
+        }
     }
 
     public function prestations(Request $request): void
@@ -506,6 +528,7 @@ final class AdminController
                 'commission_percent' => (string) Commission::percent(),
                 'founder_commission_percent' => (string) Commission::founderPercent(),
                 'founder_limit' => (string) Commission::founderLimit(),
+                'loyalty_order_threshold' => (string) Commission::loyaltyThreshold(),
                 'invoice_due_days' => (string) Commission::dueDays(),
             ],
         ]);
@@ -517,10 +540,12 @@ final class AdminController
         $commission = max(0, min(100, (int) $request->string('commission_percent', '8')));
         $founder = max(0, min(100, (int) $request->string('founder_commission_percent', '6')));
         $limit = max(0, (int) $request->string('founder_limit', '100'));
+        $loyalty = max(0, (int) $request->string('loyalty_order_threshold', '12'));
         $due = max(1, (int) $request->string('invoice_due_days', '15'));
         Setting::set('commission_percent', (string) $commission);
         Setting::set('founder_commission_percent', (string) $founder);
         Setting::set('founder_limit', (string) $limit);
+        Setting::set('loyalty_order_threshold', (string) $loyalty);
         Setting::set('invoice_due_days', (string) $due);
         flash('saved', 'Réglages enregistrés.');
         redirect('/admin/reglages');

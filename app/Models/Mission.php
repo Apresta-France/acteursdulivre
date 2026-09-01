@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Adl\Models;
 
 use Adl\Core\Database;
+use Adl\Core\Mailer;
 
 final class Mission
 {
@@ -234,6 +235,80 @@ final class Mission
 
     /**
      * @param array<string, mixed> $mission
+     */
+    public static function isDeletable(array $mission): bool
+    {
+        return in_array((string) ($mission['status'] ?? ''), ['draft', 'open'], true);
+    }
+
+    public static function deleteForUser(int $id, int $userId): void
+    {
+        $mission = self::findForUser($id, $userId);
+        if (!$mission) {
+            throw new \RuntimeException('Cette recherche est introuvable.');
+        }
+        if (!self::isDeletable($mission)) {
+            throw new \RuntimeException('Cette recherche a déjà commencé : elle ne peut plus être supprimée.');
+        }
+
+        $active = Database::fetch(
+            'SELECT id FROM orders
+             WHERE mission_id = ?
+               AND status IN ("pending", "in_progress", "delivered", "confirmed", "paid", "dispute")
+             LIMIT 1',
+            [$id]
+        );
+        if ($active) {
+            throw new \RuntimeException(
+                'Cette recherche a une commande en cours. Annulez ou terminez le suivi avant de la supprimer.'
+            );
+        }
+
+        $pending = array_values(array_filter(
+            Application::forMission($id),
+            static fn (array $row): bool => in_array((string) ($row['status'] ?? ''), ['sent', 'viewed'], true)
+        ));
+        $title = (string) ($mission['title'] ?? 'cette recherche');
+        $attachment = (string) ($mission['attachment_path'] ?? '');
+
+        Database::transaction(static function () use ($id, $userId): void {
+            try {
+                Database::query('UPDATE conversations SET mission_id = NULL WHERE mission_id = ?', [$id]);
+            } catch (\Throwable) {
+            }
+            Database::query('UPDATE orders SET mission_id = NULL WHERE mission_id = ?', [$id]);
+            $deleted = Database::query(
+                'DELETE FROM missions WHERE id = ? AND user_id = ? AND status IN ("draft", "open")',
+                [$id, $userId]
+            );
+            if ($deleted->rowCount() < 1) {
+                throw new \RuntimeException('Cette recherche a déjà commencé : elle ne peut plus être supprimée.');
+            }
+        });
+
+        if ($attachment !== '') {
+            delete_upload($attachment);
+        }
+
+        foreach ($pending as $other) {
+            Notification::create(
+                (int) $other['user_id'],
+                'Recherche retirée',
+                'La recherche « ' . $title . ' » a été retirée par le porteur de projet.',
+                '/espace/candidatures',
+                'application_rejected',
+                'application',
+                (int) ($other['id'] ?? 0)
+            );
+            Mailer::notify(User::find((int) $other['user_id']), 'missions', 'candidature-refusee', [
+                'titre' => $title,
+                'lien' => url('/espace/candidatures'),
+            ]);
+        }
+    }
+
+    /**
+     * @param array<string, mixed> $mission
      * @param array<string, mixed> $user
      */
     public static function canAccessAttachment(array $mission, array $user): bool
@@ -290,6 +365,7 @@ final class Mission
         $row['status_label'] = self::STATUSES[$row['status'] ?? 'open'] ?? 'Ouverte';
         $row['href'] = '/missions/' . $row['slug'];
         $row['applicants'] = Application::countForMission((int) $row['id']);
+        $row['can_delete'] = self::isDeletable($row);
         $row['live'] = true;
         if (!empty($row['attachment_path'])) {
             $row['attachment_href'] = url('/missions/' . $row['slug'] . '/fichier');

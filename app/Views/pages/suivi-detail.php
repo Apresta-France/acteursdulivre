@@ -38,6 +38,11 @@ $mine = !empty($action['mine']);
     <a class="btn-ghost jalon-msg" href="<?= e(url((string) ($threadHref ?? '/espace/messages'))) ?>">Ouvrir la messagerie</a>
   </div>
 
+  <?php
+    $suiviTab = 'jalons';
+    require ADL_ROOT . '/app/Views/partials/suivi-tabs.php';
+  ?>
+
   <?php if (!empty($error)): ?>
     <div class="flash flash-error"><?= e((string) $error) ?></div>
   <?php endif; ?>

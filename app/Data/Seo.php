@@ -38,7 +38,7 @@ final class Seo
             ],
             'tarifs' => [
                 'title' => 'Tarifs et commission 8 %',
-                'description' => 'Aucun abonnement. Vitrine, fiches et appels d\'offres gratuits. Première mission offerte, puis 8 % de commission hors taxes (hors TVA) sur les missions réalisées.',
+                'description' => 'Aucun abonnement. Vitrine, fiches et appels d\'offres gratuits. Première mission offerte, puis 8 % hors taxes (6 % pour les 100 premiers inscrits, et dès 12 missions réalisées).',
                 'path' => '/tarifs',
             ],
             'confiance' => [
@@ -297,7 +297,7 @@ final class Seo
     {
         return [
             ['q' => 'Quand la commission est-elle facturée ?', 'a' => 'Lorsque le client confirme que la mission est finalisée et note la prestation. La facture est alors émise au prestataire — dernier jalon — payable sous 15 jours.'],
-            ['q' => 'La première mission est-elle payante ?', 'a' => 'Non. La première mission réalisée via la plateforme est gratuite. À partir de la deuxième, la commission est de 8 % sur le montant hors taxes (hors TVA).'],
+            ['q' => 'La première mission est-elle payante ?', 'a' => 'Non. La première mission réalisée via la plateforme est gratuite. À partir de la deuxième, la commission est de 8 % sur le montant hors taxes (hors TVA), ou 6 % pour les membres fondateurs (100 premiers inscrits) et dès 12 missions réalisées.'],
             ['q' => 'L\'IA générative est-elle autorisée ?', 'a' => 'Non, pour les missions entre acteurs du livre : aucun livrable ne peut être produit par une IA générative. Le moratoire ne s\'applique pas à la fabrication de la plateforme. Le détail figure dans les règles IA.'],
             ['q' => 'Qui facture le client final ?', 'a' => 'Le prestataire facture directement son client, hors plateforme. La plateforme n\'encaisse pas le prix de la mission ; elle facture uniquement sa commission au prestataire, à la validation.'],
             ['q' => 'Faut-il un abonnement ?', 'a' => 'Non. Créer un compte, une vitrine, des fiches ou un appel d\'offres est gratuit. Aucun abonnement.'],
@@ -309,7 +309,7 @@ final class Seo
     {
         return [
             ['q' => 'Comment trouver un prestataire du livre ?', 'a' => 'Vous pouvez parcourir l\'annuaire, commander une prestation à prix affiché, ou publier une recherche pour recevoir des devis.'],
-            ['q' => 'Combien coûte la mise en relation ?', 'a' => 'Gratuit pour le porteur de projet. Côté prestataire, la première mission est offerte, puis 8 % de commission sur le montant hors taxes (hors TVA) des missions suivantes.'],
+            ['q' => 'Combien coûte la mise en relation ?', 'a' => 'Gratuit pour le porteur de projet. Côté prestataire, la première mission est offerte, puis 8 % de commission hors taxes (6 % pour les 100 premiers inscrits, et dès 12 missions réalisées).'],
             ['q' => 'Comment se passe une mission ?', 'a' => 'Brief, devis accepté dans le suivi (cela vaut accord), jalons de facture et de règlement hors plateforme, livraison, puis validation et notation. Pas de contrat type : la commission prestataire est le dernier jalon.'],
         ];
     }
@@ -318,8 +318,8 @@ final class Seo
     public static function tarifsFaqs(): array
     {
         return [
-            ['q' => 'Quel est le tarif d\'acteursdulivre.fr ?', 'a' => 'Aucun abonnement. La première mission réalisée est gratuite pour le prestataire. Ensuite, 8 % de commission sur le montant hors taxes (hors TVA) de la mission.'],
-            ['q' => 'La commission est-elle calculée TTC ou hors taxes ?', 'a' => 'Hors taxes. Les 8 % s\'appliquent au montant HT de la mission, hors TVA. Si le prestataire est en franchise en base, le prix facturé au client vaut montant HT.'],
+            ['q' => 'Quel est le tarif d\'acteursdulivre.fr ?', 'a' => 'Aucun abonnement. La première mission réalisée est gratuite pour le prestataire. Ensuite, 8 % HT de commission, ou 6 % HT pour les 100 premiers inscrits et dès 12 missions réalisées. La plateforme facture ce montant HT plus la TVA à 20 %. Le taux personnel s\'affiche dans l\'espace, à Facturation.'],
+            ['q' => 'La commission est-elle calculée TTC ou hors taxes ?', 'a' => 'Hors taxes. Le taux (8 % ou 6 %) s\'applique au montant HT de la mission. La plateforme facture ensuite cette commission HT, plus la TVA à 20 %. Si le prestataire est en franchise en base, le prix facturé au client vaut montant HT.'],
             ['q' => 'Qui paie la commission ?', 'a' => 'Le prestataire. Le client paie le prestataire hors plateforme ; la plateforme facture sa commission au prestataire lorsque le client confirme et note.'],
             ['q' => 'Que reste-t-il gratuit ?', 'a' => 'Le compte, la vitrine, les fiches, la publication d\'une recherche, les candidatures et la messagerie. La première mission aussi.'],
         ];
@@ -652,7 +652,7 @@ acteursdulivre.fr met en relation des porteurs de projet (auteurs, éditeurs, co
 ## Faits
 - Pas d'éditeur des ouvrages des utilisateurs : contrats conclus entre le porteur de projet et le prestataire.
 - Pas d'abonnement. Compte, vitrine, fiches et appels d'offres gratuits.
-- Première mission réalisée offerte ; ensuite 8 % de commission hors taxes (hors TVA) facturés au prestataire lorsque le client confirme et note.
+- Première mission réalisée offerte ; ensuite 8 % de commission hors taxes (hors TVA), ou 6 % pour les 100 premiers inscrits et dès 12 missions réalisées, facturés au prestataire lorsque le client confirme et note.
 - Le prix de la mission se règle hors plateforme, entre client et prestataire. La plateforme suit les jalons et n'encaisse rien.
 - Moratoire IA générative pour les prestations livrées aux acteurs du livre : ni texte, ni illustration, ni voix. Les manuscrits ne servent pas à entraîner un modèle. La fabrication de la plateforme elle-même n'est pas couverte par ce moratoire ; le détail est public.
 - Pré-ouverture : inscriptions ouvertes aux auteurs et professionnels. Ouverture clients annoncée pour octobre 2026.
