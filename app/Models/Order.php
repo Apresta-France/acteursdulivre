@@ -221,6 +221,7 @@ final class Order
         if (!empty($order['startup_enabled']) && (string) ($order['startup_kind'] ?? '') === 'percent') {
             $deposit = Service::computeStartupAmount($amount, 'percent', (int) ($order['startup_value'] ?? 0));
         }
+        $deposit = min($deposit, max(0, $amount));
         Database::query(
             'UPDATE orders SET amount = ?, deposit_amount = ?, brief = ?, package_name = ?, options_json = ? WHERE id = ? AND status = "pending"',
             [
@@ -261,10 +262,21 @@ final class Order
 
     public static function touchAccepted(int $id): void
     {
+        $before = self::fetchRow($id);
         Database::query(
             'UPDATE orders SET accepted_at = COALESCE(accepted_at, NOW()) WHERE id = ?',
             [$id]
         );
+        if ($before && empty($before['accepted_at'])) {
+            $order = self::find($id);
+            if ($order) {
+                Mailer::notify(User::find((int) $order['buyer_id']), 'jalons', 'commande-acceptee', [
+                    'numero' => (string) $order['num'],
+                    'titre' => (string) $order['title'],
+                    'lien' => url('/espace/suivi/' . $id),
+                ]);
+            }
+        }
     }
 
     public static function touchInProgress(int $id): void
@@ -278,11 +290,22 @@ final class Order
 
     public static function touchDelivered(int $id): void
     {
+        $before = self::fetchRow($id);
         Database::query(
             'UPDATE orders SET status = "delivered", delivered_at = COALESCE(delivered_at, NOW())
              WHERE id = ? AND status IN ("pending", "in_progress", "delivered")',
             [$id]
         );
+        if ($before && empty($before['delivered_at'])) {
+            $order = self::find($id);
+            if ($order) {
+                Mailer::notify(User::find((int) $order['buyer_id']), 'jalons', 'commande-livree', [
+                    'numero' => (string) ($order['num'] ?? ''),
+                    'titre' => (string) ($order['title'] ?? ''),
+                    'lien' => url('/espace/suivi/' . $id),
+                ]);
+            }
+        }
     }
 
     public static function touchPaid(int $id): void
@@ -383,7 +406,8 @@ final class Order
 
             $quote = Commission::quoteForSeller((int) $locked['seller_id']);
             $amount = (int) ($locked['amount'] ?? 0);
-            $commissionAmount = Commission::amount($amount, $quote['percent']);
+            $seller = User::find((int) $locked['seller_id']);
+            $commissionAmount = Commission::amount($amount, $quote['percent'], !empty($seller['vat_exempt']));
 
             $updated = Database::query(
                 'UPDATE orders

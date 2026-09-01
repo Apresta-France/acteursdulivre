@@ -253,6 +253,7 @@ final class AdminController
 
     public function conversationShow(Request $request, string $id): void
     {
+        Auth::requireAdmin();
         $thread = Conversation::findForAdmin((int) $id);
         if (!$thread) {
             not_found('Cette conversation est introuvable.');

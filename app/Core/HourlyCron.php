@@ -358,7 +358,7 @@ final class HourlyCron
                  FROM orders o
                  JOIN users buyer ON buyer.id = o.buyer_id
                  JOIN users seller ON seller.id = o.seller_id
-                 WHERE o.status IN ('pending', 'in_progress', 'accepted', 'active')
+                 WHERE o.status IN ('pending', 'in_progress')
                    AND o.created_at <= DATE_SUB(NOW(), INTERVAL {$hours} HOUR)"
             );
         } catch (Throwable) {
@@ -443,7 +443,7 @@ final class HourlyCron
                    AND EXISTS (
                        SELECT 1 FROM orders o
                        WHERE o.mission_id = m.id
-                         AND o.status IN ('pending', 'in_progress', 'accepted', 'active')
+                         AND o.status IN ('pending', 'in_progress')
                          AND COALESCE(o.accepted_at, o.created_at) <= DATE_SUB(NOW(), INTERVAL {$hours} HOUR)
                    )"
             );

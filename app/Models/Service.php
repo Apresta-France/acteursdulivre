@@ -42,7 +42,7 @@ final class Service
             return max(0, (int) round($base * min(100, max(0, $value)) / 100));
         }
 
-        return max(0, $value);
+        return min(max(0, $base), max(0, $value));
     }
 
     /**

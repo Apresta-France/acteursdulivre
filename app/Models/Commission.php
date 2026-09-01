@@ -200,12 +200,16 @@ final class Commission
         return number_format($cents / 100, 2, ',', ' ') . ' €';
     }
 
-    public static function amount(int $missionAmount, int $percent): int
+    public static function amount(int $missionAmount, int $percent, bool $vatExempt = true): int
     {
         if ($missionAmount <= 0 || $percent <= 0) {
             return 0;
         }
-        return (int) round($missionAmount * $percent / 100);
+        $base = $vatExempt
+            ? $missionAmount
+            : (int) round($missionAmount / (1 + self::VAT_RATE));
+
+        return (int) round($base * $percent / 100);
     }
 
     private static function ongoingPercent(bool $founder, int $completed): int

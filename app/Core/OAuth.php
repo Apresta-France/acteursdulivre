@@ -154,7 +154,7 @@ final class OAuth
     {
         $uri = url('/auth/' . $provider . '/callback');
         if (!str_starts_with($uri, 'http://') && !str_starts_with($uri, 'https://')) {
-            $https = !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off';
+            $https = request_is_https();
             $host = (string) ($_SERVER['HTTP_HOST'] ?? 'localhost');
             $uri = ($https ? 'https' : 'http') . '://' . $host . $uri;
         }

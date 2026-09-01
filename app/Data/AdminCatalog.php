@@ -229,7 +229,7 @@ final class AdminCatalog
             'avisSubtitle' => 'Un avis n\'est publiable qu\'après une mission facturée. Aucune contestation en attente.',
             'catalogueSubtitle' => 'Aucune prestation.',
             'missionsSubtitle' => 'Aucun appel d\'offres.',
-            'financesSubtitle' => 'Montants hors taxes',
+            'financesSubtitle' => 'Montants TTC',
             'preouvertureSubtitle' => 'Ouverture aux clients prévue en octobre 2026.',
             'cmsSubtitle' => 'Aucun article.',
             'emptyChart' => 'Pas encore d\'historique d\'inscriptions à afficher.',
@@ -525,7 +525,7 @@ final class AdminCatalog
                     ? 'Aucun appel d\'offres.'
                     : self::qty($openMissions, 'mission ouverte', 'missions ouvertes')
                     . (count($missions) !== $openMissions ? ' · ' . self::qty(count($missions), 'au total', 'au total') : ''),
-                'financesSubtitle' => self::monthLabel($now) . ' · montants hors taxes',
+                'financesSubtitle' => self::monthLabel($now) . ' · montants TTC',
                 'preouvertureSubtitle' => 'Ouverture aux clients prévue en octobre 2026.',
                 'cmsSubtitle' => ($publishedN + $draftN) === 0 ? 'Aucun article.' : $cmsSubtitle,
                 'emptyUsers' => $userRows === [] ? 'Aucun utilisateur pour le moment.' : '',

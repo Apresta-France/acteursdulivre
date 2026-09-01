@@ -587,7 +587,8 @@ final class AccountController
                 $currentCode = (string) ($existing['current_milestone']['code'] ?? 'quote');
                 $sameCart = (int) ($existing['amount'] ?? 0) === $amount
                     && (string) ($existing['brief'] ?? '') === $brief
-                    && (string) ($existing['package_name'] ?? '') === (string) ($selected['name'] ?? '');
+                    && (string) ($existing['package_name'] ?? '') === (string) ($selected['name'] ?? '')
+                    && self::orderOptionsKey($existing['options'] ?? []) === self::orderOptionsKey($pickedOptions);
                 if ($currentCode !== 'quote') {
                     flash('saved', 'Cette commande est déjà ouverte. Consultez le devis et les jalons dans le suivi.');
                     redirect('/espace/suivi/' . (int) $existing['id']);
@@ -1781,7 +1782,7 @@ final class AccountController
         try {
             $current = Profile::findByUser((int) $user['id']) ?? [];
             $allowedTrades = array_values(array_unique(array_merge(Catalog::trades(), $current['trades'] ?? [])));
-            $allowedGenres = Catalog::specialtiesForTrades($trades, $current['genres'] ?? []);
+            $allowedGenres = Catalog::specialtiesForTrades($trades);
             $trades = array_values(array_filter($trades, static fn (string $trade): bool => in_array($trade, $allowedTrades, true)));
             $catalogTrades = Catalog::trades();
             foreach ($current['trades'] ?? [] as $kept) {
@@ -2693,6 +2694,25 @@ final class AccountController
             ];
         }
         return $out;
+    }
+
+    /** @param list<mixed> $options */
+    private static function orderOptionsKey(array $options): string
+    {
+        $parts = [];
+        foreach ($options as $option) {
+            if (!is_array($option)) {
+                continue;
+            }
+            $name = trim((string) ($option['name'] ?? ''));
+            if ($name === '') {
+                continue;
+            }
+            $parts[] = $name . "\0" . (int) ($option['price'] ?? 0);
+        }
+        sort($parts, SORT_STRING);
+
+        return implode("\n", $parts);
     }
 
     /** @param list<string> $allowedPaths */

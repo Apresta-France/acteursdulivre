@@ -343,6 +343,6 @@
       <?php endif; ?>
     </div>
   <?php endif; ?>
-  <script src="<?= e(asset('js/app.js')) ?>?v=m67"></script>
+  <script src="<?= e(asset('js/app.js')) ?>?v=m68"></script>
 </body>
 </html>

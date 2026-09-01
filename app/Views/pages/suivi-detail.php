@@ -247,7 +247,7 @@ $mine = !empty($action['mine']);
               </div>
             </form>
           <?php elseif ($form === 'commission'): ?>
-            <p class="jalon-amount">Commission : <strong><?= e((string) ($order['commission_label'] ?: $order['amount_label'] ?? '')) ?></strong></p>
+            <p class="jalon-amount">Commission : <strong><?= e((string) (($order['commission_label'] ?? '') !== '' ? $order['commission_label'] : format_euros((int) ($order['commission_amount'] ?? 0)))) ?></strong></p>
             <form class="jalon-form" method="post" action="<?= e($actionUrl) ?>">
               <?= csrf_field() ?>
               <input type="hidden" name="code" value="commission_paid">

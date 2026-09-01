@@ -276,7 +276,7 @@ final class Auth
         setcookie('adl_remember', $value, [
             'expires' => time() + 60 * 60 * 24 * 30,
             'path' => '/',
-            'secure' => (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off'),
+            'secure' => request_is_https(),
             'httponly' => true,
             'samesite' => 'Lax',
         ]);
@@ -288,7 +288,7 @@ final class Auth
         setcookie('adl_remember', '', [
             'expires' => time() - 3600,
             'path' => '/',
-            'secure' => (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off'),
+            'secure' => request_is_https(),
             'httponly' => true,
             'samesite' => 'Lax',
         ]);

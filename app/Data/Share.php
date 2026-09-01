@@ -16,9 +16,7 @@ final class Share
 
         $base = rtrim(Env::get('APP_URL', ''), '/');
         if ($base === '') {
-            $https = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
-                || (($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https')
-                || (($_SERVER['SERVER_PORT'] ?? '') === '443');
+            $https = request_is_https();
             $host = (string) ($_SERVER['HTTP_HOST'] ?? 'www.acteursdulivre.fr');
             $base = ($https ? 'https' : 'http') . '://' . $host;
         }

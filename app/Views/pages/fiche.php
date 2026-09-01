@@ -187,8 +187,10 @@ $formulePriceLabel = is_array($selectedPackage)
               <button class="btn-ghost" type="submit">Envoyer un message</button>
             </form>
             <p class="field-help" style="margin: 12px 0 0;">Aucun paiement ici : le prestataire envoie un devis, vous vous réglez hors plateforme, jalon par jalon.</p>
-          <?php else: ?>
+          <?php elseif ($isOwner): ?>
             <p class="field-help" style="margin: 12px 0 0;">C’est votre prestation. Connectez-vous avec un autre compte pour tester une commande.</p>
+          <?php else: ?>
+            <p class="field-help" style="margin: 12px 0 0;">Cette prestation n’est pas commandable pour le moment.</p>
           <?php endif; ?>
         </div>
       </div>

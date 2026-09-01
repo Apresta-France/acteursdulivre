@@ -622,6 +622,22 @@
     if (hidden) hidden.value = slug || '';
   }
 
+  function placeAtCity(city, slug) {
+    city = String(city || '').trim();
+    slug = String(slug || '').toLowerCase();
+    if (!city) return '';
+    if (slug === 'france' || slug === 'europe' || /^(france|europe)$/i.test(city)) return 'en ' + city;
+    var m = city.match(/^Les\s+(.+)$/i);
+    if (m) return 'aux ' + m[1];
+    m = city.match(/^Le\s+(.+)$/i);
+    if (m) return 'au ' + m[1];
+    m = city.match(/^La\s+(.+)$/i);
+    if (m) return 'à la ' + m[1];
+    m = city.match(/^L['’](.+)$/i);
+    if (m) return 'à l\'' + m[1];
+    return 'à ' + city;
+  }
+
   function fillCityField(root, name, nextSlug) {
     if (!root) return;
     var input = root.querySelector('[data-city-input]');
@@ -944,8 +960,7 @@
             else if (hubType === 'prestataires') label = 'Prestataires du livre';
             else label = 'Tous les métiers du livre';
           }
-          var prep = /^(france|europe)$/i.test(citySlug) ? ' en ' : ' à ';
-          label = label + prep + cityName;
+          label = label + ' ' + placeAtCity(cityName, citySlug);
         }
         if (!label) {
           var hubTypeEmpty = data.type || searchPage.getAttribute('data-type') || '';
@@ -953,7 +968,7 @@
           else if (hubTypeEmpty === 'prestataires') label = 'Prestataires du livre';
           else label = 'Tous les métiers du livre';
         }
-        if (!standalone && titleEl) titleEl.childNodes[0].textContent = label + ' ';
+        if (!standalone && titleEl && titleEl.childNodes[0]) titleEl.childNodes[0].textContent = label + ' ';
         var display = new URLSearchParams(params);
         if (!/\/recherche\/?$/.test(window.location.pathname)) {
           display.delete('type');
@@ -1055,6 +1070,36 @@
       });
     });
   });
+
+  (function bindHiddenTabValidation() {
+    var form = document.getElementById('vitrine-form');
+    if (!form) return;
+    var firstInvalid = false;
+    form.addEventListener('invalid', function (e) {
+      if (firstInvalid) return;
+      firstInvalid = true;
+      var field = e.target;
+      if (!field || !field.closest) return;
+      var panel = field.closest('[data-tab-panel]');
+      if (!panel) return;
+      var tab = panel.getAttribute('data-tab-panel');
+      var nav = document.querySelector('[data-tabs]');
+      if (nav) {
+        nav.querySelectorAll('[data-tab]').forEach(function (btn) {
+          btn.classList.toggle('is-on', btn.getAttribute('data-tab') === tab);
+        });
+      }
+      form.querySelectorAll('[data-tab-panel]').forEach(function (p) {
+        p.hidden = p.getAttribute('data-tab-panel') !== tab;
+      });
+    }, true);
+    form.addEventListener('submit', function () {
+      firstInvalid = false;
+    });
+    document.querySelectorAll('[type="submit"][form="vitrine-form"], #vitrine-form [type="submit"]').forEach(function (btn) {
+      btn.addEventListener('click', function () { firstInvalid = false; });
+    });
+  })();
 
   document.querySelectorAll('[data-repeat-add]').forEach(function (btn) {
     btn.addEventListener('click', function () {
@@ -1349,8 +1394,11 @@
         var forTrades = (chip.getAttribute('data-for-trades') || '').split(',').filter(Boolean);
         var input = chip.querySelector('input');
         var match = trades.some(function (trade) { return forTrades.indexOf(trade) !== -1; });
-        var keep = !!(input && input.checked);
-        chip.hidden = !(match || keep);
+        if (!match && input) {
+          input.checked = false;
+          chip.classList.remove('is-on');
+        }
+        chip.hidden = !match;
       });
     }
     document.querySelectorAll('[data-trades] input[type="checkbox"]').forEach(function (input) {
@@ -1556,7 +1604,7 @@
     });
   });
 
-  document.querySelectorAll('[data-count]').forEach(function (area) {
+  document.querySelectorAll('textarea[data-count], input[data-count]').forEach(function (area) {
     var out = document.querySelector('[data-count-out]');
     var min = parseInt(area.getAttribute('data-count-min') || '0', 10);
     function tick() {
@@ -1892,15 +1940,17 @@
       var kind = depositInput.getAttribute('data-startup-kind') || '';
       var value = parseInt(depositInput.getAttribute('data-startup-value') || '0', 10) || 0;
       if (kind === 'percent') return Math.round(amount * Math.min(100, Math.max(0, value)) / 100);
-      if (kind === 'amount') return value;
+      if (kind === 'amount') return Math.min(amount, Math.max(0, value));
       return 0;
     }
 
     var lastAutoDeposit = depositInput ? parseEuros(depositInput.value) : 0;
+    var ready = false;
+    var customized = false;
 
     function sync() {
       var amount = parseEuros(amountInput.value);
-      if (depositInput && depositInput.getAttribute('data-startup-kind')) {
+      if (ready && !customized && depositInput && depositInput.getAttribute('data-startup-kind')) {
         var current = parseEuros(depositInput.value);
         if (current === lastAutoDeposit || current === 0) {
           var next = computedStartup(amount);
@@ -1920,8 +1970,15 @@
     }
 
     amountInput.addEventListener('input', sync);
-    if (depositInput) depositInput.addEventListener('input', sync);
+    if (depositInput) depositInput.addEventListener('input', function () {
+      var computed = computedStartup(parseEuros(amountInput.value));
+      var current = parseEuros(depositInput.value);
+      customized = current !== computed && current !== 0;
+      lastAutoDeposit = computed;
+      sync();
+    });
     sync();
+    ready = true;
   }
   initQuoteRecap();
 

@@ -40,6 +40,23 @@ function plain_text(?string $html): string
     return \Adl\Core\RichText::plain((string) $html);
 }
 
+function request_is_https(): bool
+{
+    if (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') {
+        return true;
+    }
+    $forwarded = strtolower((string) ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? ''));
+    if ($forwarded === 'https' || str_starts_with($forwarded, 'https,')) {
+        return true;
+    }
+    if ((string) ($_SERVER['SERVER_PORT'] ?? '') === '443') {
+        return true;
+    }
+    $appUrl = strtolower((string) Env::get('APP_URL', ''));
+
+    return str_starts_with($appUrl, 'https://');
+}
+
 function url(string $path = '/'): string
 {
     $base = rtrim(Env::get('APP_URL', ''), '/');
