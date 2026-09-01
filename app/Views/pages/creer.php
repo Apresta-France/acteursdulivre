@@ -155,6 +155,39 @@ $specialtyHelps[''] = \Adl\Data\Catalog::specialtyHelp('');
         <button type="button" class="btn-ghost" data-repeat-add="options">Ajouter une option</button>
       </div>
 
+      <?php
+        $startupOn = !empty($old['startup_enabled']);
+        $startupKind = (string) ($old['startup_kind'] ?? 'amount') === 'percent' ? 'percent' : 'amount';
+      ?>
+      <div data-startup-box>
+        <label class="check-row">
+          <input type="checkbox" name="startup_enabled" value="1"<?= $startupOn ? ' checked' : '' ?> data-startup-enabled>
+          Je demande un accompagnement de démarrage
+        </label>
+        <p class="field-help" style="margin-top: 0;">Un jalon de facture et de règlement s’ajoute au début de la mission, avant le travail.</p>
+        <div class="startup-fields" data-startup-fields<?= $startupOn ? '' : ' hidden' ?>>
+          <div class="chip-row" style="margin-bottom: 12px;">
+            <label class="chip<?= $startupKind === 'amount' ? ' is-on' : '' ?>">
+              <input type="radio" name="startup_kind" value="amount"<?= $startupKind === 'amount' ? ' checked' : '' ?> data-startup-kind>
+              Montant (€)
+            </label>
+            <label class="chip<?= $startupKind === 'percent' ? ' is-on' : '' ?>">
+              <input type="radio" name="startup_kind" value="percent"<?= $startupKind === 'percent' ? ' checked' : '' ?> data-startup-kind>
+              Pourcentage
+            </label>
+          </div>
+          <div>
+            <label class="field" for="startup-value" data-startup-value-label><?= $startupKind === 'percent' ? 'Pourcentage' : 'Montant (€ TTC)' ?></label>
+            <input class="input" id="startup-value" name="startup_value" value="<?= e((string) ($old['startup_value'] ?? '')) ?>"
+                   inputmode="numeric" data-startup-value
+                   placeholder="<?= $startupKind === 'percent' ? '30' : '180' ?>">
+            <p class="field-help" data-startup-value-help><?= $startupKind === 'percent'
+                ? 'Pourcentage du montant du devis, prérempli dans le suivi.'
+                : 'Montant TTC facturé au démarrage, prérempli dans le suivi.' ?></p>
+          </div>
+        </div>
+      </div>
+
       <div>
         <?php
           $existingImages = [];

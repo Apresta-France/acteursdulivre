@@ -174,7 +174,7 @@ final class OrderMilestone
             }
 
             foreach (self::SEQUENCE as $position => $code) {
-                $def = self::DEFINITIONS[$code];
+                $def = self::definition($code, $order);
                 Database::query(
                     'INSERT INTO order_milestones (order_id, code, position, actor, status)
                      VALUES (?, ?, ?, ?, ?)',
@@ -200,7 +200,7 @@ final class OrderMilestone
 
         try {
             self::seed($id);
-            $milestones = self::forOrder($id);
+            $milestones = self::forOrder($id, $order);
         } catch (\Throwable) {
             $order['milestones'] = [];
             $order['current_milestone'] = null;
@@ -242,14 +242,17 @@ final class OrderMilestone
         return $orders;
     }
 
-    /** @return list<array<string, mixed>> */
-    public static function forOrder(int $orderId): array
+    /**
+     * @param array<string, mixed> $order
+     * @return list<array<string, mixed>>
+     */
+    public static function forOrder(int $orderId, array $order = []): array
     {
         $rows = Database::fetchAll(
             'SELECT * FROM order_milestones WHERE order_id = ? ORDER BY position ASC, id ASC',
             [$orderId]
         );
-        return array_map([self::class, 'present'], $rows);
+        return array_map(static fn (array $row): array => self::present($row, $order), $rows);
     }
 
     /**
@@ -258,7 +261,7 @@ final class OrderMilestone
     public static function dueActions(int $userId, int $limit = 5): array
     {
         $rows = Database::fetchAll(
-            'SELECT om.*, o.number, o.status AS order_status,
+            'SELECT om.*, o.number, o.status AS order_status, o.startup_enabled,
                     s.title AS service_title, m.title AS mission_title
              FROM order_milestones om
              JOIN orders o ON o.id = om.order_id
@@ -277,7 +280,7 @@ final class OrderMilestone
 
         $out = [];
         foreach ($rows as $row) {
-            $def = self::DEFINITIONS[$row['code'] ?? ''] ?? null;
+            $def = self::definition((string) ($row['code'] ?? ''), $row);
             if (!$def) {
                 continue;
             }
@@ -365,7 +368,7 @@ final class OrderMilestone
                 throw new RuntimeException('Ce n’est pas le jalon en cours.');
             }
 
-            $def = self::DEFINITIONS[$code];
+            $def = self::definition($code, $order);
             $isSeller = (int) $order['seller_id'] === $userId;
             $isBuyer = (int) $order['buyer_id'] === $userId;
             if ($def['actor'] === self::ACTOR_SELLER && !$isSeller) {
@@ -561,14 +564,25 @@ final class OrderMilestone
         return in_array((string) ($current['code'] ?? ''), ['quote', 'quote_accept'], true);
     }
 
-    public static function flashFor(string $code): string
+    /**
+     * @param array<string, mixed> $order
+     */
+    public static function flashFor(string $code, array $order = []): string
     {
+        $startup = !empty($order['startup_enabled']);
+
         return match ($code) {
             'quote' => 'Devis envoyé. Le porteur de projet peut maintenant l’accepter.',
             'quote_accept' => 'Devis accepté. Les jalons de règlement commencent.',
-            'deposit_invoice' => 'Facture d’acompte envoyée. Le client peut maintenant la régler hors plateforme.',
-            'deposit_paid' => 'Règlement de l’acompte déclaré. Le prestataire doit confirmer la réception.',
-            'deposit_ack' => 'Acompte reçu. Vous pouvez réaliser et livrer la mission.',
+            'deposit_invoice' => $startup
+                ? 'Facture d’accompagnement envoyée. Le client peut maintenant la régler hors plateforme.'
+                : 'Facture d’acompte envoyée. Le client peut maintenant la régler hors plateforme.',
+            'deposit_paid' => $startup
+                ? 'Règlement de l’accompagnement déclaré. Le prestataire doit confirmer la réception.'
+                : 'Règlement de l’acompte déclaré. Le prestataire doit confirmer la réception.',
+            'deposit_ack' => $startup
+                ? 'Accompagnement reçu. Vous pouvez réaliser et livrer la mission.'
+                : 'Acompte reçu. Vous pouvez réaliser et livrer la mission.',
             'deliver' => 'Livraison signalée. Envoyez ensuite la facture de solde.',
             'final_invoice' => 'Facture de solde envoyée. Le client peut maintenant la régler.',
             'final_paid' => 'Règlement du solde déclaré. Vous pouvez valider et noter la mission.',
@@ -592,8 +606,8 @@ final class OrderMilestone
         }
 
         $code = (string) ($current['code'] ?? '');
-        $def = self::DEFINITIONS[$code] ?? null;
-        if (!$def) {
+        $def = self::definition($code, $order);
+        if ($def === []) {
             return null;
         }
 
@@ -666,11 +680,57 @@ final class OrderMilestone
         ];
     }
 
-    /** @param array<string, mixed> $row */
-    private static function present(array $row): array
+    /**
+     * @param array<string, mixed> $order
+     * @return array<string, string>
+     */
+    public static function definition(string $code, array $order = []): array
+    {
+        $def = self::DEFINITIONS[$code] ?? [];
+        if ($def === [] || empty($order['startup_enabled']) || !in_array($code, self::DEPOSIT_CODES, true)) {
+            return $def;
+        }
+
+        return match ($code) {
+            'deposit_invoice' => array_merge($def, [
+                'title' => 'Envoyer la facture d’accompagnement de démarrage',
+                'done' => 'Facture d’accompagnement envoyée',
+                'seller_cta' => 'Envoyer la facture d’accompagnement',
+                'buyer_wait' => 'En attente de la facture d’accompagnement',
+                'lead_seller' => 'Joignez la facture de l’accompagnement de démarrage. Le client la règle hors plateforme, puis le confirme ici.',
+                'lead_buyer' => 'Le prestataire prépare la facture de l’accompagnement de démarrage.',
+            ]),
+            'deposit_paid' => array_merge($def, [
+                'title' => 'Régler l’accompagnement de démarrage',
+                'done' => 'Accompagnement déclaré réglé',
+                'buyer_cta' => 'J’ai réglé l’accompagnement',
+                'seller_wait' => 'En attente du règlement de l’accompagnement',
+                'lead_buyer' => 'Réglez l’accompagnement de démarrage au prestataire, puis confirmez ici. Aucun paiement n’est encaissé par la plateforme.',
+                'lead_seller' => 'Le client règle l’accompagnement hors plateforme, puis le déclare ici.',
+            ]),
+            'deposit_ack' => array_merge($def, [
+                'title' => 'Confirmer la réception de l’accompagnement',
+                'done' => 'Accompagnement reçu',
+                'seller_cta' => 'Accompagnement bien reçu, je démarre',
+                'buyer_wait' => 'En attente de la confirmation de réception',
+                'lead_seller' => 'Confirmez que l’accompagnement de démarrage est arrivé. La mission peut alors démarrer.',
+                'lead_buyer' => 'Le prestataire confirme la réception avant de commencer.',
+            ]),
+            default => $def,
+        };
+    }
+
+    /**
+     * @param array<string, mixed> $row
+     * @param array<string, mixed> $order
+     */
+    private static function present(array $row, array $order = []): array
     {
         $code = (string) ($row['code'] ?? '');
-        $def = self::DEFINITIONS[$code] ?? [];
+        $def = self::definition($code, $order !== [] ? $order : $row);
+        if (($row['amount'] ?? null) === null && in_array($code, self::DEPOSIT_CODES, true) && (int) ($order['deposit_amount'] ?? 0) > 0) {
+            $row['amount'] = (int) $order['deposit_amount'];
+        }
         $status = (string) ($row['status'] ?? self::STATUS_PENDING);
         $row['title'] = $status === self::STATUS_DONE
             ? (string) ($def['done'] ?? $def['title'] ?? $code)
@@ -1035,13 +1095,14 @@ final class OrderMilestone
             [(int) $order['id'], self::STATUS_CURRENT]
         );
         $nextCode = (string) ($current['code'] ?? '');
-        $nextTitle = self::DEFINITIONS[$nextCode]['title'] ?? 'la suite du suivi';
+        $nextTitle = self::definition($nextCode, $order)['title'] ?? 'la suite du suivi';
 
+        $startup = !empty($order['startup_enabled']);
         $titles = [
             'quote' => 'Devis reçu ' . $order['num'],
             'quote_accept' => 'Devis accepté ' . $order['num'],
-            'deposit_invoice' => 'Facture d’acompte ' . $order['num'],
-            'deposit_paid' => 'Acompte déclaré ' . $order['num'],
+            'deposit_invoice' => ($startup ? 'Facture d’accompagnement ' : 'Facture d’acompte ') . $order['num'],
+            'deposit_paid' => ($startup ? 'Accompagnement déclaré ' : 'Acompte déclaré ') . $order['num'],
             'deposit_ack' => 'Mission démarrée ' . $order['num'],
             'deliver' => 'Livraison à régler ' . $order['num'],
             'final_invoice' => 'Facture de solde ' . $order['num'],

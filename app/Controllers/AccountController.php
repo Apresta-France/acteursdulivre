@@ -605,7 +605,7 @@ final class AccountController
                 }
                 redirect('/espace/suivi/' . (int) $existing['id']);
             }
-            $order = Order::create([
+            $order = Order::create(array_merge([
                 'buyer_id' => (int) $user['id'],
                 'seller_id' => (int) $service['user_id'],
                 'service_id' => (int) $service['id'],
@@ -613,7 +613,7 @@ final class AccountController
                 'brief' => $brief,
                 'package_name' => $selected['name'] ?? null,
                 'options' => $pickedOptions,
-            ]);
+            ], Service::startupSnapshot($service, $amount)));
             Analytics::action('commande');
             Conversation::open((int) $user['id'], (int) $service['user_id'], [
                 'subject' => (string) $service['title'],
@@ -879,7 +879,7 @@ final class AccountController
                 'file_path' => $file['path'] ?? null,
             ]);
             self::pingJalonThread((int) $id, (int) $user['id'], $code, $file);
-            flash('saved', OrderMilestone::flashFor($code));
+            flash('saved', OrderMilestone::flashFor($code, Order::findBare((int) $id) ?? []));
         } catch (\Throwable $e) {
             flash('error', user_error_message($e));
         }
@@ -1121,7 +1121,7 @@ final class AccountController
     {
         $user = Auth::requireOfferer();
         $title = $request->string('title');
-        $excerpt = sanitize_rich_html($request->string('excerpt'));
+        $excerpt = sanitize_user_html($request->string('excerpt'));
         $category = $request->string('category_name');
         $specialty = $request->string('specialty');
         $draft = $request->string('intent') === 'draft';
@@ -1139,6 +1139,9 @@ final class AccountController
             'packages' => $packagesInput,
             'options' => $optionsInput,
             'portfolio_url' => $request->string('portfolio_url'),
+            'startup_enabled' => $request->bool('startup_enabled') ? '1' : '',
+            'startup_kind' => $request->string('startup_kind') ?: 'amount',
+            'startup_value' => $request->string('startup_value'),
         ];
 
         $allowedTrades = self::offererTrades((int) $user['id']);
@@ -1184,6 +1187,13 @@ final class AccountController
             flash('old', $old);
             redirect('/espace/prestations/creer');
         }
+        try {
+            $startup = self::startupFromRequest($request);
+        } catch (\RuntimeException $e) {
+            flash('error', user_error_message($e));
+            flash('old', $old);
+            redirect('/espace/prestations/creer');
+        }
 
         $media = ['paths' => [], 'portfolio' => '', 'uploaded' => []];
         try {
@@ -1206,6 +1216,9 @@ final class AccountController
                 'delay' => $request->string('delay') ?: null,
                 'price_from' => self::money($request->string('price_from')),
                 'status' => $draft ? 'draft' : 'published',
+                'startup_enabled' => $startup['enabled'],
+                'startup_kind' => $startup['kind'],
+                'startup_value' => $startup['value'],
             ], $packages, $options);
         } catch (\RuntimeException $e) {
             Service::discardImageFiles($media['uploaded']);
@@ -1266,6 +1279,9 @@ final class AccountController
             }, $service['options'] ?? []),
             'portfolio_url' => $service['portfolio_url'] ?? '',
             'images' => self::imagesForForm(Service::imagePaths($service)),
+            'startup_enabled' => !empty($service['startup_enabled']) ? '1' : '',
+            'startup_kind' => !empty($service['startup_kind']) ? (string) $service['startup_kind'] : 'amount',
+            'startup_value' => !empty($service['startup_enabled']) ? (string) (int) ($service['startup_value'] ?? 0) : '',
         ];
         View::page('creer', [
             'title' => 'Modifier la prestation',
@@ -1295,7 +1311,7 @@ final class AccountController
         }
 
         $title = $request->string('title');
-        $excerpt = sanitize_rich_html($request->string('excerpt'));
+        $excerpt = sanitize_user_html($request->string('excerpt'));
         $category = $request->string('category_name');
         $specialty = $request->string('specialty');
         $draft = $request->string('intent') === 'draft';
@@ -1314,6 +1330,9 @@ final class AccountController
             'options' => $optionsInput,
             'portfolio_url' => $request->string('portfolio_url'),
             'images' => self::keptServiceImages($request, $currentPaths),
+            'startup_enabled' => $request->bool('startup_enabled') ? '1' : '',
+            'startup_kind' => $request->string('startup_kind') ?: 'amount',
+            'startup_value' => $request->string('startup_value'),
         ];
 
         $allowedTrades = self::offererTrades((int) $user['id'], (string) ($service['category_name'] ?? ''));
@@ -1359,6 +1378,13 @@ final class AccountController
             flash('old', $old);
             redirect('/espace/prestations/' . (int) $id . '/modifier');
         }
+        try {
+            $startup = self::startupFromRequest($request);
+        } catch (\RuntimeException $e) {
+            flash('error', user_error_message($e));
+            flash('old', $old);
+            redirect('/espace/prestations/' . (int) $id . '/modifier');
+        }
 
         $media = ['paths' => $currentPaths, 'portfolio' => $request->string('portfolio_url'), 'uploaded' => []];
         try {
@@ -1382,6 +1408,9 @@ final class AccountController
                 'delay' => $request->string('delay') ?: null,
                 'price_from' => self::money($request->string('price_from')),
                 'status' => $draft ? 'draft' : 'published',
+                'startup_enabled' => $startup['enabled'],
+                'startup_kind' => $startup['kind'],
+                'startup_value' => $startup['value'],
             ], $packages, $options);
         } catch (\Throwable $e) {
             Service::discardImageFiles($media['uploaded']);
@@ -2439,6 +2468,18 @@ final class AccountController
             return (int) ($value[$orderId] ?? $value[(string) $orderId] ?? 0);
         }
         return (int) $value;
+    }
+
+    /**
+     * @return array{enabled: int, kind: ?string, value: ?int}
+     */
+    private static function startupFromRequest(Request $request): array
+    {
+        return Service::normalizeStartup(
+            $request->bool('startup_enabled'),
+            $request->string('startup_kind'),
+            self::money($request->string('startup_value'))
+        );
     }
 
     private static function money(string $value): ?int

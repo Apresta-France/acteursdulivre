@@ -11,36 +11,54 @@ use DOMText;
 
 final class RichText
 {
-    /** @var array<string, list<string>> */
-    private const ALLOWED = [
-        'p' => [],
-        'br' => [],
-        'strong' => [],
-        'b' => [],
-        'em' => [],
-        'i' => [],
-        'u' => [],
-        'ul' => [],
-        'ol' => [],
-        'li' => [],
-        'h2' => ['id'],
-        'h3' => ['id'],
-        'h4' => ['id'],
-        'blockquote' => [],
-        'figure' => [],
-        'figcaption' => [],
-        'table' => [],
-        'caption' => [],
-        'thead' => [],
-        'tbody' => [],
-        'tr' => [],
-        'th' => ['scope'],
-        'td' => [],
-        'a' => ['href', 'title', 'rel', 'target'],
+    public const PROFILE_FULL = 'full';
+    public const PROFILE_BASIC = 'basic';
+
+    /** @var array<string, array<string, list<string>>> */
+    private const PROFILES = [
+        self::PROFILE_FULL => [
+            'p' => [],
+            'br' => [],
+            'strong' => [],
+            'b' => [],
+            'em' => [],
+            'i' => [],
+            'u' => [],
+            'ul' => [],
+            'ol' => [],
+            'li' => [],
+            'h2' => ['id'],
+            'h3' => ['id'],
+            'h4' => ['id'],
+            'blockquote' => [],
+            'figure' => [],
+            'figcaption' => [],
+            'table' => [],
+            'caption' => [],
+            'thead' => [],
+            'tbody' => [],
+            'tr' => [],
+            'th' => ['scope'],
+            'td' => [],
+            'a' => ['href', 'title', 'rel', 'target'],
+        ],
+        self::PROFILE_BASIC => [
+            'p' => [],
+            'br' => [],
+            'strong' => [],
+            'b' => [],
+            'em' => [],
+            'i' => [],
+            'ul' => [],
+            'ol' => [],
+            'li' => [],
+            'a' => ['href', 'title', 'rel', 'target'],
+        ],
     ];
 
-    public static function sanitize(string $html): string
+    public static function sanitize(string $html, string $profile = self::PROFILE_FULL): string
     {
+        $allowed = self::PROFILES[$profile] ?? self::PROFILES[self::PROFILE_FULL];
         $html = trim($html);
         if ($html === '') {
             return '';
@@ -68,7 +86,7 @@ final class RichText
         }
 
         self::promoteDivs($root, $dom);
-        self::cleanNode($root, $dom);
+        self::cleanNode($root, $dom, $allowed);
 
         $out = '';
         foreach ($root->childNodes as $child) {
@@ -117,7 +135,14 @@ final class RichText
         }
     }
 
-    private static function cleanNode(DOMNode $node, DOMDocument $dom): void
+    /** @var list<string> */
+    private const DROP = [
+        'script', 'style', 'iframe', 'object', 'embed', 'svg', 'math',
+        'video', 'audio', 'canvas', 'template', 'noscript', 'link', 'meta', 'base',
+    ];
+
+    /** @param array<string, list<string>> $allowed */
+    private static function cleanNode(DOMNode $node, DOMDocument $dom, array $allowed): void
     {
         $toRemove = [];
         foreach (iterator_to_array($node->childNodes) as $child) {
@@ -130,39 +155,26 @@ final class RichText
             }
 
             $tag = strtolower($child->tagName);
-            if ($tag === 'script' || $tag === 'style') {
+            if (in_array($tag, self::DROP, true)) {
                 $toRemove[] = $child;
                 continue;
             }
 
-            if ($tag === 'div') {
+            if (isset($allowed[$tag])) {
+                self::cleanAttributes($child, $tag, $allowed);
+            }
+
+            self::cleanNode($child, $dom, $allowed);
+
+            $unwrap = !isset($allowed[$tag])
+                || ($tag === 'a' && trim($child->getAttribute('href')) === '');
+            if ($unwrap) {
                 $parent = $child->parentNode;
                 while ($child->firstChild) {
                     $parent?->insertBefore($child->firstChild, $child);
                 }
                 $toRemove[] = $child;
-                continue;
             }
-
-            if (!isset(self::ALLOWED[$tag])) {
-                $parent = $child->parentNode;
-                while ($child->firstChild) {
-                    $parent?->insertBefore($child->firstChild, $child);
-                }
-                $toRemove[] = $child;
-                continue;
-            }
-
-            self::cleanAttributes($child, $tag);
-            if ($tag === 'a' && trim($child->getAttribute('href')) === '') {
-                $parent = $child->parentNode;
-                while ($child->firstChild) {
-                    $parent?->insertBefore($child->firstChild, $child);
-                }
-                $toRemove[] = $child;
-                continue;
-            }
-            self::cleanNode($child, $dom);
         }
 
         foreach ($toRemove as $dead) {
@@ -170,9 +182,10 @@ final class RichText
         }
     }
 
-    private static function cleanAttributes(DOMElement $el, string $tag): void
+    /** @param array<string, list<string>> $allowed */
+    private static function cleanAttributes(DOMElement $el, string $tag, array $allowed): void
     {
-        $allowed = self::ALLOWED[$tag];
+        $keep = $allowed[$tag];
         $names = [];
         if ($el->hasAttributes()) {
             foreach ($el->attributes as $attr) {
@@ -182,7 +195,7 @@ final class RichText
 
         foreach ($names as $name) {
             $lname = strtolower($name);
-            if (!in_array($lname, $allowed, true)) {
+            if (!in_array($lname, $keep, true)) {
                 $el->removeAttribute($name);
                 continue;
             }

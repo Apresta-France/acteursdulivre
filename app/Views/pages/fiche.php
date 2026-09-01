@@ -74,7 +74,7 @@ $formulePriceLabel = is_array($selectedPackage)
         </p>
       <?php endif; ?>
       <h1><?= e((string) $service['title']) ?></h1>
-      <div class="service-excerpt"><?= rich_html(
+      <div class="service-excerpt"><?= user_html(
           (string) ($service['excerpt'] ?? ''),
           '<p>Prestation proposée par ' . e((string) $service['by']) . '.</p>'
       ) ?></div>
@@ -86,6 +86,9 @@ $formulePriceLabel = is_array($selectedPackage)
           <div><span>Spécialité</span><strong><?= e((string) $service['specialty']) ?></strong></div>
         <?php endif; ?>
         <div><span>Avis</span><strong><?= $service['reviews'] > 0 ? e((string) $service['rating']) . ' · ' . (int) $service['reviews'] : 'Pas encore d\'avis' ?></strong></div>
+        <?php if (!empty($service['startup_enabled'])): ?>
+          <div><span>Démarrage</span><strong><?= e((string) $service['startup_label']) ?></strong></div>
+        <?php endif; ?>
       </div>
 
       <?php if ($packages !== []): ?>
@@ -171,6 +174,9 @@ $formulePriceLabel = is_array($selectedPackage)
             <span>Total TTC</span>
             <strong data-order-total-value><?= e(format_euros_ttc($baseAmount)) ?></strong>
           </div>
+          <?php if (!empty($service['startup_enabled'])): ?>
+            <p class="field-help" style="margin: 8px 0 0;">Accompagnement de démarrage : <?= e((string) $service['startup_label']) ?></p>
+          <?php endif; ?>
           <?php if ($canOrder): ?>
             <a class="btn-orange" data-order-cta data-order-cta-label href="<?= e(url($orderHref)) ?>"><?= e($ctaLabel) ?></a>
             <form method="post" action="<?= e(url('/espace/messages')) ?>">

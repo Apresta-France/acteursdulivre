@@ -15,7 +15,12 @@ foreach ($milestones as $row) {
         break;
     }
 }
-$hiddenUntilQuote = ['deposit_invoice', 'deposit_paid', 'deposit_ack', 'final_invoice', 'final_paid'];
+$startupOn = !empty($order['startup_enabled']);
+$depositTitle = (string) ($order['deposit_title'] ?? ($startupOn ? 'Accompagnement de démarrage' : 'Acompte'));
+$hiddenUntilQuote = ['final_invoice', 'final_paid'];
+if (!$startupOn) {
+    $hiddenUntilQuote = array_merge(['deposit_invoice', 'deposit_paid', 'deposit_ack'], $hiddenUntilQuote);
+}
 $visibleMilestones = [];
 foreach ($milestones as $step) {
     if (!empty($step['is_skipped'])) {
@@ -91,9 +96,17 @@ $mine = !empty($action['mine']);
                   <input class="input" id="jalon-amount" name="amount" inputmode="decimal" required value="<?= e((string) ((int) ($order['amount'] ?? 0) ?: '')) ?>" placeholder="780">
                 </div>
                 <div>
-                  <label class="field" for="jalon-deposit">Acompte (€)</label>
-                  <input class="input" id="jalon-deposit" name="deposit_amount" inputmode="decimal" value="<?= e((string) ((int) ($order['deposit_amount'] ?? 0) ?: '')) ?>" placeholder="0 si aucun">
-                  <p class="field-help">Souvent 30 %. Laissez vide s’il n’y a pas d’acompte.</p>
+                  <label class="field" for="jalon-deposit"><?= e($depositTitle) ?> (€)</label>
+                  <input class="input" id="jalon-deposit" name="deposit_amount" inputmode="decimal"
+                         value="<?= e((string) ((int) ($order['deposit_amount'] ?? 0) ?: '')) ?>"
+                         placeholder="0 si aucun"
+                         <?php if ($startupOn): ?>
+                         data-startup-kind="<?= e((string) ($order['startup_kind'] ?? 'amount')) ?>"
+                         data-startup-value="<?= (int) ($order['startup_value'] ?? 0) ?>"
+                         <?php endif; ?>>
+                  <p class="field-help"><?= $startupOn
+                      ? 'Prérempli depuis votre prestation. Vous pouvez l’ajuster.'
+                      : 'Souvent 30 %. Laissez vide s’il n’y a pas d’acompte.' ?></p>
                 </div>
               </div>
               <div>
@@ -126,7 +139,7 @@ $mine = !empty($action['mine']);
           <?php elseif ($form === 'quote_accept'): ?>
             <div class="jalon-recap">
               <div class="jalon-recap-row"><span>Montant</span><strong><?= e((string) ($order['amount_label'] ?? '')) ?></strong></div>
-              <div class="jalon-recap-row"><span>Acompte</span><strong><?= (int) ($order['deposit_amount'] ?? 0) > 0 ? e((string) $order['deposit_label']) : 'Aucun' ?></strong></div>
+              <div class="jalon-recap-row"><span><?= e($depositTitle) ?></span><strong><?= (int) ($order['deposit_amount'] ?? 0) > 0 ? e((string) $order['deposit_label']) : 'Aucun' ?></strong></div>
               <?php if (!empty($order['quote_delay'])): ?>
                 <div class="jalon-recap-row"><span>Délai</span><strong><?= e((string) $order['quote_delay']) ?></strong></div>
               <?php endif; ?>
@@ -289,8 +302,13 @@ $mine = !empty($action['mine']);
             <li class="jalon is-hint">
               <span class="jalon-dot" aria-hidden="true"></span>
               <div class="jalon-body">
-                <strong>Acompte et solde</strong>
-                <p class="jalon-meta">Ces étapes s’ajoutent automatiquement si le devis prévoit un acompte ou un reste à payer.</p>
+                <?php if ($startupOn): ?>
+                  <strong>Solde</strong>
+                  <p class="jalon-meta">Cette étape s’ajoute après la livraison s’il reste un montant à régler.</p>
+                <?php else: ?>
+                  <strong>Acompte et solde</strong>
+                  <p class="jalon-meta">Ces étapes s’ajoutent automatiquement si le devis prévoit un acompte ou un reste à payer.</p>
+                <?php endif; ?>
               </div>
             </li>
           <?php endif; ?>
@@ -334,7 +352,7 @@ $mine = !empty($action['mine']);
         <p>Client et prestataire se règlent <strong>entre eux</strong>. La plateforme n’encaisse rien : elle suit les jalons, puis facture sa commission au prestataire à la validation.</p>
         <div class="jalon-recap" data-quote-recap>
           <div class="jalon-recap-row"><span>Mission</span><strong data-quote-recap-amount><?= e((string) ($order['amount_label'] ?? '')) ?></strong></div>
-          <div class="jalon-recap-row"><span>Acompte</span><strong data-quote-recap-deposit><?= (int) ($order['deposit_amount'] ?? 0) > 0 ? e((string) $order['deposit_label']) : '—' ?></strong></div>
+          <div class="jalon-recap-row"><span><?= e($depositTitle) ?></span><strong data-quote-recap-deposit><?= (int) ($order['deposit_amount'] ?? 0) > 0 ? e((string) $order['deposit_label']) : '—' ?></strong></div>
           <div class="jalon-recap-row"><span>Solde</span><strong data-quote-recap-balance><?= e((string) ($order['balance_label'] ?? '—')) ?></strong></div>
           <?php if (!empty($order['commission_label'])): ?>
             <div class="jalon-recap-row"><span>Commission</span><strong><?= e((string) $order['commission_label']) ?></strong></div>

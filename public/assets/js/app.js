@@ -1712,16 +1712,92 @@
 
   bindFilePicks(document);
 
+  var EDITOR_TAGS = {
+    p: true, br: true, strong: true, b: true, em: true, i: true,
+    ul: true, ol: true, li: true, a: true
+  };
+
+  function escapeEditorText(text) {
+    return String(text)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  function safeEditorHref(href) {
+    href = String(href || '').trim();
+    if (!href) return '';
+    if (/^(javascript|data|vbscript):/i.test(href)) return '';
+    if (/^https?:\/\//i.test(href) || /^mailto:[^\s]+$/i.test(href)) return href;
+    if (href.charAt(0) === '/' && href.charAt(1) !== '/') return href;
+    return '';
+  }
+
+  function serializeEditorNode(node) {
+    if (node.nodeType === 3) return escapeEditorText(node.nodeValue || '');
+    if (node.nodeType !== 1) return '';
+    var tag = (node.tagName || '').toLowerCase();
+    if (tag === 'script' || tag === 'style') return '';
+    var inner = '';
+    Array.prototype.forEach.call(node.childNodes, function (child) {
+      inner += serializeEditorNode(child);
+    });
+    if (tag === 'br') return '<br>';
+    if (tag === 'a') {
+      var href = safeEditorHref(node.getAttribute('href'));
+      if (!href) return inner;
+      var extra = ' rel="noopener noreferrer" target="_blank"';
+      if (/^https?:\/\//i.test(href)) {
+        return '<a href="' + escapeEditorText(href) + '"' + extra + '>' + inner + '</a>';
+      }
+      return '<a href="' + escapeEditorText(href) + '">' + inner + '</a>';
+    }
+    if (EDITOR_TAGS[tag]) return '<' + tag + '>' + inner + '</' + tag + '>';
+    return inner;
+  }
+
+  function sanitizeEditorHtml(html) {
+    if (!html) return '';
+    var doc;
+    try {
+      doc = new DOMParser().parseFromString('<div id="adl-rt">' + html + '</div>', 'text/html');
+    } catch (err) {
+      return '';
+    }
+    var root = doc.getElementById('adl-rt');
+    if (!root) return '';
+    var out = '';
+    Array.prototype.forEach.call(root.childNodes, function (child) {
+      out += serializeEditorNode(child);
+    });
+    return out;
+  }
+
   function toEditorHtml(raw) {
     if (!raw) return '';
-    if (/<[a-z][\s\S]*>/i.test(raw)) return raw;
+    if (/<[a-z][\s\S]*>/i.test(raw)) return sanitizeEditorHtml(raw);
     return raw.split(/\n\s*\n/).map(function (block) {
-      return '<p>' + block.replace(/\n/g, '<br>') + '</p>';
+      return '<p>' + escapeEditorText(block).replace(/\n/g, '<br>') + '</p>';
     }).join('');
   }
 
   function editorIsEmpty(editor) {
     return (editor.innerText || '').replace(/\u00a0/g, ' ').trim() === '';
+  }
+
+  function insertEditorHtml(html) {
+    if (!html) return;
+    document.execCommand('insertHTML', false, html);
+  }
+
+  function clipboardToEditorHtml(data) {
+    if (!data) return '';
+    var html = data.getData('text/html') || '';
+    var text = data.getData('text/plain') || '';
+    var clean = html ? sanitizeEditorHtml(html) : '';
+    if (clean && clean.replace(/<[^>]+>/g, '').replace(/\s+/g, '').length) return clean;
+    return toEditorHtml(text);
   }
 
   document.querySelectorAll('[data-wysiwyg]').forEach(function (wrap) {
@@ -1737,11 +1813,28 @@
     wrap.classList.add('is-ready');
 
     function sync() {
-      source.value = editorIsEmpty(editor) ? '' : editor.innerHTML;
+      source.value = editorIsEmpty(editor) ? '' : sanitizeEditorHtml(editor.innerHTML);
     }
 
     editor.addEventListener('input', sync);
-    editor.addEventListener('blur', sync);
+    editor.addEventListener('blur', function () {
+      if (!editorIsEmpty(editor)) {
+        var clean = sanitizeEditorHtml(editor.innerHTML);
+        if (clean !== editor.innerHTML) editor.innerHTML = clean;
+      }
+      sync();
+    });
+    editor.addEventListener('paste', function (event) {
+      event.preventDefault();
+      insertEditorHtml(clipboardToEditorHtml(event.clipboardData));
+      sync();
+    });
+    editor.addEventListener('drop', function (event) {
+      if (!event.dataTransfer) return;
+      event.preventDefault();
+      insertEditorHtml(clipboardToEditorHtml(event.dataTransfer));
+      sync();
+    });
     var form = wrap.closest('form');
     if (form) form.addEventListener('submit', sync);
 
@@ -1758,7 +1851,10 @@
         var current = window.getSelection() && window.getSelection().toString();
         var href = window.prompt('Adresse du lien', current && /^https?:\/\//i.test(current) ? current : 'https://');
         if (!href) return;
+        href = String(href).trim();
         if (!/^https?:\/\//i.test(href) && !/^mailto:/i.test(href)) href = 'https://' + href.replace(/^\/+/, '');
+        href = safeEditorHref(href);
+        if (!href) return;
         document.execCommand('createLink', false, href);
       } else {
         document.execCommand(cmd, false, null);
@@ -1785,8 +1881,27 @@
       return n.toLocaleString('fr-FR') + ' €';
     }
 
+    function computedStartup(amount) {
+      if (!depositInput) return 0;
+      var kind = depositInput.getAttribute('data-startup-kind') || '';
+      var value = parseInt(depositInput.getAttribute('data-startup-value') || '0', 10) || 0;
+      if (kind === 'percent') return Math.round(amount * Math.min(100, Math.max(0, value)) / 100);
+      if (kind === 'amount') return value;
+      return 0;
+    }
+
+    var lastAutoDeposit = depositInput ? parseEuros(depositInput.value) : 0;
+
     function sync() {
       var amount = parseEuros(amountInput.value);
+      if (depositInput && depositInput.getAttribute('data-startup-kind')) {
+        var current = parseEuros(depositInput.value);
+        if (current === lastAutoDeposit || current === 0) {
+          var next = computedStartup(amount);
+          depositInput.value = next > 0 ? String(next) : '';
+          lastAutoDeposit = next;
+        }
+      }
       var deposit = depositInput ? parseEuros(depositInput.value) : 0;
       var amountEl = recap.querySelector('[data-quote-recap-amount]');
       var depositEl = recap.querySelector('[data-quote-recap-deposit]');
@@ -1803,6 +1918,37 @@
     sync();
   }
   initQuoteRecap();
+
+  (function initStartupFields() {
+    var box = document.querySelector('[data-startup-box]');
+    if (!box) return;
+    var toggle = box.querySelector('[data-startup-enabled]');
+    var fields = box.querySelector('[data-startup-fields]');
+    var label = box.querySelector('[data-startup-value-label]');
+    var help = box.querySelector('[data-startup-value-help]');
+    var input = box.querySelector('[data-startup-value]');
+    function kind() {
+      var on = box.querySelector('[data-startup-kind]:checked');
+      return on && on.value === 'percent' ? 'percent' : 'amount';
+    }
+    function sync() {
+      var on = !!(toggle && toggle.checked);
+      if (fields) fields.hidden = !on;
+      var percent = kind() === 'percent';
+      if (label) label.textContent = percent ? 'Pourcentage' : 'Montant (€ TTC)';
+      if (help) {
+        help.textContent = percent
+          ? 'Pourcentage du montant du devis, prérempli dans le suivi.'
+          : 'Montant TTC facturé au démarrage, prérempli dans le suivi.';
+      }
+      if (input) input.placeholder = percent ? '30' : '180';
+    }
+    if (toggle) toggle.addEventListener('change', sync);
+    box.querySelectorAll('[data-startup-kind]').forEach(function (radio) {
+      radio.addEventListener('change', sync);
+    });
+    sync();
+  })();
 
   document.querySelectorAll('[data-order-total]').forEach(function (root) {
     var base = parseInt(root.getAttribute('data-base') || '0', 10) || 0;

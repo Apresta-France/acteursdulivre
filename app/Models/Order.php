@@ -35,23 +35,36 @@ final class Order
         Invoice::assertCanOffer($sellerId, true);
 
         $optionsJson = self::encodeOptions($data['options'] ?? []);
+        $startupEnabled = !empty($data['startup_enabled']) ? 1 : 0;
+        $startupKind = $startupEnabled
+            ? ((string) ($data['startup_kind'] ?? '') === 'percent' ? 'percent' : 'amount')
+            : null;
+        $startupValue = $startupEnabled ? (int) ($data['startup_value'] ?? 0) : null;
+        $deposit = (int) ($data['deposit_amount'] ?? 0);
+        if ($startupEnabled && $deposit < 1 && $startupKind !== null) {
+            $deposit = Service::computeStartupAmount((int) ($data['amount'] ?? 0), $startupKind, (int) $startupValue);
+        }
         $params = [
             $buyerId,
             $sellerId,
             $data['service_id'] ?? null,
             $data['mission_id'] ?? null,
             (int) ($data['amount'] ?? 0),
+            $deposit,
             trim((string) ($data['brief'] ?? '')) ?: null,
             trim((string) ($data['package_name'] ?? '')) ?: null,
             $optionsJson,
+            $startupEnabled,
+            $startupKind,
+            $startupValue,
         ];
         $lastError = null;
         $orderId = 0;
         for ($attempt = 0; $attempt < 3; $attempt++) {
             try {
                 Database::query(
-                    'INSERT INTO orders (number, buyer_id, seller_id, service_id, mission_id, amount, status, brief, package_name, options_json, created_at)
-                     VALUES (?, ?, ?, ?, ?, ?, "pending", ?, ?, ?, NOW())',
+                    'INSERT INTO orders (number, buyer_id, seller_id, service_id, mission_id, amount, deposit_amount, status, brief, package_name, options_json, startup_enabled, startup_kind, startup_value, created_at)
+                     VALUES (?, ?, ?, ?, ?, ?, ?, "pending", ?, ?, ?, ?, ?, ?, NOW())',
                     [self::nextNumber(), ...$params]
                 );
                 $orderId = (int) Database::lastId();
@@ -203,10 +216,16 @@ final class Order
         if (!$order || ($order['status'] ?? '') !== 'pending') {
             throw new \RuntimeException('Cette commande n\'est plus en attente.');
         }
+        $amount = (int) ($data['amount'] ?? 0);
+        $deposit = (int) ($order['deposit_amount'] ?? 0);
+        if (!empty($order['startup_enabled']) && (string) ($order['startup_kind'] ?? '') === 'percent') {
+            $deposit = Service::computeStartupAmount($amount, 'percent', (int) ($order['startup_value'] ?? 0));
+        }
         Database::query(
-            'UPDATE orders SET amount = ?, brief = ?, package_name = ?, options_json = ? WHERE id = ? AND status = "pending"',
+            'UPDATE orders SET amount = ?, deposit_amount = ?, brief = ?, package_name = ?, options_json = ? WHERE id = ? AND status = "pending"',
             [
-                (int) ($data['amount'] ?? 0),
+                $amount,
+                $deposit,
                 trim((string) ($data['brief'] ?? '')) ?: null,
                 trim((string) ($data['package_name'] ?? '')) ?: null,
                 self::encodeOptions($data['options'] ?? []),
@@ -641,6 +660,13 @@ final class Order
         $row['amount_label'] = format_euros((int) ($row['amount'] ?? 0));
         $row['deposit_amount'] = (int) ($row['deposit_amount'] ?? 0);
         $row['deposit_label'] = format_euros($row['deposit_amount']);
+        $row['startup_enabled'] = !empty($row['startup_enabled']);
+        $row['startup_kind'] = $row['startup_enabled']
+            ? ((string) ($row['startup_kind'] ?? '') === 'percent' ? 'percent' : 'amount')
+            : '';
+        $row['startup_value'] = $row['startup_enabled'] ? (int) ($row['startup_value'] ?? 0) : 0;
+        $row['startup_label'] = Service::startupLabel($row);
+        $row['deposit_title'] = $row['startup_enabled'] ? 'Accompagnement de démarrage' : 'Acompte';
         $row['status_label'] = self::STATUSES[$status] ?? $status;
         $row['status_tone'] = match ($status) {
             'paid', 'delivered', 'confirmed' => 'green',

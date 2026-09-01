@@ -15,6 +15,75 @@ final class Service
 
     public const IMAGE_MAX = 5;
 
+    /**
+     * @return array{enabled: int, kind: ?string, value: ?int}
+     */
+    public static function normalizeStartup(bool $enabled, string $kind, ?int $value): array
+    {
+        if (!$enabled) {
+            return ['enabled' => 0, 'kind' => null, 'value' => null];
+        }
+        $kind = $kind === 'percent' ? 'percent' : 'amount';
+        $value = (int) $value;
+        if ($kind === 'percent') {
+            if ($value < 1 || $value > 100) {
+                throw new \RuntimeException('Indiquez un pourcentage d’accompagnement entre 1 et 100.');
+            }
+        } elseif ($value < 1) {
+            throw new \RuntimeException('Indiquez le montant de l’accompagnement de démarrage.');
+        }
+
+        return ['enabled' => 1, 'kind' => $kind, 'value' => $value];
+    }
+
+    public static function computeStartupAmount(int $base, string $kind, int $value): int
+    {
+        if ($kind === 'percent') {
+            return max(0, (int) round($base * min(100, max(0, $value)) / 100));
+        }
+
+        return max(0, $value);
+    }
+
+    /**
+     * @param array<string, mixed> $service
+     * @return array{startup_enabled: int, startup_kind: ?string, startup_value: ?int, deposit_amount: int}
+     */
+    public static function startupSnapshot(array $service, int $amount): array
+    {
+        if (empty($service['startup_enabled'])) {
+            return [
+                'startup_enabled' => 0,
+                'startup_kind' => null,
+                'startup_value' => null,
+                'deposit_amount' => 0,
+            ];
+        }
+        $kind = (string) ($service['startup_kind'] ?? '') === 'percent' ? 'percent' : 'amount';
+        $value = (int) ($service['startup_value'] ?? 0);
+
+        return [
+            'startup_enabled' => 1,
+            'startup_kind' => $kind,
+            'startup_value' => $value,
+            'deposit_amount' => self::computeStartupAmount($amount, $kind, $value),
+        ];
+    }
+
+    /** @param array<string, mixed> $row */
+    public static function startupLabel(array $row): string
+    {
+        if (empty($row['startup_enabled'])) {
+            return '';
+        }
+        $value = (int) ($row['startup_value'] ?? 0);
+        if ((string) ($row['startup_kind'] ?? '') === 'percent') {
+            return $value . ' % du montant';
+        }
+
+        return format_euros_ttc($value);
+    }
+
     public static function find(int $id): ?array
     {
         $row = Database::fetch(
@@ -176,10 +245,11 @@ final class Service
         $imagePaths = self::normalizeImagePaths($data);
         $portfolioUrl = self::normalizePortfolioUrl($data['portfolio_url'] ?? null);
 
-        $id = (int) Database::transaction(static function () use ($userId, $data, $title, $slug, $imagePaths, $portfolioUrl, $priceFrom, $packages, $options): int {
+        $startup = self::startupFields($data);
+        $id = (int) Database::transaction(static function () use ($userId, $data, $title, $slug, $imagePaths, $portfolioUrl, $priceFrom, $packages, $options, $startup): int {
             Database::query(
-                'INSERT INTO services (user_id, category_name, specialty, title, slug, excerpt, image_path, portfolio_url, status, price_from, delay)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                'INSERT INTO services (user_id, category_name, specialty, title, slug, excerpt, image_path, portfolio_url, status, price_from, delay, startup_enabled, startup_kind, startup_value)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
                 [
                     $userId,
                     $data['category_name'] ?? null,
@@ -192,6 +262,9 @@ final class Service
                     $data['status'] ?? 'published',
                     $priceFrom,
                     $data['delay'] ?? null,
+                    $startup['enabled'],
+                    $startup['kind'],
+                    $startup['value'],
                 ]
             );
 
@@ -246,10 +319,17 @@ final class Service
             ? self::normalizePortfolioUrl($data['portfolio_url'] ?? null)
             : self::normalizePortfolioUrl($service['portfolio_url'] ?? null);
 
-        Database::transaction(static function () use ($id, $userId, $data, $service, $title, $imagePaths, $portfolioUrl, $status, $priceFrom, $packages, $options): void {
+        $startup = array_key_exists('startup_enabled', $data)
+            ? self::startupFields($data)
+            : [
+                'enabled' => !empty($service['startup_enabled']) ? 1 : 0,
+                'kind' => $service['startup_kind'] ?? null,
+                'value' => isset($service['startup_value']) ? (int) $service['startup_value'] : null,
+            ];
+        Database::transaction(static function () use ($id, $userId, $data, $service, $title, $imagePaths, $portfolioUrl, $status, $priceFrom, $packages, $options, $startup): void {
             Database::query(
                 'UPDATE services
-                 SET category_name = ?, specialty = ?, title = ?, excerpt = ?, image_path = ?, portfolio_url = ?, status = ?, price_from = ?, delay = ?
+                 SET category_name = ?, specialty = ?, title = ?, excerpt = ?, image_path = ?, portfolio_url = ?, status = ?, price_from = ?, delay = ?, startup_enabled = ?, startup_kind = ?, startup_value = ?
                  WHERE id = ? AND user_id = ?',
                 [
                     $data['category_name'] ?? $service['category_name'] ?? null,
@@ -261,6 +341,9 @@ final class Service
                     $status,
                     $priceFrom,
                     $data['delay'] ?? $service['delay'] ?? null,
+                    $startup['enabled'],
+                    $startup['kind'],
+                    $startup['value'],
                     $id,
                     $userId,
                 ]
@@ -622,6 +705,25 @@ final class Service
         $row['thumb'] = $row['has_image'] ? $row['img'] : '';
         $row['cover'] = $row['has_image'] ? '' : $row['img'];
         $row['search'] = $row['cat'] . ' ' . $row['specialty'] . ' ' . $row['title'] . ' ' . $row['by'] . ' ' . $city . ' ' . plain_text((string) ($row['excerpt'] ?? ''));
+        $row['startup_enabled'] = !empty($row['startup_enabled']);
+        $row['startup_kind'] = $row['startup_enabled']
+            ? ((string) ($row['startup_kind'] ?? '') === 'percent' ? 'percent' : 'amount')
+            : '';
+        $row['startup_value'] = $row['startup_enabled'] ? (int) ($row['startup_value'] ?? 0) : 0;
+        $row['startup_label'] = self::startupLabel($row);
         return $row;
+    }
+
+    /**
+     * @param array<string, mixed> $data
+     * @return array{enabled: int, kind: ?string, value: ?int}
+     */
+    private static function startupFields(array $data): array
+    {
+        return self::normalizeStartup(
+            !empty($data['startup_enabled']),
+            (string) ($data['startup_kind'] ?? 'amount'),
+            isset($data['startup_value']) ? (int) $data['startup_value'] : null
+        );
     }
 }

@@ -16,9 +16,21 @@ function sanitize_rich_html(?string $html): string
     return \Adl\Core\RichText::sanitize((string) $html);
 }
 
+function sanitize_user_html(?string $html): string
+{
+    return \Adl\Core\RichText::sanitize((string) $html, \Adl\Core\RichText::PROFILE_BASIC);
+}
+
 function rich_html(?string $html, string $fallback = ''): string
 {
     $clean = sanitize_rich_html($html);
+
+    return $clean !== '' ? $clean : $fallback;
+}
+
+function user_html(?string $html, string $fallback = ''): string
+{
+    $clean = sanitize_user_html($html);
 
     return $clean !== '' ? $clean : $fallback;
 }

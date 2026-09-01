@@ -2457,7 +2457,25 @@ a.service-cover-hero:focus-visible {
 .wysiwyg-editor p:last-child { margin-bottom: 0; }
 .wysiwyg-editor ul, .wysiwyg-editor ol { margin: 0 0 0.7em; padding-left: 1.3em; }
 .wysiwyg-editor a { color: var(--navy); }
+.wysiwyg-editor form,
+.wysiwyg-editor input,
+.wysiwyg-editor select,
+.wysiwyg-editor button,
+.wysiwyg-editor textarea,
+.wysiwyg-editor label,
+.wysiwyg-editor iframe,
+.wysiwyg-editor img,
+.wysiwyg-editor video,
+.wysiwyg-editor svg,
+.wysiwyg-editor table,
+.wysiwyg-editor .wysiwyg-toolbar { display: none !important; }
 .field-help { font-size: 13px; color: #8496A8; margin: 6px 0 0; }
+.startup-fields {
+  margin-top: 12px;
+  padding: 14px 16px;
+  background: #F7F5F2;
+  border-radius: 10px;
+}
 .form-notice {
   border: 1px solid #F4DFD8;
   background: #FDF3F0;

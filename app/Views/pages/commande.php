@@ -82,6 +82,12 @@ $baseAmount = $package
               <strong data-order-total-value><?= e(format_euros_ttc($baseAmount)) ?></strong>
             </div>
           <?php endif; ?>
+          <?php if ($service !== null && !empty($service['startup_enabled'])): ?>
+            <div class="side-foot">
+              <span>Accompagnement de démarrage</span>
+              <strong><?= e((string) $service['startup_label']) ?></strong>
+            </div>
+          <?php endif; ?>
         </div>
       </aside>
     </div>
