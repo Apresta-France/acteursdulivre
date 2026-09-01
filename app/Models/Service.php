@@ -449,6 +449,7 @@ final class Service
         $row['subtitle'] = $row['by'];
         $row['meta'] = trim(($row['delay'] ?? '') . ($reviews['avg'] !== '' ? ' · ★ ' . $reviews['avg'] : ''));
         $row['thumb'] = $row['has_image'] ? $row['img'] : '';
+        $row['cover'] = $row['has_image'] ? '' : $row['img'];
         $row['search'] = $row['cat'] . ' ' . $row['specialty'] . ' ' . $row['title'] . ' ' . $row['by'] . ' ' . plain_text((string) ($row['excerpt'] ?? ''));
         return $row;
     }

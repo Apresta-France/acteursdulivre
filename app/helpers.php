@@ -189,8 +189,18 @@ function service_cover_label(string $category): string
     return $category !== '' ? $category : 'Prestation';
 }
 
-function service_cover_image_url(): string
+function service_cover_image_url(string $category = ''): string
 {
+    $stem = $category !== '' ? \Adl\Data\Catalog::coverStem($category) : '';
+    if ($stem !== '') {
+        $dir = ADL_ROOT . '/public/assets/img/covers/';
+        if (is_file($dir . $stem . '.webp')) {
+            return asset('img/covers/' . $stem . '.webp');
+        }
+        if (is_file($dir . $stem . '.jpg')) {
+            return asset('img/covers/' . $stem . '.jpg');
+        }
+    }
     $webp = ADL_ROOT . '/public/assets/img/service-cover-default.webp';
     if (is_file($webp)) {
         return asset('img/service-cover-default.webp');
@@ -202,7 +212,8 @@ function service_cover_html(string $category, string $extraClass = ''): string
 {
     $label = service_cover_label($category);
     $class = trim('service-cover ' . $extraClass);
-    return '<div class="' . e($class) . '" role="img" aria-label="' . e('Visuel ' . $label) . '">'
+    $url = service_cover_image_url($category);
+    return '<div class="' . e($class) . '" style="--service-cover-photo:url(\'' . e($url) . '\')" role="img" aria-label="' . e('Visuel ' . $label) . '">'
         . '<span class="service-cover-photo" aria-hidden="true"></span>'
         . '<span class="service-cover-kicker">acteursdulivre.fr</span>'
         . '<span class="service-cover-type">' . e($label) . '</span>'
@@ -211,7 +222,7 @@ function service_cover_html(string $category, string $extraClass = ''): string
 
 function service_brand_cover_url(string $category = ''): string
 {
-    return service_cover_image_url();
+    return service_cover_image_url($category);
 }
 
 /** @param array<string, mixed> $item */

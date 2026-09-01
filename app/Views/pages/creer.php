@@ -59,7 +59,7 @@ $noTrades = $trades === [];
           <?php else: ?>
             <select class="input" id="service-trade" name="category_name" required data-cover-trade>
               <?php foreach ($trades as $trade): ?>
-                <option value="<?= e($trade) ?>"<?= $selected === $trade ? ' selected' : '' ?>>
+                <option value="<?= e($trade) ?>" data-cover-url="<?= e(service_brand_cover_url($trade)) ?>"<?= $selected === $trade ? ' selected' : '' ?>>
                   <?= e(\Adl\Data\Catalog::tradeTitle($trade)) ?>
                 </option>
               <?php endforeach; ?>

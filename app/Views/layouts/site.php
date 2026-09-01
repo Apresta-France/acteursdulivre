@@ -308,6 +308,6 @@
       </footer>
     </div>
   </div>
-  <script src="<?= e(asset('js/app.js')) ?>?v=m46"></script>
+  <script src="<?= e(asset('js/app.js')) ?>?v=m47"></script>
 </body>
 </html>

@@ -446,7 +446,7 @@
       var media = item.thumb
         ? '<div class="search-card-media" style="background-image:url(\'' + escapeHtml(item.thumb) + '\')"></div>'
         : (item.kind === 'prestations'
-          ? '<div class="search-card-media service-cover" role="img" aria-label="Visuel ' + escapeHtml(item.cat || 'Prestation') + '"><span class="service-cover-photo" aria-hidden="true"></span><span class="service-cover-kicker">acteursdulivre.fr</span><span class="service-cover-type">' + escapeHtml(item.cat || 'Prestation') + '</span></div>'
+          ? '<div class="search-card-media service-cover"' + (item.cover ? ' style="--service-cover-photo:url(\'' + escapeHtml(item.cover) + '\')"' : '') + ' role="img" aria-label="Visuel ' + escapeHtml(item.cat || 'Prestation') + '"><span class="service-cover-photo" aria-hidden="true"></span><span class="service-cover-kicker">acteursdulivre.fr</span><span class="service-cover-type">' + escapeHtml(item.cat || 'Prestation') + '</span></div>'
           : '<div class="search-card-media search-card-media-plain"><span class="avatar">' + escapeHtml((item.initials || item.title || 'AD').slice(0, 2).toUpperCase()) + '</span></div>');
       return '<a class="search-card' + (item.is_busy ? ' is-busy' : '') + '" href="' + escapeHtml(item.href) + '">' + media +
         '<div class="search-card-body">' +
@@ -941,9 +941,14 @@
     function setCoverLabel(label) {
       if (coverType) coverType.textContent = label || 'Prestation';
     }
+    function setCoverPhoto(url) {
+      if (!coverBrand || !url) return;
+      coverBrand.style.setProperty('--service-cover-photo', "url('" + url + "')");
+    }
     coverForm.querySelectorAll('input[name="category_name"]').forEach(function (radio) {
       radio.addEventListener('change', function () {
         setCoverLabel(radio.value);
+        setCoverPhoto(radio.getAttribute('data-cover-url') || '');
       });
     });
     var coverSelect = coverForm.querySelector('[data-cover-trade]');
@@ -951,6 +956,7 @@
       coverSelect.addEventListener('change', function () {
         var option = coverSelect.options[coverSelect.selectedIndex];
         setCoverLabel(option ? option.textContent.trim() : coverSelect.value);
+        setCoverPhoto(option ? (option.getAttribute('data-cover-url') || '') : '');
       });
     }
     if (coverFile) {

@@ -78,6 +78,28 @@ final class Catalog
         'Juridique' => 'Juristes',
     ];
 
+    /** @var array<string, string> métier canonique => fichier de vignette par défaut */
+    public const COVER_STEMS = [
+        'Écriture' => 'auteurs',
+        'Correction' => 'correcteurs',
+        'Bêta-lecture' => 'beta-lecteurs',
+        'Illustration' => 'illustrateurs',
+        'Traduction' => 'traducteurs',
+        'Maquette' => 'maquettistes',
+        'Édition' => 'editeurs',
+        'Impression' => 'imprimeurs',
+        'Presse & com' => 'presse-communication',
+        'Librairie' => 'libraires',
+        'Audio' => 'narrateurs-audio',
+        'Agent littéraire' => 'agents-litteraires',
+        'Salons' => 'salons-evenements',
+        'Iconographie' => 'iconographes',
+        'Lecture éditoriale' => 'lecteurs-editoriaux',
+        'Photographie' => 'photographes',
+        'Reliure' => 'relieurs',
+        'Juridique' => 'juristes',
+    ];
+
     public const DELAYS = [
         'week' => 'Moins d\'une semaine',
         'mid' => '1 à 3 semaines',
@@ -395,6 +417,15 @@ final class Catalog
     public static function resolveTrade(string $text): ?string
     {
         return self::tradeFromSlug(slugify(trim($text)));
+    }
+
+    public static function coverStem(string $category): string
+    {
+        $trade = self::resolveTrade($category);
+        if ($trade === null) {
+            return '';
+        }
+        return self::COVER_STEMS[$trade] ?? '';
     }
 
     /**
@@ -899,6 +930,9 @@ final class Catalog
             }
         }
         $item['specialties'] = $specs !== [] ? array_values(array_unique($specs)) : [Taxonomy::GLOBAL_NAME];
+        if (($item['kind'] ?? '') === 'prestations' && empty($item['thumb']) && empty($item['cover'])) {
+            $item['cover'] = service_brand_cover_url((string) ($item['cat'] ?? ''));
+        }
         return $item;
     }
 
