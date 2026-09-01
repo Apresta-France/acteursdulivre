@@ -9,13 +9,16 @@ $id = (string) ($cityField['id'] ?? ($mode === 'search' ? 'search-city' : 'city'
 $value = (string) ($cityField['value'] ?? '');
 $slug = (string) ($cityField['slug'] ?? '');
 $insee = (string) ($cityField['insee'] ?? '');
-$placeholder = (string) ($cityField['placeholder'] ?? 'Paris, Lyon, Nantes…');
+$placeholder = (string) ($cityField['placeholder'] ?? ($mode === 'search' ? 'France, Europe, une ville…' : 'Paris, Lyon, Nantes…'));
 $inputClass = (string) ($cityField['input_class'] ?? 'input');
 $extra = (string) ($cityField['extra'] ?? '');
+if ($mode === 'search' && !preg_match('/aria-label|aria-labelledby/', $extra)) {
+    $extra = trim($extra . ' aria-label="Ville"');
+}
 $compact = !empty($cityField['compact']);
-$api = url('/api/villes');
+$api = url('/api/villes') . ($mode === 'search' ? '?scope=search' : '');
 ?>
-<div class="city-ac<?= $compact ? ' is-compact' : '' ?>" data-city-ac data-city-api="<?= e($api) ?>">
+<div class="city-ac<?= $compact ? ' is-compact' : '' ?>" data-city-ac data-city-scope="<?= e($mode) ?>" data-city-api="<?= e($api) ?>">
   <input
     class="<?= e($inputClass) ?>"
     type="text"
@@ -24,7 +27,11 @@ $api = url('/api/villes');
     value="<?= e($value) ?>"
     placeholder="<?= e($placeholder) ?>"
     autocomplete="off"
+    autocorrect="off"
+    autocapitalize="off"
     spellcheck="false"
+    data-1p-ignore
+    data-lpignore="true"
     data-city-input
     aria-autocomplete="list"
     aria-expanded="false"

@@ -69,42 +69,84 @@ final class Cities
         'villeurbanne' => 'Villeurbanne',
     ];
 
-    /**
-     * @return list<array{name: string, slug: string, area_slug: string, insee: string, postcode: string, dept: string, hint: string, label: string}>
-     */
-    public static function suggest(string $q, int $limit = 8): array
+    /** @var array<string, array{name: string, hint: string}> */
+    public const REGIONS = [
+        'france' => ['name' => 'France', 'hint' => 'Tout le territoire'],
+        'europe' => ['name' => 'Europe', 'hint' => 'Tout le continent'],
+    ];
+
+    public static function isRegion(string $slug): bool
     {
-        $q = trim($q);
-        if (mb_strlen($q) < 2) {
-            return [];
-        }
+        return isset(self::REGIONS[self::normalizeSlug($slug)]);
+    }
 
-        $limit = max(1, min(12, $limit));
-        $remote = self::apiSearch($q, $limit);
-        if ($remote !== []) {
-            return $remote;
-        }
-
-        $needle = search_norm($q);
+    /**
+     * @return list<array{name: string, slug: string, area_slug: string, insee: string, postcode: string, dept: string, hint: string, label: string, kind: string}>
+     */
+    public static function regionSuggestions(): array
+    {
         $out = [];
-        foreach (self::MAJOR as $slug => $name) {
-            if (!str_contains(search_norm($name), $needle) && !str_contains($slug, slugify($q))) {
-                continue;
-            }
-            $out[] = self::present([
-                'name' => $name,
+        foreach (self::REGIONS as $slug => $meta) {
+            $row = self::present([
+                'name' => $meta['name'],
                 'slug' => $slug,
                 'area_slug' => $slug,
                 'insee' => '',
                 'postcode' => '',
                 'dept' => '',
-                'hint' => '',
+                'hint' => $meta['hint'],
             ]);
-            if (count($out) >= $limit) {
-                break;
-            }
+            $row['kind'] = 'region';
+            $out[] = $row;
         }
         return $out;
+    }
+
+    /**
+     * @return list<array{name: string, slug: string, area_slug: string, insee: string, postcode: string, dept: string, hint: string, label: string, kind?: string}>
+     */
+    public static function suggest(string $q, int $limit = 8, bool $withRegions = false): array
+    {
+        $q = trim($q);
+        $limit = max(1, min(12, $limit));
+        $cities = [];
+
+        if (mb_strlen($q) >= 2) {
+            $remote = self::apiSearch($q, $limit);
+            if ($remote !== []) {
+                $cities = $remote;
+            } else {
+                $needle = search_norm($q);
+                foreach (self::MAJOR as $slug => $name) {
+                    if (!str_contains(search_norm($name), $needle) && !str_contains($slug, slugify($q))) {
+                        continue;
+                    }
+                    $cities[] = self::present([
+                        'name' => $name,
+                        'slug' => $slug,
+                        'area_slug' => $slug,
+                        'insee' => '',
+                        'postcode' => '',
+                        'dept' => '',
+                        'hint' => '',
+                    ]);
+                    if (count($cities) >= $limit) {
+                        break;
+                    }
+                }
+            }
+        }
+
+        if (!$withRegions) {
+            return $cities;
+        }
+
+        $seen = array_fill_keys(array_keys(self::REGIONS), true);
+        $cities = array_values(array_filter($cities, static function (array $item) use ($seen): bool {
+            return !isset($seen[(string) ($item['slug'] ?? '')]) && !isset($seen[(string) ($item['area_slug'] ?? '')]);
+        }));
+
+        return array_merge(self::regionSuggestions(), $cities);
     }
 
     /**
@@ -117,16 +159,17 @@ final class Cities
         $label = self::cleanLabel($label);
         $slug = self::normalizeSlug($slug);
         $insee = preg_replace('/\D+/', '', $insee) ?? '';
+        $local = $label !== '' ? self::fromFreeText($label) : self::empty();
 
         if ($insee !== '') {
             $hit = self::apiByInsee($insee);
-            if ($hit !== null) {
+            if ($hit !== null && ($label === '' || self::samePlace($hit, $local))) {
                 return $hit;
             }
         }
         if ($slug !== '') {
             $hit = self::resolveSlug($slug);
-            if ($hit !== null) {
+            if ($hit !== null && ($label === '' || self::samePlace($hit, $local))) {
                 if ($label !== '') {
                     $hit['name'] = $label;
                 }
@@ -134,7 +177,6 @@ final class Cities
             }
         }
         if ($label !== '') {
-            $local = self::fromFreeText($label);
             $hits = self::apiSearch($label, 1);
             if ($hits !== [] && self::samePlace($hits[0], $local)) {
                 return $hits[0];
@@ -153,6 +195,16 @@ final class Cities
         $slug = self::normalizeSlug($slug);
         if ($slug === '') {
             return null;
+        }
+        if (isset(self::REGIONS[$slug])) {
+            return [
+                'name' => self::REGIONS[$slug]['name'],
+                'slug' => $slug,
+                'area_slug' => $slug,
+                'insee' => '',
+                'postcode' => '',
+                'dept' => '',
+            ];
         }
         if (isset(self::MAJOR[$slug])) {
             return [
@@ -187,7 +239,12 @@ final class Cities
             return self::empty();
         }
         $area = self::areaSlug($label, $slug);
-        $name = self::MAJOR[$area] ?? self::MAJOR[$slug] ?? $label;
+        $name = $label;
+        if ($area === $slug && isset(self::MAJOR[$slug])) {
+            $name = self::MAJOR[$slug];
+        } elseif (isset(self::MAJOR[$slug])) {
+            $name = self::MAJOR[$slug];
+        }
 
         return [
             'name' => $name,
@@ -204,11 +261,39 @@ final class Cities
         return slugify($slug);
     }
 
+    /** Paris/Lyon/Marseille + arrondissement → slug d'aire (paris-11e → paris). */
+    public static function canonicalArea(string $slug): string
+    {
+        $slug = self::normalizeSlug($slug);
+        return $slug === '' ? '' : self::areaSlug('', $slug);
+    }
+
+    /** Slug d’aire seulement si la commune est reconnue (liste ou API). */
+    public static function knownArea(string $slug): string
+    {
+        $area = self::canonicalArea($slug);
+        if ($area === '') {
+            return '';
+        }
+        if (isset(self::REGIONS[$area]) || isset(self::MAJOR[$area])) {
+            return $area;
+        }
+        $hit = self::resolveSlug($area);
+        if ($hit === null) {
+            return '';
+        }
+        $resolved = (string) (($hit['area_slug'] ?? '') !== '' ? $hit['area_slug'] : ($hit['slug'] ?? ''));
+        return self::canonicalArea($resolved);
+    }
+
     public static function labelForSlug(string $slug, bool $remote = true): string
     {
         $slug = self::normalizeSlug($slug);
         if ($slug === '') {
             return '';
+        }
+        if (isset(self::REGIONS[$slug])) {
+            return self::REGIONS[$slug]['name'];
         }
         if (isset(self::MAJOR[$slug])) {
             return self::MAJOR[$slug];
@@ -254,8 +339,8 @@ final class Cities
     /** @param array<string, mixed> $item */
     public static function itemMatches(array $item, string $want): bool
     {
-        $want = self::normalizeSlug($want);
-        if ($want === '') {
+        $want = self::canonicalArea($want);
+        if ($want === '' || self::isRegion($want)) {
             return true;
         }
         $slug = self::itemCitySlug($item);
@@ -279,6 +364,31 @@ final class Cities
         return $slug;
     }
 
+    /** « Le Havre » → « au Havre », « Paris » → « à Paris ». */
+    public static function placeAt(string $city): string
+    {
+        $city = trim($city);
+        if ($city === '') {
+            return '';
+        }
+        if (self::isRegion(self::normalizeSlug($city))) {
+            return 'en ' . $city;
+        }
+        if (preg_match('/^Les\s+(.+)$/iu', $city, $m) === 1) {
+            return 'aux ' . $m[1];
+        }
+        if (preg_match('/^Le\s+(.+)$/iu', $city, $m) === 1) {
+            return 'au ' . $m[1];
+        }
+        if (preg_match('/^La\s+(.+)$/iu', $city, $m) === 1) {
+            return 'à la ' . $m[1];
+        }
+        if (preg_match('/^L[\'’](.+)$/iu', $city, $m) === 1) {
+            return 'à l\'' . $m[1];
+        }
+        return 'à ' . $city;
+    }
+
     public static function guessFromQuery(string $rest): string
     {
         $rest = trim((string) preg_replace('/\s+/', ' ', $rest));
@@ -286,21 +396,14 @@ final class Cities
             return '';
         }
         $slug = self::normalizeSlug($rest);
-        if (isset(self::MAJOR[$slug])) {
-            return $slug;
-        }
-        $tokens = preg_split('/\s+/', $rest) ?: [];
-        if (count($tokens) === 1 && mb_strlen($slug) >= 3) {
-            if (isset(self::MAJOR[$slug]) || self::resolveSlug($slug) !== null) {
-                return $slug;
-            }
-            return $slug;
-        }
-        if (isset(self::MAJOR[$slug])) {
+        if (isset(self::REGIONS[$slug]) || isset(self::MAJOR[$slug])) {
             return $slug;
         }
         $hit = self::resolveSlug($slug);
-        return $hit['area_slug'] ?? '';
+        if ($hit === null) {
+            return '';
+        }
+        return $hit['area_slug'] !== '' ? $hit['area_slug'] : $hit['slug'];
     }
 
     /**
@@ -416,9 +519,13 @@ final class Cities
      */
     private static function samePlace(array $a, array $b): bool
     {
-        return ($a['slug'] ?? '') === ($b['slug'] ?? '')
-            || ($a['area_slug'] ?? '') === ($b['slug'] ?? '')
-            || ($a['slug'] ?? '') === ($b['area_slug'] ?? '');
+        $aSlug = (string) ($a['slug'] ?? '');
+        $bSlug = (string) ($b['slug'] ?? '');
+        $aArea = (string) ($a['area_slug'] ?? '');
+        $bArea = (string) ($b['area_slug'] ?? '');
+        return ($aSlug !== '' && $aSlug === $bSlug)
+            || ($aArea !== '' && ($aArea === $bSlug || $aArea === $bArea))
+            || ($bArea !== '' && $bArea === $aSlug);
     }
 
     public static function cleanLabel(string $raw): string

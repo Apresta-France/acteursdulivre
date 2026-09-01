@@ -243,7 +243,7 @@ $isOwnProfile = $viewer && (int) ($viewer['id'] ?? 0) === (int) ($p['user_id'] ?
                 if ($area !== '') {
                     foreach ($p['trades'] ?? [] as $tradeName) {
                         $tradeName = (string) $tradeName;
-                        if ($tradeName === '') {
+                        if ($tradeName === '' || !\Adl\Data\Catalog::tradeCityHasResults($tradeName, $area)) {
                             continue;
                         }
                         $geoLinks[] = '<a href="' . e(url(\Adl\Data\Catalog::tradeCityPath($tradeName, $area))) . '">' . e(\Adl\Data\Catalog::tradeGeoLabel($tradeName) . ' à ' . ($p['city'] ?? $area)) . '</a>';

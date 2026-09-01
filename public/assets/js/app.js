@@ -474,12 +474,32 @@
       .catch(function () {});
   }
 
+  function syncHeaderVille(slug) {
+    var hidden = document.querySelector('.site-header [data-header-ville]');
+    if (hidden) hidden.value = slug || '';
+  }
+
+  function fillCityField(root, name, nextSlug) {
+    if (!root) return;
+    var input = root.querySelector('[data-city-input]');
+    var hidden = root.querySelector('[data-city-slug]');
+    var insee = root.querySelector('[data-city-insee]');
+    if (input) {
+      input.value = name || '';
+      if (name) input.dataset.cityLocked = name;
+      else delete input.dataset.cityLocked;
+    }
+    if (hidden) hidden.value = nextSlug || '';
+    if (insee && !nextSlug) insee.value = '';
+  }
+
   function bindCityAutocomplete(root) {
     var input = root.querySelector('[data-city-input]');
     var slug = root.querySelector('[data-city-slug]');
     var insee = root.querySelector('[data-city-insee]');
     var panel = root.querySelector('[data-city-panel]');
     var api = root.getAttribute('data-city-api') || '/api/villes';
+    var searchScope = root.getAttribute('data-city-scope') === 'search';
     if (!input || !panel) return;
 
     function emit() {
@@ -489,13 +509,25 @@
       }}));
     }
 
+    function applyCity(name, nextSlug, nextInsee, locked) {
+      input.value = name || '';
+      if (slug) slug.value = nextSlug || '';
+      if (insee) insee.value = nextInsee || '';
+      if (locked && input.value.trim()) input.dataset.cityLocked = input.value.trim();
+      else delete input.dataset.cityLocked;
+    }
+
     function setCity(item) {
-      input.value = item && item.name ? item.name : '';
-      if (slug) slug.value = item && item.area_slug ? item.area_slug : (item && item.slug ? item.slug : '');
-      if (insee) insee.value = item && item.insee ? item.insee : '';
+      applyCity(
+        item && item.name ? item.name : '',
+        item && item.area_slug ? item.area_slug : (item && item.slug ? item.slug : ''),
+        item && item.insee ? item.insee : '',
+        true
+      );
       panel.hidden = true;
       panel.innerHTML = '';
       input.setAttribute('aria-expanded', 'false');
+      input.dispatchEvent(new Event('change', { bubbles: true }));
       emit();
     }
 
@@ -506,7 +538,8 @@
         return;
       }
       panel.innerHTML = items.map(function (item) {
-        return '<button type="button" class="city-ac-item" data-city-pick>' +
+        var region = item.kind === 'region';
+        return '<button type="button" class="city-ac-item' + (region ? ' is-region' : '') + '" data-city-pick>' +
           '<strong>' + escapeHtml(item.name || item.label || '') + '</strong>' +
           (item.hint ? '<em>' + escapeHtml(item.hint) + '</em>' : '') +
           '</button>';
@@ -518,16 +551,29 @@
       input.setAttribute('aria-expanded', 'true');
     }
 
+    function load(q) {
+      var params = new URLSearchParams({ q: q, limit: '8' });
+      if (searchScope) params.set('scope', 'search');
+      fetchSearch(api, params, function (data) {
+        render(data.results || []);
+      });
+    }
+
     var run = debounce(function () {
       var q = input.value.trim();
       if (slug && q === '') {
         slug.value = '';
         if (insee) insee.value = '';
+        if (searchScope) {
+          load('');
+          emit();
+          return;
+        }
         panel.hidden = true;
         emit();
         return;
       }
-      if (q.length < 2) {
+      if (q.length < 2 && !searchScope) {
         panel.hidden = true;
         return;
       }
@@ -536,9 +582,7 @@
       }
       if (slug) slug.value = '';
       if (insee) insee.value = '';
-      fetchSearch(api, new URLSearchParams({ q: q, limit: '8' }), function (data) {
-        render(data.results || []);
-      });
+      load(q);
     }, 180);
 
     input.addEventListener('input', function () {
@@ -546,28 +590,48 @@
       run();
     });
     input.addEventListener('focus', function () {
+      if (searchScope) {
+        run();
+        return;
+      }
       if (panel.innerHTML) panel.hidden = false;
     });
     input.addEventListener('keydown', function (event) {
-      if (event.key === 'Escape') panel.hidden = true;
-      if (event.key === 'Enter' && !panel.hidden && panel.querySelector('[data-city-pick]')) {
-        event.preventDefault();
-        var first = panel.querySelector('[data-city-pick]');
-        if (first) first.click();
+      if (event.key === 'Escape') {
+        panel.hidden = true;
+        input.setAttribute('aria-expanded', 'false');
       }
     });
     document.addEventListener('click', function (event) {
-      if (!root.contains(event.target)) panel.hidden = true;
-    });
-    root.addEventListener('submit', function () {
-      if (slug && !slug.value && input.value.trim()) {
-        slug.value = input.value.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+      if (!root.contains(event.target)) {
+        panel.hidden = true;
+        input.setAttribute('aria-expanded', 'false');
       }
     });
+    if (slug && !slug.value.trim() && input.name === 'ville_label' && input.value.trim()) {
+      input.value = '';
+    }
     if (input.value.trim()) input.dataset.cityLocked = input.value.trim();
   }
 
   document.querySelectorAll('[data-city-ac]').forEach(bindCityAutocomplete);
+
+  document.querySelectorAll('form.search, form.mk-search').forEach(function (form) {
+    form.addEventListener('submit', function () {
+      var hiddenVille = form.querySelector('[data-header-ville]');
+      if (hiddenVille && !hiddenVille.value.trim()) {
+        hiddenVille.disabled = true;
+      }
+      var q = form.querySelector('[name="q"]');
+      var city = form.querySelector('[data-city-input]');
+      var slug = form.querySelector('[data-city-slug]');
+      if (!q || !city) return;
+      if (q.value.trim() === '' && city.value.trim() !== '' && (!slug || slug.value.trim() === '')) {
+        q.value = city.value.trim();
+        city.value = '';
+      }
+    });
+  });
 
   document.querySelectorAll('[data-live-search]').forEach(function (form) {
     var input = form.querySelector('[data-live-input]');
@@ -706,10 +770,8 @@
         return;
       }
       if (name === 'ville') {
-        var cityInput = filters.querySelector('[data-city-input]');
-        var citySlug = filters.querySelector('[data-city-slug]');
-        if (cityInput) cityInput.value = '';
-        if (citySlug) citySlug.value = '';
+        fillCityField(filters.querySelector('[data-city-ac]'), '', '');
+        syncHeaderVille('');
         return;
       }
       filters.querySelectorAll('input[name="' + name + '[]"]').forEach(function (input) {
@@ -724,14 +786,22 @@
         var n = data.count || 0;
         if (countEl) countEl.textContent = '· ' + n + ' résultat' + (n > 1 ? 's' : '');
         var label = data.query || data.cat || '';
-        var cityName = (filters.querySelector('[data-city-input]') || {}).value || '';
+        var citySlug = (filters.querySelector('[data-city-slug]') || {}).value || '';
+        var cityName = citySlug ? ((filters.querySelector('[data-city-input]') || {}).value || '') : '';
         if (cityName && !data.query) {
-          label = (label ? label + ' à ' : '') + cityName;
+          if (!label) {
+            var hubType = data.type || searchPage.getAttribute('data-type') || '';
+            if (hubType === 'prestations') label = 'Prestations à prix affiché';
+            else if (hubType === 'prestataires') label = 'Prestataires du livre';
+            else label = 'Tous les métiers du livre';
+          }
+          var prep = /^(france|europe)$/i.test(citySlug) ? ' en ' : ' à ';
+          label = label + prep + cityName;
         }
         if (!label) {
-          var hubType = data.type || searchPage.getAttribute('data-type') || '';
-          if (hubType === 'prestations') label = 'Prestations à prix affiché';
-          else if (hubType === 'prestataires') label = 'Prestataires du livre';
+          var hubTypeEmpty = data.type || searchPage.getAttribute('data-type') || '';
+          if (hubTypeEmpty === 'prestations') label = 'Prestations à prix affiché';
+          else if (hubTypeEmpty === 'prestataires') label = 'Prestataires du livre';
           else label = 'Tous les métiers du livre';
         }
         if (titleEl) titleEl.childNodes[0].textContent = label + ' ';
@@ -760,24 +830,16 @@
       }
       update();
     });
-    filters.addEventListener('change', update);
-    filters.addEventListener('city-change', function (event) {
-      var headerInput = document.querySelector('.site-header [data-city-input]');
-      var headerSlug = document.querySelector('.site-header [data-city-slug]');
-      if (headerInput) headerInput.value = (event.detail && event.detail.name) || '';
-      if (headerSlug) headerSlug.value = (event.detail && event.detail.slug) || '';
+    filters.addEventListener('change', function (event) {
+      if (event.target && event.target.closest && event.target.closest('[data-city-ac]')) {
+        return;
+      }
       update();
     });
-    var headerCity = document.querySelector('.site-header [data-city-ac]');
-    if (headerCity) {
-      headerCity.addEventListener('city-change', function (event) {
-        var filterCity = filters.querySelector('[data-city-input]');
-        var filterSlug = filters.querySelector('[data-city-slug]');
-        if (filterCity) filterCity.value = (event.detail && event.detail.name) || '';
-        if (filterSlug) filterSlug.value = (event.detail && event.detail.slug) || '';
-        update();
-      });
-    }
+    filters.addEventListener('city-change', function (event) {
+      syncHeaderVille((event.detail && event.detail.slug) || '');
+      update();
+    });
     if (headerInput) {
       headerInput.addEventListener('input', function () {
         if (hiddenQ) hiddenQ.value = headerInput.value;
@@ -801,10 +863,8 @@
       if (budgetMax) budgetMax.value = BUDGET_DEFAULT_MAX;
       if (hiddenQ) hiddenQ.value = '';
       if (headerInput) headerInput.value = '';
-      var cityInput = filters.querySelector('[data-city-input]');
-      var citySlug = filters.querySelector('[data-city-slug]');
-      if (cityInput) cityInput.value = '';
-      if (citySlug) citySlug.value = '';
+      fillCityField(filters.querySelector('[data-city-ac]'), '', '');
+      syncHeaderVille('');
       syncBudget();
       syncActive();
       update();

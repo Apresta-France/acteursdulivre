@@ -215,11 +215,26 @@ final class Profile
         }
 
         $geo = self::normalizeCity($data);
+        $geoCols = self::hasCityGeoColumns();
+        $citySql = $geoCols
+            ? 'city = ?, city_slug = ?, city_area_slug = ?, city_insee = ?, city_postcode = ?, city_dept = ?,'
+            : 'city = ?,';
+        $cityParams = [$geo['name'] !== '' ? $geo['name'] : null];
+        if ($geoCols) {
+            array_push(
+                $cityParams,
+                $geo['slug'] !== '' ? $geo['slug'] : null,
+                $geo['area_slug'] !== '' ? $geo['area_slug'] : null,
+                $geo['insee'] !== '' ? $geo['insee'] : null,
+                $geo['postcode'] !== '' ? $geo['postcode'] : null,
+                $geo['dept'] !== '' ? $geo['dept'] : null
+            );
+        }
 
         Database::query(
             'UPDATE profiles SET
                 slug = ?, title = ?, name_mode = ?, public_name = ?, presentation = ?, does = ?, does_not = ?,
-                city = ?, city_slug = ?, city_area_slug = ?, city_insee = ?, city_postcode = ?, city_dept = ?,
+                ' . $citySql . '
                 work_mode = ?, availability = ?,
                 availability_status = ?, response_time = ?,
                 languages = ?, hourly_rate = ?, rate_note = ?, website = ?, socials_json = ?,
@@ -227,38 +242,37 @@ final class Profile
                 languages_json = ?, experiences_json = ?, education_json = ?,
                 updated_at = NOW()
              WHERE user_id = ?',
-            [
-                $slug,
-                $data['title'] ?? null,
-                self::normalizeNameMode($data['name_mode'] ?? null),
-                self::normalizeText($data['public_name'] ?? null),
-                $data['presentation'] ?? null,
-                self::normalizeText($data['does'] ?? null),
-                self::normalizeText($data['does_not'] ?? null),
-                $geo['name'] !== '' ? $geo['name'] : null,
-                $geo['slug'] !== '' ? $geo['slug'] : null,
-                $geo['area_slug'] !== '' ? $geo['area_slug'] : null,
-                $geo['insee'] !== '' ? $geo['insee'] : null,
-                $geo['postcode'] !== '' ? $geo['postcode'] : null,
-                $geo['dept'] !== '' ? $geo['dept'] : null,
-                self::normalizeWorkMode($data['work_mode'] ?? null) ?: null,
-                $data['availability'] ?? null,
-                self::normalizeStatus($data['availability_status'] ?? null),
-                self::normalizeResponseTime($data['response_time'] ?? null) ?: null,
-                $languages,
-                self::normalizeRate((string) ($data['hourly_rate'] ?? ''), (string) ($data['rate_kind'] ?? ''), $data['trades'] ?? []),
-                $data['rate_note'] ?? null,
-                self::normalizeSocialUrl(trim((string) ($data['website'] ?? '')), 'website') ?: null,
-                self::encode(self::normalizeSocials($data['socials'] ?? [])),
-                self::encode($data['trades'] ?? []),
-                self::encode($data['skills'] ?? []),
-                self::encode($data['tools'] ?? []),
-                self::encode($data['genres'] ?? []),
-                self::encode($data['languages_list'] ?? []),
-                self::encode($data['experiences'] ?? []),
-                self::encode($data['education'] ?? []),
-                $userId,
-            ]
+            array_merge(
+                [
+                    $slug,
+                    $data['title'] ?? null,
+                    self::normalizeNameMode($data['name_mode'] ?? null),
+                    self::normalizeText($data['public_name'] ?? null),
+                    $data['presentation'] ?? null,
+                    self::normalizeText($data['does'] ?? null),
+                    self::normalizeText($data['does_not'] ?? null),
+                ],
+                $cityParams,
+                [
+                    self::normalizeWorkMode($data['work_mode'] ?? null) ?: null,
+                    $data['availability'] ?? null,
+                    self::normalizeStatus($data['availability_status'] ?? null),
+                    self::normalizeResponseTime($data['response_time'] ?? null) ?: null,
+                    $languages,
+                    self::normalizeRate((string) ($data['hourly_rate'] ?? ''), (string) ($data['rate_kind'] ?? ''), $data['trades'] ?? []),
+                    $data['rate_note'] ?? null,
+                    self::normalizeSocialUrl(trim((string) ($data['website'] ?? '')), 'website') ?: null,
+                    self::encode(self::normalizeSocials($data['socials'] ?? [])),
+                    self::encode($data['trades'] ?? []),
+                    self::encode($data['skills'] ?? []),
+                    self::encode($data['tools'] ?? []),
+                    self::encode($data['genres'] ?? []),
+                    self::encode($data['languages_list'] ?? []),
+                    self::encode($data['experiences'] ?? []),
+                    self::encode($data['education'] ?? []),
+                    $userId,
+                ]
+            )
         );
 
         return self::findByUser($userId) ?? $profile;
@@ -758,6 +772,20 @@ final class Profile
             ? '/admin/verifications/' . (int) ($row['user_id'] ?? 0) . '/justificatif'
             : '';
         return $row;
+    }
+
+    private static function hasCityGeoColumns(): bool
+    {
+        static $ok = null;
+        if ($ok !== null) {
+            return $ok;
+        }
+        try {
+            $ok = Database::fetch("SHOW COLUMNS FROM profiles LIKE 'city_slug'") !== null;
+        } catch (\Throwable) {
+            $ok = false;
+        }
+        return $ok;
     }
 
     /** @param mixed $value */

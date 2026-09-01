@@ -519,15 +519,15 @@ final class Catalog
             return null;
         }
         $type = ($type === '' || !array_key_exists($type, self::TYPES)) ? 'all' : $type;
-        $city = Cities::normalizeSlug((string) ($filters['city'] ?? ''));
+        $city = Cities::canonicalArea((string) ($filters['city'] ?? ''));
         $trade = self::resolveTrade($cat);
         if ($trade === null && $q !== '') {
-            $trade = self::resolveTrade($q);
+            $trade = self::tradeFromQuery($q);
         }
         if ($city === '' && $q !== '') {
             $city = self::cityFromQuery($q, $trade);
         }
-        if ($trade !== null && $city !== '' && self::tradeCityHasResults($trade, $city)) {
+        if ($type === 'all' && $trade !== null && $city !== '' && self::tradeCityHasResults($trade, $city)) {
             $target = self::tradeCityPath($trade, $city);
             return $target !== $currentPath ? $target : null;
         }
@@ -542,6 +542,16 @@ final class Catalog
         return $hub !== $currentPath ? $hub : null;
     }
 
+    public static function tradeFromQuery(string $q): ?string
+    {
+        $direct = self::resolveTrade($q);
+        if ($direct !== null) {
+            return $direct;
+        }
+        $found = self::queryTrades($q);
+        return count($found) === 1 ? $found[0] : null;
+    }
+
     public static function cityFromQuery(string $q, ?string $knownTrade = null): string
     {
         $q = trim($q);
@@ -551,28 +561,62 @@ final class Catalog
         $rest = $q;
         $trades = $knownTrade !== null ? [$knownTrade] : self::queryTrades($q);
         foreach ($trades as $trade) {
-            foreach ([
+            $labels = [
                 $trade,
                 self::TRADE_LABELS[$trade] ?? '',
                 self::TRADE_TITLES[$trade] ?? '',
                 self::tradeGeoLabel($trade),
                 self::tradeGeoLabelPlural($trade),
-            ] as $label) {
-                if ($label === '') {
-                    continue;
+                self::tradeGeoSlug($trade),
+            ];
+            foreach (self::tradeAliases() as $alias => $canonical) {
+                if ($canonical === $trade) {
+                    $labels[] = $alias;
                 }
+            }
+            foreach (self::SEARCH_SYNONYMS as $word => $targets) {
+                foreach ($targets as $target) {
+                    if (self::resolveTrade((string) $target) === $trade) {
+                        $labels[] = $word;
+                    }
+                }
+            }
+            foreach (array_unique(array_filter($labels)) as $label) {
                 $pattern = '/' . preg_quote((string) $label, '/') . '/iu';
                 $rest = trim((string) preg_replace($pattern, ' ', $rest));
             }
         }
-        $rest = trim((string) preg_replace('/\s+/', ' ', $rest));
-        if ($rest === '' || self::resolveTrade($rest) !== null) {
-            return '';
+        $rest = trim((string) preg_replace('/\b(a|à|de|du|des|en|sur|au|aux|le|la|les)\b/iu', ' ', $rest));
+        $kept = [];
+        foreach (preg_split('/\s+/', $rest) ?: [] as $token) {
+            if ($token !== '' && !self::isNonCityToken($token)) {
+                $kept[] = $token;
+            }
         }
-        if (self::resolveTrade($q) !== null && $rest === $q) {
+        $rest = implode(' ', $kept);
+        if ($rest === '') {
             return '';
         }
         return Cities::guessFromQuery($rest);
+    }
+
+    private static function isNonCityToken(string $text): bool
+    {
+        if (self::resolveTrade($text) !== null) {
+            return true;
+        }
+        $slug = slugify($text);
+        $norm = search_norm($text);
+        if ($slug === '' || isset(self::SEARCH_STOP[$slug])) {
+            return true;
+        }
+        foreach (array_merge(Profile::GENRES, self::specialties()) as $label) {
+            $label = (string) $label;
+            if ($label !== '' && (slugify($label) === $slug || search_norm($label) === $norm)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
@@ -595,6 +639,9 @@ final class Catalog
     {
         $type = array_key_exists($type, self::TYPES) ? $type : 'all';
         $filters = self::normalizeFilters($filters, $availableOnly);
+        if ($type === 'missions') {
+            $filters['city'] = '';
+        }
 
         $items = [];
         if ($type === 'all' || $type === 'prestations') {
@@ -619,6 +666,16 @@ final class Catalog
             }
             $item['score'] = $score;
             $pool[] = $item;
+        }
+
+        $city = (string) ($filters['city'] ?? '');
+        if ($city !== '') {
+            $pool = array_values(array_filter($pool, static function (array $item) use ($city): bool {
+                if (($item['kind'] ?? '') === 'missions') {
+                    return false;
+                }
+                return Cities::itemMatches($item, $city);
+            }));
         }
 
         $facets = self::facetOptions($pool, $type);
@@ -689,7 +746,7 @@ final class Catalog
             'trust' => $trust,
             'bmin' => $bmin,
             'bmax' => $bmax,
-            'city' => Cities::normalizeSlug((string) ($raw['city'] ?? '')),
+            'city' => Cities::canonicalArea((string) ($raw['city'] ?? '')),
         ];
     }
 
@@ -928,7 +985,11 @@ final class Catalog
 
         foreach (self::providers() as $provider) {
             foreach ($provider['trades'] ?? [] as $trade) {
-                $add((string) $trade, $provider);
+                $resolved = self::resolveTrade((string) $trade);
+                if ($resolved === null) {
+                    continue;
+                }
+                $add($resolved, $provider);
             }
         }
         foreach (self::services() as $service) {
@@ -1295,12 +1356,26 @@ final class Catalog
     private static function itemHasTrade(array $item, array $trades): bool
     {
         $hay = array_merge([(string) ($item['cat'] ?? '')], is_array($item['trades'] ?? null) ? $item['trades'] : []);
+        $want = [];
         foreach ($trades as $trade) {
-            $want = search_norm((string) $trade);
-            foreach ($hay as $value) {
-                if ($value !== '' && search_norm((string) $value) === $want) {
-                    return true;
-                }
+            $trade = (string) $trade;
+            $want[search_norm($trade)] = true;
+            $resolved = self::resolveTrade($trade);
+            if ($resolved !== null) {
+                $want[search_norm($resolved)] = true;
+            }
+        }
+        foreach ($hay as $value) {
+            $value = (string) $value;
+            if ($value === '') {
+                continue;
+            }
+            if (isset($want[search_norm($value)])) {
+                return true;
+            }
+            $resolved = self::resolveTrade($value);
+            if ($resolved !== null && isset($want[search_norm($resolved)])) {
+                return true;
             }
         }
         return false;
@@ -1449,7 +1524,11 @@ final class Catalog
         }
         foreach ($labels as $label => $trade) {
             $norm = search_norm((string) $label);
-            if ($norm !== '' && mb_strlen($norm) >= 4 && str_contains($qNorm, $norm)) {
+            if ($norm === '' || mb_strlen($norm) < 4) {
+                continue;
+            }
+            $quoted = preg_quote($norm, '/');
+            if (preg_match('/(?<![a-z0-9])' . $quoted . '(?![a-z0-9])/u', $qNorm) === 1) {
                 $found[$trade] = true;
             }
         }

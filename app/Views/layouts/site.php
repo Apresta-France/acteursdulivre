@@ -58,7 +58,7 @@
   <?php if (!empty($isArticle) && !empty($article['img'])): ?>
   <link rel="preload" as="image" href="<?= e((string) $article['img']) ?>">
   <?php endif; ?>
-  <link rel="stylesheet" href="<?= e(asset('css/app.css')) ?>?v=m103">
+  <link rel="stylesheet" href="<?= e(asset('css/app.css')) ?>?v=m108">
   <link rel="icon" href="<?= e(asset('img/favicon.ico')) ?>?v=3" sizes="any">
   <link rel="icon" type="image/png" href="<?= e(asset('img/favicon-32x32.png')) ?>?v=3" sizes="32x32">
   <link rel="apple-touch-icon" href="<?= e(asset('img/apple-touch-icon.png')) ?>?v=3">
@@ -122,23 +122,7 @@
             <input type="hidden" name="type" value="<?= e($headerSearchType) ?>">
           <?php endif; ?>
           <input type="search" name="q" value="<?= e($query ?? '') ?>" placeholder="correcteur roman, illustration jeunesse…" autocomplete="off" data-live-input aria-label="Rechercher un prestataire ou une prestation">
-          <?php
-            $headerCity = (string) ($searchCity ?? '');
-            $headerCityLabel = (string) ($searchCityLabel ?? '');
-            if ($headerCityLabel === '' && $headerCity !== '') {
-                $headerCityLabel = \Adl\Data\Cities::labelForSlug($headerCity);
-            }
-            $cityField = [
-                'mode' => 'search',
-                'id' => 'header-city',
-                'input_class' => '',
-                'placeholder' => 'Ville',
-                'compact' => true,
-                'value' => $headerCityLabel,
-                'slug' => $headerCity,
-            ];
-            require ADL_ROOT . '/app/Views/partials/city-field.php';
-          ?>
+          <input type="hidden" name="ville" value="<?= e($searchCity ?? '') ?>" data-header-ville>
           <button type="submit">Chercher</button>
           <div class="search-suggest" data-live-panel hidden></div>
         </form>
@@ -325,6 +309,6 @@
       </footer>
     </div>
   </div>
-  <script src="<?= e(asset('js/app.js')) ?>?v=m49"></script>
+  <script src="<?= e(asset('js/app.js')) ?>?v=m55"></script>
 </body>
 </html>

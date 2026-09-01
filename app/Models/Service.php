@@ -16,7 +16,7 @@ final class Service
     public static function find(int $id): ?array
     {
         $row = Database::fetch(
-            'SELECT s.*, u.first_name, u.last_name, p.slug AS profile_slug, p.city AS seller_city
+            'SELECT ' . self::sellerSelect() . '
              FROM services s
              JOIN users u ON u.id = s.user_id
              LEFT JOIN profiles p ON p.user_id = u.id
@@ -29,7 +29,7 @@ final class Service
     public static function findBySlug(string $slug): ?array
     {
         $row = Database::fetch(
-            'SELECT s.*, u.first_name, u.last_name, p.slug AS profile_slug, p.city AS seller_city
+            'SELECT ' . self::sellerSelect() . '
              FROM services s
              JOIN users u ON u.id = s.user_id
              LEFT JOIN profiles p ON p.user_id = u.id
@@ -43,7 +43,7 @@ final class Service
     public static function published(): array
     {
         $rows = Database::fetchAll(
-            'SELECT s.*, u.first_name, u.last_name, p.slug AS profile_slug, p.city AS seller_city
+            'SELECT ' . self::sellerSelect() . '
              FROM services s
              JOIN users u ON u.id = s.user_id
              LEFT JOIN profiles p ON p.user_id = u.id
@@ -65,7 +65,7 @@ final class Service
     public static function all(): array
     {
         $rows = Database::fetchAll(
-            'SELECT s.*, u.first_name, u.last_name, p.slug AS profile_slug, p.city AS seller_city
+            'SELECT ' . self::sellerSelect() . '
              FROM services s
              JOIN users u ON u.id = s.user_id
              LEFT JOIN profiles p ON p.user_id = u.id
@@ -78,7 +78,7 @@ final class Service
     public static function forUser(int $userId): array
     {
         $rows = Database::fetchAll(
-            'SELECT s.*, u.first_name, u.last_name, p.slug AS profile_slug, p.city AS seller_city
+            'SELECT ' . self::sellerSelect() . '
              FROM services s
              JOIN users u ON u.id = s.user_id
              LEFT JOIN profiles p ON p.user_id = u.id
@@ -87,6 +87,23 @@ final class Service
             [$userId]
         );
         return array_map([self::class, 'present'], $rows);
+    }
+
+    private static function sellerSelect(): string
+    {
+        static $sql = null;
+        if ($sql !== null) {
+            return $sql;
+        }
+        $sql = 's.*, u.first_name, u.last_name, p.slug AS profile_slug, p.city AS seller_city';
+        try {
+            $col = Database::fetch("SHOW COLUMNS FROM profiles LIKE 'city_slug'");
+            if ($col !== null) {
+                $sql .= ', p.city_slug AS seller_city_slug, p.city_area_slug AS seller_city_area_slug';
+            }
+        } catch (\Throwable) {
+        }
+        return $sql;
     }
 
     public static function setStatus(int $id, string $status): void

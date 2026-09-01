@@ -129,7 +129,7 @@ if ($cityPage) {
       <div class="mk-head">
         <div>
           <h2><?= e((string) $block['title']) ?></h2>
-          <p><?= e((string) $block['countLabel']) ?><?= (int) $block['count'] > 0 ? ' sur la plateforme.' : '.' ?></p>
+          <p><?= e((string) $block['countLabel']) ?><?php if ((int) $block['count'] > 0): ?><?= $cityPage ? ' à ' . e($cityName) : ' sur la plateforme' ?>.<?php else: ?>.<?php endif; ?></p>
         </div>
         <a href="<?= e((string) $block['href']) ?>">Tout voir →</a>
       </div>

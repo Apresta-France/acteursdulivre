@@ -82,7 +82,7 @@ if ($searchCity !== '') {
                 'id' => 'filter-city',
                 'value' => $searchCityLabel,
                 'slug' => $searchCity,
-                'placeholder' => 'Toutes les villes',
+                'placeholder' => 'France, Europe, une ville…',
             ];
             require ADL_ROOT . '/app/Views/partials/city-field.php';
           ?>

@@ -198,8 +198,9 @@ final class Seo
         $who = Catalog::tradeGeoLabel($trade);
         $article = Catalog::tradeGeoArticle($trade);
         $title = Catalog::tradeTitle($trade);
-        $h1 = $who . ' à ' . $cityName;
-        $lead = 'Trouvez ' . $article . ' ' . mb_strtolower($who) . ' à ' . $cityName
+        $where = Cities::placeAt($cityName);
+        $h1 = $who . ' ' . $where;
+        $lead = 'Trouvez ' . $article . ' ' . mb_strtolower($who, 'UTF-8') . ' ' . $where
             . ' : profils publics et prestations à prix affiché. Travail humain, sans IA générative.';
         $national = self::tradeCopy($trade);
 

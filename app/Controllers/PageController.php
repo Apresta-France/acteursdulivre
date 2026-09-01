@@ -84,7 +84,7 @@ final class PageController
             $cat = Catalog::resolveTrade($cat) ?? $cat;
         }
         $found = Catalog::search(
-            $request->string('q'),
+            self::requestSearchQuery($request),
             $request->string('type', 'all'),
             $cat,
             max(1, min(48, $request->int('limit', 24) ?? 24)),
@@ -104,9 +104,10 @@ final class PageController
     public function citiesApi(Request $request): void
     {
         $q = $request->string('q');
+        $withRegions = $request->string('scope') === 'search';
         json_response([
             'query' => $q,
-            'results' => Cities::suggest($q, max(1, min(12, $request->int('limit', 8) ?? 8))),
+            'results' => Cities::suggest($q, max(1, min(12, $request->int('limit', 8) ?? 8)), $withRegions),
         ]);
     }
 
@@ -188,12 +189,24 @@ final class PageController
 
     public function metierVille(Request $request, string $slug, string $city): void
     {
+        $reserved = [
+            'a-propos', 'admin', 'aide', 'api', 'assets', 'auth', 'cgu', 'cgv',
+            'comment-ca-marche', 'confidentialite', 'confiance', 'connexion',
+            'contact', 'cookies', 'cron', 'deconnexion', 'espace', 'inscription',
+            'install', 'journal', 'mentions-legales', 'metiers', 'missions',
+            'mot-de-passe', 'newsletter', 'prestataires', 'prestations', 'public',
+            'questions', 'recherche', 'regles-ia', 'signaler', 'tarifs',
+        ];
+        if (in_array($slug, $reserved, true)) {
+            not_found();
+        }
+
         $trade = Catalog::tradeFromSlug($slug);
         if ($trade === null) {
             not_found('Cette page n\'existe pas.');
         }
 
-        $citySlug = Cities::normalizeSlug($city);
+        $citySlug = Cities::canonicalArea($city);
         if ($citySlug === '' || !Catalog::tradeCityHasResults($trade, $citySlug)) {
             not_found('Aucun prestataire référencé pour cette ville.');
         }
@@ -791,7 +804,7 @@ final class PageController
 
     private function renderCatalog(Request $request, string $forcedType): void
     {
-        $query = $request->string('q');
+        $query = self::requestSearchQuery($request);
         $type = $forcedType !== 'all' ? $forcedType : $request->string('type', 'all');
         if (!array_key_exists($type, Catalog::TYPES)) {
             $type = 'all';
@@ -802,12 +815,6 @@ final class PageController
         }
         $availableOnly = $request->bool('dispo');
         $filters = self::searchFilters($request);
-        if ($filters['city'] === '' && $query !== '') {
-            $guess = Catalog::cityFromQuery($query, Catalog::resolveTrade($cat) ?? Catalog::resolveTrade($query));
-            if ($guess !== '') {
-                $filters['city'] = $guess;
-            }
-        }
         $target = Catalog::redirectPath($request->path(), $query, $type, $cat, $availableOnly, $filters);
         if ($target !== null) {
             redirect($target, 301);
@@ -837,7 +844,7 @@ final class PageController
         };
         $heading = $query !== '' ? $query : ($cat !== '' ? $cat : $copy['heading']);
         if ($cityLabel !== '' && $query === '') {
-            $heading = ($cat !== '' ? $cat : $copy['heading']) . ' à ' . $cityLabel;
+            $heading = ($cat !== '' ? $cat : $copy['heading']) . ' ' . Cities::placeAt($cityLabel);
         }
 
         View::page('resultats', [
@@ -936,16 +943,29 @@ final class PageController
         ];
     }
 
+    private static function requestSearchQuery(Request $request): string
+    {
+        $q = $request->string('q');
+        if ($q !== '') {
+            return $q;
+        }
+        if (self::requestCity($request) !== '') {
+            return '';
+        }
+        return $request->string('ville_label');
+    }
+
     private static function requestCity(Request $request): string
     {
-        $slug = Cities::normalizeSlug($request->string('ville') !== '' ? $request->string('ville') : $request->string('city'));
-        if ($slug !== '') {
-            return $slug;
+        $raw = $request->string('ville') !== '' ? $request->string('ville') : $request->string('city');
+        $known = Cities::knownArea($raw);
+        if ($known !== '') {
+            return $known;
         }
         $label = $request->string('ville_label');
         if ($label === '') {
             return '';
         }
-        return Cities::fromFreeText($label)['area_slug'];
+        return Cities::knownArea(Cities::guessFromQuery($label));
     }
 }
