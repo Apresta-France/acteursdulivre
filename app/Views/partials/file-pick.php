@@ -3,6 +3,7 @@ $filePickId = (string) ($filePickId ?? '');
 $filePickName = (string) ($filePickName ?? 'file');
 $filePickAccept = (string) ($filePickAccept ?? '');
 $filePickRequired = !empty($filePickRequired);
+$filePickMultiple = !empty($filePickMultiple);
 $filePickButton = (string) ($filePickButton ?? 'Choisir un fichier');
 $filePickDrop = !empty($filePickDrop);
 $filePickEmpty = (string) ($filePickEmpty ?? ($filePickDrop ? 'ou déposez-le ici' : 'Aucun fichier choisi'));
@@ -17,6 +18,7 @@ $filePickHint = (string) ($filePickHint ?? '');
     name="<?= e($filePickName) ?>"
     <?= $filePickAccept !== '' ? 'accept="' . e($filePickAccept) . '"' : '' ?>
     <?= $filePickRequired ? 'required' : '' ?>
+    <?= $filePickMultiple ? 'multiple' : '' ?>
     <?= $filePickAttrs ?>
     data-file-input
   >
@@ -32,6 +34,7 @@ unset(
     $filePickName,
     $filePickAccept,
     $filePickRequired,
+    $filePickMultiple,
     $filePickButton,
     $filePickEmpty,
     $filePickAttrs,

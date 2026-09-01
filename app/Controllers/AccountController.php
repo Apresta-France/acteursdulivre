@@ -1138,6 +1138,7 @@ final class AccountController
             'price_from' => $request->string('price_from'),
             'packages' => $packagesInput,
             'options' => $optionsInput,
+            'portfolio_url' => $request->string('portfolio_url'),
         ];
 
         $allowedTrades = self::offererTrades((int) $user['id']);
@@ -1171,23 +1172,6 @@ final class AccountController
             }
         }
 
-        $imagePath = null;
-        try {
-            $stored = store_upload(
-                $request->file('image'),
-                'prestations',
-                ['jpg', 'jpeg', 'png', 'webp', 'gif'],
-                5 * 1024 * 1024
-            );
-            if ($stored) {
-                $imagePath = $stored;
-            }
-        } catch (\Throwable $e) {
-            flash('error', user_error_message($e));
-            flash('old', $old);
-            redirect('/espace/prestations/creer');
-        }
-
         $packages = self::packagesFromInput($packagesInput);
         $options = self::optionsFromInput($optionsInput);
         if (self::incompletePricedRows($packagesInput, ['description', 'delay'])) {
@@ -1201,22 +1185,35 @@ final class AccountController
             redirect('/espace/prestations/creer');
         }
 
+        $media = ['paths' => [], 'portfolio' => '', 'uploaded' => []];
+        try {
+            $media = self::serviceMediaFromRequest($request, []);
+        } catch (\Throwable $e) {
+            flash('error', user_error_message($e));
+            flash('old', $old);
+            redirect('/espace/prestations/creer');
+        }
+        $old['portfolio_url'] = $media['portfolio'];
+
         try {
             $service = Service::create((int) $user['id'], [
                 'title' => $title,
                 'excerpt' => $excerpt !== '' ? $excerpt : null,
                 'category_name' => $category,
                 'specialty' => $specialty !== '' ? $specialty : null,
-                'image_path' => $imagePath,
+                'images' => $media['paths'],
+                'portfolio_url' => $media['portfolio'],
                 'delay' => $request->string('delay') ?: null,
                 'price_from' => self::money($request->string('price_from')),
                 'status' => $draft ? 'draft' : 'published',
             ], $packages, $options);
         } catch (\RuntimeException $e) {
+            Service::discardImageFiles($media['uploaded']);
             flash('error', user_error_message($e));
             flash('old', $old);
             redirect('/espace/prestations/creer');
         } catch (\Throwable) {
+            Service::discardImageFiles($media['uploaded']);
             flash('error', 'La prestation n\'a pas pu être enregistrée. Réessayez dans un instant.');
             flash('old', $old);
             redirect('/espace/prestations/creer');
@@ -1267,6 +1264,8 @@ final class AccountController
                     'price' => $o['price'] ?? '',
                 ];
             }, $service['options'] ?? []),
+            'portfolio_url' => $service['portfolio_url'] ?? '',
+            'images' => self::imagesForForm(Service::imagePaths($service)),
         ];
         View::page('creer', [
             'title' => 'Modifier la prestation',
@@ -1303,6 +1302,7 @@ final class AccountController
 
         $packagesInput = self::packageInput($request);
         $optionsInput = self::optionInput($request);
+        $currentPaths = Service::imagePaths($service);
         $old = [
             'title' => $title,
             'excerpt' => $excerpt,
@@ -1312,6 +1312,8 @@ final class AccountController
             'price_from' => $request->string('price_from'),
             'packages' => $packagesInput,
             'options' => $optionsInput,
+            'portfolio_url' => $request->string('portfolio_url'),
+            'images' => self::keptServiceImages($request, $currentPaths),
         ];
 
         $allowedTrades = self::offererTrades((int) $user['id'], (string) ($service['category_name'] ?? ''));
@@ -1335,22 +1337,14 @@ final class AccountController
             flash('old', $old);
             redirect('/espace/prestations/' . (int) $id . '/modifier');
         }
-
-        $imagePath = $service['image_path'] ?? null;
-        try {
-            $stored = store_upload(
-                $request->file('image'),
-                'prestations',
-                ['jpg', 'jpeg', 'png', 'webp', 'gif'],
-                5 * 1024 * 1024
-            );
-            if ($stored) {
-                $imagePath = $stored;
+        if (!$draft) {
+            try {
+                Invoice::assertCanOffer((int) $user['id']);
+            } catch (\Throwable $e) {
+                flash('error', user_error_message($e));
+                flash('old', $old);
+                redirect('/espace/prestations/' . (int) $id . '/modifier');
             }
-        } catch (\Throwable $e) {
-            flash('error', user_error_message($e));
-            flash('old', $old);
-            redirect('/espace/prestations/' . (int) $id . '/modifier');
         }
 
         $packages = self::packagesFromInput($packagesInput);
@@ -1366,18 +1360,32 @@ final class AccountController
             redirect('/espace/prestations/' . (int) $id . '/modifier');
         }
 
+        $media = ['paths' => $currentPaths, 'portfolio' => $request->string('portfolio_url'), 'uploaded' => []];
+        try {
+            $media = self::serviceMediaFromRequest($request, $currentPaths);
+        } catch (\Throwable $e) {
+            flash('error', user_error_message($e));
+            flash('old', $old);
+            redirect('/espace/prestations/' . (int) $id . '/modifier');
+        }
+        $old['images'] = self::imagesForForm($media['paths']);
+        $old['portfolio_url'] = $media['portfolio'];
+
         try {
             $updated = Service::update((int) $id, (int) $user['id'], [
                 'title' => $title,
                 'excerpt' => $excerpt !== '' ? $excerpt : null,
                 'category_name' => $category,
                 'specialty' => $specialty !== '' ? $specialty : null,
-                'image_path' => $imagePath,
+                'images' => $media['paths'],
+                'portfolio_url' => $media['portfolio'],
                 'delay' => $request->string('delay') ?: null,
                 'price_from' => self::money($request->string('price_from')),
                 'status' => $draft ? 'draft' : 'published',
             ], $packages, $options);
         } catch (\Throwable $e) {
+            Service::discardImageFiles($media['uploaded']);
+            $old['images'] = self::imagesForForm($currentPaths);
             flash('error', user_error_message($e));
             flash('old', $old);
             redirect('/espace/prestations/' . (int) $id . '/modifier');
@@ -2487,6 +2495,173 @@ final class AccountController
             }
         }
         return array_values(array_unique($out));
+    }
+
+    /**
+     * @param list<string> $allowedPaths
+     * @return array{paths: list<string>, portfolio: string, uploaded: list<string>}
+     */
+    private static function serviceMediaFromRequest(Request $request, array $allowedPaths): array
+    {
+        $portfolio = self::portfolioUrlFromRequest($request);
+
+        $files = $request->files('images');
+        if ($files === []) {
+            $single = $request->file('image');
+            if ($single !== [] && ($single['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE) {
+                $files = [$single];
+            }
+        }
+
+        $managed = $request->string('images_managed') === '1';
+        $paths = [];
+        if (!$managed) {
+            $paths = $allowedPaths;
+        } else {
+            foreach ($request->strings('keep_images') as $path) {
+                $kept = self::safeKeptImagePath($path, $allowedPaths);
+                if ($kept !== null && !in_array($kept, $paths, true)) {
+                    $paths[] = $kept;
+                }
+            }
+        }
+        if (count($paths) + count($files) > Service::IMAGE_MAX) {
+            throw new \RuntimeException('Vous pouvez déposer ' . Service::IMAGE_MAX . ' visuels maximum.');
+        }
+
+        $uploaded = [];
+        try {
+            foreach ($files as $file) {
+                if (count($paths) >= Service::IMAGE_MAX) {
+                    break;
+                }
+                $stored = store_upload(
+                    $file,
+                    'prestations',
+                    ['jpg', 'jpeg', 'png', 'webp', 'gif'],
+                    5 * 1024 * 1024
+                );
+                if ($stored) {
+                    $paths[] = $stored;
+                    $uploaded[] = $stored;
+                }
+            }
+        } catch (\Throwable $e) {
+            Service::discardImageFiles($uploaded);
+            throw $e;
+        }
+
+        return ['paths' => $paths, 'portfolio' => $portfolio, 'uploaded' => $uploaded];
+    }
+
+    /**
+     * @param list<string> $allowedPaths
+     * @return list<array{path: string, url: string}>
+     */
+    private static function portfolioUrlFromRequest(Request $request): string
+    {
+        $raw = $request->string('portfolio_url');
+        if ($raw === '') {
+            return '';
+        }
+        if (mb_strlen($raw) > 500) {
+            throw new \RuntimeException('Le lien de portfolio est trop long (500 caractères max).');
+        }
+        $portfolio = Profile::normalizeSocialUrl($raw, 'website');
+        if ($portfolio === '') {
+            $portfolio = self::normalizePortfolioUrl($raw);
+        }
+        if ($portfolio === '') {
+            throw new \RuntimeException('Le lien de portfolio n\'est pas une adresse valide.');
+        }
+        if (mb_strlen($portfolio) > 500) {
+            throw new \RuntimeException('Le lien de portfolio est trop long (500 caractères max).');
+        }
+        return $portfolio;
+    }
+
+    private static function normalizePortfolioUrl(string $raw): string
+    {
+        $raw = trim($raw);
+        if ($raw === '' || preg_match('#^(javascript|data|file|vbscript):#i', $raw) === 1) {
+            return '';
+        }
+        if (preg_match('#^https?://#i', $raw) !== 1) {
+            $raw = 'https://' . ltrim($raw, '/');
+        }
+        $parts = parse_url($raw);
+        if ($parts === false) {
+            return '';
+        }
+        $scheme = strtolower((string) ($parts['scheme'] ?? ''));
+        $host = (string) ($parts['host'] ?? '');
+        if (!in_array($scheme, ['http', 'https'], true) || $host === '') {
+            return '';
+        }
+        if (function_exists('idn_to_ascii')) {
+            $flags = defined('IDNA_DEFAULT') ? IDNA_DEFAULT : 0;
+            $variant = defined('INTL_IDNA_VARIANT_UTS46') ? INTL_IDNA_VARIANT_UTS46 : 0;
+            $ascii = $variant
+                ? idn_to_ascii($host, $flags, $variant)
+                : idn_to_ascii($host);
+            if (is_string($ascii) && $ascii !== '') {
+                $host = $ascii;
+            }
+        }
+        $host = strtolower($host);
+        if (!str_contains($host, '.')) {
+            return '';
+        }
+
+        $path = $parts['path'] ?? '';
+        $query = isset($parts['query']) ? '?' . $parts['query'] : '';
+        $fragment = isset($parts['fragment']) ? '#' . $parts['fragment'] : '';
+        return $scheme . '://' . $host . $path . $query . $fragment;
+    }
+
+    private static function keptServiceImages(Request $request, array $allowedPaths): array
+    {
+        if ($request->string('images_managed') !== '1') {
+            return self::imagesForForm($allowedPaths);
+        }
+        $paths = [];
+        foreach ($request->strings('keep_images') as $path) {
+            $kept = self::safeKeptImagePath($path, $allowedPaths);
+            if ($kept !== null && !in_array($kept, $paths, true)) {
+                $paths[] = $kept;
+            }
+        }
+        return self::imagesForForm($paths);
+    }
+
+    /**
+     * @param list<string> $paths
+     * @return list<array{path: string, url: string}>
+     */
+    private static function imagesForForm(array $paths): array
+    {
+        $out = [];
+        foreach ($paths as $path) {
+            $path = trim((string) $path);
+            if ($path === '') {
+                continue;
+            }
+            $out[] = [
+                'path' => $path,
+                'url' => uploaded($path),
+            ];
+        }
+        return $out;
+    }
+
+    /** @param list<string> $allowedPaths */
+    private static function safeKeptImagePath(string $path, array $allowedPaths): ?string
+    {
+        $path = trim(str_replace(['\\', "\0"], '/', $path));
+        if ($path === '' || str_contains($path, '..')) {
+            return null;
+        }
+        return in_array($path, $allowedPaths, true) ? $path : null;
     }
 
     /** @return array<string, mixed>|null */

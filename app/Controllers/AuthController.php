@@ -161,6 +161,17 @@ final class AuthController
         redirect('/');
     }
 
+    public function stopImpersonation(Request $request): void
+    {
+        $targetId = Auth::id();
+        if (!Auth::stopImpersonating()) {
+            flash('error', 'Aucune impersonnation en cours.');
+            redirect($targetId ? '/espace' : '/connexion');
+        }
+        flash('saved', 'Vous êtes de nouveau connecté avec votre compte administrateur.');
+        redirect($targetId ? '/admin/utilisateurs/' . $targetId : '/admin');
+    }
+
     public function forgotForm(Request $request): void
     {
         if (Auth::check()) {

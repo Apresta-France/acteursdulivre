@@ -21,8 +21,8 @@ $query = (string) ($query ?? '');
       <p class="mk-kicker">La place de marché des métiers du livre</p>
       <h1>Un livre, ça se fait à plusieurs.</h1>
       <p class="mk-lead">Dix-huit métiers, de l'écriture au salon : trouvez les bonnes personnes, comparez des prestations à prix affichés, ou publiez votre recherche.</p>
-      <form class="mk-search" method="get" action="<?= e(url('/recherche')) ?>" role="search" data-live-search data-api="<?= e(url('/api/recherche')) ?>" autocomplete="off">
-        <input name="q" value="<?= e($query) ?>" placeholder="De quoi votre livre a-t-il besoin ?" aria-label="Recherche" data-live-input autocomplete="off">
+      <form class="mk-search" method="get" action="<?= e(url('/recherche')) ?>" role="search" data-live-search data-api="<?= e(url('/api/recherche')) ?>" autocomplete="off" toolname="search_home" tooldescription="Rechercher depuis l'accueil un prestataire, une prestation ou un besoin lié à un livre.">
+        <input type="search" name="q" value="<?= e($query) ?>" placeholder="De quoi votre livre a-t-il besoin ?" aria-label="Recherche" data-live-input autocomplete="off" toolparamdescription="Mots-clés décrivant le besoin du livre.">
         <button class="btn-orange" type="submit">Chercher</button>
         <div class="search-suggest" data-live-panel hidden></div>
       </form>

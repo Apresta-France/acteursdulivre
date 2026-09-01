@@ -71,6 +71,7 @@ return static function (Router $router): void {
     $router->get('/auth/{provider}', [AuthController::class, 'oauthStart']);
     $router->get('/auth/{provider}/callback', [AuthController::class, 'oauthCallback']);
     $router->post('/deconnexion', [AuthController::class, 'logout']);
+    $router->post('/impersonnation/quitter', [AuthController::class, 'stopImpersonation']);
 
     $router->get('/espace', [AccountController::class, 'dashboard']);
     $router->get('/espace/bienvenue', [AccountController::class, 'onboarding']);
@@ -157,6 +158,7 @@ return static function (Router $router): void {
     $router->get('/admin/utilisateurs/{id}', [AdminController::class, 'utilisateur']);
     $router->post('/admin/utilisateurs/{id}', [AdminController::class, 'utilisateurSave']);
     $router->post('/admin/utilisateurs/{id}/supprimer', [AdminController::class, 'utilisateurDelete']);
+    $router->post('/admin/utilisateurs/{id}/impersonner', [AdminController::class, 'utilisateurImpersonate']);
     $router->get('/admin/prestations', [AdminController::class, 'prestations']);
     $router->get('/admin/missions', [AdminController::class, 'missions']);
     $router->get('/admin/finances', [AdminController::class, 'finances']);

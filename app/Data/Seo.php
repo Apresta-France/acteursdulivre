@@ -368,6 +368,7 @@ final class Seo
             'url' => Share::absolute($url),
             'type' => $type,
             'image' => Share::absolute($image),
+            'image_type' => (string) ($extra['image_type'] ?? self::imageMime($image)),
             'image_width' => (int) ($extra['image_width'] ?? self::OG_W),
             'image_height' => (int) ($extra['image_height'] ?? self::OG_H),
             'image_alt' => (string) ($extra['image_alt'] ?? ($usingDefaultImage ? self::OG_ALT : $fullTitle)),
@@ -376,6 +377,18 @@ final class Seo
             'published_time' => $extra['published_time'] ?? null,
             'modified_time' => $extra['modified_time'] ?? null,
         ], $extra);
+    }
+
+    public static function imageMime(string $url): string
+    {
+        $path = strtolower((string) (parse_url($url, PHP_URL_PATH) ?: $url));
+        $ext = pathinfo($path, PATHINFO_EXTENSION);
+        return match ($ext) {
+            'png' => 'image/png',
+            'webp' => 'image/webp',
+            'gif' => 'image/gif',
+            default => 'image/jpeg',
+        };
     }
 
     public static function documentTitle(string $title): string
@@ -753,6 +766,9 @@ final class Seo
             'areaServed' => 'FR',
             'serviceType' => (string) ($service['cat'] ?? 'Métier du livre'),
         ];
+        if (!empty($service['has_image']) && trim((string) ($service['img'] ?? '')) !== '') {
+            $out['image'] = Share::absolute((string) $service['img']);
+        }
         if ($price !== null) {
             $out['offers'] = [
                 '@type' => 'Offer',
@@ -850,7 +866,9 @@ TXT;
         return <<<MD
 # Acteurs du Livre
 
-> Place de marché francophone des métiers du livre, éditée par EDITIONS TESSERACT (SAS, Sainghin-en-Weppes, France). Site : {$home}
+> Place de marché francophone des métiers du livre, éditée par EDITIONS TESSERACT (SAS, Sainghin-en-Weppes, France).
+
+Site : [acteursdulivre.fr]({$home})
 
 ## En une phrase
 acteursdulivre.fr met en relation des porteurs de projet (auteurs, éditeurs, collectifs) et des prestataires du livre (correcteurs, bêta-lecteurs, lecteurs éditoriaux, illustrateurs, iconographes, photographes, traducteurs, maquettistes, imprimeurs, relieurs, attachés de presse, libraires, narrateurs, agents, juristes, salons).
@@ -865,27 +883,30 @@ acteursdulivre.fr met en relation des porteurs de projet (auteurs, éditeurs, co
 - Langue : français. Devise : EUR.
 
 ## Pages utiles
-- Accueil : {$home}
-- Comment ça marche : {$home}comment-ca-marche
-- Questions fréquentes : {$home}questions
-- Tarifs : {$home}tarifs
-- Confiance : {$home}confiance
-- Règles IA : {$home}regles-ia
-- À propos : {$home}a-propos
-- Annuaire : {$home}recherche
-- Prestataires : {$home}prestataires
-- Prestations : {$home}prestations
-- Appels d'offres : {$home}missions
-- Métiers : {$home}metiers/correction
-- Pages locales (ex. {$home}correctrice/paris) : redirection vers l'annuaire filtré
-- Journal (30 articles — métiers, tarifs, contrats, diffusion) : {$home}journal
-- Contact : {$home}contact
-- Mentions légales : {$home}mentions-legales
+- [Accueil]({$home}) : page d'entrée de la place de marché
+- [Comment ça marche]({$home}comment-ca-marche) : fonctionnement de la mise en relation
+- [Questions fréquentes]({$home}questions) : commission, clients, règlement
+- [Tarifs]({$home}tarifs) : commission et conditions tarifaires
+- [Confiance]({$home}confiance) : garanties et cadre de la plateforme
+- [Règles IA]({$home}regles-ia) : moratoire sur l'IA générative
+- [À propos]({$home}a-propos) : l'éditeur et le projet
+- [Annuaire]({$home}recherche) : rechercher un prestataire ou une prestation
+- [Prestataires]({$home}prestataires) : vitrines des professionnels
+- [Prestations]({$home}prestations) : offres à prix affiché
+- [Appels d'offres]({$home}missions) : recherches publiées par les porteurs de projet
+- [Métiers]({$home}metiers/correction) : pages métiers, exemple correction
+- [Journal]({$home}journal) : articles sur les métiers, tarifs, contrats et diffusion
+- [Contact]({$home}contact) : écrire à l'équipe
+- [Mentions légales]({$home}mentions-legales) : informations légales
+
+Les pages locales (exemple : [correctrice à Paris]({$home}correctrice/paris)) redirigent vers l'annuaire filtré.
 
 ## Contact
-guillaume@editions-tesseract.fr — médiation@acteursdulivre.fr — presse@acteursdulivre.fr
-Facebook : https://www.facebook.com/acteursdulivre/
-Instagram : https://www.instagram.com/acteursdulivre.fr/
+- [guillaume@editions-tesseract.fr](mailto:guillaume@editions-tesseract.fr)
+- [mediation@acteursdulivre.fr](mailto:mediation@acteursdulivre.fr)
+- [presse@acteursdulivre.fr](mailto:presse@acteursdulivre.fr)
+- [Facebook](https://www.facebook.com/acteursdulivre/)
+- [Instagram](https://www.instagram.com/acteursdulivre.fr/)
 MD;
     }
 

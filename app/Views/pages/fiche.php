@@ -25,10 +25,53 @@ $formulePriceLabel = is_array($selectedPackage)
   <div class="search-crumb">Prestations · <?= e((string) ($service['cat'] ?: 'Offre')) ?><?php if (!empty($service['specialty'])): ?> · <?= e((string) $service['specialty']) ?><?php endif; ?></div>
   <div class="publish-grid">
     <div>
-      <?php if (!empty($service['has_image'])): ?>
-        <div class="service-cover-hero" style="background-image:url('<?= e((string) $service['img']) ?>')" role="img" aria-label="<?= e('Visuel de la prestation') ?>"></div>
+      <?php
+        $gallery = is_array($service['images'] ?? null) ? $service['images'] : [];
+        $portfolioUrl = trim((string) ($service['portfolio_url'] ?? ''));
+      ?>
+      <?php if ($gallery !== []): ?>
+        <a class="service-cover-hero" href="<?= e((string) $gallery[0]) ?>" style="background-image:url('<?= e((string) $gallery[0]) ?>')"
+           data-zoom data-zoom-title="<?= e((string) $service['title']) ?>"
+           aria-haspopup="dialog" aria-controls="portfolio-zoom"
+           aria-label="<?= e('Agrandir le visuel de la prestation') ?>"></a>
+        <?php if (count($gallery) > 1): ?>
+          <div class="service-fiche-gallery">
+            <?php foreach (array_slice($gallery, 1) as $i => $src): ?>
+              <a class="service-fiche-gallery-item" href="<?= e((string) $src) ?>" style="background-image:url('<?= e((string) $src) ?>')"
+                 data-zoom data-zoom-title="<?= e((string) $service['title']) ?>"
+                 aria-haspopup="dialog" aria-controls="portfolio-zoom"
+                 aria-label="<?= e('Agrandir le visuel ' . (string) ($i + 2)) ?>"></a>
+            <?php endforeach; ?>
+          </div>
+        <?php endif; ?>
+        <dialog class="zoom-modal" id="portfolio-zoom" data-zoom-dialog aria-labelledby="portfolio-zoom-title">
+          <div class="zoom-modal-inner">
+            <div class="zoom-modal-bar">
+              <h2 id="portfolio-zoom-title"></h2>
+              <button type="button" class="zoom-modal-close" data-zoom-close aria-label="Fermer">×</button>
+            </div>
+            <figure class="zoom-modal-figure">
+              <img data-zoom-img alt="">
+              <figcaption>
+                <span data-zoom-caption hidden></span>
+                <p data-zoom-desc hidden></p>
+              </figcaption>
+            </figure>
+          </div>
+          <button type="button" class="zoom-modal-nav is-prev" data-zoom-prev aria-label="Visuel précédent" hidden>‹</button>
+          <button type="button" class="zoom-modal-nav is-next" data-zoom-next aria-label="Visuel suivant" hidden>›</button>
+        </dialog>
       <?php else: ?>
         <?= service_cover_html((string) ($service['cat'] ?? ''), 'is-hero') ?>
+      <?php endif; ?>
+      <?php if ($portfolioUrl !== ''): ?>
+        <p class="service-portfolio-link">
+          <?php if (preg_match('#^https?://#i', $portfolioUrl)): ?>
+            <a href="<?= e($portfolioUrl) ?>" target="_blank" rel="noopener noreferrer">Voir le portfolio externe</a>
+          <?php else: ?>
+            <?= e($portfolioUrl) ?>
+          <?php endif; ?>
+        </p>
       <?php endif; ?>
       <h1><?= e((string) $service['title']) ?></h1>
       <div class="service-excerpt"><?= rich_html(

@@ -19,6 +19,13 @@ final class Auth
         }
         $user = User::find((int) $id);
         if (!$user || ($user['status'] ?? 'active') !== 'active') {
+            if (self::isImpersonating() && self::stopImpersonating()) {
+                return self::user();
+            }
+            self::logout();
+            return null;
+        }
+        if (self::isImpersonating() && self::impersonator() === null) {
             self::logout();
             return null;
         }
@@ -56,7 +63,7 @@ final class Auth
         session_regenerate_id(true);
         $_SESSION['user_id'] = (int) $user['id'];
         $_SESSION['_user_cache'] = $user;
-        unset($_SESSION['_oauth_pending']);
+        unset($_SESSION['_oauth_pending'], $_SESSION['_impersonator_id']);
         User::touchLastLogin((int) $user['id']);
         self::forgetRemember();
         if ($remember) {
@@ -73,8 +80,71 @@ final class Auth
     public static function logout(): void
     {
         self::forgetRemember();
-        unset($_SESSION['user_id'], $_SESSION['_user_cache']);
+        unset($_SESSION['user_id'], $_SESSION['_user_cache'], $_SESSION['_impersonator_id']);
         session_regenerate_id(true);
+    }
+
+    public static function impersonate(array $target, array $admin): void
+    {
+        $adminId = (int) ($admin['id'] ?? 0);
+        $targetId = (int) ($target['id'] ?? 0);
+        if ($adminId < 1 || $targetId < 1) {
+            throw new \RuntimeException('Impersonnation impossible.');
+        }
+        if (($admin['role'] ?? '') !== 'admin') {
+            throw new \RuntimeException('Seuls les administrateurs peuvent ouvrir une session à la place d’un autre compte.');
+        }
+        if ($adminId === $targetId) {
+            throw new \RuntimeException('Vous ne pouvez pas vous connecter à la place de votre propre compte.');
+        }
+        if (self::isImpersonating()) {
+            throw new \RuntimeException('Terminez d’abord l’impersonnation en cours.');
+        }
+        if (($target['status'] ?? '') !== 'active' || User::isClosed($target)) {
+            throw new \RuntimeException('Ce compte n’est pas accessible (inactif, suspendu ou clôturé).');
+        }
+
+        session_regenerate_id(true);
+        $_SESSION['_impersonator_id'] = $adminId;
+        $_SESSION['user_id'] = $targetId;
+        $_SESSION['_user_cache'] = $target;
+    }
+
+    public static function isImpersonating(): bool
+    {
+        return (int) ($_SESSION['_impersonator_id'] ?? 0) > 0;
+    }
+
+    public static function impersonator(): ?array
+    {
+        $id = (int) ($_SESSION['_impersonator_id'] ?? 0);
+        if ($id < 1) {
+            return null;
+        }
+        $admin = User::find($id);
+        if (!$admin || ($admin['role'] ?? '') !== 'admin' || ($admin['status'] ?? '') !== 'active' || User::isClosed($admin)) {
+            return null;
+        }
+        return $admin;
+    }
+
+    public static function stopImpersonating(): bool
+    {
+        $adminId = (int) ($_SESSION['_impersonator_id'] ?? 0);
+        if ($adminId < 1) {
+            return false;
+        }
+        $admin = User::find($adminId);
+        unset($_SESSION['_impersonator_id'], $_SESSION['_user_cache']);
+        if (!$admin || ($admin['role'] ?? '') !== 'admin' || ($admin['status'] ?? '') !== 'active' || User::isClosed($admin)) {
+            unset($_SESSION['user_id']);
+            session_regenerate_id(true);
+            return false;
+        }
+        session_regenerate_id(true);
+        $_SESSION['user_id'] = $adminId;
+        $_SESSION['_user_cache'] = $admin;
+        return true;
     }
 
     public static function requireUser(): array

@@ -13,6 +13,8 @@ final class Service
         'published' => 'En ligne',
     ];
 
+    public const IMAGE_MAX = 5;
+
     public static function find(int $id): ?array
     {
         $row = Database::fetch(
@@ -171,28 +173,40 @@ final class Service
             $priceFrom = $prices !== [] ? min($prices) : null;
         }
 
-        Database::query(
-            'INSERT INTO services (user_id, category_name, specialty, title, slug, excerpt, image_path, status, price_from, delay)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-            [
-                $userId,
-                $data['category_name'] ?? null,
-                $data['specialty'] ?? null,
-                $title,
-                $slug,
-                $data['excerpt'] ?? null,
-                $data['image_path'] ?? null,
-                $data['status'] ?? 'published',
-                $priceFrom,
-                $data['delay'] ?? null,
-            ]
-        );
+        $imagePaths = self::normalizeImagePaths($data);
+        $portfolioUrl = self::normalizePortfolioUrl($data['portfolio_url'] ?? null);
 
-        $id = (int) Database::lastId();
-        self::replacePackages($id, $packages);
-        self::replaceOptions($id, $options);
+        $id = (int) Database::transaction(static function () use ($userId, $data, $title, $slug, $imagePaths, $portfolioUrl, $priceFrom, $packages, $options): int {
+            Database::query(
+                'INSERT INTO services (user_id, category_name, specialty, title, slug, excerpt, image_path, portfolio_url, status, price_from, delay)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                [
+                    $userId,
+                    $data['category_name'] ?? null,
+                    $data['specialty'] ?? null,
+                    $title,
+                    $slug,
+                    $data['excerpt'] ?? null,
+                    $imagePaths[0] ?? null,
+                    $portfolioUrl,
+                    $data['status'] ?? 'published',
+                    $priceFrom,
+                    $data['delay'] ?? null,
+                ]
+            );
 
-        return self::find($id) ?? ['slug' => $slug];
+            $newId = (int) Database::lastId();
+            self::replacePackages($newId, $packages);
+            self::replaceOptions($newId, $options);
+            self::replaceExtraImages($newId, $imagePaths);
+            return $newId;
+        });
+
+        try {
+            return self::find($id) ?? ['id' => $id, 'slug' => $slug];
+        } catch (\Throwable) {
+            return ['id' => $id, 'slug' => $slug];
+        }
     }
 
     /**
@@ -224,31 +238,46 @@ final class Service
             $priceFrom = $prices !== [] ? min($prices) : null;
         }
 
-        $imagePath = array_key_exists('image_path', $data)
-            ? $data['image_path']
-            : ($service['image_path'] ?? null);
+        $previousPaths = self::imagePaths($service);
+        $imagePaths = array_key_exists('images', $data) || array_key_exists('image_path', $data)
+            ? self::normalizeImagePaths($data)
+            : $previousPaths;
+        $portfolioUrl = array_key_exists('portfolio_url', $data)
+            ? self::normalizePortfolioUrl($data['portfolio_url'] ?? null)
+            : self::normalizePortfolioUrl($service['portfolio_url'] ?? null);
 
-        Database::query(
-            'UPDATE services
-             SET category_name = ?, specialty = ?, title = ?, excerpt = ?, image_path = ?, status = ?, price_from = ?, delay = ?
-             WHERE id = ? AND user_id = ?',
-            [
-                $data['category_name'] ?? $service['category_name'] ?? null,
-                $data['specialty'] ?? $service['specialty'] ?? null,
-                $title,
-                $data['excerpt'] ?? $service['excerpt'] ?? null,
-                $imagePath,
-                $status,
-                $priceFrom,
-                $data['delay'] ?? $service['delay'] ?? null,
-                $id,
-                $userId,
-            ]
-        );
-        self::replacePackages($id, $packages);
-        self::replaceOptions($id, $options);
+        Database::transaction(static function () use ($id, $userId, $data, $service, $title, $imagePaths, $portfolioUrl, $status, $priceFrom, $packages, $options): void {
+            Database::query(
+                'UPDATE services
+                 SET category_name = ?, specialty = ?, title = ?, excerpt = ?, image_path = ?, portfolio_url = ?, status = ?, price_from = ?, delay = ?
+                 WHERE id = ? AND user_id = ?',
+                [
+                    $data['category_name'] ?? $service['category_name'] ?? null,
+                    $data['specialty'] ?? $service['specialty'] ?? null,
+                    $title,
+                    $data['excerpt'] ?? $service['excerpt'] ?? null,
+                    $imagePaths[0] ?? null,
+                    $portfolioUrl,
+                    $status,
+                    $priceFrom,
+                    $data['delay'] ?? $service['delay'] ?? null,
+                    $id,
+                    $userId,
+                ]
+            );
+            self::replacePackages($id, $packages);
+            self::replaceOptions($id, $options);
+            self::replaceExtraImages($id, $imagePaths);
+        });
+        self::deleteObsoleteImages($imagePaths, $previousPaths);
 
-        return self::find($id) ?? $service;
+        try {
+            return self::find($id) ?? $service;
+        } catch (\Throwable) {
+            $service['slug'] = $service['slug'] ?? '';
+            $service['id'] = $id;
+            return $service;
+        }
     }
 
     public static function deleteForUser(int $id, int $userId): void
@@ -281,7 +310,98 @@ final class Service
             Database::query('DELETE FROM services WHERE id = ? AND user_id = ?', [$id, $userId]);
         });
 
-        self::deleteImageFile((string) ($service['image_path'] ?? ''));
+        foreach (self::imagePaths($service) as $path) {
+            self::deleteImageFile($path);
+        }
+    }
+
+    /**
+     * @param array<string, mixed> $service
+     * @return list<string>
+     */
+    public static function imagePaths(array $service): array
+    {
+        if (isset($service['image_paths']) && is_array($service['image_paths'])) {
+            $out = [];
+            foreach ($service['image_paths'] as $path) {
+                $path = trim((string) $path);
+                if ($path !== '' && !in_array($path, $out, true)) {
+                    $out[] = $path;
+                }
+            }
+            return $out;
+        }
+        $one = trim((string) ($service['image_path'] ?? ''));
+        return $one !== '' ? [$one] : [];
+    }
+
+    /**
+     * @param array<string, mixed> $data
+     * @return list<string>
+     */
+    private static function normalizeImagePaths(array $data): array
+    {
+        $raw = $data['images'] ?? [];
+        if (!is_array($raw) || $raw === []) {
+            $one = trim((string) ($data['image_path'] ?? ''));
+            $raw = $one !== '' ? [$one] : [];
+        }
+        $out = [];
+        foreach ($raw as $path) {
+            $path = trim((string) $path);
+            if ($path === '' || str_contains($path, '..') || str_contains($path, "\0")) {
+                continue;
+            }
+            if (!in_array($path, $out, true)) {
+                $out[] = $path;
+            }
+            if (count($out) >= self::IMAGE_MAX) {
+                break;
+            }
+        }
+        return $out;
+    }
+
+    private static function normalizePortfolioUrl(mixed $value): ?string
+    {
+        $url = trim((string) $value);
+        if ($url === '') {
+            return null;
+        }
+        return mb_strlen($url) > 500 ? null : $url;
+    }
+
+    /** @param list<string> $paths */
+    public static function discardImageFiles(array $paths): void
+    {
+        foreach ($paths as $path) {
+            self::deleteImageFile((string) $path);
+        }
+    }
+
+    /** @param list<string> $paths */
+    private static function replaceExtraImages(int $serviceId, array $paths): void
+    {
+        Database::query('DELETE FROM service_images WHERE service_id = ?', [$serviceId]);
+        foreach (array_slice($paths, 1) as $i => $path) {
+            Database::query(
+                'INSERT INTO service_images (service_id, image_path, sort_order) VALUES (?, ?, ?)',
+                [$serviceId, $path, $i]
+            );
+        }
+    }
+
+    /**
+     * @param list<string> $paths
+     * @param list<string> $previousPaths
+     */
+    private static function deleteObsoleteImages(array $paths, array $previousPaths): void
+    {
+        foreach ($previousPaths as $old) {
+            if (!in_array($old, $paths, true)) {
+                self::deleteImageFile($old);
+            }
+        }
     }
 
     private static function deleteImageFile(string $path): void
@@ -293,7 +413,11 @@ final class Service
         $full = ADL_ROOT . '/public/uploads/' . ltrim($path, '/');
         $root = realpath(ADL_ROOT . '/public/uploads');
         $real = realpath($full);
-        if ($root === false || $real === false || !str_starts_with($real, $root) || !is_file($real)) {
+        if ($root === false || $real === false || !is_file($real)) {
+            return;
+        }
+        $prefix = rtrim($root, '/\\') . DIRECTORY_SEPARATOR;
+        if ($real !== $root && !str_starts_with($real, $prefix)) {
             return;
         }
         @unlink($real);
@@ -455,9 +579,28 @@ final class Service
         $row['profile_href'] = !empty($row['profile_slug']) ? '/prestataires/' . $row['profile_slug'] : '';
         $row['packages'] = $packages;
         $row['options'] = $options;
+        $imagePaths = [];
         $imagePath = trim((string) ($row['image_path'] ?? ''));
-        $row['has_image'] = $imagePath !== '';
-        $row['img'] = $imagePath !== '' ? uploaded($imagePath) : service_brand_cover_url((string) ($row['category_name'] ?? ''));
+        if ($imagePath !== '') {
+            $imagePaths[] = $imagePath;
+        }
+        try {
+            foreach (Database::fetchAll(
+                'SELECT image_path FROM service_images WHERE service_id = ? ORDER BY sort_order ASC, id ASC',
+                [(int) $row['id']]
+            ) as $extra) {
+                $path = trim((string) ($extra['image_path'] ?? ''));
+                if ($path !== '' && !in_array($path, $imagePaths, true)) {
+                    $imagePaths[] = $path;
+                }
+            }
+        } catch (\Throwable) {
+        }
+        $row['image_paths'] = $imagePaths;
+        $row['images'] = array_map(static fn (string $path): string => uploaded($path), $imagePaths);
+        $row['has_image'] = $imagePaths !== [];
+        $row['img'] = $imagePaths !== [] ? $row['images'][0] : service_brand_cover_url((string) ($row['category_name'] ?? ''));
+        $row['portfolio_url'] = trim((string) ($row['portfolio_url'] ?? ''));
         $row['live'] = true;
         $row['kind'] = 'prestations';
         $row['kind_label'] = 'Prestation';

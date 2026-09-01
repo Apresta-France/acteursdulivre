@@ -217,7 +217,7 @@
 
   function initPortfolioZoom() {
     var triggers = Array.prototype.slice.call(document.querySelectorAll('[data-zoom]'));
-    var dialog = document.getElementById('portfolio-zoom');
+    var dialog = document.querySelector('[data-zoom-dialog]') || document.getElementById('portfolio-zoom');
     if (!triggers.length || !dialog) return;
 
     var img = dialog.querySelector('[data-zoom-img]');
@@ -682,7 +682,7 @@
       }
       panel.innerHTML = items.map(function (item) {
         var region = item.kind === 'region';
-        return '<button type="button" class="city-ac-item' + (region ? ' is-region' : '') + '" data-city-pick>' +
+        return '<button type="button" role="option" aria-selected="false" class="city-ac-item' + (region ? ' is-region' : '') + '" data-city-pick>' +
           '<strong>' + escapeHtml(item.name || item.label || '') + '</strong>' +
           (item.hint ? '<em>' + escapeHtml(item.hint) + '</em>' : '') +
           '</button>';
@@ -1373,14 +1373,102 @@
   if (coverForm) {
     var coverType = coverForm.querySelector('.service-cover-type');
     var coverBrand = coverForm.querySelector('.service-cover');
-    var coverPhoto = coverForm.querySelector('[data-cover-photo]');
+    var coverBrandWrap = coverForm.querySelector('[data-cover-brand]');
+    var coverThumbs = coverForm.querySelector('[data-cover-thumbs]');
     var coverFile = coverForm.querySelector('[data-cover-file]');
+    var coverMax = parseInt(coverFile && coverFile.getAttribute('data-max-files') || '5', 10) || 5;
     function setCoverLabel(label) {
       if (coverType) coverType.textContent = label || 'Prestation';
     }
     function setCoverPhoto(url) {
       if (!coverBrand || !url) return;
       coverBrand.style.setProperty('--service-cover-photo', "url('" + url + "')");
+    }
+    function existingCoverCount() {
+      return coverThumbs ? coverThumbs.querySelectorAll('[data-keep-image]').length : 0;
+    }
+    function newCoverCount() {
+      return coverFile && coverFile.files ? coverFile.files.length : 0;
+    }
+    function remainingCoverSlots() {
+      return Math.max(0, coverMax - existingCoverCount() - newCoverCount());
+    }
+    function listToFileList(files) {
+      if (typeof DataTransfer === 'undefined') return null;
+      var transfer = new DataTransfer();
+      files.forEach(function (file) { transfer.items.add(file); });
+      return transfer.files;
+    }
+    function syncCoverPreview() {
+      var hasAny = existingCoverCount() > 0 || newCoverCount() > 0;
+      if (coverBrandWrap) coverBrandWrap.hidden = !!hasAny;
+      if (coverThumbs) coverThumbs.hidden = !hasAny;
+      if (coverFile) {
+        var left = remainingCoverSlots();
+        coverFile.setAttribute('data-remaining-files', String(left));
+        coverFile.disabled = left < 1 && newCoverCount() === 0;
+        var pick = coverFile.closest('[data-file-pick]');
+        if (pick) pick.classList.toggle('is-full', left < 1 && newCoverCount() === 0);
+      }
+    }
+    function refreshCoverFileName() {
+      if (!coverFile) return;
+      var pick = coverFile.closest('[data-file-pick]');
+      var nameEl = pick && pick.querySelector('[data-file-name]');
+      if (!nameEl) return;
+      var files = coverFile.files;
+      var n = files ? files.length : 0;
+      if (n === 0) {
+        nameEl.textContent = (pick && pick.getAttribute('data-file-empty')) || 'ou déposez-les ici';
+        if (pick) pick.classList.remove('has-file');
+        return;
+      }
+      nameEl.textContent = n === 1 ? files[0].name : (n + ' fichiers choisis');
+      if (pick) pick.classList.add('has-file');
+    }
+    function capCoverFiles() {
+      if (!coverFile || !coverFile.files) return;
+      var left = Math.max(0, coverMax - existingCoverCount());
+      if (coverFile.files.length <= left) {
+        refreshCoverFileName();
+        return;
+      }
+      var next = listToFileList(Array.prototype.slice.call(coverFile.files, 0, left));
+      if (next) coverFile.files = next;
+      refreshCoverFileName();
+    }
+    function renderCoverPreviews() {
+      if (!coverThumbs || !coverFile) return;
+      coverThumbs.querySelectorAll('[data-new-preview]').forEach(function (el) {
+        el.remove();
+      });
+      var files = coverFile.files ? Array.prototype.slice.call(coverFile.files) : [];
+      files.forEach(function (file, index) {
+        var fig = document.createElement('figure');
+        fig.className = 'service-gallery-thumb';
+        fig.setAttribute('data-new-preview', '');
+        var media = document.createElement('div');
+        media.className = 'service-gallery-media';
+        media.style.backgroundImage = 'url(\'' + URL.createObjectURL(file) + '\')';
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'service-gallery-remove';
+        btn.setAttribute('aria-label', 'Retirer ce visuel');
+        btn.textContent = '✕';
+        btn.addEventListener('click', function () {
+          var kept = [];
+          Array.prototype.slice.call(coverFile.files).forEach(function (item, i) {
+            if (i !== index) kept.push(item);
+          });
+          var next = listToFileList(kept);
+          if (next) coverFile.files = next;
+          coverFile.dispatchEvent(new Event('change', { bubbles: true }));
+        });
+        fig.appendChild(media);
+        fig.appendChild(btn);
+        coverThumbs.appendChild(fig);
+      });
+      syncCoverPreview();
     }
     coverForm.querySelectorAll('input[name="category_name"]').forEach(function (radio) {
       radio.addEventListener('change', function () {
@@ -1398,18 +1486,21 @@
     }
     if (coverFile) {
       coverFile.addEventListener('change', function () {
-        var file = coverFile.files && coverFile.files[0];
-        if (!file || !coverPhoto) {
-          if (coverBrand) coverBrand.hidden = false;
-          if (coverPhoto) coverPhoto.hidden = true;
-          return;
-        }
-        var url = URL.createObjectURL(file);
-        coverPhoto.style.backgroundImage = 'url(\'' + url + '\')';
-        coverPhoto.hidden = false;
-        if (coverBrand) coverBrand.hidden = true;
+        capCoverFiles();
+        renderCoverPreviews();
       });
     }
+    if (coverThumbs) {
+      coverThumbs.addEventListener('click', function (event) {
+        var btn = event.target.closest('[data-remove-keep]');
+        if (!btn) return;
+        var fig = btn.closest('[data-keep-image]');
+        if (fig) fig.remove();
+        capCoverFiles();
+        renderCoverPreviews();
+      });
+    }
+    syncCoverPreview();
   }
 
   (function bindTradeSpecialties() {
@@ -1422,16 +1513,26 @@
     var helps = {};
     try { byTrade = JSON.parse(form.getAttribute('data-specialties-by-trade') || '{}'); } catch (e) {}
     try { helps = JSON.parse(form.getAttribute('data-specialty-helps') || '{}'); } catch (e) {}
+    var initialTrade = tradeSelect.value;
+    var keepSpecialty = specSelect.value;
+    var keepLabel = '';
+    var keepOpt = specSelect.options[specSelect.selectedIndex];
+    if (keepSpecialty && keepOpt) keepLabel = keepOpt.textContent.trim();
     function fill() {
       var trade = tradeSelect.value;
       var options = byTrade[trade] || [];
       var current = specSelect.value;
       var html = '<option value="">Choisir une spécialité</option>';
+      var seen = {};
       options.forEach(function (opt) {
         var value = opt && opt.v ? opt.v : opt;
         var label = opt && opt.l ? opt.l : value;
+        seen[value] = true;
         html += '<option value="' + escapeHtml(value) + '"' + (value === current ? ' selected' : '') + '>' + escapeHtml(label) + '</option>';
       });
+      if (trade === initialTrade && keepSpecialty && !seen[keepSpecialty]) {
+        html += '<option value="' + escapeHtml(keepSpecialty) + '"' + (current === keepSpecialty || current === '' ? ' selected' : '') + '>' + escapeHtml(keepLabel || keepSpecialty) + '</option>';
+      }
       specSelect.innerHTML = html;
       var help = form.querySelector('[data-specialty-help]');
       if (help) help.textContent = helps[trade] || helps[''] || help.textContent;
@@ -1528,6 +1629,19 @@
     updateFichePreview();
   }
 
+  function fileMatchesAccept(file, accept) {
+    if (!accept) return true;
+    var type = (file.type || '').toLowerCase();
+    var name = (file.name || '').toLowerCase();
+    return accept.split(',').some(function (token) {
+      token = token.trim().toLowerCase();
+      if (!token) return false;
+      if (token.charAt(0) === '.') return name.slice(-token.length) === token;
+      if (token.slice(-2) === '/*') return type.indexOf(token.slice(0, -1)) === 0;
+      return type === token;
+    });
+  }
+
   function bindFilePick(pick) {
     if (!pick || pick.dataset.filePickBound) return;
     pick.dataset.filePickBound = '1';
@@ -1535,17 +1649,18 @@
     var name = pick.querySelector('[data-file-name], [data-dropzone-label]');
     if (!input || !name) return;
     var empty = name.textContent;
-    function setFile(file) {
-      if (!file) {
+    pick.setAttribute('data-file-empty', empty);
+    function setFiles(files) {
+      if (!files || !files.length) {
         name.textContent = empty;
         pick.classList.remove('has-file');
         return;
       }
-      name.textContent = file.name;
+      name.textContent = files.length === 1 ? files[0].name : (files.length + ' fichiers choisis');
       pick.classList.add('has-file');
     }
     input.addEventListener('change', function () {
-      setFile(input.files && input.files[0] ? input.files[0] : null);
+      setFiles(input.files);
     });
     ['dragenter', 'dragover'].forEach(function (ev) {
       pick.addEventListener(ev, function (e) {
@@ -1561,11 +1676,30 @@
     });
     pick.addEventListener('drop', function (e) {
       var files = e.dataTransfer && e.dataTransfer.files;
-      if (!files || !files[0]) return;
+      if (!files || !files[0] || typeof DataTransfer === 'undefined') return;
+      var maxBytes = parseInt(input.getAttribute('data-max-bytes') || '0', 10);
+      var incoming = Array.prototype.slice.call(files).filter(function (file) {
+        if (maxBytes > 0 && file.size > maxBytes) return false;
+        return fileMatchesAccept(file, input.getAttribute('accept') || '');
+      });
+      if (!incoming.length) return;
       var transfer = new DataTransfer();
-      transfer.items.add(files[0]);
+      if (input.multiple) {
+        var existing = input.files ? Array.prototype.slice.call(input.files) : [];
+        var remaining = parseInt(input.getAttribute('data-remaining-files') || '', 10);
+        if (isNaN(remaining)) {
+          var cap = parseInt(input.getAttribute('data-max-files') || '0', 10);
+          remaining = cap > 0 ? Math.max(0, cap - existing.length) : incoming.length;
+        }
+        incoming = incoming.slice(0, Math.max(0, remaining));
+        existing.forEach(function (file) { transfer.items.add(file); });
+        incoming.forEach(function (file) { transfer.items.add(file); });
+      } else {
+        transfer.items.add(incoming[0]);
+      }
+      if (!transfer.files.length) return;
       input.files = transfer.files;
-      setFile(files[0]);
+      setFiles(input.files);
       input.dispatchEvent(new Event('change', { bubbles: true }));
     });
   }

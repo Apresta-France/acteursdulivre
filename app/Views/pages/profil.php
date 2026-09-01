@@ -179,7 +179,7 @@ $isOwnProfile = $viewer && (int) ($viewer['id'] ?? 0) === (int) ($p['user_id'] ?
             </figure>
           <?php endforeach; ?>
         </div>
-        <dialog class="zoom-modal" id="portfolio-zoom" aria-labelledby="portfolio-zoom-title">
+        <dialog class="zoom-modal" id="portfolio-zoom" data-zoom-dialog aria-labelledby="portfolio-zoom-title">
           <div class="zoom-modal-inner">
             <div class="zoom-modal-bar">
               <h2 id="portfolio-zoom-title"></h2>

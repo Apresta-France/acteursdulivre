@@ -16,6 +16,7 @@
     $metaImageW = (int) ($meta['image_width'] ?? \Adl\Data\Seo::OG_W);
     $metaImageH = (int) ($meta['image_height'] ?? \Adl\Data\Seo::OG_H);
     $metaImageAlt = (string) ($meta['image_alt'] ?? $metaTitle);
+    $metaImageType = (string) ($meta['image_type'] ?? \Adl\Data\Seo::imageMime($metaImage));
     $jsonLd = $meta['json_ld'] ?? [];
     $founderOffer = null;
     if (empty($logged)) {
@@ -40,7 +41,7 @@
   <meta property="og:url" content="<?= e($metaUrl) ?>">
   <meta property="og:image" content="<?= e($metaImage) ?>">
   <meta property="og:image:secure_url" content="<?= e($metaImage) ?>">
-  <meta property="og:image:type" content="image/jpeg">
+  <meta property="og:image:type" content="<?= e($metaImageType) ?>">
   <meta property="og:image:width" content="<?= $metaImageW ?>">
   <meta property="og:image:height" content="<?= $metaImageH ?>">
   <meta property="og:image:alt" content="<?= e($metaImageAlt) ?>">
@@ -66,7 +67,7 @@
   <?php if (!empty($isArticle) && !empty($article['img'])): ?>
   <link rel="preload" as="image" href="<?= e((string) $article['img']) ?>">
   <?php endif; ?>
-  <link rel="stylesheet" href="<?= e(asset('css/app.css')) ?>?v=m119">
+  <link rel="stylesheet" href="<?= e(asset('css/app.css')) ?>?v=m122">
   <link rel="icon" href="<?= e(asset('img/favicon.ico')) ?>?v=3" sizes="any">
   <link rel="icon" type="image/png" href="<?= e(asset('img/favicon-32x32.png')) ?>?v=3" sizes="32x32">
   <link rel="apple-touch-icon" href="<?= e(asset('img/apple-touch-icon.png')) ?>?v=3">
@@ -106,13 +107,13 @@
       </div>
 
       <header class="site-header">
-        <a href="<?= e(url('/')) ?>" class="brand">
+        <a href="<?= e(url('/')) ?>" class="brand" aria-label="acteursdulivre.fr — accueil">
           <picture>
             <source media="(max-width: 768px)" srcset="<?= e(asset('img/logo-mark.png')) ?>?v=1">
             <img src="<?= e(asset('img/logo.png')) ?>?v=4" alt="acteursdulivre.fr — place de marché des métiers du livre" width="212" height="58" decoding="async">
           </picture>
         </a>
-        <form class="search" role="search" action="<?= e(url('/recherche')) ?>" method="get" data-live-search data-api="<?= e(url('/api/recherche')) ?>" autocomplete="off">
+        <form class="search" role="search" action="<?= e(url('/recherche')) ?>" method="get" data-live-search data-api="<?= e(url('/api/recherche')) ?>" autocomplete="off" toolname="search_directory" tooldescription="Rechercher un prestataire, une prestation ou un appel d'offres parmi les métiers du livre.">
           <?php
             $headerSearchType = (string) ($searchType ?? '');
             if ($headerSearchType === '' || $headerSearchType === 'all') {
@@ -129,7 +130,7 @@
           <?php if ($headerSearchType !== '' && $headerSearchType !== 'all' && array_key_exists($headerSearchType, \Adl\Data\Catalog::TYPES)): ?>
             <input type="hidden" name="type" value="<?= e($headerSearchType) ?>">
           <?php endif; ?>
-          <input type="search" name="q" value="<?= e($query ?? '') ?>" placeholder="correcteur roman, illustration jeunesse…" autocomplete="off" data-live-input aria-label="Rechercher un prestataire ou une prestation">
+          <input type="search" name="q" value="<?= e($query ?? '') ?>" placeholder="correcteur roman, illustration jeunesse…" autocomplete="off" data-live-input aria-label="Rechercher un prestataire ou une prestation" toolparamdescription="Mots-clés : métier, genre littéraire ou besoin.">
           <input type="hidden" name="ville" value="<?= e($searchCity ?? '') ?>" data-header-ville>
           <button type="submit">Chercher</button>
           <div class="search-suggest" data-live-panel hidden></div>
@@ -250,18 +251,19 @@
             <div class="footer-news-title">Le point sur les métiers du livre, une fois par semaine</div>
             <div>Nouveaux projets, nouveaux profils, une lecture utile. Pas de publicité, confirmation par e-mail, désinscription en un clic.</div>
           </div>
-          <form class="footer-news-form" action="<?= e(url('/newsletter')) ?>" method="post">
+          <form class="footer-news-form" action="<?= e(url('/newsletter')) ?>" method="post" toolname="subscribe_newsletter" tooldescription="Inscrire une adresse e-mail à la lettre hebdomadaire des métiers du livre. Confirmation par e-mail, désinscription en un clic.">
             <?= csrf_field() ?>
             <input type="hidden" name="back" value="<?= e((string) ($_SERVER['REQUEST_URI'] ?? '/')) ?>">
-            <input type="email" name="email" placeholder="votre@email.fr" required>
+            <label class="sr-only" for="footer-news-email">Adresse e-mail pour la lettre d'information</label>
+            <input id="footer-news-email" type="email" name="email" placeholder="votre@email.fr" required autocomplete="email" toolparamdescription="Adresse e-mail pour recevoir la lettre.">
             <button type="submit">S'inscrire</button>
           </form>
         </div>
         <div class="footer-cols">
           <div>
             <div class="footer-logo">
-              <a href="<?= e(url('/')) ?>">
-                <img src="<?= e(asset('img/logo-inv.png')) ?>?v=5" alt="acteursdulivre.fr" width="154" height="42" loading="lazy" decoding="async">
+              <a href="<?= e(url('/')) ?>" aria-label="acteursdulivre.fr — accueil">
+                <img src="<?= e(asset('img/logo-inv.png')) ?>?v=5" alt="" width="154" height="42" loading="lazy" decoding="async">
               </a>
             </div>
             <p>La place de marché des métiers du livre. Dix-huit métiers, de l'écriture au salon.</p>
@@ -333,6 +335,6 @@
       <?php endif; ?>
     </div>
   <?php endif; ?>
-  <script src="<?= e(asset('js/app.js')) ?>?v=m61"></script>
+  <script src="<?= e(asset('js/app.js')) ?>?v=m65"></script>
 </body>
 </html>

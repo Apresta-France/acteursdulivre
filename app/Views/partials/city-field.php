@@ -12,7 +12,7 @@ $insee = (string) ($cityField['insee'] ?? '');
 $placeholder = (string) ($cityField['placeholder'] ?? ($mode === 'search' ? 'France, Europe, une ville…' : 'Paris, Lyon, Nantes…'));
 $inputClass = (string) ($cityField['input_class'] ?? 'input');
 $extra = (string) ($cityField['extra'] ?? '');
-if ($mode === 'search' && !preg_match('/aria-label|aria-labelledby/', $extra)) {
+if (!preg_match('/aria-label|aria-labelledby/', $extra)) {
     $extra = trim($extra . ' aria-label="Ville"');
 }
 $compact = !empty($cityField['compact']);
@@ -33,13 +33,15 @@ $api = url('/api/villes') . ($mode === 'search' ? '?scope=search' : '');
     data-1p-ignore
     data-lpignore="true"
     data-city-input
+    role="combobox"
     aria-autocomplete="list"
     aria-expanded="false"
+    aria-controls="<?= e($id) ?>-list"
     <?= $extra !== '' ? $extra : '' ?>
   >
   <input type="hidden" name="<?= e($slugName) ?>" value="<?= e($slug) ?>" data-city-slug>
   <?php if ($mode !== 'search'): ?>
     <input type="hidden" name="<?= e($inseeName) ?>" value="<?= e($insee) ?>" data-city-insee>
   <?php endif; ?>
-  <div class="search-suggest city-ac-panel" data-city-panel hidden></div>
+  <div class="search-suggest city-ac-panel" id="<?= e($id) ?>-list" role="listbox" data-city-panel hidden></div>
 </div>

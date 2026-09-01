@@ -49,6 +49,7 @@ $specialtyHelps[''] = \Adl\Data\Catalog::specialtyHelp('');
           data-specialties-by-trade="<?= e(json_encode($specialtyOptionsByTrade, JSON_UNESCAPED_UNICODE)) ?>"
           data-specialty-helps="<?= e(json_encode($specialtyHelps, JSON_UNESCAPED_UNICODE)) ?>">
       <?= csrf_field() ?>
+      <input type="hidden" name="images_managed" value="1">
 
       <div>
         <label class="field" for="service-title">Titre — commencez par « Je … »</label>
@@ -155,20 +156,49 @@ $specialtyHelps[''] = \Adl\Data\Catalog::specialtyHelp('');
       </div>
 
       <div>
-        <span class="field" id="service-image-label">Visuel (optionnel)</span>
+        <?php
+          $existingImages = [];
+          foreach (is_array($old['images'] ?? null) ? $old['images'] : [] as $img) {
+              if (is_array($img) && ($img['path'] ?? '') !== '' && ($img['url'] ?? '') !== '') {
+                  $existingImages[] = $img;
+              } elseif (is_string($img) && $img !== '') {
+                  $existingImages[] = ['path' => $img, 'url' => uploaded($img)];
+              }
+          }
+          $imageMax = \Adl\Models\Service::IMAGE_MAX;
+          $hasImages = $existingImages !== [];
+        ?>
+        <span class="field" id="service-image-label">Visuels (optionnel)</span>
         <?php
           $filePickId = 'service-image';
-          $filePickName = 'image';
+          $filePickName = 'images[]';
           $filePickAccept = 'image/jpeg,image/png,image/webp,image/gif';
-          $filePickButton = 'Choisir un visuel';
+          $filePickButton = $hasImages ? 'Ajouter des visuels' : 'Choisir des visuels';
+          $filePickEmpty = 'ou déposez-les ici';
           $filePickDrop = true;
-          $filePickAttrs = 'data-cover-file aria-labelledby="service-image-label"';
+          $filePickMultiple = true;
+          $filePickAttrs = 'data-cover-file data-max-files="' . (int) $imageMax . '" data-max-bytes="5242880" aria-labelledby="service-image-label"';
           require ADL_ROOT . '/app/Views/partials/file-pick.php';
         ?>
-        <p class="field-help">JPG, PNG ou WebP, 5 Mo max. Sans visuel, un visuel charté affiche le métier.</p>
-        <div class="service-cover-preview">
+        <p class="field-help">JPG, PNG ou WebP, 5 Mo max par image, jusqu'à <?= (int) $imageMax ?> visuels. Le premier sert de couverture dans l'annuaire. Sans visuel, un visuel charté affiche le métier.</p>
+        <div class="service-gallery" data-cover-thumbs<?= $hasImages ? '' : ' hidden' ?>>
+          <?php foreach ($existingImages as $img): ?>
+            <figure class="service-gallery-thumb" data-keep-image>
+              <input type="hidden" name="keep_images[]" value="<?= e((string) $img['path']) ?>">
+              <div class="service-gallery-media" style="background-image:url('<?= e((string) $img['url']) ?>')"></div>
+              <button type="button" class="service-gallery-remove" data-remove-keep aria-label="Retirer ce visuel">✕</button>
+            </figure>
+          <?php endforeach; ?>
+        </div>
+        <div class="service-cover-preview" data-cover-brand<?= $hasImages ? ' hidden' : '' ?>>
           <?= service_cover_html($coverLabel) ?>
-          <div class="service-cover-file" data-cover-photo hidden></div>
+        </div>
+        <div class="service-portfolio-field">
+          <label class="field" for="service-portfolio">Portfolio externe (optionnel)</label>
+          <input class="input" id="service-portfolio" name="portfolio_url" inputmode="url"
+                 value="<?= e((string) ($old['portfolio_url'] ?? '')) ?>"
+                 placeholder="https://">
+          <p class="field-help">Un site, Behance, Instagram… pour montrer d'autres images, y compris hors de cette spécialité.</p>
         </div>
       </div>
 

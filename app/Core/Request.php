@@ -90,4 +90,34 @@ final class Request
         $file = $_FILES[$key] ?? [];
         return is_array($file) ? $file : [];
     }
+
+    /** @return list<array<string, mixed>> */
+    public function files(string $key): array
+    {
+        $bag = $_FILES[$key] ?? null;
+        if (!is_array($bag) || !isset($bag['name'])) {
+            return [];
+        }
+        if (!is_array($bag['name'])) {
+            if (($bag['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
+                return [];
+            }
+            return [$bag];
+        }
+
+        $out = [];
+        foreach ($bag['name'] as $i => $name) {
+            if (($bag['error'][$i] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
+                continue;
+            }
+            $out[] = [
+                'name' => $bag['name'][$i] ?? '',
+                'type' => $bag['type'][$i] ?? '',
+                'tmp_name' => $bag['tmp_name'][$i] ?? '',
+                'error' => $bag['error'][$i] ?? UPLOAD_ERR_NO_FILE,
+                'size' => $bag['size'][$i] ?? 0,
+            ];
+        }
+        return $out;
+    }
 }

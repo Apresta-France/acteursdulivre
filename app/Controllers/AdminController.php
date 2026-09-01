@@ -400,7 +400,25 @@ final class AdminController
             'lockRole' => $closed || $isSelf || $onlyAdmin,
             'lockStatus' => $closed || $isSelf,
             'canDelete' => !$closed && !$isSelf && !$onlyAdmin,
+            'canImpersonate' => !$closed && !$isSelf && ($account['status'] ?? '') === 'active' && !Auth::isImpersonating(),
         ]);
+    }
+
+    public function utilisateurImpersonate(Request $request, string $id): void
+    {
+        $admin = Auth::requireAdmin();
+        $account = User::find((int) $id);
+        if (!$account) {
+            flash('error', 'Utilisateur introuvable.');
+            redirect('/admin/utilisateurs');
+        }
+        try {
+            Auth::impersonate($account, $admin);
+        } catch (Throwable $e) {
+            flash('error', $e->getMessage());
+            redirect('/admin/utilisateurs/' . (int) $id);
+        }
+        redirect('/espace');
     }
 
     public function utilisateurSave(Request $request, string $id): void

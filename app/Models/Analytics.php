@@ -805,6 +805,9 @@ final class Analytics
         if (is_array($cached) && ($cached['role'] ?? '') === 'admin') {
             return false;
         }
+        if (\Adl\Core\Auth::isImpersonating()) {
+            return false;
+        }
         return true;
     }
 
