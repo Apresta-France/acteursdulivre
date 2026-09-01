@@ -382,17 +382,24 @@ final class PageController
 
     public function missions(Request $request): void
     {
-        $cat = $request->string('metier') ?: $request->string('cat');
-        if ($cat !== '') {
-            $resolved = Catalog::resolveTrade($cat);
-            $cat = $resolved ?? $cat;
+        $filters = self::searchFilters($request);
+        if ($filters['metiers'] === []) {
+            $legacy = $request->string('cat');
+            if ($legacy !== '') {
+                $filters['metiers'] = [Catalog::resolveTrade($legacy) ?? $legacy];
+            }
         }
-        $found = Catalog::search('', 'missions', $cat);
+        $found = Catalog::search('', 'missions', '', 48, false, $filters);
+        $filters = $found['filters'] ?? $filters;
+        $filtered = Catalog::hasFacetFilters($filters);
+
         View::page('missions', [
             'title' => 'Appels d\'offres',
-            'searchCat' => $cat,
             'liveMissions' => $found['results'],
-            'trades' => Catalog::trades(),
+            'searchCount' => (int) ($found['count'] ?? 0),
+            'searchFilters' => $filters,
+            'searchFacets' => $found['facets'] ?? [],
+            'searchState' => $found,
             'meta' => Seo::build(
                 'Appels d\'offres du livre',
                 'Missions ouvertes : correction, illustration, traduction, impression. Candidatez sans commission sur la candidature.',
@@ -400,8 +407,8 @@ final class PageController
                 'website',
                 null,
                 [
-                    'robots' => $cat !== '' ? 'noindex, follow' : Seo::ROBOTS_INDEX,
-                    'json_ld' => $cat !== '' ? [] : Seo::webPageGraph(
+                    'robots' => $filtered ? 'noindex, follow' : Seo::ROBOTS_INDEX,
+                    'json_ld' => $filtered ? [] : Seo::webPageGraph(
                         'Appels d\'offres du livre',
                         'Missions ouvertes des métiers du livre.',
                         '/missions',

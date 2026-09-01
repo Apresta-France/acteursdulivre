@@ -104,6 +104,7 @@ final class Catalog
         'week' => 'Moins d\'une semaine',
         'mid' => '1 à 3 semaines',
         'month' => 'Plus d\'un mois',
+        'open' => 'À convenir',
     ];
 
     public const LEVELS = [
@@ -880,11 +881,14 @@ final class Catalog
                         ? 'avant le ' . $mission['deadline_label']
                         : 'échéance à convenir',
                     'price' => $mission['budget'],
+                    'budget_min' => $mission['budget_min'] ?? null,
+                    'budget_max' => $mission['budget_max'] ?? null,
                     'thumb' => '',
                     'initials' => $mission['initials'],
                     'excerpt' => (string) ($mission['brief'] ?? ''),
                     'tags' => array_values(array_filter([$volume['value'] ?? ''])),
                     'deadline' => $mission['deadline_label'],
+                    'deadline_date' => (string) ($mission['deadline'] ?? ''),
                     'when' => $mission['when'],
                     'applicants' => (int) ($mission['applicants'] ?? 0),
                     'volume' => $volume['value'] ?? (string) ($mission['volume'] ?? ''),
@@ -1259,7 +1263,10 @@ final class Catalog
     /** @param array<string, mixed> $item */
     private static function decorate(array $item): array
     {
-        $item['delay_bucket'] = self::delayBucket((string) ($item['delay'] ?? $item['deadline'] ?? ''));
+        $item['delay_bucket'] = self::delayBucket((string) ($item['deadline_date'] ?? $item['delay'] ?? $item['deadline'] ?? ''));
+        if ($item['delay_bucket'] === '' && ($item['kind'] ?? '') === 'missions') {
+            $item['delay_bucket'] = 'open';
+        }
         $item['price_num'] = self::priceAmount($item);
         $item['rating_num'] = self::ratingAmount($item['rating'] ?? 0);
         $item['verified'] = !empty($item['verified']);
@@ -1305,7 +1312,7 @@ final class Catalog
         if ($filters['delays'] !== []) {
             $bucket = (string) ($item['delay_bucket'] ?? '');
             $kind = (string) ($item['kind'] ?? '');
-            $applyDelay = $bucket !== '' || $kind === 'prestations' || $kind === 'service';
+            $applyDelay = $bucket !== '' || $kind === 'prestations' || $kind === 'service' || $kind === 'missions';
             if ($applyDelay && !in_array($bucket, $filters['delays'], true)) {
                 return false;
             }
@@ -1454,6 +1461,24 @@ final class Catalog
 
     private static function delayBucket(string $delay): string
     {
+        $delay = trim($delay);
+        if ($delay === '') {
+            return '';
+        }
+        if (preg_match('/^(\d{4}-\d{2}-\d{2})/', $delay, $date)) {
+            $ts = strtotime($date[1] . ' 23:59:59');
+            if ($ts === false) {
+                return '';
+            }
+            $days = (int) ceil(($ts - time()) / 86400);
+            if ($days <= 7) {
+                return 'week';
+            }
+            if ($days <= 21) {
+                return 'mid';
+            }
+            return 'month';
+        }
         $delay = search_norm($delay);
         if ($delay === '') {
             return '';

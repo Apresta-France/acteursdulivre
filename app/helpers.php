@@ -295,13 +295,13 @@ function search_norm(string $text): string
  * @param list<array{v: string, l: string, n: int|string}> $options
  * @param list<string> $selected
  */
-function search_filter_group(string $name, string $label, array $options, array $selected = []): string
+function search_filter_group(string $name, string $label, array $options, array $selected = [], bool $keepEmpty = false): string
 {
     $html = '<div class="sf-group"><div class="sf-group-label">' . e($label) . '</div><div class="sf-opts">';
     foreach ($options as $opt) {
         $value = (string) ($opt['v'] ?? '');
         $on = in_array($value, $selected, true);
-        if (!$on && (int) ($opt['n'] ?? 0) === 0 && in_array($name, ['metier', 'spec'], true)) {
+        if (!$keepEmpty && !$on && (int) ($opt['n'] ?? 0) === 0 && in_array($name, ['metier', 'spec'], true)) {
             continue;
         }
         $html .= '<label class="sf-opt">'

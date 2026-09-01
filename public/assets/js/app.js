@@ -438,6 +438,28 @@
     }).join('');
   }
 
+  function renderMissionRows(items) {
+    if (!items || !items.length) {
+      return '<div class="search-empty"><strong>Aucune recherche ouverte pour ces critères.</strong><span>Publiez la vôtre, ou élargissez le filtre.</span></div>';
+    }
+    var rows = items.map(function (item) {
+      var tags = (item.tags || []).filter(Boolean).map(function (tag) {
+        return '<span class="chip-static dark">' + escapeHtml(String(tag)) + '</span>';
+      }).join('');
+      return '<a class="mission-row" href="' + escapeHtml(item.href) + '">' +
+        '<div>' +
+          '<div class="mission-row-title">' + escapeHtml(item.title) +
+            (item.live ? '<span class="search-live">Nouvelle</span>' : '') +
+          '</div>' +
+          '<div class="mission-row-sub">' + escapeHtml(item.subtitle || '') + '</div>' +
+          (tags ? '<div class="chip-row">' + tags + '</div>' : '') +
+        '</div>' +
+        '<div><strong>' + escapeHtml(item.price || '') + '</strong><span>' + escapeHtml(item.meta || '') + '</span></div>' +
+      '</a>';
+    }).join('');
+    return '<div class="missions-list">' + rows + '</div>';
+  }
+
   function renderCards(items) {
     if (!items || !items.length) {
       return '<div class="search-empty"><strong>Aucun résultat pour cette recherche.</strong><span>Essayez un métier (illustration, traduction…) ou publiez une mission.</span></div>';
@@ -683,6 +705,9 @@
     var budgetMax = filters.querySelector('[data-budget-max]');
     var budgetFill = searchPage.querySelector('[data-budget-fill]');
     var budgetLabel = searchPage.querySelector('[data-budget-label]');
+    var standalone = searchPage.hasAttribute('data-search-standalone');
+    var resultsKind = searchPage.getAttribute('data-results') || 'cards';
+    var countUnit = searchPage.getAttribute('data-count-unit') || 'résultat';
     var BUDGET_DEFAULT_MIN = 200;
     var BUDGET_DEFAULT_MAX = 4000;
 
@@ -732,6 +757,8 @@
       if (min !== BUDGET_DEFAULT_MIN) params.set('bmin', String(min));
       if (max !== BUDGET_DEFAULT_MAX) params.set('bmax', String(max));
       if (forcedType && forcedType !== 'all') params.set('type', forcedType);
+      var limit = searchPage.getAttribute('data-search-limit');
+      if (limit) params.set('limit', limit);
       return params;
     }
 
@@ -782,9 +809,9 @@
     var update = debounce(function () {
       var params = currentParams();
       fetchSearch(api, params, function (data) {
-        results.innerHTML = renderCards(data.results || []);
+        results.innerHTML = resultsKind === 'rows' ? renderMissionRows(data.results || []) : renderCards(data.results || []);
         var n = data.count || 0;
-        if (countEl) countEl.textContent = '· ' + n + ' résultat' + (n > 1 ? 's' : '');
+        if (countEl) countEl.textContent = '· ' + n + ' ' + countUnit + (n > 1 ? 's' : '');
         var label = data.query || data.cat || '';
         var citySlug = (filters.querySelector('[data-city-slug]') || {}).value || '';
         var cityName = citySlug ? ((filters.querySelector('[data-city-input]') || {}).value || '') : '';
@@ -804,20 +831,23 @@
           else if (hubTypeEmpty === 'prestataires') label = 'Prestataires du livre';
           else label = 'Tous les métiers du livre';
         }
-        if (titleEl) titleEl.childNodes[0].textContent = label + ' ';
+        if (!standalone && titleEl) titleEl.childNodes[0].textContent = label + ' ';
         var display = new URLSearchParams(params);
         if (!/\/recherche\/?$/.test(window.location.pathname)) {
           display.delete('type');
+          display.delete('limit');
         }
         var next = display.toString();
         history.replaceState(null, '', window.location.pathname + (next ? '?' + next : ''));
-        if (headerInput) headerInput.value = data.query || '';
+        if (!standalone && headerInput) headerInput.value = data.query || '';
         syncActive();
-        refreshShareBars(searchPage, {
-          url: window.location.href,
-          title: 'Recherche : ' + label,
-          text: 'Prestataires des métiers du livre sur acteursdulivre.fr'
-        });
+        if (!standalone) {
+          refreshShareBars(searchPage, {
+            url: window.location.href,
+            title: 'Recherche : ' + label,
+            text: 'Prestataires des métiers du livre sur acteursdulivre.fr'
+          });
+        }
       });
     }, 160);
 
@@ -840,7 +870,7 @@
       syncHeaderVille((event.detail && event.detail.slug) || '');
       update();
     });
-    if (headerInput) {
+    if (headerInput && !standalone) {
       headerInput.addEventListener('input', function () {
         if (hiddenQ) hiddenQ.value = headerInput.value;
         update();
@@ -861,10 +891,12 @@
       filters.querySelectorAll('input[type="checkbox"]').forEach(function (input) { input.checked = false; });
       if (budgetMin) budgetMin.value = BUDGET_DEFAULT_MIN;
       if (budgetMax) budgetMax.value = BUDGET_DEFAULT_MAX;
-      if (hiddenQ) hiddenQ.value = '';
-      if (headerInput) headerInput.value = '';
-      fillCityField(filters.querySelector('[data-city-ac]'), '', '');
-      syncHeaderVille('');
+      if (!standalone) {
+        if (hiddenQ) hiddenQ.value = '';
+        if (headerInput) headerInput.value = '';
+        fillCityField(filters.querySelector('[data-city-ac]'), '', '');
+        syncHeaderVille('');
+      }
       syncBudget();
       syncActive();
       update();

@@ -1856,6 +1856,10 @@ main, main > * { min-width: 0; }
   gap: 16px;
   margin-bottom: 16px;
 }
+.missions-page .search-head {
+  align-items: flex-start;
+  margin-bottom: 22px;
+}
 .search-aside-head span, .search-crumb, .side-kicker {
   font-family: var(--display);
   font-size: 13px;
@@ -2266,7 +2270,25 @@ main, main > * { min-width: 0; }
   .form-grid-3:has([data-volume-wrap][hidden]) { grid-template-columns: 1fr; }
 }
 .publish-grid, .profile-body, .missions-layout { display: grid; grid-template-columns: 1fr 340px; gap: 34px; align-items: start; }
-.publish-page, .missions-page, .mission-page, .profile-page { padding: 30px 44px 54px; }
+.publish-page, .mission-page, .profile-page { padding: 30px 44px 54px; }
+.missions-lead {
+  font-size: 15px;
+  color: #66768A;
+  line-height: 1.55;
+  margin: 8px 0 0;
+  max-width: 42em;
+}
+.search-aside-card.side-card-warm {
+  background: #FDF3F0;
+  border-color: #F4DFD8;
+}
+@media (min-width: 1101px) {
+  .missions-page .search-aside {
+    position: sticky;
+    top: 16px;
+    align-self: start;
+  }
+}
 .publish-side, .profile-side, .my-missions { display: flex; flex-direction: column; gap: 16px; }
 .suggest-row { display: flex; gap: 12px; align-items: center; padding: 8px 0; color: inherit; }
 .suggest-row:hover { color: inherit; }
@@ -2486,6 +2508,8 @@ a.tab {
 .profile-report .btn-ghost { margin-top: 10px; }
 
 .missions-list { border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+.missions-list .mission-row:last-child { border-bottom: 0; }
+.mission-row .chip-row { margin-top: 10px; }
 .mission-row {
   display: grid;
   grid-template-columns: 1fr 180px;
@@ -3004,7 +3028,7 @@ a.tab {
 }
 
 @media (max-width: 768px) {
-  .search-banner, .search-layout, .publish-page, .missions-page, .mission-page, .profile-body { padding-left: 20px; padding-right: 20px; }
+  .search-banner, .search-layout, .publish-page, .mission-page, .profile-body { padding-left: 20px; padding-right: 20px; }
   .mission-page .facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .profile-hero { padding: 24px 20px; }
   .repeat-row,
