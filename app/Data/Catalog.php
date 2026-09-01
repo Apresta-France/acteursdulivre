@@ -1249,6 +1249,7 @@ final class Catalog
             'is_busy' => !empty($profile['is_busy']),
             'hourly_rate' => (string) ($profile['hourly_rate'] ?? ''),
             'rate_note' => (string) ($profile['rate_note'] ?? ''),
+            'rate_kind' => Profile::rateKind($profile),
             'rate_kicker' => Profile::rateKicker($profile),
             'rate_is_percent' => Profile::isPercentRate($profile),
             'languages' => (string) ($profile['languages'] ?? ''),

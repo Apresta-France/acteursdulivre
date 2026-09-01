@@ -17,6 +17,14 @@
     $metaImageH = (int) ($meta['image_height'] ?? \Adl\Data\Seo::OG_H);
     $metaImageAlt = (string) ($meta['image_alt'] ?? $metaTitle);
     $jsonLd = $meta['json_ld'] ?? [];
+    $founderOffer = null;
+    if (empty($logged)) {
+        try {
+            $founderOffer = \Adl\Models\Commission::founderOffer();
+        } catch (\Throwable) {
+            $founderOffer = null;
+        }
+    }
   ?>
   <title><?= e($metaTitle) ?></title>
   <meta name="description" content="<?= e($metaDesc) ?>">
@@ -58,7 +66,7 @@
   <?php if (!empty($isArticle) && !empty($article['img'])): ?>
   <link rel="preload" as="image" href="<?= e((string) $article['img']) ?>">
   <?php endif; ?>
-  <link rel="stylesheet" href="<?= e(asset('css/app.css')) ?>?v=m115">
+  <link rel="stylesheet" href="<?= e(asset('css/app.css')) ?>?v=m118">
   <link rel="icon" href="<?= e(asset('img/favicon.ico')) ?>?v=3" sizes="any">
   <link rel="icon" type="image/png" href="<?= e(asset('img/favicon-32x32.png')) ?>?v=3" sizes="32x32">
   <link rel="apple-touch-icon" href="<?= e(asset('img/apple-touch-icon.png')) ?>?v=3">
@@ -69,7 +77,7 @@
   ) ?></script>
   <?php endif; ?>
 </head>
-<body data-stats="<?= e(url('/api/stats')) ?>">
+<body<?= $founderOffer ? ' class="has-founder-banner"' : '' ?> data-stats="<?= e(url('/api/stats')) ?>">
   <div class="nav-backdrop" data-nav-close hidden></div>
   <div class="site-shell">
     <div class="site-canvas">
@@ -309,6 +317,22 @@
       </footer>
     </div>
   </div>
-  <script src="<?= e(asset('js/app.js')) ?>?v=m59"></script>
+  <?php if ($founderOffer): ?>
+    <?php
+      $founderLeft = (int) $founderOffer['remaining'];
+      $founderLimit = (int) $founderOffer['limit'];
+      $founderPct = (int) $founderOffer['percent'];
+      $founderPlaces = $founderLeft > 1 ? 'places' : 'place';
+    ?>
+    <div class="founder-banner">
+      <span class="founder-banner-badge">Taux fondateur</span>
+      <span class="founder-banner-text">Il reste encore <strong><?= e(format_int($founderLeft)) ?> <?= $founderPlaces ?></strong> parmi les <?= e(format_int($founderLimit)) ?> premiers inscrits — <?= $founderPct ?>&nbsp;% de commission dès la 2ᵉ mission.</span>
+      <span class="founder-banner-short">Encore <strong><?= e(format_int($founderLeft)) ?> <?= $founderPlaces ?></strong> au taux fondateur (<?= $founderPct ?>&nbsp;% dès la 2ᵉ mission).</span>
+      <?php if (empty($isInscription)): ?>
+        <a href="<?= e(url('/inscription')) ?>">Réserver ma place</a>
+      <?php endif; ?>
+    </div>
+  <?php endif; ?>
+  <script src="<?= e(asset('js/app.js')) ?>?v=m60"></script>
 </body>
 </html>

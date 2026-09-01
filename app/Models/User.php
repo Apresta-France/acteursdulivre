@@ -369,6 +369,12 @@ final class User
         return (int) ($row['n'] ?? 0);
     }
 
+    public static function countFounders(): int
+    {
+        $row = Database::fetch('SELECT COUNT(*) AS n FROM users WHERE founder = 1');
+        return (int) ($row['n'] ?? 0);
+    }
+
     public static function initials(array $user): string
     {
         $a = mb_strtoupper(mb_substr((string) ($user['first_name'] ?? ''), 0, 1));

@@ -104,6 +104,49 @@ img { max-width: 100%; }
   border-radius: 4px;
 }
 
+.founder-banner {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 25;
+  background: var(--beige);
+  color: var(--navy);
+  padding: 11px 44px;
+  padding-bottom: max(11px, env(safe-area-inset-bottom));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  font-size: 14px;
+  line-height: 1.45;
+  border-top: 1px solid color-mix(in srgb, var(--navy) 12%, transparent);
+  box-shadow: 0 -10px 28px rgba(var(--navy-rgb), .16);
+}
+body.has-founder-banner .site-shell { padding-bottom: 120px; }
+body.has-founder-banner .share-toast { bottom: 72px; }
+.founder-banner a {
+  color: var(--navy);
+  font-weight: 600;
+  text-decoration: underline;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.founder-banner a:hover { color: var(--orange); }
+.founder-banner-short { display: none; }
+.founder-banner-badge {
+  font-family: var(--display);
+  font-size: 11px;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  background: var(--orange);
+  color: #fff;
+  padding: 4px 9px;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+.founder-banner strong { font-weight: 700; }
+
 .topbar {
   background: var(--navy);
   color: #B9CBDC;
@@ -884,7 +927,8 @@ main, main > * { min-width: 0; }
 
 @media (max-width: 1100px) {
   .site-shell { padding: 12px; }
-  .site-header, .preopen, .topbar, .rail, .mega, .footer-news, .footer-cols, .footer-metiers, .footer-legal { padding-left: 20px; padding-right: 20px; }
+  body.has-founder-banner .site-shell { padding-bottom: 88px; }
+  .site-header, .preopen, .founder-banner, .topbar, .rail, .mega, .footer-news, .footer-cols, .footer-metiers, .footer-legal { padding-left: 20px; padding-right: 20px; }
   .site-header { flex-wrap: wrap; gap: 14px 16px; }
   .search { flex: 1 1 220px; min-width: 180px; }
   .nav-toggle { display: inline-flex; margin-left: auto; order: 3; }
@@ -955,6 +999,7 @@ main, main > * { min-width: 0; }
   .footer-news-form { flex-wrap: wrap; width: 100%; }
   .footer-news-form input { width: 100%; min-width: 0; }
   .preopen, .topbar, .footer-news, .footer-legal { flex-direction: column; align-items: flex-start; gap: 10px; }
+  .founder-banner { flex-wrap: wrap; }
   .footer-legal div { flex-wrap: wrap; gap: 12px 18px; }
   .topbar-links { flex-wrap: wrap; gap: 12px 16px; }
   .admin-outer { padding: 0; }
@@ -990,6 +1035,8 @@ main, main > * { min-width: 0; }
 
 @media (max-width: 768px) {
   .site-shell { padding: 0; }
+  body.has-founder-banner .site-shell { padding-bottom: 0; }
+  body.has-founder-banner .footer-legal { padding-bottom: calc(72px + env(safe-area-inset-bottom)); }
   .site-canvas { box-shadow: none; border-radius: 0; }
   .preopen { border-radius: 0; }
   .preopen { padding-top: max(11px, env(safe-area-inset-top)); font-size: 13px; line-height: 1.45; }
@@ -1001,7 +1048,7 @@ main, main > * { min-width: 0; }
   }
   .brand img { height: 44px; width: auto; }
   .user-chip-name { display: none; }
-  .site-header, .preopen, .topbar, .rail, .mega, .footer-news, .footer-cols, .footer-metiers, .footer-legal {
+  .site-header, .preopen, .founder-banner, .topbar, .rail, .mega, .footer-news, .footer-cols, .footer-metiers, .footer-legal {
     padding-left: 16px;
     padding-right: 16px;
   }
@@ -1102,6 +1149,20 @@ main, main > * { min-width: 0; }
   }
   .preopen-text { display: none; }
   .preopen-short {
+    display: inline;
+    flex: 1 1 200px;
+    font-size: 13px;
+    line-height: 1.4;
+  }
+  .founder-banner {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 12px;
+    padding-bottom: max(10px, env(safe-area-inset-bottom));
+  }
+  .founder-banner-text { display: none; }
+  .founder-banner-short {
     display: inline;
     flex: 1 1 200px;
     font-size: 13px;
@@ -2788,6 +2849,20 @@ a.tab {
 .fiche-order .btn-orange,
 .fiche-order .btn-ghost { width: 100%; margin-top: 14px; }
 .fiche-order .btn-ghost { margin-top: 10px; }
+.fiche-ia { padding: 16px 18px; }
+.fiche-ia .side-kicker { margin-bottom: 8px; }
+.fiche-ia .side-title-sm { margin-bottom: 6px; }
+.fiche-ia p {
+  margin: 0;
+  font-size: 13px;
+  color: #4A5A6B;
+  line-height: 1.55;
+}
+.fiche-ia a {
+  display: inline-block;
+  margin-top: 10px;
+  font-size: 13px;
+}
 .fiche-buy-bar { display: none; }
 @media (max-width: 1100px) {
   .fiche-page { padding-bottom: 96px; }

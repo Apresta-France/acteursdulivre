@@ -1247,11 +1247,43 @@
   var rateBox = document.querySelector('[data-rate-fields]');
   if (rateBox) {
     var bookstore = rateBox.getAttribute('data-bookstore-trade') || 'Librairie';
+    var rightsTrades = (rateBox.getAttribute('data-rights-trades') || 'Illustration,Photographie,Iconographie').split(',');
+    var rateMeta = {
+      price: { label: 'Tarif', note: 'Précision tarifaire', ph: 'data-placeholder-price', inputmode: 'text' },
+      percent: { label: 'Commission', note: 'Précision', ph: 'data-placeholder-percent', inputmode: 'decimal' },
+      exploitation: { label: 'Exploitation', note: 'Précision', ph: 'data-placeholder-exploitation', inputmode: 'text' },
+      cession: { label: 'Cession', note: 'Précision', ph: 'data-placeholder-cession', inputmode: 'text' }
+    };
+    function selectedTrades() {
+      return Array.prototype.slice.call(document.querySelectorAll('[data-trades] input[type="checkbox"]:checked'))
+        .map(function (el) { return el.value; });
+    }
+    function hasRightsTrade(trades) {
+      return rightsTrades.some(function (trade) { return trades.indexOf(trade) !== -1; });
+    }
     function currentKind() {
       var on = rateBox.querySelector('[data-rate-kind]:checked');
       return on ? on.value : 'price';
     }
+    function applyRateHelp(trades) {
+      var help = rateBox.querySelector('[data-rate-help]');
+      if (!help) return;
+      var isBookstore = trades.indexOf(bookstore) !== -1;
+      var rights = hasRightsTrade(trades);
+      var text = rateBox.getAttribute('data-help-default') || '';
+      if (rights && !isBookstore) {
+        text = trades.indexOf('Illustration') !== -1
+          ? (rateBox.getAttribute('data-help-rights') || text)
+          : (rateBox.getAttribute('data-help-photo') || text);
+      } else if (isBookstore && !rights) {
+        text = rateBox.getAttribute('data-help-bookstore') || text;
+      } else if (isBookstore && rights) {
+        text = rateBox.getAttribute('data-help-both') || text;
+      }
+      help.textContent = text;
+    }
     function applyRateKind(kind, fromTrade) {
+      var meta = rateMeta[kind] || rateMeta.price;
       var input = rateBox.querySelector('[data-rate-input]');
       var note = rateBox.querySelector('[data-rate-note]');
       var label = rateBox.querySelector('[data-rate-label]');
@@ -1261,28 +1293,36 @@
         radio.checked = radio.value === kind;
       });
       syncChips(rateBox);
-      if (label) label.textContent = kind === 'percent' ? 'Commission' : 'Tarif';
-      if (noteLabel) noteLabel.textContent = kind === 'percent' ? 'Précision' : 'Précision tarifaire';
+      if (label) label.textContent = meta.label;
+      if (noteLabel) noteLabel.textContent = meta.note;
       if (input) {
-        input.placeholder = input.getAttribute(kind === 'percent' ? 'data-placeholder-percent' : 'data-placeholder-price') || '';
-        input.setAttribute('inputmode', kind === 'percent' ? 'decimal' : 'text');
+        input.placeholder = input.getAttribute(meta.ph) || '';
+        input.setAttribute('inputmode', meta.inputmode);
         if (fromTrade && kind === 'percent' && /€|eur|\/\s*heure/i.test(input.value)) input.value = '';
       }
       if (note) {
-        note.placeholder = note.getAttribute(kind === 'percent' ? 'data-placeholder-percent' : 'data-placeholder-price') || '';
+        note.placeholder = note.getAttribute(meta.ph) || '';
       }
     }
+    function syncRateUi(kind, fromTrade) {
+      applyRateKind(kind, fromTrade);
+      applyRateHelp(selectedTrades());
+    }
     rateBox.querySelectorAll('[data-rate-kind]').forEach(function (radio) {
-      radio.addEventListener('change', function () { applyRateKind(currentKind(), false); });
+      radio.addEventListener('change', function () { syncRateUi(currentKind(), false); });
     });
     document.querySelectorAll('[data-trades] input[type="checkbox"]').forEach(function (box) {
       box.addEventListener('change', function () {
-        var checked = Array.prototype.slice.call(document.querySelectorAll('[data-trades] input[type="checkbox"]:checked'))
-          .map(function (el) { return el.value; });
-        if (checked.indexOf(bookstore) !== -1) applyRateKind('percent', true);
+        var kind = currentKind();
+        if (box.value === bookstore && box.checked) {
+          kind = 'percent';
+          syncRateUi(kind, true);
+          return;
+        }
+        syncRateUi(kind, false);
       });
     });
-    applyRateKind(currentKind(), false);
+    syncRateUi(currentKind(), false);
   }
 
   document.querySelectorAll('[data-name-mode]').forEach(function (box) {

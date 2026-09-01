@@ -26,6 +26,29 @@ final class Commission
         return max(0, min(100, $value));
     }
 
+    /**
+     * Places encore ouvertes parmi les premiers inscrits (taux réduit dès la 2ᵉ mission).
+     *
+     * @return array{remaining: int, limit: int, percent: int}|null
+     */
+    public static function founderOffer(): ?array
+    {
+        $limit = self::founderLimit();
+        if ($limit < 1) {
+            return null;
+        }
+        $remaining = max(0, $limit - User::countFounders());
+        if ($remaining < 1) {
+            return null;
+        }
+
+        return [
+            'remaining' => $remaining,
+            'limit' => $limit,
+            'percent' => self::founderPercent(),
+        ];
+    }
+
     public static function loyaltyThreshold(): int
     {
         return max(0, (int) (Setting::get('loyalty_order_threshold', '12') ?: '12'));

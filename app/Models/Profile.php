@@ -11,6 +11,28 @@ final class Profile
 {
     public const TRADE_BOOKSTORE = 'Librairie';
     public const TRADE_BETA_READER = 'Bêta-lecture';
+    public const TRADE_ILLUSTRATION = 'Illustration';
+    public const TRADE_PHOTOGRAPHY = 'Photographie';
+    public const TRADE_ICONOGRAPHY = 'Iconographie';
+
+    /** @var list<string> */
+    public const RIGHTS_TRADES = [
+        self::TRADE_ILLUSTRATION,
+        self::TRADE_PHOTOGRAPHY,
+        self::TRADE_ICONOGRAPHY,
+    ];
+
+    public const RATE_PRICE = 'price';
+    public const RATE_PERCENT = 'percent';
+    public const RATE_EXPLOITATION = 'exploitation';
+    public const RATE_CESSION = 'cession';
+
+    public const RATE_KINDS = [
+        self::RATE_PRICE => 'Tarif (€)',
+        self::RATE_PERCENT => 'Commission (%)',
+        self::RATE_EXPLOITATION => 'Exploitation com.',
+        self::RATE_CESSION => 'Cession de droits',
+    ];
 
     public const TRADES = [
         'Écriture', 'Correction', 'Bêta-lecture', 'Illustration', 'Traduction', 'Maquette',
@@ -231,13 +253,30 @@ final class Profile
             );
         }
 
+        $trades = is_array($data['trades'] ?? null) ? $data['trades'] : [];
+        $rateKind = self::normalizeRateKind((string) ($data['rate_kind'] ?? ''));
+        if ($rateKind === '') {
+            $rateKind = self::isBookstore([], $trades) ? self::RATE_PERCENT : self::RATE_PRICE;
+        }
+        $kindCols = self::hasRateKindColumn();
+        $rateSql = $kindCols
+            ? 'hourly_rate = ?, rate_kind = ?, rate_note = ?,'
+            : 'hourly_rate = ?, rate_note = ?,';
+        $rateParams = [
+            self::normalizeRate((string) ($data['hourly_rate'] ?? ''), $rateKind, $trades),
+        ];
+        if ($kindCols) {
+            $rateParams[] = $rateKind;
+        }
+        $rateParams[] = $data['rate_note'] ?? null;
+
         Database::query(
             'UPDATE profiles SET
                 slug = ?, title = ?, name_mode = ?, public_name = ?, presentation = ?, does = ?, does_not = ?,
                 ' . $citySql . '
                 work_mode = ?, availability = ?,
                 availability_status = ?, response_time = ?,
-                languages = ?, hourly_rate = ?, rate_note = ?, website = ?, socials_json = ?,
+                languages = ?, ' . $rateSql . ' website = ?, socials_json = ?,
                 trades_json = ?, skills_json = ?, tools_json = ?, genres_json = ?,
                 languages_json = ?, experiences_json = ?, education_json = ?,
                 updated_at = NOW()
@@ -259,11 +298,12 @@ final class Profile
                     self::normalizeStatus($data['availability_status'] ?? null),
                     self::normalizeResponseTime($data['response_time'] ?? null) ?: null,
                     $languages,
-                    self::normalizeRate((string) ($data['hourly_rate'] ?? ''), (string) ($data['rate_kind'] ?? ''), $data['trades'] ?? []),
-                    $data['rate_note'] ?? null,
+                ],
+                $rateParams,
+                [
                     self::normalizeSocialUrl(trim((string) ($data['website'] ?? '')), 'website') ?: null,
                     self::encode(self::normalizeSocials($data['socials'] ?? [])),
-                    self::encode($data['trades'] ?? []),
+                    self::encode($trades),
                     self::encode($data['skills'] ?? []),
                     self::encode($data['tools'] ?? []),
                     self::encode($data['genres'] ?? []),
@@ -562,16 +602,49 @@ final class Profile
         return in_array(self::TRADE_BOOKSTORE, $list, true);
     }
 
-    public static function isPercentRate(array $profile): bool
+    /** @param list<mixed> $trades */
+    public static function hasRightsRate(array $profile = [], array $trades = []): bool
     {
+        $list = $trades !== [] ? $trades : ($profile['trades'] ?? []);
+        foreach (self::RIGHTS_TRADES as $trade) {
+            if (in_array($trade, $list, true)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public static function isRightsRateKind(string $kind): bool
+    {
+        return $kind === self::RATE_EXPLOITATION || $kind === self::RATE_CESSION;
+    }
+
+    public static function normalizeRateKind(mixed $value): string
+    {
+        $kind = trim((string) $value);
+        return array_key_exists($kind, self::RATE_KINDS) ? $kind : '';
+    }
+
+    /** @param list<mixed> $trades */
+    public static function rateKind(array $profile = [], array $trades = []): string
+    {
+        $stored = self::normalizeRateKind($profile['rate_kind'] ?? '');
+        if ($stored !== '') {
+            return $stored;
+        }
         $rate = trim((string) ($profile['hourly_rate'] ?? ''));
         if (str_contains($rate, '%')) {
-            return true;
+            return self::RATE_PERCENT;
         }
-        if (($profile['rate_kind'] ?? '') === 'percent') {
-            return true;
+        if (self::isBookstore($profile, $trades) && ($rate === '' || !str_contains($rate, '€'))) {
+            return self::RATE_PERCENT;
         }
-        return self::isBookstore($profile) && $rate !== '' && !str_contains($rate, '€');
+        return self::RATE_PRICE;
+    }
+
+    public static function isPercentRate(array $profile): bool
+    {
+        return self::rateKind($profile) === self::RATE_PERCENT;
     }
 
     /**
@@ -583,10 +656,11 @@ final class Profile
         if ($rate === '') {
             return null;
         }
-        if ($kind !== 'percent' && $kind !== 'price') {
-            $kind = self::isBookstore([], $trades) ? 'percent' : 'price';
+        $kind = self::normalizeRateKind($kind);
+        if ($kind === '') {
+            $kind = self::isBookstore([], $trades) ? self::RATE_PERCENT : self::RATE_PRICE;
         }
-        if ($kind !== 'percent' && !str_contains($rate, '%')) {
+        if ($kind !== self::RATE_PERCENT && !str_contains($rate, '%')) {
             return $rate;
         }
 
@@ -604,7 +678,30 @@ final class Profile
 
     public static function rateKicker(array $profile): string
     {
-        return self::isPercentRate($profile) ? 'Commission' : 'À partir de';
+        return match (self::rateKind($profile)) {
+            self::RATE_PERCENT => 'Commission',
+            self::RATE_EXPLOITATION => 'Exploitation commerciale',
+            self::RATE_CESSION => 'Cession de droits',
+            default => 'À partir de',
+        };
+    }
+
+    /** @param list<mixed> $trades */
+    public static function rateHelp(array $profile = [], array $trades = []): string
+    {
+        $list = $trades !== [] ? $trades : ($profile['trades'] ?? []);
+        $bookstore = self::isBookstore([], $list);
+        $rights = self::hasRightsRate([], $list);
+        if ($rights && !$bookstore) {
+            if (in_array(self::TRADE_ILLUSTRATION, $list, true)) {
+                return 'Les illustrateurs précisent parfois un droit d’exploitation commerciale ou une cession de droits.';
+            }
+            return 'Les photographes et iconographes précisent parfois un droit d’exploitation commerciale ou une cession de droits.';
+        }
+        if ($bookstore && !$rights) {
+            return 'Les libraires indiquent une commission sur les ventes, pas un prix de prestation.';
+        }
+        return 'Les libraires indiquent une commission sur les ventes. Les illustrateurs précisent parfois un droit d’exploitation commerciale ou une cession de droits.';
     }
 
     public static function normalizeText(mixed $value): ?string
@@ -638,7 +735,12 @@ final class Profile
         if ($rate === '') {
             return '';
         }
-        return self::isPercentRate($profile) ? 'commission ' . $rate : 'à partir de ' . $rate;
+        return match (self::rateKind($profile)) {
+            self::RATE_PERCENT => 'commission ' . $rate,
+            self::RATE_EXPLOITATION => 'exploitation commerciale ' . $rate,
+            self::RATE_CESSION => 'cession de droits ' . $rate,
+            default => 'à partir de ' . $rate,
+        };
     }
 
     /**
@@ -771,7 +873,23 @@ final class Profile
         $row['verification_doc_href'] = !empty($row['verification_doc_path'])
             ? '/admin/verifications/' . (int) ($row['user_id'] ?? 0) . '/justificatif'
             : '';
+        $row['rate_kind'] = self::rateKind($row);
+        $row['rate_kicker'] = self::rateKicker($row);
         return $row;
+    }
+
+    private static function hasRateKindColumn(): bool
+    {
+        static $ok = null;
+        if ($ok !== null) {
+            return $ok;
+        }
+        try {
+            $ok = Database::fetch("SHOW COLUMNS FROM profiles LIKE 'rate_kind'") !== null;
+        } catch (\Throwable) {
+            $ok = false;
+        }
+        return $ok;
     }
 
     private static function hasCityGeoColumns(): bool

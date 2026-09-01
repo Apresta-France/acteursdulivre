@@ -17,11 +17,10 @@ $socials = !empty($p['socials']) ? $p['socials'] : [['network' => '', 'url' => '
 $socialNetworks = $socialNetworks ?? \Adl\Models\Profile::SOCIAL_NETWORKS;
 $completion = (int) ($completion ?? ($p['completion'] ?? 0));
 $publicHref = !empty($p['slug']) ? url('/prestataires/' . $p['slug']) : '';
-$rateKind = \Adl\Models\Profile::isPercentRate($p) || (\Adl\Models\Profile::isBookstore($p) && trim((string) ($p['hourly_rate'] ?? '')) === '')
-    ? 'percent'
-    : 'price';
+$rateKind = \Adl\Models\Profile::rateKind($p);
+$rateHelp = \Adl\Models\Profile::rateHelp($p);
 $rateValue = (string) ($p['hourly_rate'] ?? '');
-if ($rateKind === 'percent') {
+if ($rateKind === \Adl\Models\Profile::RATE_PERCENT || str_contains($rateValue, '%')) {
     $rateValue = trim(str_replace('%', '', $rateValue));
 }
 ?>
@@ -186,9 +185,16 @@ if ($rateKind === 'percent') {
           <?php endforeach; ?>
         </div>
       </div>
-      <div data-rate-fields data-bookstore-trade="<?= e(\Adl\Models\Profile::TRADE_BOOKSTORE) ?>">
+      <div data-rate-fields
+           data-bookstore-trade="<?= e(\Adl\Models\Profile::TRADE_BOOKSTORE) ?>"
+           data-rights-trades="<?= e(implode(',', \Adl\Models\Profile::RIGHTS_TRADES)) ?>"
+           data-help-default="Les libraires indiquent une commission sur les ventes. Les illustrateurs précisent parfois un droit d’exploitation commerciale ou une cession de droits."
+           data-help-rights="Les illustrateurs précisent parfois un droit d’exploitation commerciale ou une cession de droits."
+           data-help-photo="Les photographes et iconographes précisent parfois un droit d’exploitation commerciale ou une cession de droits."
+           data-help-bookstore="Les libraires indiquent une commission sur les ventes, pas un prix de prestation."
+           data-help-both="Les libraires indiquent une commission sur les ventes. Les illustrateurs précisent parfois un droit d’exploitation commerciale ou une cession de droits.">
         <span class="field">Mode de tarification</span>
-        <p class="field-help">Les libraires indiquent une commission sur les ventes, pas un prix de prestation.</p>
+        <p class="field-help" data-rate-help><?= e($rateHelp) ?></p>
         <div class="chip-row" style="margin: 10px 0 16px;">
           <label class="chip<?= $rateKind === 'price' ? ' is-on' : '' ?>">
             <input type="radio" name="rate_kind" value="price"<?= $rateKind === 'price' ? ' checked' : '' ?> data-rate-kind>
@@ -198,24 +204,58 @@ if ($rateKind === 'percent') {
             <input type="radio" name="rate_kind" value="percent"<?= $rateKind === 'percent' ? ' checked' : '' ?> data-rate-kind>
             Commission (%)
           </label>
+          <label class="chip<?= $rateKind === 'exploitation' ? ' is-on' : '' ?>" data-rate-rights>
+            <input type="radio" name="rate_kind" value="exploitation"<?= $rateKind === 'exploitation' ? ' checked' : '' ?> data-rate-kind>
+            Exploitation com.
+          </label>
+          <label class="chip<?= $rateKind === 'cession' ? ' is-on' : '' ?>" data-rate-rights>
+            <input type="radio" name="rate_kind" value="cession"<?= $rateKind === 'cession' ? ' checked' : '' ?> data-rate-kind>
+            Cession de droits
+          </label>
         </div>
         <div class="form-grid-3">
           <div>
-            <label class="field" for="hourly_rate" data-rate-label><?= $rateKind === 'percent' ? 'Commission' : 'Tarif' ?></label>
+            <?php
+              $rateLabels = [
+                  'percent' => 'Commission',
+                  'exploitation' => 'Exploitation',
+                  'cession' => 'Cession',
+              ];
+              $ratePlaceholders = [
+                  'percent' => '35',
+                  'exploitation' => '15 % ou 400 €',
+                  'cession' => '800 €',
+              ];
+              $noteLabels = [
+                  'percent' => 'Précision',
+                  'exploitation' => 'Précision',
+                  'cession' => 'Précision',
+              ];
+              $notePlaceholders = [
+                  'percent' => 'sur le prix public TTC',
+                  'exploitation' => 'durée, territoires, supports',
+                  'cession' => '5 ans, monde, livre + numérique',
+              ];
+            ?>
+            <label class="field" for="hourly_rate" data-rate-label><?= e($rateLabels[$rateKind] ?? 'Tarif') ?></label>
             <input class="input" id="hourly_rate" name="hourly_rate" value="<?= e($rateValue) ?>"
-                   placeholder="<?= $rateKind === 'percent' ? '35' : '32 € / heure' ?>"
+                   placeholder="<?= e($ratePlaceholders[$rateKind] ?? '32 € / heure') ?>"
                    inputmode="<?= $rateKind === 'percent' ? 'decimal' : 'text' ?>"
                    data-rate-input
                    data-placeholder-price="32 € / heure"
-                   data-placeholder-percent="35">
+                   data-placeholder-percent="35"
+                   data-placeholder-exploitation="15 % ou 400 €"
+                   data-placeholder-cession="800 €">
           </div>
           <div>
-            <label class="field" for="rate_note" data-rate-note-label><?= $rateKind === 'percent' ? 'Précision' : 'Précision tarifaire' ?></label>
+            <label class="field" for="rate_note" data-rate-note-label><?= e($noteLabels[$rateKind] ?? 'Précision tarifaire') ?></label>
             <input class="input" id="rate_note" name="rate_note" value="<?= e((string) ($p['rate_note'] ?? '')) ?>"
-                   placeholder="<?= $rateKind === 'percent' ? 'sur le prix public TTC' : 'ou 4,50 € / 1 000 signes' ?>"
+                   placeholder="<?= e($notePlaceholders[$rateKind] ?? 'ou 4,50 € / 1 000 signes') ?>"
                    data-rate-note
                    data-placeholder-price="ou 4,50 € / 1 000 signes"
-                   data-placeholder-percent="sur le prix public TTC">
+                   data-placeholder-percent="sur le prix public TTC"
+                   data-placeholder-exploitation="durée, territoires, supports"
+                   data-placeholder-cession="5 ans, monde, livre + numérique">
           </div>
           <div>
             <label class="field" for="website">Site ou portfolio externe</label>

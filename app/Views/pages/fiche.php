@@ -143,6 +143,12 @@ $formulePriceLabel = is_array($selectedPackage)
           <?php endif; ?>
         </div>
       </div>
+      <div class="side-card side-card-warm fiche-ia">
+        <div class="side-kicker">Garantie plateforme</div>
+        <div class="side-title-sm">Sans IA générative</div>
+        <p>Cette prestation est garantie sans usage d’IA générative. Le livrable est produit par un humain&nbsp;; le prestataire s’y est engagé.</p>
+        <a href="<?= e(url('/regles-ia')) ?>">Lire nos règles IA</a>
+      </div>
       <div class="side-card">
         <div class="side-kicker">Le prestataire</div>
         <div class="suggest-row" style="padding: 0;">
