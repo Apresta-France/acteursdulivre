@@ -20,7 +20,7 @@ return [
   <li>BookTok demande du temps (souvent 4 à 8 h/semaine) plus que du budget média.</li>
   <li>Instagram sert de vitrine et d’archive ; ce n’est pas un magasin.</li>
   <li>La newsletter est le seul fichier que vous possédez vraiment.</li>
-  <li>Presse, librairie et <a href="/metiers/salons">salons</a> restent des leviers distincts, à budgéter à part.</li>
+  <li>Presse, librairie et salons restent des leviers distincts, à budgéter à part.</li>
 </ul>
 
 <h2>Ce que les réseaux changent — et ce qu’ils ne changent pas</h2>
@@ -115,6 +115,6 @@ return [
 <p>Quand vous avez quelque chose à montrer : couverture, extrait, date. Ouvrir un compte six mois à l’avance sans matière épuise l’auteur et l’audience. Six à huit semaines avant parution suffisent pour la plupart des premiers romans.</p>
 
 <h2>Pour aller plus loin</h2>
-<p>Métiers <a href="/metiers/presse-com">presse et com</a>, <a href="/metiers/librairie">librairie</a>, <a href="/metiers/salons">salons</a>, <a href="/metiers/photographie">photographie</a>. Autres articles : le <a href="/journal">journal</a>.</p>
+<p>Métiers <a href="/metiers/presse-com">presse et com</a>, <a href="/metiers/librairie">librairie</a>, <a href="/metiers/photographie">photographie</a>. Autres articles : le <a href="/journal">journal</a>.</p>
 HTML,
 ];

@@ -189,6 +189,10 @@ return static function (Router $router): void {
     $router->get('/admin/emails', [AdminController::class, 'emails']);
     $router->get('/admin/emails/{id}', [AdminController::class, 'emailEdit']);
     $router->post('/admin/emails/{id}', [AdminController::class, 'emailSave']);
+    $router->get('/admin/migrations', [AdminController::class, 'migrations']);
+    $router->post('/admin/migrations', [AdminController::class, 'migrationsApply']);
+    $router->get('/admin/envois', [AdminController::class, 'envois']);
+    $router->get('/admin/envois/{id}', [AdminController::class, 'envoiShow']);
 
     $router->get('/{slug}/{city}', [PageController::class, 'metierVille']);
 };

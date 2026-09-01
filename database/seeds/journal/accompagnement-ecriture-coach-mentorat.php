@@ -12,7 +12,7 @@ return [
     'published' => true,
     'body' => <<<'HTML'
 <p>En 2026, une séance d’accompagnement d’écriture se facture le plus souvent <strong>entre 60 et 120 € de l’heure</strong>. Un cycle de quelques semaines — plan, retours sur chapitres, points d’étape — se négocie plutôt <strong>entre 400 et 1 500 €</strong>. Au-delà, vous n’achetez plus un coaching : vous approchez le prix d’une réécriture, voire d’un prête-plume.</p>
-<p>Coach, mentorat, atelier : trois mots, trois livrables. Les confondre, c’est comparer un devis à l’heure et un forfait de groupe, puis conclure que « c’est trop cher » ou « étonnamment bas ». Les <a href="/metiers/ecriture">auteurs qui accompagnent</a> le savent. Les briefs, pas toujours.</p>
+<p>Coach, mentorat, atelier : trois mots, trois livrables. Les confondre, c’est comparer un devis à l’heure et un forfait de groupe, puis conclure que « c’est trop cher » ou « étonnamment bas ». Les <a href="/metiers/coach-litteraire">coachs littéraires</a> le savent. Les briefs, pas toujours.</p>
 
 <h2 id="essentiel">L’essentiel</h2>
 <ul>
@@ -116,6 +116,6 @@ return [
 <p>Pas obligatoirement. Il est utile si vous bloquez, si le plan ne tient pas, ou si vous n’avez jamais fini un texte long. Il est superflu si le manuscrit est déjà solide : passez alors à la lecture, puis à la correction.</p>
 
 <h2>Pour aller plus loin</h2>
-<p>Fiches <a href="/metiers/ecriture">écriture</a>, <a href="/metiers/beta-lecture">bêta-lecture</a> et <a href="/metiers/lecture-editoriale">lecture éditoriale</a>. D’autres textes dans le <a href="/journal">journal</a>. Questions pratiques : <a href="/aide">l’aide</a>.</p>
+<p>Fiches <a href="/metiers/coach-litteraire">coach littéraire</a>, <a href="/metiers/ecriture">écriture</a>, <a href="/metiers/beta-lecture">bêta-lecture</a> et <a href="/metiers/lecture-editoriale">lecture éditoriale</a>. D’autres textes dans le <a href="/journal">journal</a>. Questions pratiques : <a href="/aide">l’aide</a>.</p>
 HTML,
 ];

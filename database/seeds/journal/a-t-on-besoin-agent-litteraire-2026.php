@@ -47,7 +47,7 @@ return [
 <p>Le manuscrit n’est pas fini, ou il n’a jamais été lu par un tiers exigeant. Dans ce cas, une <a href="/metiers/lecture-editoriale">lecture éditoriale</a> ou une <a href="/metiers/beta-lecture">bêta-lecture</a> coûte moins cher qu’attendre une réponse d’agence six mois. L’agent n’est pas un comité de lecture gratuit à la chaîne.</p>
 <p>Vous visez uniquement l’autoédition, sans cession à une maison, sans audio chez un éditeur, sans étranger. Il n’y a rien à mandater, sauf à transformer l’agent en conseiller — alors payez du conseil, pas 15 % sur des ventes qu’il n’a pas obtenues.</p>
 <p>Vous avez déjà un éditeur, un contrat signé, et un seul titre sans droits dérivés en vue. Un juriste pour l’avenant suivant peut suffire. Prendre un agent <em>après</em> signature est possible, pour la suite : cela se négocie, ce n’est pas rétroactif sur le contrat déjà en place, sauf accord des trois parties.</p>
-<p>Vous cherchez surtout de la visibilité. C’est de la <a href="/metiers/presse-com">presse</a>, de la librairie, des <a href="/metiers/salons">salons</a>. L’agent n’est pas un community manager.</p>
+<p>Vous cherchez surtout de la visibilité. C’est de la <a href="/metiers/presse-com">presse</a>, de la librairie, des salons. L’agent n’est pas un community manager.</p>
 
 <h2>Comment évaluer un mandat (et un silence)</h2>
 <p>Un agent sérieux dit non souvent. Un silence de trois mois n’est pas un oui. Relancez une fois, puis passez à autre chose. N’envoyez pas le même texte à quinze agences en copie cachée si leurs sites demandent l’exclusivité de soumission : c’est le premier test de lecture des usages.</p>

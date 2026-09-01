@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Adl\Core;
 
 use Adl\Core\Mail\SmtpTransport;
+use Adl\Models\EmailLog;
 use Adl\Models\EmailTemplate;
 use Adl\Models\Setting;
 use Adl\Models\User;
@@ -12,7 +13,7 @@ use Adl\Models\User;
 final class Mailer
 {
     /**
-     * @param array{unsubscribe_url?: string, headers?: array<string, string>} $options
+     * @param array{unsubscribe_url?: string, headers?: array<string, string>, template_slug?: string, source?: string} $options
      */
     public static function send(string $to, string $subject, string $html, string $text = '', array $options = []): void
     {
@@ -29,21 +30,30 @@ final class Mailer
         ]);
 
         $headers = is_array($options['headers'] ?? null) ? $options['headers'] : [];
+        $status = 'sent';
+        $error = null;
 
-        if ($host === '') {
-            self::logToFile($to, $subject, $wrapped);
-            return;
+        try {
+            if ($host === '') {
+                self::logToFile($to, $subject, $wrapped);
+                $status = 'file';
+            } else {
+                $transport = new SmtpTransport(
+                    $host,
+                    (int) self::setting('mail_port', Env::get('MAIL_PORT', '587')),
+                    self::setting('mail_username', Env::get('MAIL_USERNAME', '')),
+                    self::setting('mail_password', Env::get('MAIL_PASSWORD', '')),
+                    self::setting('mail_encryption', Env::get('MAIL_ENCRYPTION', 'tls')),
+                    self::heloHost(),
+                );
+                $transport->send($from, $fromName, $to, $subject, $wrapped, $text, $headers);
+            }
+        } catch (\Throwable $e) {
+            self::record($to, $subject, $wrapped, $text, $options, 'failed', $e->getMessage());
+            throw $e;
         }
 
-        $transport = new SmtpTransport(
-            $host,
-            (int) self::setting('mail_port', Env::get('MAIL_PORT', '587')),
-            self::setting('mail_username', Env::get('MAIL_USERNAME', '')),
-            self::setting('mail_password', Env::get('MAIL_PASSWORD', '')),
-            self::setting('mail_encryption', Env::get('MAIL_ENCRYPTION', 'tls')),
-            self::heloHost(),
-        );
-        $transport->send($from, $fromName, $to, $subject, $wrapped, $text, $headers);
+        self::record($to, $subject, $wrapped, $text, $options, $status, $error);
     }
 
     public static function usesSmtp(): bool
@@ -83,7 +93,9 @@ final class Mailer
         }
         $subject = self::replace($template['subject'], $vars);
         $html = self::replace($template['body_html'], $vars);
-        self::send($to, $subject, $html);
+        self::send($to, $subject, $html, '', [
+            'template_slug' => $slug,
+        ]);
     }
 
     /**
@@ -149,6 +161,23 @@ final class Mailer
             // table pas encore migrée
         }
         return (string) $default;
+    }
+
+    /**
+     * @param array<string, mixed> $options
+     */
+    private static function record(string $to, string $subject, string $html, string $text, array $options, string $status, ?string $error): void
+    {
+        EmailLog::record([
+            'recipient' => $to,
+            'subject' => $subject,
+            'body_html' => $html,
+            'body_text' => $text,
+            'template_slug' => isset($options['template_slug']) ? (string) $options['template_slug'] : null,
+            'source' => (string) ($options['source'] ?? 'transactional'),
+            'status' => $status,
+            'error' => $error,
+        ]);
     }
 
     private static function logToFile(string $to, string $subject, string $html): void

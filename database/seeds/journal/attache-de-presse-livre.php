@@ -25,7 +25,7 @@ return [
 
 <h2>Ce qu’un mois de service de presse contient</h2>
 <p>Le <strong>service de presse</strong> (SP), au sens artisanal du livre, c’est l’envoi d’exemplaires — papier ou PDF selon les titres et les médias — à des journalistes, chroniqueurs, libraires relais, parfois programmateurs de festivals. L’attaché de presse choisit les destinataires, rédige ou recadre le dossier, relance, et note les retombées.</p>
-<p>Un mois « classique » inclut en général : cadrage de l’angle, liste d’envois, préparation des colis ou des liens, première vague, relances, et un point. Il n’inclut pas, sauf mention contraire, la conception graphique du dossier, une tournée, ni la gestion des <a href="/metiers/salons">salons</a>.</p>
+<p>Un mois « classique » inclut en général : cadrage de l’angle, liste d’envois, préparation des colis ou des liens, première vague, relances, et un point. Il n’inclut pas, sauf mention contraire, la conception graphique du dossier, une tournée, ni la gestion des salons.</p>
 <p>Ce que trop de devis oublient d’écrire : qui paie les livres, qui paie le port, qui imprime les dossiers, et qui répond aux demandes d’interview. Un forfait « tout compris » qui oublie 40 exemplaires et 180 € de La Poste n’est pas tout compris.</p>
 
 <h2>Le fichier : qualité avant quantité</h2>
@@ -90,7 +90,7 @@ return [
 
 <h2>Premier roman, petite maison, autoédition</h2>
 <p>Un premier roman sans angle (sujet, territoire, actualité, lectorat identifiable) se défend mal en un mois. L’AP honnête le dit, et propose soit un cadrage plus long, soit un travail d’angle avant les envois. Payer 2 000 € pour 80 colis silencieux n’est pas « le marché qui a parlé » : c’est un brief trop tardif.</p>
-<p>Les petites maisons ont souvent un AP à temps partagé. L’auteur autoédité achète le même métier, sans le logo d’éditeur. Le fichier ne s’ouvre pas plus vite pour autant — parfois moins. D’où l’intérêt des relais locaux : presse régionale, librairies, <a href="/metiers/salons">salons</a>, associations. Moins glamour, plus réel.</p>
+<p>Les petites maisons ont souvent un AP à temps partagé. L’auteur autoédité achète le même métier, sans le logo d’éditeur. Le fichier ne s’ouvre pas plus vite pour autant — parfois moins. D’où l’intérêt des relais locaux : presse régionale, librairies, salons, associations. Moins glamour, plus réel.</p>
 <p>La <a href="/">place de marché</a> permet de comparer des profils livre, pas des agences généralistes qui « font aussi la culture ». L’<a href="/inscription">inscription</a> est gratuite ; le brief doit citer la date de parution, le genre, le territoire, et le stock disponible pour le SP.</p>
 
 <h2>Comment briefer et mesurer</h2>
@@ -111,6 +111,6 @@ return [
 <p>Idéalement 6 à 10 semaines avant la disponibilité réelle du livre — fichiers stables, couverture définitive, ISBN, date. Commencer le jour de la livraison imprimeur, c’est courir après une pile déjà pleine.</p>
 
 <h2>Pour aller plus loin</h2>
-<p>Fiches <a href="/metiers/presse-com">presse et com</a>, <a href="/metiers/librairie">librairie</a>, <a href="/metiers/salons">salons</a>. Autres textes dans le <a href="/journal">journal</a>. Questions : <a href="/aide">aide</a> ou <a href="/a-propos">à propos</a>.</p>
+<p>Fiches <a href="/metiers/presse-com">presse et com</a>, <a href="/metiers/librairie">librairie</a>. Autres textes dans le <a href="/journal">journal</a>. Questions : <a href="/aide">aide</a> ou <a href="/a-propos">à propos</a>.</p>
 HTML,
 ];

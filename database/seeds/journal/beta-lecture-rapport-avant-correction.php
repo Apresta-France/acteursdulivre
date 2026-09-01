@@ -82,7 +82,7 @@ return [
 
 <h2>Combien de lecteurs faut-il ?</h2>
 <p>Un bon rapport vaut mieux que trois avis contradictoires sans méthode. Deux bêta-lecteurs de profils différents (par exemple un lecteur de genre et un lecteur « généraliste ») peuvent éclairer un angle mort. Au-delà, vous collectionnez des opinions : vous n’achetez plus une prestation, vous fuyez la décision.</p>
-<p>Les retours de <a href="/metiers/librairie">libraires</a> ou les échanges en <a href="/metiers/salons">salon</a> sont précieux plus tard, une fois le livre fabriqué. Ils ne remplacent pas une lecture de manuscrit.</p>
+<p>Les retours de <a href="/metiers/librairie">libraires</a> ou les échanges en salon sont précieux plus tard, une fois le livre fabriqué. Ils ne remplacent pas une lecture de manuscrit.</p>
 
 <h2>Comment travailler le rapport sans se perdre ?</h2>
 <p>Lisez-le une première fois sans corriger. Laissez passer quarante-huit heures. Classez ensuite les remarques : je retiens / je discute / je laisse. Réécrivez par couches (structure, puis scènes, puis phrases). Puis seulement, envoyez vers la prépa ou la correction.</p>

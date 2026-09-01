@@ -81,7 +81,7 @@ return [
 
 <h2>Offset ou numérique : le papier est-il le même ?</h2>
 <p>Pas toujours. L’impression à la demande impose souvent la gamme de l’opérateur : un « cream 80 » qui n’est pas le bouffant de votre imprimeur offset. Le rendu est plus plat, le blanc différent, le dos parfois surprenant. Ce n’est pas un défaut moral ; c’est un autre objet. Si vous testez en POD puis tirez 300 ex. en numérique court, prévenez les lecteurs — ou assumez deux mains.</p>
-<p>L’offset devient pertinent vers 500 à 800 exemplaires. En dessous, le numérique court d’un imprimeur livre offre en général un meilleur compromis que le POD dès que l’on vise <a href="/metiers/librairie">dépôt en librairie</a> ou <a href="/metiers/salons">salons</a>.</p>
+<p>L’offset devient pertinent vers 500 à 800 exemplaires. En dessous, le numérique court d’un imprimeur livre offre en général un meilleur compromis que le POD dès que l’on vise <a href="/metiers/librairie">dépôt en librairie</a> ou salons.</p>
 
 <h2>Recyclé, labels, « papier de l’éditeur » : que croire ?</h2>
 <p>Les labels (FSC, PEFC, anges bleus, etc.) parlent de filière, pas de plaisir de lecture. Demandez le nom commercial de la feuille, pas seulement « écologique ». Un recyclé mal choisi jaunit ou poussière ; un offset certifié peut être excellent. L’argument environnemental se tient si l’on ne sur-imprime pas 2 000 exemplaires « au cas où ».</p>

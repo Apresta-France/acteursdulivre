@@ -78,7 +78,7 @@ return [
 
 <h2>Quand l’impression à la demande suffit</h2>
 <p>La POD est un outil de test, pas un défaut. Elle suffit pour offrir, envoyer cinq services de presse, vérifier la pagination, ou vendre en ligne sans stock. Elle convient aussi aux titres à rotation lente, réimprimés par dizaines.</p>
-<p>Elle cesse de suffire dès que vous visez trois <a href="/metiers/salons">salons</a>, un dépôt de 10 exemplaires chez plusieurs libraires, ou un prix public serré. À 6&nbsp;€ de fabrication et 30 à 40&nbsp;% de remise libraire, la marge disparaît. Le tirage court redevient l’option rationnelle.</p>
+<p>Elle cesse de suffire dès que vous visez trois salons, un dépôt de 10 exemplaires chez plusieurs libraires, ou un prix public serré. À 6&nbsp;€ de fabrication et 30 à 40&nbsp;% de remise libraire, la marge disparaît. Le tirage court redevient l’option rationnelle.</p>
 <p>Attention aux forfaits qui bundlent ISBN, diffusion et impression&nbsp;: le coût unitaire cache souvent un papier imposé. Comparez avec un imprimeur indépendant. Les <a href="/prestations">prestations</a> se lisent poste par poste.</p>
 
 <h2>Comment lire un devis d’imprimeur&nbsp;?</h2>

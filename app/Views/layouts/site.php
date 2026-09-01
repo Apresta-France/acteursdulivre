@@ -26,6 +26,13 @@
             $founderOffer = null;
         }
     }
+    $bodyClass = [];
+    if ($founderOffer) {
+        $bodyClass[] = 'has-founder-banner';
+    }
+    if (\Adl\Core\Auth::isImpersonating()) {
+        $bodyClass[] = 'has-impersonation-bar';
+    }
   ?>
   <title><?= e($metaTitle) ?></title>
   <meta name="description" content="<?= e($metaDesc) ?>">
@@ -67,7 +74,7 @@
   <?php if (!empty($isArticle) && !empty($article['img'])): ?>
   <link rel="preload" as="image" href="<?= e((string) $article['img']) ?>">
   <?php endif; ?>
-  <link rel="stylesheet" href="<?= e(asset('css/app.css')) ?>?v=m122">
+  <link rel="stylesheet" href="<?= e(asset('css/app.css')) ?>?v=m123">
   <link rel="icon" href="<?= e(asset('img/favicon.ico')) ?>?v=3" sizes="any">
   <link rel="icon" type="image/png" href="<?= e(asset('img/favicon-32x32.png')) ?>?v=3" sizes="32x32">
   <link rel="apple-touch-icon" href="<?= e(asset('img/apple-touch-icon.png')) ?>?v=3">
@@ -78,7 +85,8 @@
   ) ?></script>
   <?php endif; ?>
 </head>
-<body<?= $founderOffer ? ' class="has-founder-banner"' : '' ?> data-stats="<?= e(url('/api/stats')) ?>">
+<body<?= $bodyClass !== [] ? ' class="' . e(implode(' ', $bodyClass)) . '"' : '' ?> data-stats="<?= e(url('/api/stats')) ?>">
+  <?php require ADL_ROOT . '/app/Views/partials/impersonation-bar.php'; ?>
   <div class="nav-backdrop" data-nav-close hidden></div>
   <div class="site-shell">
     <div class="site-canvas">
@@ -266,7 +274,7 @@
                 <img src="<?= e(asset('img/logo-inv.png')) ?>?v=5" alt="" width="154" height="42" loading="lazy" decoding="async">
               </a>
             </div>
-            <p>La place de marché des métiers du livre. Dix-huit métiers, de l'écriture au salon.</p>
+            <p>La place de marché des métiers du livre. Dix-huit métiers, de l'écriture au coaching.</p>
             <div class="socials">
               <?php foreach ($socials ?? [] as $s): ?>
                 <?php if (is_array($s)): ?>

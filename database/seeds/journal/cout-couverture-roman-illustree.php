@@ -89,7 +89,7 @@ return [
 <p>Aucune illustration livrée via Acteurs du Livre ne peut être produite par une IA générative. Page <a href="/confiance">Confiance</a>.</p>
 
 <h2>Où placer la couverture dans le budget du roman ?</h2>
-<p>Dans un budget type 3 400 à 5 800 € (300 pages, 300 exemplaires brochés, hors diffusion), la couverture illustrée simple tient souvent entre 550 et 1 400 € selon que la typo et l’image sont séparées. Ce n’est pas le poste à couper en premier : c’est le premier contact en librairie et sur les tables de <a href="/metiers/salons">salon</a>. Détail des autres postes : <a href="/journal/cout-fabrication-roman-autoedition">fabrication d’un roman autoédité</a>.</p>
+<p>Dans un budget type 3 400 à 5 800 € (300 pages, 300 exemplaires brochés, hors diffusion), la couverture illustrée simple tient souvent entre 550 et 1 400 € selon que la typo et l’image sont séparées. Ce n’est pas le poste à couper en premier : c’est le premier contact en librairie et sur les tables de salon. Détail des autres postes : <a href="/journal/cout-fabrication-roman-autoedition">fabrication d’un roman autoédité</a>.</p>
 <p>Sur <a href="/">acteursdulivre.fr</a>, pas d’abonnement. Première mission offerte au prestataire, puis 8 % ; règlement hors plateforme. Voir <a href="/comment-ca-marche">comment ça marche</a> et les <a href="/tarifs">tarifs</a>. L’<a href="/inscription">inscription</a> est gratuite ; les <a href="/prestataires">prestataires</a> de l’annuaire affichent leurs formules.</p>
 
 <h2>Questions fréquentes</h2>

@@ -31,13 +31,14 @@ final class Catalog
         'Maquette' => ['label' => 'Volume', 'placeholder' => '256 pages', 'unit' => 'pages'],
         'Impression' => ['label' => 'Tirage', 'placeholder' => '500 exemplaires', 'unit' => 'exemplaires'],
         'Audio' => ['label' => 'Durée', 'placeholder' => '6 heures', 'unit' => 'heures'],
+        'Coach littéraire' => ['label' => 'Durée', 'placeholder' => '6 séances', 'unit' => 'séances'],
         'Lecture éditoriale' => ['label' => 'Volume', 'placeholder' => '240 pages', 'unit' => 'pages'],
         'Iconographie' => ['label' => 'Volume', 'placeholder' => '40 visuels', 'unit' => 'visuels'],
         'Reliure' => ['label' => 'Tirage', 'placeholder' => '30 exemplaires', 'unit' => 'exemplaires'],
     ];
 
     public const BRIEF_HINTS = [
-        'Écriture' => 'Genre, volume, accompagnement souhaité (prête-plume, réécriture, coaching), calendrier…',
+        'Écriture' => 'Genre, volume, accompagnement souhaité (prête-plume, réécriture), calendrier…',
         'Correction' => 'Genre, état du texte, attentes, contraintes de calendrier…',
         'Bêta-lecture' => 'Genre, public visé, ce que vous attendez de la lecture, calendrier…',
         'Illustration' => 'Couverture ou intérieur, style souhaité, format, références…',
@@ -49,7 +50,7 @@ final class Catalog
         'Librairie' => 'Ouvrage, diffusion souhaitée, zone, calendrier…',
         'Audio' => 'Durée estimée, ton, public, contraintes techniques…',
         'Agent littéraire' => 'Projet, genre, ce que vous attendez d’un accompagnement, calendrier…',
-        'Salons' => 'Type d’événement, dates, lieu, public, prestations souhaitées…',
+        'Coach littéraire' => 'Genre, stade du texte, formule (séance, cycle, mentorat, atelier), calendrier…',
         'Iconographie' => 'Ouvrage, nombre de visuels, droits souhaités, sources, calendrier…',
         'Lecture éditoriale' => 'Genre, public, ce que vous attendez du rapport, calendrier…',
         'Photographie' => 'Usage (portrait, ouvrage, reportage), format, droits, calendrier…',
@@ -70,7 +71,7 @@ final class Catalog
         'Librairie' => 'Libraires',
         'Audio' => 'Narrateurs audio',
         'Agent littéraire' => 'Agents littéraires',
-        'Salons' => 'Salons & événements',
+        'Coach littéraire' => 'Coachs littéraires',
         'Iconographie' => 'Iconographes',
         'Lecture éditoriale' => 'Lecteurs éditoriaux',
         'Photographie' => 'Photographes',
@@ -92,7 +93,7 @@ final class Catalog
         'Librairie' => 'libraires',
         'Audio' => 'narrateurs-audio',
         'Agent littéraire' => 'agents-litteraires',
-        'Salons' => 'salons-evenements',
+        'Coach littéraire' => 'coachs-litteraires',
         'Iconographie' => 'iconographes',
         'Lecture éditoriale' => 'lecteurs-editoriaux',
         'Photographie' => 'photographes',
@@ -103,7 +104,7 @@ final class Catalog
     /** Métiers dont la spécialité reste un genre de texte. */
     public const TEXT_TRADES = [
         'Écriture', 'Correction', 'Bêta-lecture', 'Traduction', 'Édition',
-        'Audio', 'Agent littéraire', 'Lecture éditoriale',
+        'Audio', 'Agent littéraire', 'Lecture éditoriale', 'Coach littéraire',
     ];
 
     /**
@@ -128,8 +129,9 @@ final class Catalog
         'Librairie' => [
             'Dépôt-vente', 'Conseil', 'Animation', 'Diffusion locale',
         ],
-        'Salons' => [
-            'Stand', 'Organisation', 'Animation', 'Dédicaces',
+        'Coach littéraire' => [
+            'Coaching d\'écriture', 'Mentorat', 'Atelier d\'écriture',
+            'Accompagnement de plan', 'Suivi de manuscrit',
         ],
         'Iconographie' => [
             'Recherche d\'images', 'Droits', 'Archives', 'Documentaire', 'Couverture',
@@ -233,7 +235,7 @@ final class Catalog
         'Librairie' => ['slug' => 'libraire', 'one' => 'Libraire', 'many' => 'Libraires', 'article' => 'un'],
         'Audio' => ['slug' => 'narratrice-audio', 'one' => 'Narratrice audio', 'many' => 'Narratrices audio', 'article' => 'une'],
         'Agent littéraire' => ['slug' => 'agente-litteraire', 'one' => 'Agente littéraire', 'many' => 'Agentes littéraires', 'article' => 'une'],
-        'Salons' => ['slug' => 'salon-du-livre', 'one' => 'Salon du livre', 'many' => 'Salons du livre', 'article' => 'un'],
+        'Coach littéraire' => ['slug' => 'coach-litteraire', 'one' => 'Coach littéraire', 'many' => 'Coachs littéraires', 'article' => 'un'],
         'Iconographie' => ['slug' => 'iconographe', 'one' => 'Iconographe', 'many' => 'Iconographes', 'article' => 'un'],
         'Lecture éditoriale' => ['slug' => 'lectrice-editoriale', 'one' => 'Lectrice éditoriale', 'many' => 'Lectrices éditoriales', 'article' => 'une'],
         'Photographie' => ['slug' => 'photographe', 'one' => 'Photographe', 'many' => 'Photographes', 'article' => 'un'],
@@ -254,7 +256,7 @@ final class Catalog
         'Librairie' => 'Librairie',
         'Audio' => 'Narration audio',
         'Agent littéraire' => 'Agent littéraire',
-        'Salons' => 'Salons & événements',
+        'Coach littéraire' => 'Coach littéraire',
         'Iconographie' => 'Iconographie',
         'Lecture éditoriale' => 'Lecture éditoriale',
         'Photographie' => 'Photographie',
@@ -713,11 +715,15 @@ final class Catalog
             'Agente littéraire' => 'Agent littéraire',
             'Agents littéraires' => 'Agent littéraire',
             'Agentes littéraires' => 'Agent littéraire',
-            'Salon' => 'Salons',
-            'Salon du livre' => 'Salons',
-            'Salons & événements' => 'Salons',
-            'Salons & rencontres' => 'Salons',
-            'Ateliers & médiation' => 'Salons',
+            'Coach littéraire' => 'Coach littéraire',
+            'Coach d\'écriture' => 'Coach littéraire',
+            'Coaching d\'écriture' => 'Coach littéraire',
+            'Coachs littéraires' => 'Coach littéraire',
+            'Coachs d\'écriture' => 'Coach littéraire',
+            'Mentorat' => 'Coach littéraire',
+            'Mentorat littéraire' => 'Coach littéraire',
+            'Atelier d\'écriture' => 'Coach littéraire',
+            'Ateliers d\'écriture' => 'Coach littéraire',
         ];
     }
 
@@ -727,6 +733,7 @@ final class Catalog
         $groups = [
             'Écrire & corriger' => [
                 'Auteurs & prête-plume' => 'Écriture',
+                'Coaching d\'écriture' => 'Coach littéraire',
                 'Correction orthotypo' => 'Correction',
                 'Bêta-lecture' => 'Bêta-lecture',
                 'Lecture éditoriale' => 'Lecture éditoriale',
@@ -754,8 +761,8 @@ final class Catalog
                 'Attachés de presse' => 'Presse & com',
                 'Réseaux sociaux & communauté' => 'Presse & com',
                 'Livre audio & narration' => 'Audio',
-                'Salons & rencontres' => 'Salons',
-                'Ateliers & médiation' => 'Salons',
+                'Mentorat littéraire' => 'Coach littéraire',
+                'Ateliers d\'écriture' => 'Coach littéraire',
             ],
         ];
         $out = [];
@@ -769,11 +776,21 @@ final class Catalog
         return $out;
     }
 
+    /** Anciens slugs de pages métier, conservés pour les redirections 301. */
+    public const LEGACY_TRADE_SLUGS = [
+        'salons' => 'Coach littéraire',
+        'salons-evenements' => 'Coach littéraire',
+        'salon-du-livre' => 'Coach littéraire',
+    ];
+
     public static function tradeFromSlug(string $slug): ?string
     {
         $slug = slugify($slug);
         if ($slug === '') {
             return null;
+        }
+        if (isset(self::LEGACY_TRADE_SLUGS[$slug])) {
+            return self::LEGACY_TRADE_SLUGS[$slug];
         }
         try {
             $trades = array_values(array_unique(array_merge(

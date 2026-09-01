@@ -26,6 +26,7 @@ final class Onboarding
         'Photographie' => 'Photographie d\'auteurs et d\'ouvrages',
         'Reliure' => 'Reliure d\'art et petits tirages',
         'Juridique' => 'Contrats d\'édition et droits d\'auteur',
+        'Coach littéraire' => 'Coach d\'écriture, romans et essais',
     ];
 
     public const PRESENTATION_HINTS = [
@@ -44,6 +45,7 @@ final class Onboarding
         'Photographie' => 'Décrivez vos usages (portrait, ouvrage, reportage), votre lumière, et les cessions que vous proposez.',
         'Reliure' => 'Indiquez les techniques, les matériaux, et les volumes que vous acceptez.',
         'Juridique' => 'Précisez vos domaines (contrats, cessions, image, litiges) et le type de clients que vous accompagnez.',
+        'Coach littéraire' => 'Précisez les formules (séance, cycle, mentorat, atelier), les genres, et ce que vous lisez entre deux rendez-vous.',
     ];
 
     /** @param array<string, mixed> $user */

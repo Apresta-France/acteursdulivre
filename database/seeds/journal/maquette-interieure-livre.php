@@ -95,7 +95,7 @@ return [
 <h2>Comment comparer deux devis de maquette ?</h2>
 <p>Même format, même volume, même liste (intérieur, couverture, épreuves, sources, e-pub). Même nombre d’allers-retours. Un « pour vendredi » se paie. Un gabarit réutilisable pour une collection aussi — c’est une plus-value, pas un dû gratuit.</p>
 <p>Sur <a href="/">acteursdulivre.fr</a>, pas d’abonnement : première mission offerte au prestataire, puis 8 % ; règlement hors plateforme. <a href="/comment-ca-marche">Comment ça marche</a>, <a href="/tarifs">tarifs</a>, <a href="/prestations">prestations</a>, <a href="/prestataires">annuaire</a>, <a href="/inscription">inscription</a>. Aucun livrable maquette généré par IA : <a href="/confiance">Confiance</a>. Le suivi à jalons d’<a href="/a-propos">Acteurs du Livre</a> fige le périmètre.</p>
-<p>La <a href="/metiers/reliure">reliure</a> d’art et les <a href="/metiers/salons">salons</a> imposent parfois un format ou une couverture toilée : dites-le avant la grille, pas après le PDF.</p>
+<p>La <a href="/metiers/reliure">reliure</a> d’art et les salons imposent parfois un format ou une couverture toilée : dites-le avant la grille, pas après le PDF.</p>
 
 <h2>Questions fréquentes</h2>
 <h3>Peut-on maquetter soi-même dans un traitement de texte ?</h3>

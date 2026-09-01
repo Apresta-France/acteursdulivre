@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Adl\Data;
 
 use Adl\Core\Auth;
+use Adl\Core\Migrator;
 use Adl\Models\Article;
 use Adl\Models\Commission;
 use Adl\Models\Invoice;
@@ -62,6 +63,8 @@ final class AdminCatalog
             ['smtp', 'SMTP', '', '', '/admin/smtp'],
             ['sso', 'Connexion Google / Facebook', '', '', '/admin/sso'],
             ['emails', 'Modèles d\'e-mails', '', '', '/admin/emails'],
+            ['envois', 'E-mails envoyés', '', '', '/admin/envois'],
+            ['migrations', 'Migrations', $badges['migrations'], '', '/admin/migrations'],
         ];
         $nav = [];
         foreach ($items as [$id, $label, $badge, $group, $href]) {
@@ -95,6 +98,7 @@ final class AdminCatalog
             'litiges' => self::badgeCount(static fn (): int => Order::countByStatus('dispute')),
             'avis' => self::badgeCount(static fn (): int => Report::countOpenForType('review')),
             'finances' => self::badgeCount(static fn (): int => Invoice::countOverdue()),
+            'migrations' => self::badgeCount(static fn (): int => Migrator::pendingCount()),
         ];
     }
 
@@ -130,6 +134,8 @@ final class AdminCatalog
             'smtp' => 'Paramètres SMTP',
             'sso' => 'Connexion Google / Facebook',
             'emails' => 'Modèles d\'e-mails',
+            'envois' => 'E-mails envoyés',
+            'migrations' => 'Migrations',
         ];
     }
 

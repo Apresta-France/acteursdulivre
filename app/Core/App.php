@@ -9,16 +9,15 @@ final class App
     public static function run(): void
     {
         $request = new Request();
+        $path = $request->path();
 
-        if (Env::loaded() && $request->path() !== '/install' && !str_starts_with($request->path(), '/install/')) {
+        if (Env::loaded() && !self::skipsAutoMigrate($path)) {
             try {
                 Migrator::migrate();
             } catch (\Throwable) {
                 // La page d'erreur de connexion gère le cas DB
             }
         }
-
-        $path = $request->path();
         $csrfExempt = $path === '/install'
             || str_starts_with($path, '/install')
             || str_starts_with($path, '/newsletter/desinscription/')
@@ -47,5 +46,13 @@ final class App
         $routes = require ADL_ROOT . '/config/routes.php';
         $routes($router);
         $router->dispatch($request);
+    }
+
+    private static function skipsAutoMigrate(string $path): bool
+    {
+        return $path === '/install'
+            || str_starts_with($path, '/install/')
+            || $path === '/admin'
+            || str_starts_with($path, '/admin/');
     }
 }

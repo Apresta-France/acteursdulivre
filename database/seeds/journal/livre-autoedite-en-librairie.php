@@ -81,7 +81,7 @@ return [
   <p>«&nbsp;On ne refuse pas les auteurs. On refuse les cartons sans interlocuteur et les livres qui n’ont pas l’air d’être déjà des livres.&nbsp;»</p>
 </blockquote>
 <p>N’envoyez pas un mail groupé. Une rencontre d’auteur se prépare avec le libraire (date, pile, annonce)&nbsp;; elle se mérite par un premier dépôt qui a bougé.</p>
-<p>La <a href="/metiers/presse-com">presse et la com</a> aident si elles amènent du monde <em>dans cette boutique</em>. Un article national sans adresse de retrait ne fait pas tourner la table. Un article local, une radio de quartier, un <a href="/metiers/salons">salon</a> à vingt kilomètres, si.</p>
+<p>La <a href="/metiers/presse-com">presse et la com</a> aident si elles amènent du monde <em>dans cette boutique</em>. Un article national sans adresse de retrait ne fait pas tourner la table. Un article local, une radio de quartier, un salon à vingt kilomètres, si.</p>
 
 <h2>Le livre doit déjà être un livre</h2>
 <p>Le libraire juge en dix secondes&nbsp;: couverture, dos, quatrième, pagination, fautes de la première page. Une <a href="/metiers/correction">correction</a> et une <a href="/metiers/maquette">maquette</a> professionnelles ne sont pas un luxe de vanité. Ce sont le ticket. Un roman à 4&nbsp;€ en POD trop plat, titre illisible, quatrième trop longue, reste au carton.</p>
@@ -90,7 +90,7 @@ return [
 
 <h2>Que faire après le premier dépôt&nbsp;?</h2>
 <p>Revenez à la date convenue, pas tous les trois jours. Proposez le réassort si ça tourne, la reprise si ça ne tourne pas. Tenez la facturation simple&nbsp;: nombre vendu × prix public × (1 − remise). Un libraire n’a pas à deviner votre comptabilité.</p>
-<p>Notez ce qui s’est vendu, et à qui le libraire l’a vendu (cadeau, lecture club, passage auteur). C’est votre unique étude de marché. Elle oriente le prochain dépôt, le prochain <a href="/metiers/salons">salon</a>, et parfois une réimpression — numérique court plutôt que POD si la remise doit rester tenable.</p>
+<p>Notez ce qui s’est vendu, et à qui le libraire l’a vendu (cadeau, lecture club, passage auteur). C’est votre unique étude de marché. Elle oriente le prochain dépôt, le prochain salon, et parfois une réimpression — numérique court plutôt que POD si la remise doit rester tenable.</p>
 <p>Sur <a href="/">acteursdulivre.fr</a>, vous trouvez des prestataires pour fabriquer le livre, pas un réseau d’office. Pas d’abonnement&nbsp;; la première mission du prestataire est offerte, puis 8&nbsp;% lui sont facturés. Le règlement se fait hors site. Voir <a href="/comment-ca-marche">comment ça marche</a> et les <a href="/tarifs">tarifs</a>.</p>
 
 <h2>Questions fréquentes</h2>

@@ -24,7 +24,7 @@ return [
 </ul>
 
 <h2>Pourquoi un fichier JPG ne suffit-il pas ?</h2>
-<p>Parce que le droit d’auteur français distingue l’œuvre et ses modes d’exploitation. Acheter un fichier, c’est obtenir un support. Exploiter l’image sur un livre, un e-pub, une affiche de <a href="/metiers/salons">salon</a>, une campagne <a href="/metiers/presse-com">presse et communication</a>, un livre audio : ce sont des actes distincts. S’ils ne sont pas cédés, ils restent à l’auteur de l’image.</p>
+<p>Parce que le droit d’auteur français distingue l’œuvre et ses modes d’exploitation. Acheter un fichier, c’est obtenir un support. Exploiter l’image sur un livre, un e-pub, une affiche de salon, une campagne <a href="/metiers/presse-com">presse et communication</a>, un livre audio : ce sont des actes distincts. S’ils ne sont pas cédés, ils restent à l’auteur de l’image.</p>
 <p>L’<a href="/metiers/illustration">illustrateur</a> cède des droits, il ne vend pas son nom. La <a href="/metiers/photographie">photographie</a> et l’<a href="/metiers/iconographie">iconographie</a> obéissent à la même logique, avec d’autres barèmes et parfois des ayants droit multiples.</p>
 
 <h2>Quelles sont les cinq lignes à écrire ?</h2>

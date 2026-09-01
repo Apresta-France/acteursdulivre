@@ -20,7 +20,7 @@ $query = (string) ($query ?? '');
     <div>
       <p class="mk-kicker">La place de marché des métiers du livre</p>
       <h1>Un livre, ça se fait à plusieurs.</h1>
-      <p class="mk-lead">Dix-huit métiers, de l'écriture au salon : trouvez les bonnes personnes, comparez des prestations à prix affichés, ou publiez votre recherche.</p>
+      <p class="mk-lead">Dix-huit métiers, de l'écriture au coaching : trouvez les bonnes personnes, comparez des prestations à prix affichés, ou publiez votre recherche.</p>
       <form class="mk-search" method="get" action="<?= e(url('/recherche')) ?>" role="search" data-live-search data-api="<?= e(url('/api/recherche')) ?>" autocomplete="off" toolname="search_home" tooldescription="Rechercher depuis l'accueil un prestataire, une prestation ou un besoin lié à un livre.">
         <input type="search" name="q" value="<?= e($query) ?>" placeholder="De quoi votre livre a-t-il besoin ?" aria-label="Recherche" data-live-input autocomplete="off" toolparamdescription="Mots-clés décrivant le besoin du livre.">
         <button class="btn-orange" type="submit">Chercher</button>
@@ -271,7 +271,7 @@ $query = (string) ($query ?? '');
           ?>
           <figure class="mk-quote">
             <span class="mk-quote-mark" aria-hidden="true"><svg width="48" height="36" viewBox="0 0 48 36" fill="currentColor"><path d="M0 20.4C0 10.2 6 3.4 16.4 0l2.8 5.5C13.3 8.3 9.7 12.5 9.7 18.2c0 1.1.2 2.1.5 2.9h9.1V36H0V20.4zm22.7 0C22.7 10.2 28.7 3.4 39.1 0l2.8 5.5c-5.9 2.8-9.5 7-9.5 12.7 0 1.1.2 2.1.5 2.9h9.2V36H22.7V20.4z"/></svg></span>
-            <div class="mk-stars" aria-label="<?= $noteLabel !== '' ? 'Note ' . e($noteLabel) . ' sur 5' : 'Avis' ?>">
+            <div class="mk-stars" role="img" aria-label="<?= $noteLabel !== '' ? 'Note ' . e($noteLabel) . ' sur 5' : 'Avis' ?>">
               <?php for ($i = 1; $i <= 5; $i++): ?>
                 <span<?= $i <= $filled ? ' class="is-on"' : '' ?> aria-hidden="true">★</span>
               <?php endfor; ?>

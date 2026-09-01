@@ -25,7 +25,7 @@ return [
 
 <h2>Ce qu’on achète en s’inscrivant</h2>
 <p>Le <strong>droit de table</strong> paie une surface (souvent 1,20 à 1,80 m), deux chaises, parfois une nappe et un bandeau au nom de l’auteur. Il ne paie pas le public. Il ne paie pas l’emplacement face à l’entrée. Lisez le règlement : horaires d’accès, interdiction de quitter le stand, assurance, badge accompagnant, branchement électrique pour un terminal de paiement.</p>
-<p>Les salons municipaux et associatifs restent dans la fourchette 80–400 €. Les manifestations plus denses, les tentes extérieures, les « corners » éditeurs, les salons à fort trafic touristique sortent de cette zone — et d’un premier budget. Un prestataire <a href="/metiers/salons">salons du livre</a> peut aider à lire le dossier d’inscription et à choisir trois dates dans l’année, pas trente.</p>
+<p>Les salons municipaux et associatifs restent dans la fourchette 80–400 €. Les manifestations plus denses, les tentes extérieures, les « corners » éditeurs, les salons à fort trafic touristique sortent de cette zone — et d’un premier budget. Un libraire partenaire peut aider à lire le dossier d’inscription et à choisir trois dates dans l’année, pas trente.</p>
 <p>Sur <a href="/">acteursdulivre.fr</a>, ces missions se commandent comme les autres <a href="/prestations">prestations</a>. Voir <a href="/comment-ca-marche">comment ça marche</a> et les <a href="/tarifs">tarifs</a>.</p>
 
 <h2>Le budget réel, ligne par ligne</h2>
@@ -91,7 +91,7 @@ return [
   <li><strong>Calendrier</strong> — pas la semaine de votre réimpression, pas le même week-end qu’un dépôt important.</li>
   <li><strong>Coût total</strong> — table + route + nuits, pas la table seule.</li>
 </ol>
-<p>Inscrivez-vous tôt : les bons emplacements partent. Un prestataire <a href="/metiers/salons">salons</a> peut monter le dossier ; la première mission est offerte, puis 8 % sont facturés au prestataire, règlement hors plateforme. Après le salon, ramenez un décompte (vendus, offerts, abîmés, contacts) plutôt qu’une photo. Si un libraire a pris votre carte, écrivez dans la semaine pour un dépôt de 5 à 15 exemplaires, remise 30–40 %. Les livres cornés ne retournent ni en SP ni en librairie.</p>
+<p>Inscrivez-vous tôt : les bons emplacements partent. Après le salon, ramenez un décompte (vendus, offerts, abîmés, contacts) plutôt qu’une photo. Si un libraire a pris votre carte, écrivez dans la semaine pour un dépôt de 5 à 15 exemplaires, remise 30–40 %. Les livres cornés ne retournent ni en SP ni en librairie.</p>
 <p>Les <a href="/prestataires">prestataires</a> se trouvent via l’<a href="/inscription">inscription</a> gratuite. Voir <a href="/a-propos">à propos</a>, <a href="/journal">journal</a>, <a href="/aide">aide</a> et <a href="/confiance">Confiance</a> (aucune communication générée par une IA sur la plateforme).</p>
 
 <h2>Questions fréquentes</h2>
@@ -107,6 +107,6 @@ return [
 <p>Presque jamais : coût, fatigue, concurrence, règles d’accès. Commencez par un salon de bassin de vie, puis montez si le livre a une demande.</p>
 
 <h2>Pour aller plus loin</h2>
-<p>Métiers <a href="/metiers/salons">salons</a>, <a href="/metiers/librairie">librairie</a>, <a href="/metiers/presse-com">presse-com</a>, <a href="/metiers/impression">impression</a> ; <a href="/prestations">prestations</a> et <a href="/journal">journal</a>.</p>
+<p>Métiers <a href="/metiers/librairie">librairie</a>, <a href="/metiers/presse-com">presse-com</a>, <a href="/metiers/impression">impression</a> ; <a href="/prestations">prestations</a> et <a href="/journal">journal</a>.</p>
 HTML,
 ];

@@ -7,6 +7,7 @@ $profile = $profile ?? null;
 $isSelf = !empty($isSelf);
 $closed = !empty($closed);
 $canDelete = !empty($canDelete);
+$canImpersonate = !empty($canImpersonate);
 $lockRole = !empty($lockRole);
 $lockStatus = !empty($lockStatus);
 $role = (string) ($account['role'] ?? 'client');
@@ -25,14 +26,23 @@ $fmt = static function (string $dt, string $empty = '—'): string {
   <p class="admin-back"><a href="<?= e(url('/admin/utilisateurs')) ?>">← Tous les utilisateurs</a></p>
   <div class="admin-user-hero">
     <?= avatar_html($account, 56) ?>
-    <div>
+    <div class="admin-user-hero-text">
       <h1><?= e(User::displayName($account)) ?></h1>
       <p class="admin-lead" style="margin: 4px 0 0;"><?= e((string) ($account['email'] ?? '')) ?></p>
       <?php if ($closed): ?>
         <p class="admin-user-closed">Compte clôturé<?= !empty($account['deleted_at']) ? ' le ' . e($fmt((string) $account['deleted_at'])) : '' ?>.</p>
       <?php endif; ?>
     </div>
+    <?php if (!empty($canImpersonate)): ?>
+      <form method="post" action="<?= e(url('/admin/utilisateurs/' . (int) ($account['id'] ?? 0) . '/impersonner')) ?>">
+        <?= csrf_field() ?>
+        <button class="btn-orange" type="submit">Se connecter en tant que…</button>
+      </form>
+    <?php endif; ?>
   </div>
+  <?php if (empty($canImpersonate) && empty($closed) && empty($isSelf) && $status !== 'active'): ?>
+    <p class="admin-user-help" style="margin-top: -10px;">L’impersonnation n’est possible que pour un compte actif.</p>
+  <?php endif; ?>
 
   <?php if (!empty($saved)): ?><div class="flash flash-ok"><?= e(is_string($saved) ? $saved : 'Compte mis à jour.') ?></div><?php endif; ?>
   <?php if (!empty($error)): ?><div class="flash flash-error"><?= e((string) $error) ?></div><?php endif; ?>

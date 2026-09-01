@@ -37,7 +37,7 @@ final class Profile
     public const TRADES = [
         'Écriture', 'Correction', 'Bêta-lecture', 'Illustration', 'Traduction', 'Maquette',
         'Édition', 'Impression', 'Presse & com', 'Librairie', 'Audio',
-        'Agent littéraire', 'Salons',
+        'Agent littéraire', 'Coach littéraire',
         'Iconographie', 'Lecture éditoriale', 'Photographie', 'Reliure', 'Juridique',
     ];
 

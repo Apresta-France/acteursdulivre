@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Adl\Core;
 
 use Adl\Core\Mail\SmtpTransport;
+use Adl\Models\EmailLog;
 use Adl\Models\Newsletter;
 use Adl\Models\Setting;
 
@@ -34,19 +35,42 @@ final class NewsletterMailer
             Mailer::send($to, $subject, $html, $text, [
                 'unsubscribe_url' => $unsubUrl,
                 'headers' => $headers,
+                'source' => 'newsletter',
             ]);
             return;
         }
 
-        $transport = new SmtpTransport(
-            $host,
-            (int) self::setting('newsletter_smtp_port', self::fallback('mail_port', Env::get('MAIL_PORT', '587'))),
-            self::setting('newsletter_smtp_username', self::fallback('mail_username', Env::get('MAIL_USERNAME', ''))),
-            self::setting('newsletter_smtp_password', self::fallback('mail_password', Env::get('MAIL_PASSWORD', ''))),
-            self::setting('newsletter_smtp_encryption', self::fallback('mail_encryption', Env::get('MAIL_ENCRYPTION', 'tls'))),
-            self::heloHost(),
-        );
-        $transport->send($from, $fromName, $to, $subject, $wrapped, $text, $headers);
+        try {
+            $transport = new SmtpTransport(
+                $host,
+                (int) self::setting('newsletter_smtp_port', self::fallback('mail_port', Env::get('MAIL_PORT', '587'))),
+                self::setting('newsletter_smtp_username', self::fallback('mail_username', Env::get('MAIL_USERNAME', ''))),
+                self::setting('newsletter_smtp_password', self::fallback('mail_password', Env::get('MAIL_PASSWORD', ''))),
+                self::setting('newsletter_smtp_encryption', self::fallback('mail_encryption', Env::get('MAIL_ENCRYPTION', 'tls'))),
+                self::heloHost(),
+            );
+            $transport->send($from, $fromName, $to, $subject, $wrapped, $text, $headers);
+        } catch (\Throwable $e) {
+            EmailLog::record([
+                'recipient' => $to,
+                'subject' => $subject,
+                'body_html' => $wrapped,
+                'body_text' => $text,
+                'source' => 'newsletter',
+                'status' => 'failed',
+                'error' => $e->getMessage(),
+            ]);
+            throw $e;
+        }
+
+        EmailLog::record([
+            'recipient' => $to,
+            'subject' => $subject,
+            'body_html' => $wrapped,
+            'body_text' => $text,
+            'source' => 'newsletter',
+            'status' => 'sent',
+        ]);
     }
 
     public static function usesSmtp(): bool

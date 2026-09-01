@@ -6,6 +6,7 @@ namespace Adl\Controllers;
 
 use Adl\Core\Auth;
 use Adl\Core\Mailer;
+use Adl\Core\Migrator;
 use Adl\Core\NewsletterComposer;
 use Adl\Core\NewsletterCron;
 use Adl\Core\NewsletterMailer;
@@ -18,6 +19,7 @@ use Adl\Models\Analytics;
 use Adl\Models\Article;
 use Adl\Models\Commission;
 use Adl\Models\Conversation;
+use Adl\Models\EmailLog;
 use Adl\Models\EmailTemplate;
 use Adl\Models\Invoice;
 use Adl\Models\Mission;
@@ -736,7 +738,9 @@ final class AdminController
             redirect('/admin/smtp');
         }
         try {
-            Mailer::send($to, 'Test SMTP — Acteurs du Livre', '<p>Ceci est un e-mail de test envoyé depuis l\'administration.</p>');
+            Mailer::send($to, 'Test SMTP — Acteurs du Livre', '<p>Ceci est un e-mail de test envoyé depuis l\'administration.</p>', '', [
+                'source' => 'test',
+            ]);
             if (!Mailer::usesSmtp()) {
                 flash('error', 'Aucun hôte SMTP n\'est configuré : le message a été écrit dans storage/mail, il n\'a pas été envoyé.');
             } else {
@@ -949,6 +953,85 @@ final class AdminController
         EmailTemplate::update((int) $id, $request->string('subject'), $request->input('body_html', ''));
         flash('saved', true);
         redirect('/admin/emails');
+    }
+
+    public function envois(Request $request): void
+    {
+        $query = $request->string('q', '');
+        $filtre = $this->filtre($request, ['tous', 'transactional', 'newsletter', 'test'], 'tous');
+        $page = max(1, (int) ($request->int('page', 1) ?? 1));
+        $found = EmailLog::search($query, $filtre, $page);
+        $n = $found['total'];
+        $subtitle = format_int($n) . ' ' . ($n > 1 ? 'e-mails' : 'e-mail');
+        if ($query !== '') {
+            $subtitle .= ' pour « ' . $query . ' »';
+        }
+
+        $this->page('envois', 'admin/envois', [
+            'envoisQuery' => $query,
+            'filtre' => $filtre,
+            'mails' => $found['items'],
+            'pager' => $found,
+            'envoisFilters' => $this->filterLinks('/admin/envois', EmailLog::SOURCES, $filtre, $query !== '' ? ['q' => $query] : []),
+            'envoisSubtitle' => $subtitle,
+        ]);
+    }
+
+    public function envoiShow(Request $request, string $id): void
+    {
+        Auth::requireAdmin();
+        $mail = EmailLog::find((int) $id);
+        if (!$mail) {
+            flash('error', 'E-mail introuvable.');
+            redirect('/admin/envois');
+        }
+        $this->page('envois', 'admin/envoi', [
+            'title' => (string) ($mail['subject'] ?? 'E-mail envoyé'),
+            'mail' => $mail,
+        ]);
+    }
+
+    public function migrations(Request $request): void
+    {
+        $status = Migrator::status();
+        $pending = (int) $status['pending'];
+        $applied = (int) $status['applied'];
+        $missing = (int) $status['missing'];
+        $total = (int) $status['total'];
+        $subtitle = $pending === 0
+            ? 'La base est à jour.'
+            : ($pending > 1
+                ? $pending . ' migrations en attente.'
+                : '1 migration en attente.');
+
+        $this->page('migrations', 'admin/migrations', [
+            'items' => $status['items'],
+            'pending' => $pending,
+            'applied' => $applied,
+            'missing' => $missing,
+            'total' => $total,
+            'upToDate' => !empty($status['up_to_date']),
+            'migrationsSubtitle' => $subtitle,
+        ]);
+    }
+
+    public function migrationsApply(Request $request): void
+    {
+        Auth::requireAdmin();
+        try {
+            $applied = Migrator::migrate();
+            if ($applied === []) {
+                flash('saved', 'Aucune nouvelle migration.');
+            } elseif (count($applied) === 1) {
+                flash('saved', '1 migration appliquée : ' . $applied[0]);
+            } else {
+                flash('saved', count($applied) . ' migrations appliquées.');
+            }
+        } catch (Throwable $e) {
+            $detail = trim($e->getMessage());
+            flash('error', $detail !== '' ? $detail : 'Échec de la migration.');
+        }
+        redirect('/admin/migrations');
     }
 
     private static function reportCount(): int

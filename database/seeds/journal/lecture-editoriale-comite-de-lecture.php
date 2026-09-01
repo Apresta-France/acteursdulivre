@@ -79,7 +79,7 @@ return [
   <li><strong>Livrable</strong> — pages, grille, entretien téléphonique inclus ou non.</li>
   <li><strong>Ligne de référence</strong> — le lecteur travaille-t-il « comme une maison X » ou en généraliste ?</li>
   <li><strong>Confidentialité</strong> — manuscrit non réutilisé, pas d’IA générative (page <a href="/confiance">Confiance</a>).</li>
-  <li><strong>Suite</strong> — ce qui n’est pas inclus (préparation de copie, coaching d’<a href="/metiers/ecriture">écriture</a>).</li>
+  <li><strong>Suite</strong> — ce qui n’est pas inclus (préparation de copie, coaching d’<a href="/metiers/coach-litteraire">écriture</a>).</li>
 </ol>
 <p>Les <a href="/prestataires">lecteurs éditoriaux</a> de l’annuaire précisent l’unité. L’<a href="/inscription">inscription</a> est gratuite. La première mission du prestataire est offerte, puis 8 % lui sont facturés ; règlement hors plateforme — <a href="/tarifs">tarifs</a>.</p>
 

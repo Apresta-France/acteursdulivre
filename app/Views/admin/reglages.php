@@ -41,5 +41,6 @@ $s = $settings ?? [];
     <a href="<?= e(url('/admin/smtp')) ?>">SMTP</a>
     <a href="<?= e(url('/admin/sso')) ?>">Google / Facebook</a>
     <a href="<?= e(url('/admin/emails')) ?>">Modèles d’e-mails</a>
+    <a href="<?= e(url('/admin/envois')) ?>">E-mails envoyés</a>
   </div>
 </div>

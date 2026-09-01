@@ -81,7 +81,7 @@ if ($cityPage) {
       <p class="mk-kicker"><?= $cityPage ? 'Local · ' . e($cityName) : 'Métier · ' . e($tradeTitle) ?></p>
       <h1><?= e((string) ($geo['h1'] ?? $label)) ?></h1>
       <p class="mk-lead"><?= e((string) ($geo['lead'] ?? ('Prestataires, prestations à prix affiché et missions ouvertes pour le métier « ' . $trade . ' ».'))) ?></p>
-      <div class="metier-hero-stats" aria-label="Chiffres de ce métier">
+      <div class="metier-hero-stats" role="group" aria-label="Chiffres de ce métier">
         <div>
           <strong><?= (int) $providerCount ?></strong>
           <span><?= $providerCount > 1 ? 'prestataires' : 'prestataire' ?></span>
@@ -112,7 +112,7 @@ if ($cityPage) {
         </div>
       <?php endif; ?>
       <?php if ($tradeCities !== []): ?>
-        <div class="metier-chips" aria-label="Villes">
+        <div class="metier-chips" role="group" aria-label="Villes">
           <?php foreach ($tradeCities as $place): ?>
             <a href="<?= e(url((string) $place['href'])) ?>"<?= $citySlug === ($place['slug'] ?? '') ? ' aria-current="page"' : '' ?>><?= e((string) $place['label']) ?></a>
           <?php endforeach; ?>

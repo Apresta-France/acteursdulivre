@@ -107,6 +107,6 @@ return [
 <p>Non. Il garantit un travail de liste, d’envoi et de suivi. Les parutions dépendent des rédactions. Méfiez-vous de quiconque vend un nombre d’articles.</p>
 
 <h2>Pour aller plus loin</h2>
-<p>Caler un SP sur un dépôt et un salon : métiers <a href="/metiers/presse-com">presse-com</a>, <a href="/metiers/librairie">librairie</a>, <a href="/metiers/salons">salons</a>, <a href="/metiers/impression">impression</a>. Autres textes du <a href="/journal">journal</a>, <a href="/aide">centre d’aide</a>.</p>
+<p>Caler un SP sur un dépôt et un salon : métiers <a href="/metiers/presse-com">presse-com</a>, <a href="/metiers/librairie">librairie</a>, <a href="/metiers/impression">impression</a>. Autres textes du <a href="/journal">journal</a>, <a href="/aide">centre d’aide</a>.</p>
 HTML,
 ];

@@ -781,7 +781,7 @@ final class Prototype
             ['01', 'Auteurs', '1 240'], ['02', 'Correcteurs', '1 105'], ['03', 'Bêta-lecteurs', '210'], ['04', 'Illustrateurs', '860'],
             ['05', 'Traducteurs', '520'], ['06', 'Maquettistes', '470'], ['07', 'Éditeurs', '310'], ['08', 'Imprimeurs', '148'],
             ['09', 'Presse & com', '236'], ['10', 'Libraires', '690'], ['11', 'Narrateurs audio', '174'], ['12', 'Agents littéraires', '62'],
-            ['13', 'Salons & événements', '98'], ['14', 'Iconographes', '84'], ['15', 'Lecteurs éditoriaux', '112'],
+            ['13', 'Coachs littéraires', '98'], ['14', 'Iconographes', '84'], ['15', 'Lecteurs éditoriaux', '112'],
             ['16', 'Photographes', '76'], ['17', 'Relieurs', '41'], ['18', 'Juristes', '38'],
         ];
         return array_map(static fn (array $m): array => [
@@ -1295,7 +1295,7 @@ final class Prototype
             ['Illustrateur album jeunesse 3-6 ans, 24 pages', 'Camille D., autrice', 'Illustration', 'il y a 3 j', '1 800 – 2 500 €', '18 sept.', 14, '', ['Album', 'Couleur', 'Cession 5 ans']],
             ['Traduction ES→FR d\'un recueil de nouvelles', 'Éditions Pampa', 'Traduction', 'il y a 4 j', '3 200 €', '30 sept.', 4, '', ['Littérature', '180 000 signes']],
             ['Impression 500 ex. broché, papier recyclé', 'Collectif Encre Vive', 'Impression', 'il y a 5 j', '1 400 – 2 000 €', '5 oct.', 9, 'Éco-labels', ['Offset', 'Dos carré collé']],
-            ['Attaché de presse, premier roman, sortie janvier', 'Éditions La Ligne', 'Presse & com', 'il y a 6 j', '2 000 – 3 000 €', '22 sept.', 9, '', ['Presse écrite', 'Podcasts', 'Salons']],
+            ['Attaché de presse, premier roman, sortie janvier', 'Éditions La Ligne', 'Presse & com', 'il y a 6 j', '2 000 – 3 000 €', '22 sept.', 9, '', ['Presse écrite', 'Podcasts', 'Événementiel']],
             ['Narrateur pour livre audio, 7 h de texte', 'Studio Bel Écho', 'Audio', 'il y a 1 sem.', '2 400 €', '12 oct.', 6, '', ['Voix féminine', 'Studio fourni']],
         ];
         $out = [];

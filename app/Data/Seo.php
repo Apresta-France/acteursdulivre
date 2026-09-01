@@ -110,8 +110,8 @@ final class Seo
         $title = Catalog::tradeTitle($trade);
         $map = [
             'Écriture' => [
-                'h1' => 'Auteurs, prête-plume et accompagnement d\'écriture',
-                'lead' => 'Trouvez un auteur, un prête-plume ou un coach d\'écriture pour un roman, un essai ou un récit. Prestations cadrées ou appel d\'offres, sans IA générative.',
+                'h1' => 'Auteurs, prête-plume et réécriture',
+                'lead' => 'Trouvez un auteur ou un prête-plume pour un roman, un essai ou un récit. Prestations cadrées ou appel d\'offres, sans IA générative.',
             ],
             'Correction' => [
                 'h1' => 'Correction et relecture de manuscrit',
@@ -157,9 +157,9 @@ final class Seo
                 'h1' => 'Agents littéraires',
                 'lead' => 'Accompagnement pour placer un manuscrit, négocier un contrat ou suivre une carrière. Mandat et périmètre écrits.',
             ],
-            'Salons' => [
-                'h1' => 'Salons du livre et événements',
-                'lead' => 'Organisation de rencontres, dédicaces et salons. Dates, lieu et public précisés dans l\'appel d\'offres ou la fiche.',
+            'Coach littéraire' => [
+                'h1' => 'Coachs littéraires et accompagnement d\'écriture',
+                'lead' => 'Trouvez un coach d\'écriture, un mentorat ou un atelier pour un roman, un essai ou un récit. Séances cadrées ou appel d\'offres, sans IA générative.',
             ],
             'Iconographie' => [
                 'h1' => 'Iconographie et droits d\'images',
@@ -871,7 +871,7 @@ TXT;
 Site : [acteursdulivre.fr]({$home})
 
 ## En une phrase
-acteursdulivre.fr met en relation des porteurs de projet (auteurs, éditeurs, collectifs) et des prestataires du livre (correcteurs, bêta-lecteurs, lecteurs éditoriaux, illustrateurs, iconographes, photographes, traducteurs, maquettistes, imprimeurs, relieurs, attachés de presse, libraires, narrateurs, agents, juristes, salons).
+acteursdulivre.fr met en relation des porteurs de projet (auteurs, éditeurs, collectifs) et des prestataires du livre (correcteurs, bêta-lecteurs, lecteurs éditoriaux, illustrateurs, iconographes, photographes, traducteurs, maquettistes, imprimeurs, relieurs, attachés de presse, libraires, narrateurs, agents, juristes, coachs littéraires).
 
 ## Faits
 - Pas d'éditeur des ouvrages des utilisateurs : contrats conclus entre le porteur de projet et le prestataire.
