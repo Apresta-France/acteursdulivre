@@ -26,7 +26,7 @@ $alreadyReported = !empty($alreadyReported);
       <span>Demandez un devis depuis une vitrine, ou écrivez au porteur d'une recherche.</span>
     </div>
   <?php else: ?>
-    <div class="inbox">
+    <div class="inbox<?= $thread ? '' : ' is-list-only' ?>">
       <aside class="inbox-list">
         <?php foreach ($threads as $item): ?>
           <a class="inbox-item<?= !empty($thread) && (int) $item['id'] === (int) $thread['id'] ? ' is-on' : '' ?><?= !empty($item['unread']) ? ' is-unread' : '' ?>" href="<?= e(url((string) $item['href'])) ?>">
@@ -46,6 +46,7 @@ $alreadyReported = !empty($alreadyReported);
           </div>
         <?php else: ?>
           <div class="inbox-thread-head">
+            <a class="inbox-back" href="<?= e(url('/espace/messages')) ?>">← Conversations</a>
             <div class="inbox-thread-who">
               <?= avatar_html($thread['other'] ?? [], 40) ?>
               <div>
