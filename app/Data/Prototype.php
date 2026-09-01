@@ -38,7 +38,7 @@ final class Prototype
         foreach ([
             'Accueil', 'Resultats', 'Fiche', 'Commande', 'Profil', 'Publier', 'Messagerie', 'Dashboard',
             'Missions', 'Mission', 'Suivi', 'Commandes', 'Creer', 'Inscription', 'Comment', 'Tarifs',
-            'Confiance', 'Aide', 'Metier', 'Apropos', 'Journal', 'Article', 'Contact', 'Legal',
+            'Confiance', 'Aide', 'Questions', 'Metier', 'Apropos', 'Journal', 'Article', 'Contact', 'Legal',
             'Connexion', 'Notifications', 'MesPrestations', 'MesMissions', 'Candidatures', 'Favoris',
             'Avis', 'Vitrine', 'Parametres', 'Facturation', 'Bienvenue',
         ] as $name) {
@@ -55,6 +55,7 @@ final class Prototype
             'mission' => 'isMission', 'suivi' => 'isSuivi', 'suivi-detail' => 'isSuivi', 'suivi-depot' => 'isSuivi', 'suivi-depot-list' => 'isSuivi', 'commandes' => 'isCommandes',
             'creer' => 'isCreer', 'inscription' => 'isInscription', 'inscription-sso' => 'isInscription', 'comment' => 'isComment',
             'tarifs' => 'isTarifs', 'confiance' => 'isConfiance', 'aide' => 'isAide',
+            'questions' => 'isQuestions',
             'metier' => 'isMetier', 'apropos' => 'isApropos', 'journal' => 'isJournal',
             'article' => 'isArticle', 'contact' => 'isContact', 'legal' => 'isLegal',
             'connexion' => 'isConnexion', 'notifications' => 'isNotifications',
@@ -129,6 +130,7 @@ final class Prototype
                 ['label' => 'Tarifs', 'href' => '/tarifs'],
             ]],
             ['title' => 'Aide', 'links' => [
+                ['label' => 'Questions fréquentes', 'href' => '/questions'],
                 ['label' => 'Centre d\'aide', 'href' => '/aide'],
                 ['label' => 'Nous écrire', 'href' => '/contact'],
                 ['label' => 'Litiges & médiation', 'href' => '/confiance'],
@@ -621,6 +623,10 @@ final class Prototype
             'tarifsFaq' => self::faqItems(array_map(
                 static fn (array $row): array => [$row['q'], $row['a']],
                 Seo::tarifsFaqs()
+            )),
+            'questionsFaq' => self::faqItems(array_map(
+                static fn (array $row): array => [$row['q'], $row['a']],
+                Seo::questionsFaqs()
             )),
             'checkoutSteps' => self::steps(['Le brief', 'Les jalons', 'Le suivi'], 1, false),
             'paiements' => self::paiements(),

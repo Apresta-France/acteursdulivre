@@ -233,6 +233,7 @@ final class DcEngine
             'goCreer' => '/espace/prestations/creer',
             'goTarifs' => '/tarifs',
             'goAide' => '/aide',
+            'goQuestions' => '/questions',
             'goComment' => '/comment-ca-marche',
             'goConfiance' => '/confiance',
             'goInscription' => '/inscription',

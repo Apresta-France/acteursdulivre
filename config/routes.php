@@ -40,6 +40,7 @@ return static function (Router $router): void {
     $router->get('/journal', [PageController::class, 'journal']);
     $router->get('/journal/{slug}', [PageController::class, 'article']);
     $router->get('/aide', [PageController::class, 'aide']);
+    $router->get('/questions', [PageController::class, 'questions']);
     $router->post('/newsletter', [PageController::class, 'newsletter']);
     $router->get('/newsletter/confirmer/{token}', [PageController::class, 'newsletterConfirm']);
     $router->get('/newsletter/desinscription/{token}', [PageController::class, 'newsletterUnsubscribe']);

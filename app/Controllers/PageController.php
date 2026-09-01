@@ -568,6 +568,14 @@ final class PageController
         ]);
     }
 
+    public function questions(Request $request): void
+    {
+        View::page('questions', [
+            'title' => 'Questions fréquentes',
+            'meta' => Seo::forScreen('questions'),
+        ]);
+    }
+
     public function newsletter(Request $request): void
     {
         try {

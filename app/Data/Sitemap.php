@@ -131,6 +131,7 @@ final class Sitemap
             ['path' => '/a-propos', 'priority' => '0.6'],
             ['path' => '/inscription', 'priority' => '0.6'],
             ['path' => '/aide', 'priority' => '0.5'],
+            ['path' => '/questions', 'priority' => '0.6'],
             ['path' => '/contact', 'priority' => '0.5'],
         ];
         foreach (LegalPages::slugs() as $item) {

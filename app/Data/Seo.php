@@ -61,6 +61,11 @@ final class Seo
                 'description' => 'Jalons, règlement hors plateforme, commission, annulation, facturation, avis, litiges : les réponses utiles pour utiliser acteursdulivre.fr.',
                 'path' => '/aide',
             ],
+            'questions' => [
+                'title' => 'Questions fréquentes',
+                'description' => 'Quand la commission est prise, comment les clients arrivent, qui paie quoi : les réponses qu\'on nous pose le plus souvent.',
+                'path' => '/questions',
+            ],
             'contact' => [
                 'title' => 'Contact',
                 'description' => 'Écrire à l\'équipe d\'acteursdulivre.fr : question, signalement ou demande presse. Réponse en jours ouvrés.',
@@ -288,6 +293,7 @@ final class Seo
             'accueil', 'aide' => self::homeFaqs(),
             'comment' => self::commentFaqs(),
             'tarifs' => self::tarifsFaqs(),
+            'questions' => self::questionsFaqs(),
             default => [],
         };
     }
@@ -322,6 +328,65 @@ final class Seo
             ['q' => 'La commission est-elle calculée TTC ou hors taxes ?', 'a' => 'Hors taxes. Le taux (8 % ou 6 %) s\'applique au montant HT de la mission. La plateforme facture ensuite cette commission HT, plus la TVA à 20 %. Si le prestataire est en franchise en base, le prix facturé au client vaut montant HT.'],
             ['q' => 'Qui paie la commission ?', 'a' => 'Le prestataire. Le client paie le prestataire hors plateforme ; la plateforme facture sa commission au prestataire lorsque le client confirme et note.'],
             ['q' => 'Que reste-t-il gratuit ?', 'a' => 'Le compte, la vitrine, les fiches, la publication d\'une recherche, les candidatures et la messagerie. La première mission aussi.'],
+        ];
+    }
+
+    /** @return list<array{q: string, a: string}> */
+    public static function questionsFaqs(): array
+    {
+        return [
+            [
+                'q' => 'Quand la commission est-elle prise ?',
+                'a' => "Jamais à l'inscription, jamais à la publication d'une fiche, jamais à l'envoi d'un devis. La commission n'existe que lorsqu'une mission a été réalisée et validée.\n\nLe client confirme que le travail est terminé et note la prestation : c'est à ce moment que la plateforme facture sa commission au prestataire — dernier jalon, payable sous 15 jours.\n\nLa première mission réalisée via la plateforme est offerte. À partir de la deuxième, le taux est de 8 % du montant hors taxes (hors TVA), ou 6 % pour les 100 premiers inscrits et dès 12 missions réalisées.",
+            ],
+            [
+                'q' => 'Faut-il un abonnement ?',
+                'a' => 'Non. Créer un compte, une vitrine, des fiches ou un appel d\'offres est gratuit. Publier, candidater, échanger et suivre les jalons aussi. Seule la commission sur les missions réalisées — à partir de la deuxième — est facturée au prestataire.',
+            ],
+            [
+                'q' => 'Qui paie la commission ?',
+                'a' => 'Le prestataire. Le client paie le prestataire hors plateforme, par le moyen qu\'ils conviennent. La plateforme n\'encaisse pas le prix de la mission : elle facture uniquement sa commission au prestataire, à la validation.',
+            ],
+            [
+                'q' => 'Comment la plateforme va-t-elle trouver des clients ?',
+                'a' => "Nous ne vendons pas un forfait de clients et nous ne promettons pas un volume. Une place de marché tient si les deux côtés sont là : des prestataires visibles, et des porteurs de projet qui ont un besoin concret.\n\nAujourd'hui la plateforme est en pré-ouverture : les auteurs et les professionnels du livre s'inscrivent déjà ; l'ouverture aux clients est prévue en octobre 2026. Les auteurs déjà présents sont souvent les premiers à commander — une correction, une couverture, une impression.\n\nPour que ces besoins vous trouvent, la plateforme s'appuie sur ce qui est public et indexable : un annuaire par métier, des prestations à prix affiché, des appels d'offres, des pages métier, un journal sur la fabrication du livre, une newsletter qui relaie les recherches ouvertes et les nouveaux profils, et les réseaux sociaux.\n\nNous ne poussons aucun profil contre rémunération publicitaire : le classement dépend des avis et des délais tenus. Une vitrine précise reçoit plus de demandes qu'une fiche vide ; vous pouvez aussi candidater aux recherches publiées. La plateforme met en relation. Elle ne garantit pas un carnet de commandes.",
+            ],
+            [
+                'q' => 'Comment ça marche, concrètement ?',
+                'a' => 'Trois chemins : parcourir l\'annuaire, commander une prestation à prix affiché, ou publier une recherche pour recevoir des devis. Le devis accepté dans le suivi vaut accord. Les jalons cadrent le travail (devis, factures, déclarations de règlement, livraison). Le règlement se fait entre vous, hors plateforme. À la validation et à la notation, la commission prestataire est facturée.',
+            ],
+            [
+                'q' => 'La plateforme encaisse-t-elle l\'argent des missions ?',
+                'a' => 'Non. Aucune carte bancaire n\'est collectée. Client et prestataire se règlent hors site — virement SEPA, chèque, facture entreprise, notamment. Les déclarations de règlement dans le suivi valent engagement sur l\'honneur.',
+            ],
+            [
+                'q' => 'Qui peut s\'inscrire aujourd\'hui ?',
+                'a' => 'Les auteurs et les professionnels du livre. Un même compte peut chercher des prestataires et proposer des services. L\'ouverture aux clients est prévue en octobre 2026. Il n\'y a pas de liste d\'attente séparée : les comptes inscrits sont les vrais comptes.',
+            ],
+            [
+                'q' => 'Comment apparaître et recevoir des demandes ?',
+                'a' => 'Complétez votre vitrine — métier, titre, présentation, tarif — et publiez au moins une fiche. Les vitrines précises reçoivent plus de demandes. Vous pouvez aussi candidater aux recherches ouvertes. Le classement dépend des avis et des délais tenus, pas d\'un budget publicitaire. Un justificatif d\'activité et une référence professionnelle permettent d\'obtenir le badge vérifié.',
+            ],
+            [
+                'q' => 'L\'IA générative est-elle autorisée ?',
+                'a' => 'Non, pour les missions entre acteurs du livre : aucun livrable ne peut être produit par une IA générative — texte, illustration, voix, traduction ou maquette. Le moratoire ne s\'applique pas à la fabrication de la plateforme. Le détail figure dans les règles IA.',
+            ],
+            [
+                'q' => 'Y a-t-il un contrat type ?',
+                'a' => 'Non. L\'acceptation du devis dans le suivi vaut accord entre les parties. La plateforme ne génère ni contrat type ni NDA. Le devis peut rappeler le périmètre, les délais et, le cas échéant, l\'usage des livrables.',
+            ],
+            [
+                'q' => 'Que se passe-t-il si je ne règle pas la commission ?',
+                'a' => 'Tant que la facture n\'est pas réglée à l\'échéance, les fiches disparaissent de l\'annuaire et le prestataire ne peut plus proposer de nouvelles offres. Le délai de règlement est de 15 jours.',
+            ],
+            [
+                'q' => 'La plateforme prend-elle des droits sur les livres ?',
+                'a' => 'Non. Nous ne sommes ni éditeur, ni employeur, ni agent. Nous ne prenons aucun droit sur les ouvrages. Les textes, visuels et manuscrits restent la propriété de ceux qui les ont déposés.',
+            ],
+            [
+                'q' => 'Comment vous écrire ?',
+                'a' => 'Par le formulaire de contact, ou à bonjour@acteursdulivre.fr. L\'équipe répond en jours ouvrés, du lundi au vendredi, 9 h – 18 h. Pour un litige : mediation@acteursdulivre.fr.',
+            ],
         ];
     }
 
@@ -581,6 +646,7 @@ final class Seo
             'apropos' => 'À propos',
             'journal' => 'Le journal',
             'aide' => 'Centre d\'aide',
+            'questions' => 'Questions fréquentes',
             'contact' => 'Contact',
             'missions' => 'Appels d\'offres',
             'resultats' => 'Annuaire',
@@ -661,6 +727,7 @@ acteursdulivre.fr met en relation des porteurs de projet (auteurs, éditeurs, co
 ## Pages utiles
 - Accueil : {$home}
 - Comment ça marche : {$home}comment-ca-marche
+- Questions fréquentes : {$home}questions
 - Tarifs : {$home}tarifs
 - Confiance : {$home}confiance
 - Règles IA : {$home}regles-ia

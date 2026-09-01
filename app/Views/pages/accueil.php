@@ -329,8 +329,8 @@ $query = (string) ($query ?? '');
   <section class="mk-faq mk-wash-cool">
     <div>
       <h2>Questions fréquentes</h2>
-      <p>Tout le détail dans le centre d'aide.</p>
-      <a href="<?= e(url('/aide')) ?>">Centre d'aide →</a>
+      <p>Commission, clients, règlement : les réponses au même endroit.</p>
+      <a href="<?= e(url('/questions')) ?>">Toutes les questions →</a>
     </div>
     <div class="mk-faq-list">
       <?php foreach ($aideFaq as $f): ?>

@@ -198,10 +198,10 @@ function service_cover_image_url(string $category = ''): string
     if ($stem !== '') {
         $dir = ADL_ROOT . '/public/assets/img/covers/';
         if (is_file($dir . $stem . '.webp')) {
-            return asset('img/covers/' . $stem . '.webp');
+            return asset('img/covers/' . $stem . '.webp') . '?v=5';
         }
         if (is_file($dir . $stem . '.jpg')) {
-            return asset('img/covers/' . $stem . '.jpg');
+            return asset('img/covers/' . $stem . '.jpg') . '?v=5';
         }
     }
     $webp = ADL_ROOT . '/public/assets/img/service-cover-default.webp';

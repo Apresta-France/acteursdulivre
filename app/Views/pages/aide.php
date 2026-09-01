@@ -12,6 +12,7 @@ if ($q !== '') {
 <div class="help-page">
   <div class="help-intro">
     <h1>Centre d'aide</h1>
+    <p class="help-questions-link">Commission, clients, modèle : voir aussi <a href="<?= e(url('/questions')) ?>">les questions qu'on nous pose</a>.</p>
     <form method="get" action="<?= e(url('/aide')) ?>" class="help-search" role="search">
       <input type="search" name="q" value="<?= e((string) ($helpQuery ?? '')) ?>" placeholder="annulation, facture, TVA, commission…">
       <button type="submit">Rechercher</button>
