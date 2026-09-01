@@ -78,8 +78,13 @@ if ($cityPage) {
           · <?= e($cityName) ?>
         <?php endif; ?>
       </nav>
-      <p class="mk-kicker"><?= $cityPage ? 'Local · ' . e($cityName) : 'Métier · ' . e($tradeTitle) ?></p>
-      <h1><?= e((string) ($geo['h1'] ?? $label)) ?></h1>
+      <?php if ($cityPage): ?>
+        <p class="mk-kicker">Local · <?= e($cityName) ?></p>
+      <?php endif; ?>
+      <div class="metier-hero-title">
+        <span class="mk-trade-ico" aria-hidden="true"><?= trade_icon($trade, 22) ?></span>
+        <h1><?= e((string) ($geo['h1'] ?? $label)) ?></h1>
+      </div>
       <p class="mk-lead"><?= e((string) ($geo['lead'] ?? ('Prestataires, prestations à prix affiché et missions ouvertes pour le métier « ' . $trade . ' ».'))) ?></p>
       <div class="metier-hero-stats" role="group" aria-label="Chiffres de ce métier">
         <div>
@@ -188,7 +193,10 @@ if ($cityPage) {
       </div>
       <div class="metier-others">
         <?php foreach ($otherTrades as $other): ?>
-          <a href="<?= e(url((string) $other['href'])) ?>"><?= e((string) $other['label']) ?></a>
+          <a href="<?= e(url((string) $other['href'])) ?>">
+            <span class="mk-trade-ico" aria-hidden="true"><?= trade_icon((string) ($other['trade'] ?? ''), 14) ?></span>
+            <?= e((string) $other['label']) ?>
+          </a>
         <?php endforeach; ?>
       </div>
     </section>

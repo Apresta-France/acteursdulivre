@@ -79,6 +79,28 @@ final class Catalog
         'Juridique' => 'Juristes',
     ];
 
+    /** @var array<string, string> métier canonique => nom d'icône (helpers icon()) */
+    public const TRADE_ICONS = [
+        'Écriture' => 'trade-ecriture',
+        'Correction' => 'trade-correction',
+        'Bêta-lecture' => 'trade-beta',
+        'Illustration' => 'trade-illustration',
+        'Traduction' => 'trade-traduction',
+        'Maquette' => 'trade-maquette',
+        'Édition' => 'trade-edition',
+        'Impression' => 'trade-impression',
+        'Presse & com' => 'trade-presse',
+        'Librairie' => 'trade-librairie',
+        'Audio' => 'trade-audio',
+        'Agent littéraire' => 'trade-agent',
+        'Coach littéraire' => 'trade-coach',
+        'Iconographie' => 'trade-iconographie',
+        'Lecture éditoriale' => 'trade-lecture',
+        'Photographie' => 'trade-photo',
+        'Reliure' => 'trade-reliure',
+        'Juridique' => 'trade-juridique',
+    ];
+
     /** @var array<string, string> métier canonique => fichier de vignette par défaut */
     public const COVER_STEMS = [
         'Écriture' => 'auteurs',
@@ -267,6 +289,11 @@ final class Catalog
     public static function tradeTitle(string $trade): string
     {
         return self::TRADE_TITLES[$trade] ?? $trade;
+    }
+
+    public static function tradeIcon(string $trade): string
+    {
+        return self::TRADE_ICONS[$trade] ?? 'book';
     }
 
     /** @return list<string> */
@@ -1532,9 +1559,11 @@ final class Catalog
             $n = $counts[$trade] ?? 0;
             $out[] = [
                 'num' => str_pad((string) ($i + 1), 2, '0', STR_PAD_LEFT),
+                'icon' => self::tradeIcon($trade),
                 'name' => self::TRADE_LABELS[$trade] ?? $trade,
                 'trade' => $trade,
                 'count' => format_int($n),
+                'empty' => $n === 0,
                 'countLabel' => $n === 0 ? 'Aucun profil' : ($n . ' profil' . ($n > 1 ? 's' : '')),
                 'href' => self::tradePath($trade),
             ];

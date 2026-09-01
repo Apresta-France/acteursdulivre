@@ -150,6 +150,7 @@ final class PageController
                 continue;
             }
             $otherTrades[] = [
+                'trade' => $other,
                 'label' => Catalog::TRADE_LABELS[$other] ?? $other,
                 'href' => Catalog::tradePath($other),
             ];

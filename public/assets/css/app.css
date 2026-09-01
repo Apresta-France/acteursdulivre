@@ -3310,6 +3310,9 @@ a.tab {
 .metier-hero .search-crumb { margin-bottom: 14px; }
 .metier-hero .search-crumb a { color: inherit; }
 .metier-hero .search-crumb a:hover { color: var(--orange); }
+.metier-hero-title { display: flex; align-items: flex-start; gap: 14px; margin: 0 0 14px; }
+.metier-hero-title h1 { flex: 1; min-width: 0; }
+.metier-hero .mk-kicker { margin-bottom: 10px; }
 .metier-hero .mk-lead { margin: 0 0 22px; }
 .metier-hero-stats {
   display: grid;
@@ -3357,14 +3360,18 @@ a.tab {
 .metier-tips span { color: var(--orange); flex-shrink: 0; }
 .metier-others { display: flex; flex-wrap: wrap; gap: 10px; }
 .metier-others a {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   border: 1px solid var(--line);
   background: #fff;
   color: var(--navy);
   border-radius: 999px;
-  padding: 8px 14px;
+  padding: 6px 12px 6px 6px;
   font-size: 14px;
 }
-.metier-others a:hover { border-color: var(--navy); color: var(--navy); }
+.metier-others .mk-trade-ico { width: 26px; height: 26px; border-radius: 999px; }
+.metier-others a:hover { border-color: var(--orange); color: var(--navy); }
 @media (max-width: 900px) {
   .journal-hero, .journal-grid { grid-template-columns: 1fr; }
   .journal-search { max-width: none; }
@@ -4707,10 +4714,32 @@ img.profile-avatar,
 .mk-head p { margin: 6px 0 0; color: #66768A; }
 .mk-trades { display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; }
 .mk-trade { display: flex; gap: 11px; align-items: center; background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 16px; color: inherit; }
-.mk-trade:hover { border-color: var(--navy); color: inherit; }
+.mk-trade:hover { border-color: var(--orange); color: inherit; }
 .mk-trade strong { display: block; font-size: 15px; color: var(--navy); }
-.mk-trade em { display: block; font-style: normal; font-size: 12px; color: #8496A8; margin-top: 3px; }
-.mk-num { width: 38px; height: 38px; border-radius: 9px; background: var(--fog); color: var(--navy); display: flex; align-items: center; justify-content: center; font-family: var(--display); font-size: 12px; flex-shrink: 0; }
+.mk-trade em { display: block; font-style: normal; font-size: 12px; color: #66768A; margin-top: 3px; }
+.mk-trade-ico {
+  width: 38px;
+  height: 38px;
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--orange) 16%, #fff);
+  color: var(--orange);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.mk-trade.is-empty {
+  background: #FAFBFC;
+}
+.mk-trade.is-empty .mk-trade-ico {
+  background: var(--fog);
+  color: #9AABBA;
+}
+.mk-trade.is-empty strong { color: #4A5A6B; font-weight: 500; }
+.mk-trade.is-empty em { color: #A8B6C3; }
+.mk-trade.is-empty:hover { border-color: #C5D0DA; }
+.metier-hero-title .mk-trade-ico { width: 48px; height: 48px; border-radius: 12px; margin-top: 4px; }
+.metier-others .mk-trade-ico { width: 26px; height: 26px; border-radius: 999px; }
 .mk-fog, .mk-fog-pad { background: linear-gradient(180deg, var(--wash-cool) 0%, #F0F4F8 100%); }
 .mk-fog { border-top: 1px solid var(--line); }
 .mk-wash-beige,
@@ -4971,7 +5000,8 @@ img.profile-avatar,
 .mk-team { display: flex; flex-direction: column; gap: 16px; margin: 20px 0 28px; }
 .mk-initials { width: 44px; height: 44px; border-radius: 50%; background: var(--fog); color: var(--navy); display: flex; align-items: center; justify-content: center; font-family: var(--display); font-weight: 700; }
 @media (max-width: 1000px) {
-  .mk-hero, .mk-band, .mk-ia, .mk-faq, .mk-split, .mk-cards-3, .mk-quotes, .mk-quotes-block[data-count="1"], .mk-trades, .mk-mega, .mk-stats, .mk-steps, .tarif-grid, .questions-layout { grid-template-columns: 1fr; }
+  .mk-hero, .mk-band, .mk-ia, .mk-faq, .mk-split, .mk-cards-3, .mk-quotes, .mk-quotes-block[data-count="1"], .mk-mega, .mk-stats, .mk-steps, .tarif-grid, .questions-layout { grid-template-columns: 1fr; }
+  .mk-trades { grid-template-columns: repeat(3, 1fr); }
   .questions-side { position: static; }
   .questions-page { padding: 28px 20px 44px; }
   .mk-quotes-block[data-count="1"] .mk-quotes-head { margin: 0 0 18px; }
@@ -4984,7 +5014,9 @@ img.profile-avatar,
   .mk-hero, .mk-intro, .mk-block, .mk-pad, .mk-cta, .mk-faq, .mk-split, .mk-ia, .mk-fog-pad, .mk-stats, .mk-band, .mk-banner { padding: 28px 20px; }
   .mk-hero-visual, .mk-mosaic { max-width: 440px; }
 }
-.order-steps { display: flex; gap: 8px; flex-wrap: wrap; margin: 0 0 22px; }
+@media (max-width: 640px) {
+  .mk-trades { grid-template-columns: 1fr 1fr; }
+}
 .order-step { padding: 8px 12px; border-radius: 999px; background: var(--fog); font-size: 13px; color: var(--muted-2); }
 .order-step.is-on { background: #EEF3F8; color: var(--navy); font-weight: 500; }
 .help-page { padding: 44px; }

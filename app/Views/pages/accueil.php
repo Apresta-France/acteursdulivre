@@ -91,8 +91,8 @@ $query = (string) ($query ?? '');
     </div>
     <div class="mk-trades">
       <?php foreach ($homeMetiers as $m): ?>
-        <a class="mk-trade" href="<?= e(url((string) $m['href'])) ?>">
-          <span class="mk-num"><?= e((string) $m['num']) ?></span>
+        <a class="mk-trade<?= !empty($m['empty']) ? ' is-empty' : '' ?>" href="<?= e(url((string) $m['href'])) ?>">
+          <span class="mk-trade-ico" aria-hidden="true"><?= trade_icon((string) ($m['trade'] ?? ''), 18) ?></span>
           <span>
             <strong><?= e((string) $m['name']) ?></strong>
             <em><?= e((string) $m['countLabel']) ?></em>
