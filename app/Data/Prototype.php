@@ -1462,7 +1462,7 @@ final class Prototype
     private static function topbarStats(): string
     {
         try {
-            $pros = Profile::countPublished();
+            $pros = User::countOfferers();
             $commission = \Adl\Models\Setting::get('commission_percent', '8') ?: '8';
             $label = $pros > 1 ? 'professionnels du livre' : 'professionnel du livre';
             return '1ʳᵉ mission offerte · puis ' . $commission . ' % · ' . format_int($pros) . ' ' . $label;

@@ -360,7 +360,12 @@ final class User
 
     public static function countOfferers(): int
     {
-        $row = Database::fetch('SELECT COUNT(*) AS n FROM users WHERE offers_services = 1 AND status = "active"');
+        $row = Database::fetch(
+            'SELECT COUNT(*) AS n FROM users
+             WHERE offers_services = 1
+               AND status IN ("active", "pending")
+               AND deleted_at IS NULL'
+        );
         return (int) ($row['n'] ?? 0);
     }
 

@@ -214,7 +214,7 @@ $query = (string) ($query ?? '');
           </a>
         <?php endforeach; ?>
       <?php endif; ?>
-      <a class="mk-dashed" href="<?= e(url('/missions')) ?>">Voir toutes les recherches</a>
+      <a class="mk-dashed" href="<?= e(url('/espace/publier')) ?>">Publier une recherche</a>
     </div>
   </section>
 

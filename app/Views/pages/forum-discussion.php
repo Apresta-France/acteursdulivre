@@ -61,9 +61,6 @@ $forumFlashError = trim((string) ($forumFlashError ?? ''));
               <button type="submit" class="btn-ghost-light"><?= $following ? 'Ne plus suivre' : 'Suivre' ?></button>
             </form>
           <?php endif; ?>
-          <?php if (!empty($share)): ?>
-            <?php /* share partial handled below if available */ ?>
-          <?php endif; ?>
         </div>
       </div>
     </div>
@@ -275,6 +272,19 @@ $forumFlashError = trim((string) ($forumFlashError ?? ''));
             <?php endforeach; ?>
           </div>
         <?php endif; ?>
+      </div>
+
+      <div class="forum-panel forum-share-panel">
+        <div class="forum-panel-title">Partager</div>
+        <?php
+          $shareUrl = $meta['url'] ?? \Adl\Data\Share::current();
+          $shareTitle = $meta['title'] ?? (string) ($topic['title'] ?? 'Discussion');
+          $shareText = $meta['description'] ?? '';
+          $shareLabel = '';
+          $shareCompact = true;
+          $shareNative = false;
+          require ADL_ROOT . '/app/Views/partials/share.php';
+        ?>
       </div>
 
       <div class="forum-notice forum-notice-aside">
