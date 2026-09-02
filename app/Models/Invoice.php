@@ -216,6 +216,14 @@ final class Invoice
         );
     }
 
+    public static function deleteForOrder(int $orderId): void
+    {
+        if ($orderId < 1) {
+            return;
+        }
+        Database::query('DELETE FROM invoices WHERE order_id = ?', [$orderId]);
+    }
+
     public static function markPaid(int $id): ?array
     {
         return Database::transaction(static function () use ($id) {

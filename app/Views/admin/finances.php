@@ -19,8 +19,15 @@ $invoices = $invoices ?? [];
   </div>
 
   <h2 class="admin-h2">Commandes</h2>
+  <div class="chip-row" style="margin-bottom: 14px;">
+    <?php foreach ($orderFilters ?? [] as $f): ?>
+      <a class="chip<?= !empty($f['on']) ? ' is-on' : '' ?>" href="<?= e(url($f['href'])) ?>"><?= e($f['label']) ?></a>
+    <?php endforeach; ?>
+  </div>
   <?php if (!empty($ordersTruncated)): ?>
-    <p class="admin-muted">Les <?= count($orders) ?> dernières sur <?= format_int((int) ($orderTotal ?? 0)) ?> commandes. Le volume d’affaires compte uniquement les missions validées ou réglées.</p>
+    <p class="admin-muted">Les <?= count($orders) ?> dernières sur <?= format_int((int) ($orderTotal ?? 0)) ?> commandes. Cliquez une ligne pour voir le dossier, les échanges, changer le statut ou supprimer.</p>
+  <?php else: ?>
+    <p class="admin-muted">Cliquez une commande pour voir le détail, les échanges, changer le statut ou la supprimer.</p>
   <?php endif; ?>
   <div class="r-scroll">
     <table class="table">
@@ -30,24 +37,16 @@ $invoices = $invoices ?? [];
           <tr><td colspan="7" class="admin-muted">Aucune commande.</td></tr>
         <?php endif; ?>
         <?php foreach ($orders as $o): ?>
+          <?php $dossier = (string) ($o['admin_href'] ?? '/admin/finances/' . (int) $o['id']); ?>
           <tr>
-            <td><?= e($o['num']) ?></td>
-            <td><?= e($o['title']) ?></td>
+            <td><a class="admin-order-link" href="<?= e(url($dossier)) ?>"><?= e($o['num']) ?></a></td>
+            <td><a class="admin-order-link" href="<?= e(url($dossier)) ?>"><?= e($o['title']) ?></a></td>
             <td><?= e($o['parties']) ?></td>
             <td><?= e($o['amount_label']) ?></td>
             <td><?= e($o['commission_label'] ?: '—') ?></td>
-            <td><?= e($o['status_label']) ?></td>
+            <td><span class="admin-pill tone-<?= e((string) ($o['status_tone'] ?? 'navy')) ?>"><?= e($o['status_label']) ?></span></td>
             <td>
-              <?php if (($o['status'] ?? '') !== 'dispute' && ($o['status'] ?? '') !== 'cancelled'): ?>
-                <form method="post" action="<?= e(url('/admin/litiges/' . (int) $o['id'])) ?>">
-                  <?= csrf_field() ?>
-                  <input type="hidden" name="back" value="/admin/finances">
-                  <input type="hidden" name="status" value="dispute">
-                  <button class="admin-ghost" type="submit">Ouvrir un litige</button>
-                </form>
-              <?php elseif (($o['status'] ?? '') === 'dispute'): ?>
-                <a class="admin-ghost" href="<?= e(url('/admin/litiges')) ?>">Voir le litige</a>
-              <?php endif; ?>
+              <a class="admin-ghost" href="<?= e(url($dossier)) ?>">Ouvrir</a>
             </td>
           </tr>
         <?php endforeach; ?>
@@ -67,7 +66,13 @@ $invoices = $invoices ?? [];
           <tr>
             <td><?= e($i['number'] ?? '') ?></td>
             <td><?= e($i['seller'] ?: '—') ?></td>
-            <td><?= e($i['order_number'] ?? '') ?></td>
+            <td>
+              <?php if (!empty($i['order_id'])): ?>
+                <a class="admin-order-link" href="<?= e(url('/admin/finances/' . (int) $i['order_id'])) ?>"><?= e($i['order_number'] ?? '') ?></a>
+              <?php else: ?>
+                <?= e($i['order_number'] ?? '') ?>
+              <?php endif; ?>
+            </td>
             <td><?= e((string) ($i['amount_due_label'] ?? $i['amount_label'])) ?></td>
             <td><?= e($i['due_label'] ?: '—') ?></td>
             <td><?= e($i['status_label']) ?></td>

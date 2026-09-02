@@ -570,6 +570,84 @@ final class Order
         throw new \RuntimeException('Ce statut doit passer par le suivi à jalons, pas par un changement manuel.');
     }
 
+    public static function setStatusByAdmin(int $id, string $status): void
+    {
+        if (!isset(self::STATUSES[$status])) {
+            throw new \InvalidArgumentException('Statut de commande invalide.');
+        }
+        $order = self::find($id);
+        if (!$order) {
+            throw new \RuntimeException('Commande introuvable.');
+        }
+        $current = (string) ($order['status'] ?? 'pending');
+        if ($status === $current) {
+            return;
+        }
+
+        if ($status === 'cancelled') {
+            self::setStatus($id, 'cancelled');
+            if ($current !== 'dispute') {
+                self::notifyParties($id, 'Commande annulée', 'La commande ' . $order['num'] . ' a été annulée par l\'équipe.');
+            }
+            return;
+        }
+
+        if ($status === 'dispute') {
+            if (in_array($current, ['pending', 'in_progress', 'delivered'], true)) {
+                self::setStatus($id, 'dispute');
+                return;
+            }
+            Database::query(
+                'UPDATE orders SET status = "dispute", dispute_at = COALESCE(dispute_at, NOW()) WHERE id = ?',
+                [$id]
+            );
+            return;
+        }
+
+        if ($status === 'in_progress' && $current === 'dispute') {
+            self::setStatus($id, 'in_progress');
+            return;
+        }
+
+        Database::query('UPDATE orders SET status = ? WHERE id = ?', [$status, $id]);
+    }
+
+    public static function deleteByAdmin(int $id): void
+    {
+        $order = self::findBare($id);
+        if (!$order) {
+            throw new \RuntimeException('Commande introuvable.');
+        }
+
+        $paths = array_merge(
+            OrderFile::pathsForOrder($id),
+            Conversation::attachmentPathsForOrder($id)
+        );
+        $invoice = Invoice::forOrder($id);
+        $thread = Conversation::findByOrder($id);
+
+        Database::transaction(static function () use ($id, $invoice, $thread): void {
+            Notification::deleteForSubject('order', $id);
+            if ($invoice) {
+                Notification::deleteForSubject('invoice', (int) $invoice['id']);
+            }
+            if ($thread) {
+                Notification::deleteForSubject('conversation', (int) $thread['id']);
+                Notification::deleteForSubject('message', (int) $thread['id']);
+                Report::deleteForTarget('conversation', (int) $thread['id']);
+            }
+            Report::deleteForTarget('order', $id);
+            Review::deleteForOrder($id);
+            Invoice::deleteForOrder($id);
+            Conversation::deleteForOrder($id);
+            Database::query('DELETE FROM orders WHERE id = ?', [$id]);
+        });
+
+        foreach ($paths as $path) {
+            delete_upload($path);
+        }
+    }
+
     public static function setDisputeNote(int $id, string $note): void
     {
         Database::query('UPDATE orders SET dispute_admin_note = ? WHERE id = ?', [trim($note), $id]);
@@ -759,6 +837,7 @@ final class Order
         $row['can_dispute'] = in_array($status, ['pending', 'in_progress', 'delivered'], true);
         $row['confirm_href'] = '/espace/avis';
         $row['href'] = '/espace/suivi/' . (int) ($row['id'] ?? 0);
+        $row['admin_href'] = '/admin/finances/' . (int) ($row['id'] ?? 0);
         $row['options'] = self::decodeOptions($row['options_json'] ?? null);
         $row['dispute_reason'] = trim((string) ($row['dispute_reason'] ?? ''));
         $row['dispute_admin_note'] = trim((string) ($row['dispute_admin_note'] ?? ''));

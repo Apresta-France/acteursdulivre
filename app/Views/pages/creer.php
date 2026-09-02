@@ -51,6 +51,8 @@ $specialtyHelps[''] = \Adl\Data\Catalog::specialtyHelp('');
       <?= csrf_field() ?>
       <input type="hidden" name="images_managed" value="1">
 
+      <div class="espace-panel">
+        <h2 class="espace-group-title">L'offre</h2>
       <div>
         <label class="field" for="service-title">Titre — commencez par « Je … »</label>
         <input class="input" id="service-title" name="title" required maxlength="80"
@@ -106,7 +108,10 @@ $specialtyHelps[''] = \Adl\Data\Catalog::specialtyHelp('');
         </div>
         <p class="field-help">Présentez l’offre : ce qui est inclus, les exclusions, le format et le volume livrés.</p>
       </div>
+      </div>
 
+      <div class="espace-panel">
+        <h2 class="espace-group-title">Tarifs</h2>
       <div class="form-grid-2">
         <div>
           <label class="field" for="service-price">Prix à partir de (€ TTC)</label>
@@ -120,7 +125,7 @@ $specialtyHelps[''] = \Adl\Data\Catalog::specialtyHelp('');
       </div>
 
       <div>
-        <span class="field">Formules (optionnel)</span>
+        <h3 class="espace-group-title">Formules (optionnel)</h3>
         <p class="field-help" style="margin-top: 0; margin-bottom: 12px;">Ajoutez autant de formules que nécessaire. Chaque formule enregistrée doit avoir un nom et un prix TTC. Le prix « à partir de » reprend la moins chère si vous le laissez vide.</p>
         <div class="repeat-list" data-repeat="packages">
           <?php foreach ($packages as $i => $package): ?>
@@ -140,7 +145,7 @@ $specialtyHelps[''] = \Adl\Data\Catalog::specialtyHelp('');
       </div>
 
       <div>
-        <span class="field">Options (optionnel)</span>
+        <h3 class="espace-group-title">Options (optionnel)</h3>
         <p class="field-help" style="margin-top: 0; margin-bottom: 12px;">Le client peut les ajouter à la formule ou au prix de base. Leur montant TTC s'ajoute au total.</p>
         <div class="repeat-list" data-repeat="options">
           <?php foreach ($options as $i => $option): ?>
@@ -187,8 +192,9 @@ $specialtyHelps[''] = \Adl\Data\Catalog::specialtyHelp('');
           </div>
         </div>
       </div>
+      </div>
 
-      <div>
+      <div class="espace-panel">
         <?php
           $existingImages = [];
           foreach (is_array($old['images'] ?? null) ? $old['images'] : [] as $img) {
@@ -201,7 +207,7 @@ $specialtyHelps[''] = \Adl\Data\Catalog::specialtyHelp('');
           $imageMax = \Adl\Models\Service::IMAGE_MAX;
           $hasImages = $existingImages !== [];
         ?>
-        <span class="field" id="service-image-label">Visuels (optionnel)</span>
+        <h2 class="espace-group-title" id="service-image-label">Visuels (optionnel)</h2>
         <?php
           $filePickId = 'service-image';
           $filePickName = 'images[]';

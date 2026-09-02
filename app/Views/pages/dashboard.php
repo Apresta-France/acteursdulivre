@@ -307,8 +307,8 @@ if ($offers && $profileCompletion < 80) {
         <form method="post" action="<?= e(url('/espace/forum')) ?>" class="dash-forum-prefs">
           <?= csrf_field() ?>
           <input type="hidden" name="back" value="/espace#forum">
-          <p class="field">Notifications du forum</p>
-          <p class="espace-page-lead" style="margin: 0 0 8px;">Ces e-mails concernent uniquement le forum. Les messages privés restent dans les réglages généraux.</p>
+          <h3 class="espace-group-title">Notifications du forum</h3>
+          <p class="espace-section-lead">Ces e-mails concernent uniquement le forum. Les messages privés restent dans les réglages généraux.</p>
           <label class="check-row">
             <input type="checkbox" name="notify_forum_followed" value="1"<?= !empty($notifyForumFollowed) ? ' checked' : '' ?>>
             M’écrire quand une discussion que je suis reçoit une nouvelle réponse

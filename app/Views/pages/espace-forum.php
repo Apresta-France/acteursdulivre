@@ -40,11 +40,13 @@ $pages = (int) ($pager['pages'] ?? 1);
     </div>
   </div>
 
-  <form method="post" action="<?= e(url('/espace/forum')) ?>" class="param-form" style="margin-bottom: 36px;">
+  <form method="post" action="<?= e(url('/espace/forum')) ?>" class="param-form espace-panel">
     <?= csrf_field() ?>
     <input type="hidden" name="back" value="/espace/forum">
-    <p class="field">Notifications du forum</p>
-    <p class="espace-page-lead" style="margin-top: 0;">Les messages privés et les alertes marketplace se règlent dans Paramètres.</p>
+    <div class="espace-panel-head">
+      <h2 class="espace-section-title">Notifications du forum</h2>
+      <p class="espace-section-lead">Les messages privés et les alertes marketplace se règlent dans Paramètres.</p>
+    </div>
     <label class="check-row">
       <input type="checkbox" name="notify_forum_followed" value="1"<?= !empty($notifyForumFollowed) ? ' checked' : '' ?>>
       M’écrire quand une discussion que je suis reçoit une nouvelle réponse
@@ -58,6 +60,7 @@ $pages = (int) ($pager['pages'] ?? 1);
     </div>
   </form>
 
+  <h2 class="espace-section-title">Vos discussions</h2>
   <div class="forum-tabs" style="margin-bottom: 16px;">
     <a class="chip<?= $tab === 'suivis' ? ' is-on' : '' ?>" href="<?= e(url('/espace/forum?onglet=suivis')) ?>">Discussions suivies</a>
     <a class="chip<?= $tab === 'mine' ? ' is-on' : '' ?>" href="<?= e(url('/espace/forum?onglet=mine')) ?>">Mes discussions</a>

@@ -28,6 +28,7 @@ use Adl\Models\Newsletter;
 use Adl\Models\NewsletterCampaign;
 use Adl\Models\NewsletterLetter;
 use Adl\Models\Order;
+use Adl\Models\OrderFile;
 use Adl\Models\Profile;
 use Adl\Models\Report;
 use Adl\Models\Review;
@@ -501,13 +502,22 @@ final class AdminController
 
     public function finances(Request $request): void
     {
-        $orderTotal = Order::countAll();
-        $orders = Order::recent(80);
+        $filtre = $this->filtre($request, array_merge(['tous'], array_keys(Order::STATUSES)), 'tous');
+        $orderTotal = $filtre === 'tous' ? Order::countAll() : Order::countByStatus($filtre);
+        $orders = $filtre === 'tous' ? Order::recent(80) : Order::byStatus($filtre);
+        if ($filtre !== 'tous' && count($orders) > 80) {
+            $orders = array_slice($orders, 0, 80);
+        }
         $invoices = Invoice::all();
         $this->page('finances', 'admin/finances', [
             'orders' => $orders,
             'orderTotal' => $orderTotal,
             'ordersTruncated' => $orderTotal > count($orders),
+            'filtre' => $filtre,
+            'orderFilters' => $this->filterLinks('/admin/finances', array_merge(
+                ['tous' => 'Toutes'],
+                Order::STATUSES
+            ), $filtre),
             'invoices' => $invoices,
             'kpis' => [
                 ['k' => 'Volume d’affaires', 'v' => format_euros(Order::sumAmount())],
@@ -516,6 +526,75 @@ final class AdminController
                 ['k' => 'Factures en retard', 'v' => format_int(Invoice::countOverdue())],
             ],
         ]);
+    }
+
+    public function commande(Request $request, string $id): void
+    {
+        Auth::requireAdmin();
+        $order = Order::find((int) $id);
+        if (!$order) {
+            flash('error', 'Commande introuvable.');
+            redirect('/admin/finances');
+        }
+
+        $thread = Conversation::findByOrder((int) $id);
+        $messages = [];
+        if ($thread) {
+            $adminThread = Conversation::findForAdmin((int) $thread['id']);
+            if ($adminThread) {
+                $thread = $adminThread;
+                $messages = $adminThread['messages'] ?? [];
+            }
+        }
+
+        $files = [];
+        try {
+            $files = OrderFile::forOrder((int) $id, 0, $order);
+        } catch (Throwable) {
+            $files = [];
+        }
+
+        $this->page('finances', 'admin/commande', [
+            'title' => (string) ($order['num'] ?? 'Commande'),
+            'order' => $order,
+            'buyer' => User::find((int) ($order['buyer_id'] ?? 0)),
+            'seller' => User::find((int) ($order['seller_id'] ?? 0)),
+            'invoice' => Invoice::forOrder((int) $id),
+            'review' => Review::findByOrder((int) $id),
+            'thread' => $thread,
+            'messages' => $messages,
+            'files' => $files,
+            'statuses' => Order::STATUSES,
+        ]);
+    }
+
+    public function commandeSave(Request $request, string $id): void
+    {
+        Auth::requireAdmin();
+        try {
+            $note = $request->string('note');
+            if ($note !== '') {
+                Order::setDisputeNote((int) $id, $note);
+            }
+            Order::setStatusByAdmin((int) $id, $request->string('status'));
+            flash('saved', 'Commande mise à jour.');
+        } catch (Throwable $e) {
+            flash('error', $e->getMessage());
+        }
+        redirect('/admin/finances/' . (int) $id);
+    }
+
+    public function commandeDelete(Request $request, string $id): void
+    {
+        Auth::requireAdmin();
+        try {
+            Order::deleteByAdmin((int) $id);
+            flash('saved', 'Commande supprimée.');
+            redirect('/admin/finances');
+        } catch (Throwable $e) {
+            flash('error', $e->getMessage());
+            redirect('/admin/finances/' . (int) $id);
+        }
     }
 
     public function invoiceSave(Request $request, string $id): void

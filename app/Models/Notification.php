@@ -101,6 +101,17 @@ final class Notification
         );
     }
 
+    public static function deleteForSubject(string $subjectType, int $subjectId): void
+    {
+        if ($subjectType === '' || $subjectId < 1) {
+            return;
+        }
+        Database::query(
+            'DELETE FROM notifications WHERE subject_type = ? AND subject_id = ?',
+            [$subjectType, $subjectId]
+        );
+    }
+
     public static function markSubjectRead(int $userId, string $kind, ?string $subjectType = null, ?int $subjectId = null): void
     {
         Database::query(

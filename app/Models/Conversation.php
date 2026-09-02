@@ -231,6 +231,37 @@ final class Conversation
         return $row ? self::present($row) : null;
     }
 
+    /** @return list<string> */
+    public static function attachmentPathsForOrder(int $orderId): array
+    {
+        if ($orderId < 1) {
+            return [];
+        }
+        $rows = Database::fetchAll(
+            'SELECT m.attachment_path
+             FROM messages m
+             JOIN conversations c ON c.id = m.conversation_id
+             WHERE c.order_id = ?',
+            [$orderId]
+        );
+        $paths = [];
+        foreach ($rows as $row) {
+            $path = trim((string) ($row['attachment_path'] ?? ''));
+            if ($path !== '') {
+                $paths[] = $path;
+            }
+        }
+        return $paths;
+    }
+
+    public static function deleteForOrder(int $orderId): void
+    {
+        if ($orderId < 1) {
+            return;
+        }
+        Database::query('DELETE FROM conversations WHERE order_id = ?', [$orderId]);
+    }
+
     /** @return array{path: string, name: string, mime: string} */
     public static function attachmentForUser(int $conversationId, int $messageId, int $userId): array
     {
@@ -390,7 +421,7 @@ final class Conversation
             }
             $links[] = [
                 'label' => 'Commande ' . (string) ($order['num'] ?? $orderId),
-                'href' => '/espace/suivi/' . $orderId,
+                'href' => '/admin/finances/' . $orderId,
             ];
         }
         $missionId = (int) ($row['mission_id'] ?? 0);

@@ -46,6 +46,26 @@ final class OrderFile
         );
     }
 
+    /** @return list<string> */
+    public static function pathsForOrder(int $orderId): array
+    {
+        if ($orderId < 1) {
+            return [];
+        }
+        $rows = Database::fetchAll(
+            'SELECT file_path FROM order_files WHERE order_id = ?',
+            [$orderId]
+        );
+        $paths = [];
+        foreach ($rows as $row) {
+            $path = trim((string) ($row['file_path'] ?? ''));
+            if ($path !== '') {
+                $paths[] = $path;
+            }
+        }
+        return $paths;
+    }
+
     public static function countForOrder(int $orderId): int
     {
         $row = Database::fetch(

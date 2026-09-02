@@ -60,6 +60,17 @@ final class Report
         return (int) Database::lastId();
     }
 
+    public static function deleteForTarget(string $type, int $targetId): void
+    {
+        if (!in_array($type, self::TYPES, true) || $targetId < 1) {
+            return;
+        }
+        Database::query(
+            'DELETE FROM reports WHERE target_type = ? AND target_id = ?',
+            [$type, $targetId]
+        );
+    }
+
     public static function setStatus(int $id, string $status): void
     {
         if (!isset(self::STATUSES[$status])) {
@@ -155,7 +166,7 @@ final class Report
                 'service' => self::serviceHref($targetId),
                 'mission' => self::missionHref($targetId),
                 'user' => $targetId > 0 ? '/admin/utilisateurs/' . $targetId : '/admin/moderation',
-                'order' => '/admin/finances',
+                'order' => $targetId > 0 ? '/admin/finances/' . $targetId : '/admin/finances',
                 'conversation' => $targetId > 0 ? '/admin/conversations/' . $targetId : '/admin/moderation',
                 default => '/admin/moderation',
             };

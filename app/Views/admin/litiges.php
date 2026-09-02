@@ -28,6 +28,7 @@ $litiges = $litiges ?? [];
           <p class="admin-muted"><strong>Note interne : </strong><?= nl2br(e((string) $l['dispute_admin_note'])) ?></p>
         <?php endif; ?>
         <div class="admin-actions">
+          <a class="btn-ghost" href="<?= e(url('/admin/finances/' . (int) $l['id'])) ?>">Voir le dossier</a>
           <a class="btn-ghost" href="<?= e(url('/espace/suivi/' . (int) $l['id'])) ?>">Voir le suivi</a>
         </div>
         <form method="post" action="<?= e(url('/admin/litiges/' . (int) $l['id'])) ?>" class="jalon-form">

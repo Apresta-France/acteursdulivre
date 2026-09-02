@@ -185,6 +185,43 @@ final class Review
         Database::query('DELETE FROM reviews WHERE id = ?', [$id]);
     }
 
+    public static function deleteForOrder(int $orderId): void
+    {
+        if ($orderId < 1) {
+            return;
+        }
+        Database::query('DELETE FROM reviews WHERE order_id = ?', [$orderId]);
+    }
+
+    /** @return array<string, mixed>|null */
+    public static function findByOrder(int $orderId): ?array
+    {
+        if ($orderId < 1) {
+            return null;
+        }
+        $row = Database::fetch(
+            'SELECT r.*,
+                    a.first_name AS author_first, a.last_name AS author_last,
+                    t.first_name AS target_first, t.last_name AS target_last
+             FROM reviews r
+             JOIN users a ON a.id = r.author_id
+             JOIN users t ON t.id = r.target_id
+             WHERE r.order_id = ?
+             ORDER BY r.id DESC LIMIT 1',
+            [$orderId]
+        );
+        if (!$row) {
+            return null;
+        }
+        $row['auteur'] = trim(($row['author_first'] ?? '') . ' ' . ($row['author_last'] ?? ''));
+        $row['cible'] = trim(($row['target_first'] ?? '') . ' ' . ($row['target_last'] ?? ''));
+        $row['note'] = str_replace('.', ',', (string) $row['rating']);
+        $row['txt'] = (string) ($row['body'] ?? '');
+        $row['when'] = time_ago($row['created_at'] ?? null);
+        $row['hidden'] = !empty($row['hidden_at']);
+        return $row;
+    }
+
     public static function score(mixed $value): int
     {
         $n = (int) $value;

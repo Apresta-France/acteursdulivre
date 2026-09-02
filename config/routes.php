@@ -181,6 +181,9 @@ return static function (Router $router): void {
     $router->get('/admin/missions', [AdminController::class, 'missions']);
     $router->get('/admin/finances', [AdminController::class, 'finances']);
     $router->post('/admin/finances/factures/{id}', [AdminController::class, 'invoiceSave']);
+    $router->get('/admin/finances/{id}', [AdminController::class, 'commande']);
+    $router->post('/admin/finances/{id}', [AdminController::class, 'commandeSave']);
+    $router->post('/admin/finances/{id}/supprimer', [AdminController::class, 'commandeDelete']);
     $router->get('/admin/pre-ouverture', [AdminController::class, 'preOuverture']);
     $router->get('/admin/journal', [AdminController::class, 'journal']);
     $router->get('/admin/journal/nouveau', [AdminController::class, 'articleEdit']);

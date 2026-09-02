@@ -39,8 +39,10 @@ $formAction = $editing && $missionId > 0 ? '/espace/publier/' . $missionId : '/e
           data-brief-hints="<?= e(json_encode(\Adl\Data\Catalog::BRIEF_HINTS, JSON_UNESCAPED_UNICODE)) ?>">
       <?= csrf_field() ?>
 
+      <div class="espace-panel">
+        <h2 class="espace-group-title">Le besoin</h2>
       <div>
-        <span class="field">Métier recherché</span>
+        <h3 class="espace-group-title">Métier recherché</h3>
         <div class="chip-row">
           <?php foreach ($trades as $trade): ?>
             <label class="chip<?= $selected === $trade ? ' is-on' : '' ?>">
@@ -65,7 +67,10 @@ $formAction = $editing && $missionId > 0 ? '/espace/publier/' . $missionId : '/e
                   placeholder="<?= e($briefHint) ?>"
                   data-preview-brief><?= e((string) ($old['brief'] ?? '')) ?></textarea>
       </div>
+      </div>
 
+      <div class="espace-panel">
+        <h2 class="espace-group-title">Cadre et budget</h2>
       <div class="form-grid-3<?= $hint ? '' : ' is-two' ?>" data-publish-metrics>
         <div data-volume-wrap<?= $hint ? '' : ' hidden' ?>>
           <label class="field" for="search-volume" data-volume-label><?= e($hint['label'] ?? 'Volume') ?></label>
@@ -90,7 +95,7 @@ $formAction = $editing && $missionId > 0 ? '/espace/publier/' . $missionId : '/e
       </div>
 
       <div>
-        <span class="field" id="search-file-label">Pièce jointe (optionnel)</span>
+        <h3 class="espace-group-title" id="search-file-label">Pièce jointe (optionnel)</h3>
         <?php
           $filePickId = 'search-file';
           $filePickName = 'attachment';
@@ -108,6 +113,7 @@ $formAction = $editing && $missionId > 0 ? '/espace/publier/' . $missionId : '/e
           </label>
         <?php endif; ?>
         <p class="field-help">Extrait, sommaire ou cahier des charges — PDF, DOCX, ODT, 20 Mo max.</p>
+      </div>
       </div>
 
       <div class="auth-actions publish-actions">

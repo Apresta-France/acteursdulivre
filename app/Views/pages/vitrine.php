@@ -80,6 +80,8 @@ if ($rateKind === \Adl\Models\Profile::RATE_PERCENT || str_contains($rateValue, 
     <input type="hidden" name="onglet" value="<?= e($tab) ?>" data-vitrine-tab>
 
     <div data-tab-panel="identite"<?= $tab === 'identite' ? '' : ' hidden' ?>>
+      <div class="espace-panel">
+        <h2 class="espace-group-title">Identité</h2>
       <?php
         $avatarSrc = (string) ($profile['avatar_src'] ?? $userAvatarUrl ?? '');
         $initials = (string) ($userInitials ?? \Adl\Models\Profile::initials($p));
@@ -102,7 +104,7 @@ if ($rateKind === \Adl\Models\Profile::RATE_PERCENT || str_contains($rateValue, 
         $nameModes = $nameModes ?? \Adl\Models\Profile::NAME_MODES;
       ?>
       <div data-name-mode>
-        <span class="field">Nom affiché sur la vitrine</span>
+        <h3 class="espace-group-title">Nom affiché sur la vitrine</h3>
         <p class="field-help">Le prénom et le nom du compte restent utilisés pour la facturation et les messages.</p>
         <div class="chip-row">
           <?php foreach ($nameModes as $value => $label): ?>
@@ -121,6 +123,10 @@ if ($rateKind === \Adl\Models\Profile::RATE_PERCENT || str_contains($rateValue, 
         <label class="field" for="vitrine-title">Titre de la vitrine</label>
         <input class="input" id="vitrine-title" name="title" value="<?= e((string) ($p['title'] ?? '')) ?>" placeholder="Correctrice-relectrice, romans et essais">
       </div>
+      </div>
+
+      <div class="espace-panel">
+        <h2 class="espace-group-title">À propos</h2>
       <div>
         <label class="field" for="presentation">Présentation</label>
         <textarea class="textarea" id="presentation" name="presentation" rows="6" placeholder="Votre parcours, vos spécialités, votre façon de travailler. Évitez le jargon vide : un client doit comprendre ce que vous faites mieux que d'autres."><?= e((string) ($p['presentation'] ?? '')) ?></textarea>
@@ -137,6 +143,10 @@ if ($rateKind === \Adl\Models\Profile::RATE_PERCENT || str_contains($rateValue, 
           <p class="field-help">Les exclusions évitent les demandes hors sujet.</p>
         </div>
       </div>
+      </div>
+
+      <div class="espace-panel">
+        <h2 class="espace-group-title">Disponibilité et lieu</h2>
       <div>
         <span class="field" id="availability-status-label">Disponibilité</span>
         <div class="mode-switch" data-mode-switch role="group" aria-labelledby="availability-status-label">
@@ -175,7 +185,7 @@ if ($rateKind === \Adl\Models\Profile::RATE_PERCENT || str_contains($rateValue, 
         </div>
       </div>
       <div>
-        <span class="field">Lieu de travail</span>
+        <h3 class="espace-group-title">Lieu de travail</h3>
         <?php $workMode = (string) ($p['work_mode'] ?? ''); ?>
         <div class="chip-row">
           <label class="chip<?= $workMode === '' ? ' is-on' : '' ?>">
@@ -191,7 +201,7 @@ if ($rateKind === \Adl\Models\Profile::RATE_PERCENT || str_contains($rateValue, 
         </div>
       </div>
       <div>
-        <span class="field">Délai de réponse</span>
+        <h3 class="espace-group-title">Délai de réponse</h3>
         <p class="field-help">Le temps dans lequel vous répondez habituellement à une première demande.</p>
         <?php $responseTime = (string) ($p['response_time'] ?? ''); ?>
         <div class="chip-row">
@@ -207,6 +217,10 @@ if ($rateKind === \Adl\Models\Profile::RATE_PERCENT || str_contains($rateValue, 
           <?php endforeach; ?>
         </div>
       </div>
+      </div>
+
+      <div class="espace-panel">
+        <h2 class="espace-group-title">Tarifs et présence</h2>
       <div data-rate-fields
            data-bookstore-trade="<?= e(\Adl\Models\Profile::TRADE_BOOKSTORE) ?>"
            data-rights-trades="<?= e(implode(',', \Adl\Models\Profile::RIGHTS_TRADES)) ?>"
@@ -215,7 +229,7 @@ if ($rateKind === \Adl\Models\Profile::RATE_PERCENT || str_contains($rateValue, 
            data-help-photo="Les photographes et iconographes précisent parfois un droit d’exploitation commerciale ou une cession de droits."
            data-help-bookstore="Les libraires indiquent une commission sur les ventes, pas un prix de prestation."
            data-help-both="Les libraires indiquent une commission sur les ventes. Les illustrateurs précisent parfois un droit d’exploitation commerciale ou une cession de droits.">
-        <span class="field">Mode de tarification</span>
+        <h3 class="espace-group-title">Mode de tarification</h3>
         <p class="field-help" data-rate-help><?= e($rateHelp) ?></p>
         <div class="chip-row" style="margin: 10px 0 16px;">
           <label class="chip<?= $rateKind === 'price' ? ' is-on' : '' ?>">
@@ -286,7 +300,7 @@ if ($rateKind === \Adl\Models\Profile::RATE_PERCENT || str_contains($rateValue, 
         </div>
       </div>
       <div>
-        <span class="field">Réseaux sociaux</span>
+        <h3 class="espace-group-title">Réseaux sociaux</h3>
         <p class="field-help">Les liens apparaissent sur votre vitrine publique. Un compte ou une adresse https:// suffit.</p>
         <div class="repeat-list" data-repeat="socials">
           <?php foreach ($socials as $i => $social): ?>
@@ -304,11 +318,12 @@ if ($rateKind === \Adl\Models\Profile::RATE_PERCENT || str_contains($rateValue, 
         </div>
         <button type="button" class="btn-ghost" data-repeat-add="socials">Ajouter un réseau</button>
       </div>
+      </div>
     </div>
 
     <div data-tab-panel="competences"<?= $tab === 'competences' ? '' : ' hidden' ?>>
-      <div>
-        <span class="field">Mes métiers</span>
+      <div class="espace-panel">
+        <h2 class="espace-group-title">Mes métiers</h2>
         <p class="field-help">Trois maximum : ce sont eux qui vous font apparaître dans l'annuaire.</p>
         <div class="chip-row" data-max-checks="3" data-trades>
           <?php foreach ($trades as $trade): ?>
@@ -320,8 +335,8 @@ if ($rateKind === \Adl\Models\Profile::RATE_PERCENT || str_contains($rateValue, 
         </div>
       </div>
 
-      <div>
-        <span class="field">Compétences et niveau</span>
+      <div class="espace-panel">
+        <h2 class="espace-group-title">Compétences et niveau</h2>
         <div class="repeat-list" data-repeat="skills">
           <?php foreach ($skills as $i => $skill): ?>
             <div class="repeat-row" data-repeat-row>
@@ -340,7 +355,7 @@ if ($rateKind === \Adl\Models\Profile::RATE_PERCENT || str_contains($rateValue, 
         <button type="button" class="btn-ghost" data-repeat-add="skills">Ajouter une compétence</button>
       </div>
 
-      <div>
+      <div class="espace-panel">
         <label class="field" for="tools">Logiciels et outils</label>
         <div class="field-suggest">
           <input class="input" id="tools" name="tools" value="<?= e($tools) ?>" placeholder="Antidote, InDesign, Word, Pro Tools…" autocomplete="off" autocorrect="off" spellcheck="false" data-suggest="tools" data-suggest-split="," role="combobox" aria-autocomplete="list" aria-expanded="false">
@@ -348,8 +363,8 @@ if ($rateKind === \Adl\Models\Profile::RATE_PERCENT || str_contains($rateValue, 
         <p class="field-help">Séparez les outils par une virgule.</p>
       </div>
 
-      <div>
-        <span class="field">Langues de travail</span>
+      <div class="espace-panel">
+        <h2 class="espace-group-title">Langues de travail</h2>
         <p class="field-help">Langue et niveau : ils s’affichent sur votre fiche publique. Le résumé (Français, Anglais…) se construit tout seul.</p>
         <div class="repeat-list" data-repeat="languages_list">
           <?php foreach ($languagesList as $i => $lang): ?>
@@ -369,13 +384,13 @@ if ($rateKind === \Adl\Models\Profile::RATE_PERCENT || str_contains($rateValue, 
         <button type="button" class="btn-ghost" data-repeat-add="languages_list">Ajouter une langue</button>
       </div>
 
-      <div data-vitrine-specialties
+      <div class="espace-panel" data-vitrine-specialties
            data-help-none="<?= e(\Adl\Data\Catalog::specialtyHelp('')) ?>"
            data-help-text="<?= e(\Adl\Data\Catalog::specialtyHelpForTrades(['Correction'])) ?>"
            data-help-other="<?= e(\Adl\Data\Catalog::specialtyHelpForTrades(['Illustration'])) ?>"
            data-help-both="<?= e(\Adl\Data\Catalog::specialtyHelpForTrades(['Correction', 'Illustration'])) ?>"
            data-text-trades="<?= e(implode(',', \Adl\Data\Catalog::TEXT_TRADES)) ?>">
-        <span class="field">Spécialités</span>
+        <h2 class="espace-group-title">Spécialités</h2>
         <p class="field-help" data-specialty-help><?= e(\Adl\Data\Catalog::specialtyHelpForTrades($selectedTrades)) ?></p>
         <div class="chip-row" data-specialty-chips>
           <?php foreach ($displayGenres as $genre): ?>
@@ -394,8 +409,8 @@ if ($rateKind === \Adl\Models\Profile::RATE_PERCENT || str_contains($rateValue, 
     </div>
 
     <div data-tab-panel="parcours"<?= $tab === 'parcours' ? '' : ' hidden' ?>>
-      <div>
-        <span class="field">Expériences</span>
+      <div class="espace-panel">
+        <h2 class="espace-group-title">Expériences</h2>
         <div class="repeat-list" data-repeat="experiences">
           <?php foreach ($experiences as $i => $exp): ?>
             <div class="repeat-card" data-repeat-row>
@@ -412,8 +427,8 @@ if ($rateKind === \Adl\Models\Profile::RATE_PERCENT || str_contains($rateValue, 
         <button type="button" class="btn-ghost" data-repeat-add="experiences">Ajouter une expérience</button>
       </div>
 
-      <div>
-        <span class="field">Formation et certifications</span>
+      <div class="espace-panel">
+        <h2 class="espace-group-title">Formation et certifications</h2>
         <div class="repeat-list" data-repeat="education">
           <?php foreach ($education as $i => $edu): ?>
             <div class="repeat-row" data-repeat-row>
@@ -429,9 +444,9 @@ if ($rateKind === \Adl\Models\Profile::RATE_PERCENT || str_contains($rateValue, 
     </div>
 
     <div data-tab-panel="portfolio"<?= $tab === 'portfolio' ? '' : ' hidden' ?>>
-      <div class="side-card side-card-warm" style="margin-bottom: 18px;">
-        Ajoutez des créations déjà réalisées et des exemples : un titre, une année, une courte description, et un visuel (fichier ou lien). Chaque pièce doit être une réalisation humaine dont vous détenez les droits.
-      </div>
+      <div class="espace-panel">
+        <h2 class="espace-group-title">Créations et exemples</h2>
+        <p class="espace-section-lead">Ajoutez des créations déjà réalisées et des exemples : un titre, une année, une courte description, et un visuel (fichier ou lien). Chaque pièce doit être une réalisation humaine dont vous détenez les droits.</p>
       <div class="repeat-list portfolio-list" data-repeat="portfolio">
         <?php foreach ($portfolio as $i => $item): ?>
           <div class="repeat-card" data-repeat-row>
@@ -467,6 +482,7 @@ if ($rateKind === \Adl\Models\Profile::RATE_PERCENT || str_contains($rateValue, 
         <?php endforeach; ?>
       </div>
       <button type="button" class="btn-ghost" data-repeat-add="portfolio">Ajouter une création ou un exemple</button>
+      </div>
     </div>
 
     <div class="auth-actions" style="margin-top: 28px;">
@@ -474,8 +490,10 @@ if ($rateKind === \Adl\Models\Profile::RATE_PERCENT || str_contains($rateValue, 
     </div>
   </form>
 
-  <section class="side-card" style="margin-top: 36px;">
-    <div class="side-kicker">Justificatif d'activité</div>
+  <section class="espace-panel" style="margin-top: 8px; max-width: 860px;">
+    <div class="espace-panel-head">
+      <h2 class="espace-section-title">Justificatif d'activité</h2>
+    </div>
     <?php
       $verify = (string) ($p['verification_status'] ?? '');
       $verifyLabel = match ($verify) {

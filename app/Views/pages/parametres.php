@@ -15,8 +15,12 @@ $oauthProviders = OAuth::enabledProviders();
     <div class="flash flash-error"><?= e((string) $error) ?></div>
   <?php endif; ?>
 
-  <form method="post" action="<?= e(url('/espace/parametres')) ?>" class="param-form" enctype="multipart/form-data">
+  <form method="post" action="<?= e(url('/espace/parametres')) ?>" class="param-form espace-panel" enctype="multipart/form-data">
     <?= csrf_field() ?>
+    <div class="espace-panel-head">
+      <h2 class="espace-section-title">Profil</h2>
+      <p class="espace-section-lead">Nom, e-mail et usages de votre compte unique.</p>
+    </div>
     <?php
       $avatarSrc = (string) ($avatarSrc ?? $userAvatarUrl ?? '');
       $initials = (string) ($userInitials ?? 'AD');
@@ -44,8 +48,8 @@ $oauthProviders = OAuth::enabledProviders();
       <p class="field-help">Requis uniquement si vous modifiez l’adresse e-mail.</p>
     </div>
 
-    <div>
-      <p class="field" style="margin-bottom: 10px;">Mes usages</p>
+    <div class="espace-subblock">
+      <h3 class="espace-group-title">Mes usages</h3>
       <div class="intent-grid">
         <label class="intent-card<?= !empty($seeksChecked) ? ' is-on' : '' ?>" data-intent-card>
           <input type="checkbox" name="seeks_services" value="1"<?= !empty($seeksChecked) ? ' checked' : '' ?>>
@@ -77,10 +81,12 @@ $oauthProviders = OAuth::enabledProviders();
     </div>
   </form>
 
-  <form method="post" action="<?= e(url('/espace/parametres/mot-de-passe')) ?>" class="param-form" style="margin-top: 36px;">
+  <form method="post" action="<?= e(url('/espace/parametres/mot-de-passe')) ?>" class="param-form espace-panel">
     <?= csrf_field() ?>
-    <p class="field">Mot de passe</p>
-    <p class="espace-page-lead" style="margin-top: 0;">8 caractères minimum. Laissez le champ actuel vide si votre compte n'a pas encore de mot de passe.</p>
+    <div class="espace-panel-head">
+      <h2 class="espace-section-title">Mot de passe</h2>
+      <p class="espace-section-lead">8 caractères minimum. Laissez le champ actuel vide si votre compte n'a pas encore de mot de passe.</p>
+    </div>
     <div>
       <label class="field" for="current_password">Mot de passe actuel</label>
       <input class="input" id="current_password" type="password" name="current_password">
@@ -100,10 +106,12 @@ $oauthProviders = OAuth::enabledProviders();
     </div>
   </form>
 
-  <form method="post" action="<?= e(url('/espace/parametres/notifications')) ?>" class="param-form" style="margin-top: 36px;">
+  <form method="post" action="<?= e(url('/espace/parametres/notifications')) ?>" class="param-form espace-panel">
     <?= csrf_field() ?>
-    <p class="field">Notifications</p>
-    <p class="espace-page-lead" style="margin-top: 0;">Les messages restent visibles ici. Ces cases concernent les e-mails (à l’instant et les relances).</p>
+    <div class="espace-panel-head">
+      <h2 class="espace-section-title">Notifications</h2>
+      <p class="espace-section-lead">Les messages restent visibles ici. Ces cases concernent les e-mails (à l’instant et les relances).</p>
+    </div>
     <label class="check-row"><input type="checkbox" name="notify_messages" value="1"<?= !empty($notifyMessages) ? ' checked' : '' ?>> Nouveau message et relances si une conversation reste sans réponse</label>
     <label class="check-row"><input type="checkbox" name="notify_jalons" value="1"<?= !empty($notifyJalons) ? ' checked' : '' ?>> Commandes : acceptation, livraison, facture de commission, facture échue</label>
     <label class="check-row"><input type="checkbox" name="notify_missions" value="1"<?= !empty($notifyMissions) ? ' checked' : '' ?>> Missions : nouvelle recherche correspondant à vos métiers, candidature, réponse, vitrine incomplète</label>
@@ -115,10 +123,12 @@ $oauthProviders = OAuth::enabledProviders();
     </div>
   </form>
 
-  <form method="post" action="<?= e(url('/espace/parametres/facturation')) ?>" class="param-form" style="margin-top: 36px;" data-billing-ids>
+  <form method="post" action="<?= e(url('/espace/parametres/facturation')) ?>" class="param-form espace-panel" data-billing-ids>
     <?= csrf_field() ?>
-    <p class="field">Facturation</p>
-    <p class="espace-page-lead" style="margin-top: 0;">Mentions reprises sur votre facture de commission. Le SIREN (9 chiffres) est l’identifiant exigé par la facturation électronique française. L'IBAN n'est jamais utilisé pour encaisser une mission.</p>
+    <div class="espace-panel-head">
+      <h2 class="espace-section-title">Facturation</h2>
+      <p class="espace-section-lead">Mentions reprises sur votre facture de commission. Le SIREN (9 chiffres) est l’identifiant exigé par la facturation électronique française. L'IBAN n'est jamais utilisé pour encaisser une mission.</p>
+    </div>
     <div class="auth-name-grid">
       <div>
         <label class="field" for="company_name">Raison sociale</label>
@@ -170,19 +180,23 @@ $oauthProviders = OAuth::enabledProviders();
     </div>
   </form>
 
-  <div class="param-form" style="margin-top: 36px;">
-    <p class="field">Vos données</p>
-    <p class="espace-page-lead" style="margin-top: 0;">Téléchargez une copie JSON de votre compte, profil, commandes, messages envoyés et avis.</p>
+  <div class="param-form espace-panel">
+    <div class="espace-panel-head">
+      <h2 class="espace-section-title">Vos données</h2>
+      <p class="espace-section-lead">Téléchargez une copie JSON de votre compte, profil, commandes, messages envoyés et avis.</p>
+    </div>
     <form method="post" action="<?= e(url('/espace/parametres/export')) ?>">
       <?= csrf_field() ?>
       <button class="btn-ghost" type="submit">Exporter mes données</button>
     </form>
   </div>
 
-  <form method="post" action="<?= e(url('/espace/parametres/cloture')) ?>" class="param-form param-danger" style="margin-top: 36px;">
+  <form method="post" action="<?= e(url('/espace/parametres/cloture')) ?>" class="param-form espace-panel param-danger">
     <?= csrf_field() ?>
-    <p class="field">Clôturer le compte</p>
-    <p class="espace-page-lead" style="margin-top: 0;">Impossible s'il reste une commande en cours, un litige ou une facture de commission ouverte. Les factures déjà émises sont conservées. Saisissez <strong>CLOTURER</strong> pour confirmer.</p>
+    <div class="espace-panel-head">
+      <h2 class="espace-section-title">Clôturer le compte</h2>
+      <p class="espace-section-lead">Impossible s'il reste une commande en cours, un litige ou une facture de commission ouverte. Les factures déjà émises sont conservées. Saisissez <strong>CLOTURER</strong> pour confirmer.</p>
+    </div>
     <label class="field" for="confirm">Confirmation</label>
     <input class="input" id="confirm" name="confirm" autocomplete="off">
     <div class="auth-actions">
@@ -191,9 +205,11 @@ $oauthProviders = OAuth::enabledProviders();
   </form>
 
   <?php if ($oauthProviders !== []): ?>
-    <div class="param-oauth">
-      <p class="field">Connexions sociales</p>
-      <p class="espace-page-lead" style="margin-top: 0;">Liez Google ou Facebook pour vous connecter sans mot de passe.</p>
+    <div class="param-oauth espace-panel">
+      <div class="espace-panel-head">
+        <h2 class="espace-section-title">Connexions sociales</h2>
+        <p class="espace-section-lead">Liez Google ou Facebook pour vous connecter sans mot de passe.</p>
+      </div>
       <div class="oauth-stack oauth-stack-inline">
         <?php
           $hasPassword = !empty($hasPassword);
