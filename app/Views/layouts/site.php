@@ -74,7 +74,7 @@
   <?php if (!empty($isArticle) && !empty($article['img'])): ?>
   <link rel="preload" as="image" href="<?= e((string) $article['img']) ?>">
   <?php endif; ?>
-  <link rel="stylesheet" href="<?= e(asset('css/app.css')) ?>?v=m135">
+  <link rel="stylesheet" href="<?= e(asset('css/app.css')) ?>?v=m142">
   <link rel="icon" href="<?= e(asset('img/favicon.ico')) ?>?v=3" sizes="any">
   <link rel="icon" type="image/png" href="<?= e(asset('img/favicon-32x32.png')) ?>?v=3" sizes="32x32">
   <link rel="apple-touch-icon" href="<?= e(asset('img/apple-touch-icon.png')) ?>?v=3">
@@ -174,7 +174,10 @@
         <div class="header-panel" id="header-panel">
           <?php if (!empty($logged)): ?>
             <nav class="header-nav">
-              <a href="<?= e(url('/forum')) ?>"<?= !empty($isForum) ? ' aria-current="page"' : '' ?>>Forum</a>
+              <?php $headerUnreadForum = (int) ($unreadForum ?? 0); ?>
+              <a href="<?= e(url($headerUnreadForum > 0 ? '/espace/forum?onglet=suivis' : '/forum')) ?>"<?= !empty($isForum) || !empty($isEspaceForum) ? ' aria-current="page"' : '' ?> class="header-forum-link" aria-label="<?= $headerUnreadForum > 0 ? 'Forum (' . $headerUnreadForum . ' réponses non lues)' : 'Forum' ?>">
+                Forum<?php if ($headerUnreadForum > 0): ?><span class="badge-orange"><?= $headerUnreadForum > 99 ? '99+' : $headerUnreadForum ?></span><?php endif; ?>
+              </a>
               <?php if (!empty($headerCta)): ?>
                 <a href="<?= e(url($headerCta['href'])) ?>"><?= e($headerCta['label']) ?></a>
               <?php endif; ?>
@@ -345,6 +348,6 @@
       <?php endif; ?>
     </div>
   <?php endif; ?>
-  <script src="<?= e(asset('js/app.js')) ?>?v=m69"></script>
+  <script src="<?= e(asset('js/app.js')) ?>?v=m72"></script>
 </body>
 </html>

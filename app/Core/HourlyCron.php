@@ -191,7 +191,7 @@ final class HourlyCron
         $hours = self::ONBOARDING_WAIT_HOURS;
         $users = Database::fetchAll(
             "SELECT u.* FROM users u
-             WHERE u.seeks_services = 1 AND u.status = 'active'
+             WHERE u.seeks_services = 1 AND u.offers_services = 0 AND u.status = 'active'
                AND u.created_at <= DATE_SUB(NOW(), INTERVAL {$hours} HOUR)
                AND NOT EXISTS (
                     SELECT 1 FROM missions m

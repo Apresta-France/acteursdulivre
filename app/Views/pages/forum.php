@@ -112,7 +112,7 @@ $forumListUrl = static function (string $filtre = 'recent', int $p = 1, string $
             <?php if (!empty($s['badge'])): ?>
               <span class="forum-badge forum-badge-<?= e(slugify((string) $s['badge'])) ?>"><?= e((string) $s['badge']) ?></span>
             <?php endif; ?>
-            <span class="forum-row-meta"><?= e((string) (($s['author']['name'] ?? '') . ' · ' . ($s['last_when'] ?? ''))) ?></span>
+            <span class="forum-row-meta"><?= e((string) ($s['author']['name'] ?? '')) ?><?= forum_cofounder_star($s['author'] ?? null) ?> · <?= e((string) ($s['last_when'] ?? '')) ?></span>
             <span class="forum-row-num"><?= (int) ($s['reply_count'] ?? 0) ?> rép.</span>
             <span class="forum-row-num is-muted"><?= e((string) ($s['views_label'] ?? '0')) ?> vues</span>
           </a>
@@ -176,7 +176,7 @@ $forumListUrl = static function (string $filtre = 'recent', int $p = 1, string $
                     <?php endif; ?>
                   </div>
                   <div class="forum-row-sub">
-                    <?= e((string) ($s['author']['name'] ?? '')) ?>
+                    <?= e((string) ($s['author']['name'] ?? '')) ?><?= forum_cofounder_star($s['author'] ?? null) ?>
                     · <?= e((string) ($s['author']['role'] ?? '')) ?>
                     · <?= e((string) ($s['when'] ?? '')) ?>
                     · dernière réponse de <?= e((string) ($s['last_by'] ?? '')) ?>, <?= e((string) ($s['last_when'] ?? '')) ?>
@@ -233,7 +233,7 @@ $forumListUrl = static function (string $filtre = 'recent', int $p = 1, string $
                   <?= avatar_html($c, 38, 'forum-avatar') ?>
                   <div class="forum-contrib-copy">
                     <div class="forum-contrib-name">
-                      <?= e((string) ($c['name'] ?? '')) ?>
+                      <?= e((string) ($c['name'] ?? '')) ?><?= forum_cofounder_star($c) ?>
                       <?php if (!empty($c['verified'])): ?><span class="forum-verif">vérifié</span><?php endif; ?>
                     </div>
                     <div class="forum-aside-meta"><?= e((string) ($c['meta'] ?? '')) ?></div>

@@ -11,6 +11,7 @@ use Adl\Models\Invoice;
 use Adl\Models\Mission;
 use Adl\Models\Notification;
 use Adl\Models\OrderMilestone;
+use Adl\Models\Profile;
 use Adl\Models\Service;
 use Adl\Models\User;
 
@@ -106,6 +107,7 @@ final class Prototype
         $offers = User::offersServices($user);
         $unreadMessages = self::liveUnreadMessages($user);
         $unreadAlerts = self::liveUnreadAlerts($user);
+        $unreadForum = self::liveUnreadForum($user);
 
         $footerCols = [
             ['title' => 'Porteurs de projet', 'links' => [
@@ -167,12 +169,13 @@ final class Prototype
                 $screen,
                 $seeks,
                 $offers,
-                self::espaceNavBadges($user, $unreadMessages, $unreadAlerts, $seeks, $offers)
+                self::espaceNavBadges($user, $unreadMessages, $unreadAlerts, $unreadForum, $seeks, $offers)
             ) : [],
             'headerCta' => self::headerCta($seeks, $offers),
             'routes' => DcEngine::routes(),
             'unreadMessages' => $unreadMessages,
             'unreadAlerts' => $unreadAlerts,
+            'unreadForum' => $unreadForum,
         ];
     }
 
@@ -203,6 +206,7 @@ final class Prototype
             'homeMissionFilters' => self::chips(['Toutes', 'Correction', 'Illustration', 'Traduction', 'Impression', 'Presse & com'], 0, true),
             'homeMissions' => self::homeMissions(),
             'homeTemoins' => [],
+            'homeForum' => [],
             'journal' => self::journalPreview(),
             'journalCats' => self::chips(['Tout', 'Tarifs', 'Contrats', 'Métier', 'Fabrication', 'Diffusion'], 0),
             'journalAll' => self::journalAll(),
@@ -266,11 +270,12 @@ final class Prototype
             $homeRails = Catalog::homeServiceRails(3, 3);
             $featured = $homeRails['featured'];
             $entry = $homeRails['entry'];
-            $pros = User::countOfferers();
+            $pros = Profile::countPublished();
             $services = Service::countPublished();
             $openMissions = Mission::countOpen();
             $commission = \Adl\Models\Setting::get('commission_percent', '8') ?: '8';
             $journal = Catalog::journalPreview(3);
+            $homeForum = Catalog::homeForum(3);
             $journalAll = \Adl\Models\Article::published();
             foreach ($journalAll as &$article) {
                 $article['go'] = true;
@@ -288,6 +293,7 @@ final class Prototype
                 'equipe' => Catalog::equipe(),
                 'missionsBandStats' => Catalog::missionsBandStats(),
                 'journal' => $journal,
+                'homeForum' => $homeForum,
                 'journalAll' => $journalAll,
                 'services' => Catalog::services(),
                 'missionsList' => Catalog::missions(),
@@ -307,7 +313,7 @@ final class Prototype
                 'openMissionsLabel' => format_int($openMissions) . ' recherche' . ($openMissions > 1 ? 's' : '') . ' ouverte' . ($openMissions > 1 ? 's' : ''),
                 'openMissionsCta' => $openMissions > 0 ? 'Voir les recherches' : 'Voir les appels d\'offres',
                 'inscriptionProof' => [
-                    ['v' => format_int($pros), 'k' => 'professionnels du livre inscrits'],
+                    ['v' => format_int($pros), 'k' => $pros > 1 ? 'professionnels du livre en ligne' : 'professionnel du livre en ligne'],
                     ['v' => format_int($openMissions), 'k' => 'recherches ouvertes'],
                     ['v' => $commission . ' %', 'k' => 'dès la 2ᵉ mission, sans abonnement'],
                 ],
@@ -323,6 +329,7 @@ final class Prototype
                 'homeEntry' => [],
                 'homeMissions' => [],
                 'journal' => [],
+                'homeForum' => [],
                 'journalAll' => [],
                 'services' => [],
                 'missionsList' => [],
@@ -1451,7 +1458,7 @@ final class Prototype
     private static function topbarStats(): string
     {
         try {
-            $pros = User::countOfferers();
+            $pros = Profile::countPublished();
             $commission = \Adl\Models\Setting::get('commission_percent', '8') ?: '8';
             $label = $pros > 1 ? 'professionnels du livre' : 'professionnel du livre';
             return '1ʳᵉ mission offerte · puis ' . $commission . ' % · ' . format_int($pros) . ' ' . $label;
@@ -1484,6 +1491,18 @@ final class Prototype
         }
     }
 
+    private static function liveUnreadForum(?array $user): int
+    {
+        if (!$user) {
+            return 0;
+        }
+        try {
+            return \Adl\Models\ForumTopic::unreadReplyCount((int) $user['id']);
+        } catch (\Throwable) {
+            return 0;
+        }
+    }
+
     private static function isEspaceScreen(string $screen): bool
     {
         return in_array($screen, [
@@ -1505,11 +1524,12 @@ final class Prototype
     }
 
     /** @return array<string, string> */
-    private static function espaceNavBadges(?array $user, int $unreadMessages, int $unreadAlerts, bool $seeks, bool $offers): array
+    private static function espaceNavBadges(?array $user, int $unreadMessages, int $unreadAlerts, int $unreadForum, bool $seeks, bool $offers): array
     {
         $badges = [
             'messagerie' => self::navBadge($unreadMessages),
             'notifications' => self::navBadge($unreadAlerts),
+            'espace-forum' => self::navBadge($unreadForum),
         ];
         if (!$user) {
             return $badges;
@@ -1552,6 +1572,7 @@ final class Prototype
             $badgeAria = match ($key) {
                 'messagerie' => $badge . ' non lus',
                 'notifications' => $badge . ' nouvelles',
+                'espace-forum' => $badge . ' réponses non lues',
                 default => $badge . ' en attente',
             };
             return [

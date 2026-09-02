@@ -24,6 +24,7 @@ return static function (Router $router): void {
     $router->get('/api/recherche', [PageController::class, 'searchApi']);
     $router->get('/api/villes', [PageController::class, 'citiesApi']);
     $router->get('/api/journal', [PageController::class, 'journalApi']);
+    $router->get('/api/forum/similaires', [ForumController::class, 'suggestApi']);
     $router->post('/api/stats', [PageController::class, 'statsCollect']);
     $router->get('/cron', [CronController::class, 'index']);
     $router->get('/cron/{task}', [CronController::class, 'run']);

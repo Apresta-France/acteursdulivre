@@ -101,7 +101,7 @@ final class User
         $allowed = [
             'email', 'password', 'first_name', 'last_name', 'role', 'status',
             'seeks_services', 'offers_services', 'google_id', 'facebook_id',
-            'avatar_url', 'onboarding_done_at', 'founder',
+            'avatar_url', 'onboarding_done_at', 'founder', 'platform_cofounder',
             'notify_messages', 'notify_jalons', 'notify_missions', 'notify_newsletter',
             'notify_forum_followed', 'notify_forum_mine',
             'company_name', 'siren', 'siret', 'vat_number', 'vat_exempt',
@@ -201,7 +201,7 @@ final class User
     /** @return list<array<string, mixed>> */
     public static function search(string $query = '', string $filter = 'tous'): array
     {
-        $sql = 'SELECT id, email, first_name, last_name, role, seeks_services, offers_services, status, last_login_at, created_at, avatar_url, deleted_at
+        $sql = 'SELECT id, email, first_name, last_name, role, seeks_services, offers_services, status, last_login_at, created_at, avatar_url, deleted_at, founder, platform_cofounder
                 FROM users WHERE 1=1';
         $params = [];
         $query = trim($query);
@@ -445,6 +445,38 @@ final class User
             return false;
         }
         return (int) ($row['founder'] ?? 0) === 1;
+    }
+
+    public static function isPlatformCofounder(int|array|null $user): bool
+    {
+        if (is_array($user)) {
+            if (array_key_exists('platform_cofounder', $user)) {
+                return (int) $user['platform_cofounder'] === 1;
+            }
+            $user = (int) ($user['id'] ?? 0);
+        }
+        $id = (int) ($user ?? 0);
+        if ($id < 1) {
+            return false;
+        }
+        try {
+            $row = Database::fetch('SELECT platform_cofounder FROM users WHERE id = ?', [$id]);
+        } catch (\Throwable) {
+            return false;
+        }
+        return (int) ($row['platform_cofounder'] ?? 0) === 1;
+    }
+
+    public static function setPlatformCofounder(int $id, bool $value): void
+    {
+        $user = self::find($id);
+        if (!$user) {
+            throw new \RuntimeException('Utilisateur introuvable.');
+        }
+        if (self::isClosed($user)) {
+            throw new \RuntimeException('Ce compte est clôturé et ne peut plus être modifié.');
+        }
+        self::update($id, ['platform_cofounder' => $value ? 1 : 0]);
     }
 
     private static function maybeGrantFounder(int $id): void

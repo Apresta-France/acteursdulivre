@@ -187,6 +187,7 @@ final class ForumController
             $related = ForumTopic::related((int) $topic['category_id'], (int) $topic['id'], 4);
             if ($userId > 0) {
                 $following = ForumTopic::isFollowing((int) $topic['id'], $userId);
+                ForumTopic::markRead((int) $topic['id'], $userId);
             }
             if ($op) {
                 $authorPostCount = ForumPost::authorPostCount((int) $op['user_id']);
@@ -259,6 +260,25 @@ final class ForumController
             'forumCategories' => $categories,
             'forumCategorySlug' => $preselect,
             'old' => $old,
+        ]);
+    }
+
+    public function suggestApi(Request $request): void
+    {
+        $q = $request->string('q');
+        $limit = max(1, min(10, $request->int('limit', 6) ?? 6));
+        $categoryId = max(0, $request->int('category_id', 0) ?? 0);
+        try {
+            $suggestions = ForumTopic::suggestSimilar($q, $categoryId, $limit);
+        } catch (\Throwable) {
+            $suggestions = [];
+        }
+        foreach ($suggestions as $i => $item) {
+            $suggestions[$i]['href'] = url((string) ($item['href'] ?? '/forum'));
+        }
+        json_response([
+            'suggestions' => $suggestions,
+            'results' => $suggestions,
         ]);
     }
 

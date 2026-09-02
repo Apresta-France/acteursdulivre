@@ -847,6 +847,9 @@
     var countUnit = searchPage.getAttribute('data-count-unit') || 'résultat';
     var BUDGET_DEFAULT_MIN = 200;
     var BUDGET_DEFAULT_MAX = 4000;
+    var initialState = {};
+    try { initialState = JSON.parse(searchPage.getAttribute('data-initial') || '{}'); } catch (e) {}
+    var currentPage = Math.max(1, parseInt(initialState.page || new URLSearchParams(window.location.search).get('page') || '1', 10) || 1);
 
     function formatBudget(n) {
       return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + ' €';
@@ -871,7 +874,7 @@
       if (budgetLabel) budgetLabel.textContent = formatBudget(min) + ' — ' + formatBudget(max);
     }
 
-    function currentParams() {
+    function currentParams(pageOverride) {
       var data = new FormData(filters);
       var params = new URLSearchParams();
       var forcedType = searchPage.getAttribute('data-type') || '';
@@ -896,7 +899,78 @@
       if (forcedType && forcedType !== 'all') params.set('type', forcedType);
       var limit = searchPage.getAttribute('data-search-limit');
       if (limit) params.set('limit', limit);
+      var page = pageOverride !== undefined ? pageOverride : currentPage;
+      if (page > 1) params.set('page', String(page));
       return params;
+    }
+
+    function displayParams(params) {
+      var display = new URLSearchParams(params);
+      if (!/\/recherche\/?$/.test(window.location.pathname)) {
+        display.delete('type');
+        display.delete('limit');
+      }
+      return display;
+    }
+
+    function pageHref(page) {
+      var next = displayParams(currentParams(page)).toString();
+      return window.location.pathname + (next ? '?' + next : '');
+    }
+
+    function pagerItems(page, pages) {
+      if (pages <= 7) {
+        var all = [];
+        for (var i = 1; i <= pages; i++) all.push(i);
+        return all;
+      }
+      var keep = [1, pages, page];
+      if (page > 1) keep.push(page - 1);
+      if (page < pages) keep.push(page + 1);
+      keep = keep.filter(function (n, i, arr) { return n >= 1 && n <= pages && arr.indexOf(n) === i; });
+      keep.sort(function (a, b) { return a - b; });
+      var items = [];
+      var prev = 0;
+      keep.forEach(function (n) {
+        if (prev && n > prev + 1) items.push(null);
+        items.push(n);
+        prev = n;
+      });
+      return items;
+    }
+
+    function renderPager(page, pages) {
+      var nav = searchPage.querySelector('[data-search-pager]');
+      if (!nav) return;
+      if (pages <= 1) {
+        nav.hidden = true;
+        nav.innerHTML = '';
+        return;
+      }
+      nav.hidden = false;
+      var html = [];
+      if (page > 1) {
+        html.push('<a href="' + escapeHtml(pageHref(page - 1)) + '" data-search-page-num="' + (page - 1) + '" rel="prev">Précédent</a>');
+      } else {
+        html.push('<span class="is-off" aria-disabled="true">Précédent</span>');
+      }
+      pagerItems(page, pages).forEach(function (n) {
+        if (n === null) html.push('<span class="is-gap" aria-hidden="true">…</span>');
+        else if (n === page) html.push('<span aria-current="page">' + n + '</span>');
+        else html.push('<a href="' + escapeHtml(pageHref(n)) + '" data-search-page-num="' + n + '">' + n + '</a>');
+      });
+      if (page < pages) {
+        html.push('<a href="' + escapeHtml(pageHref(page + 1)) + '" data-search-page-num="' + (page + 1) + '" rel="next">Suivant</a>');
+      } else {
+        html.push('<span class="is-off" aria-disabled="true">Suivant</span>');
+      }
+      nav.innerHTML = html.join('');
+    }
+
+    function countLabel(n, page, pages) {
+      var text = '· ' + n + ' ' + countUnit + (n > 1 ? 's' : '');
+      if (pages > 1) text += ' · page ' + page + ' / ' + pages;
+      return text;
     }
 
     function syncActive() {
@@ -943,13 +1017,16 @@
       });
     }
 
-    var update = debounce(function () {
+    function refresh() {
       var params = currentParams();
       fetchSearch(api, params, function (data) {
         if (window.AdlStats) window.AdlStats.action('filtre');
         results.innerHTML = resultsKind === 'rows' ? renderMissionRows(data.results || []) : renderCards(data.results || []);
         var n = data.count || 0;
-        if (countEl) countEl.textContent = '· ' + n + ' ' + countUnit + (n > 1 ? 's' : '');
+        currentPage = Math.max(1, parseInt(data.page, 10) || 1);
+        var pages = Math.max(1, parseInt(data.pages, 10) || 1);
+        if (countEl) countEl.textContent = countLabel(n, currentPage, pages);
+        renderPager(currentPage, pages);
         var label = data.query || data.cat || '';
         var citySlug = (filters.querySelector('[data-city-slug]') || {}).value || '';
         var cityName = citySlug ? ((filters.querySelector('[data-city-input]') || {}).value || '') : '';
@@ -969,12 +1046,7 @@
           else label = 'Tous les métiers du livre';
         }
         if (!standalone && titleEl && titleEl.childNodes[0]) titleEl.childNodes[0].textContent = label + ' ';
-        var display = new URLSearchParams(params);
-        if (!/\/recherche\/?$/.test(window.location.pathname)) {
-          display.delete('type');
-          display.delete('limit');
-        }
-        var next = display.toString();
+        var next = displayParams(currentParams()).toString();
         history.replaceState(null, '', window.location.pathname + (next ? '?' + next : ''));
         if (!standalone && headerInput) headerInput.value = data.query || '';
         syncActive();
@@ -986,7 +1058,14 @@
           });
         }
       });
-    }, 160);
+    }
+
+    var update = debounce(refresh, 160);
+
+    function updateFromFilters() {
+      currentPage = 1;
+      update();
+    }
 
     syncBudget();
     syncActive();
@@ -995,31 +1074,42 @@
       if (event.target && event.target.closest && event.target.closest('[data-city-ac]')) {
         return;
       }
-      update();
+      updateFromFilters();
     });
     filters.addEventListener('change', function (event) {
       if (event.target && event.target.closest && event.target.closest('[data-city-ac]')) {
         return;
       }
-      update();
+      updateFromFilters();
     });
     filters.addEventListener('city-change', function (event) {
       syncHeaderVille((event.detail && event.detail.slug) || '');
-      update();
+      updateFromFilters();
     });
     if (headerInput && !standalone) {
       headerInput.addEventListener('input', function () {
         if (hiddenQ) hiddenQ.value = headerInput.value;
-        update();
+        updateFromFilters();
       });
     }
     searchPage.addEventListener('click', function (event) {
+      var pageLink = event.target.closest('[data-search-page-num]');
+      if (pageLink) {
+        event.preventDefault();
+        var nextPage = parseInt(pageLink.getAttribute('data-search-page-num'), 10) || 1;
+        if (nextPage === currentPage) return;
+        currentPage = nextPage;
+        refresh();
+        var head = searchPage.querySelector('.search-head');
+        if (head && head.scrollIntoView) head.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        return;
+      }
       var chip = event.target.closest('[data-clear-name]');
       if (chip) {
         clearFilter(chip.getAttribute('data-clear-name'), chip.getAttribute('data-clear-value') || '');
         syncBudget();
         syncActive();
-        update();
+        updateFromFilters();
         return;
       }
       var reset = event.target.closest('[data-search-reset]');
@@ -1036,7 +1126,7 @@
       }
       syncBudget();
       syncActive();
-      update();
+      updateFromFilters();
     });
   }
 
@@ -1761,8 +1851,8 @@
   bindFilePicks(document);
 
   var EDITOR_TAGS = {
-    p: true, br: true, strong: true, b: true, em: true, i: true,
-    ul: true, ol: true, li: true, a: true
+    p: true, br: true, strong: true, b: true, em: true, i: true, u: true,
+    ul: true, ol: true, li: true, blockquote: true, a: true
   };
   var EDITOR_DROP = {
     script: true, style: true, iframe: true, object: true, embed: true, svg: true, math: true,
@@ -1901,6 +1991,7 @@
       var btn = event.target.closest('[data-wysiwyg-cmd]');
       if (!btn) return;
       var cmd = btn.getAttribute('data-wysiwyg-cmd');
+      var arg = btn.getAttribute('data-wysiwyg-value');
       editor.focus();
       if (cmd === 'createLink') {
         var current = window.getSelection() && window.getSelection().toString();
@@ -1911,6 +2002,9 @@
         href = safeEditorHref(href);
         if (!href) return;
         document.execCommand('createLink', false, href);
+      } else if (cmd === 'formatBlock') {
+        var tag = (arg || 'p').replace(/[^a-z0-9]/gi, '') || 'p';
+        document.execCommand('formatBlock', false, tag);
       } else {
         document.execCommand(cmd, false, null);
       }
@@ -1924,8 +2018,9 @@
     var form = document.querySelector('[data-nl-builder]');
     if (!form) return;
     var canvas = form.querySelector('[data-nl-canvas]');
-    var preview = document.querySelector('[data-nl-preview]');
+    var inspector = form.querySelector('[data-nl-inspector]');
     var hidden = form.querySelector('[data-nl-blocks]');
+    var palette = form.querySelector('[data-nl-palette]');
     var dataEl = document.getElementById('nl-builder-data');
     var data = { blocks: [], catalog: {}, uploadUrl: '', token: '' };
     try {
@@ -1933,6 +2028,7 @@
     } catch (err) {}
     var blocks = Array.isArray(data.blocks) ? data.blocks : [];
     var catalog = data.catalog || {};
+    var selectedId = '';
     var labels = {
       heading: 'Titre',
       text: 'Texte',
@@ -1941,7 +2037,7 @@
       divider: 'Séparateur',
       spacer: 'Espace',
       quote: 'Citation',
-      cards: 'Liste de liens'
+      cards: 'Liste'
     };
 
     function uid() {
@@ -1952,6 +2048,14 @@
       return escapeHtml(String(value == null ? '' : value));
     }
 
+    function indexOf(id) {
+      return blocks.findIndex(function (b) { return b.id === id; });
+    }
+
+    function findBlock(id) {
+      return blocks[indexOf(id)] || null;
+    }
+
     function defaultBlock(type) {
       var id = uid();
       if (type === 'heading') return { id: id, type: 'heading', text: '', level: 'h2' };
@@ -1959,61 +2063,87 @@
       if (type === 'image') return { id: id, type: 'image', src: '', alt: '', href: '' };
       if (type === 'button') return { id: id, type: 'button', label: 'En savoir plus', href: '', align: 'left' };
       if (type === 'divider') return { id: id, type: 'divider' };
-      if (type === 'spacer') return { id: id, type: 'spacer', height: 24 };
+      if (type === 'spacer') return { id: id, type: 'spacer', height: 28 };
       if (type === 'quote') return { id: id, type: 'quote', text: '', cite: '' };
       return { id: id, type: 'cards', title: '', items: [{ title: '', meta: '', excerpt: '', href: '' }] };
     }
 
-    function collect() {
-      var next = [];
-      canvas.querySelectorAll('[data-nl-block]').forEach(function (card) {
-        var type = card.getAttribute('data-nl-type');
-        var id = card.getAttribute('data-nl-id') || uid();
-        var block = { id: id, type: type };
-        if (type === 'heading') {
-          block.text = (card.querySelector('[data-f="text"]') || {}).value || '';
-          block.level = (card.querySelector('[data-f="level"]') || {}).value || 'h2';
-        } else if (type === 'text') {
-          var wys = card.querySelector('[data-wysiwyg]');
-          if (wys) {
-            var ed = wys.querySelector('.wysiwyg-editor');
-            var src = wys.querySelector('.wysiwyg-source');
-            if (ed && !editorIsEmpty(ed)) {
-              if (src) src.value = sanitizeEditorHtml(ed.innerHTML);
-            }
-          }
-          block.html = (card.querySelector('[data-f="html"]') || {}).value || '';
-        } else if (type === 'image') {
-          var typedSrc = (card.querySelector('[data-f="srcurl"]') || {}).value || '';
-          var storedSrc = card.getAttribute('data-src') || (card.querySelector('[data-f="src"]') || {}).value || '';
-          block.src = storedSrc || typedSrc;
-          block._url = /^https:\/\//i.test(typedSrc) ? typedSrc : '';
-          block.alt = (card.querySelector('[data-f="alt"]') || {}).value || '';
-          block.href = (card.querySelector('[data-f="href"]') || {}).value || '';
-        } else if (type === 'button') {
-          block.label = (card.querySelector('[data-f="label"]') || {}).value || 'En savoir plus';
-          block.href = (card.querySelector('[data-f="href"]') || {}).value || '';
-          block.align = (card.querySelector('[data-f="align"]') || {}).value || 'left';
-        } else if (type === 'spacer') {
-          block.height = parseInt((card.querySelector('[data-f="height"]') || {}).value, 10) || 24;
-        } else if (type === 'quote') {
-          block.text = (card.querySelector('[data-f="text"]') || {}).value || '';
-          block.cite = (card.querySelector('[data-f="cite"]') || {}).value || '';
-        } else if (type === 'cards') {
-          block.title = (card.querySelector('[data-f="title"]') || {}).value || '';
-          block.items = [];
-          card.querySelectorAll('[data-nl-card]').forEach(function (row) {
-            block.items.push({
-              title: (row.querySelector('[data-f="title"]') || {}).value || '',
-              meta: (row.querySelector('[data-f="meta"]') || {}).value || '',
-              excerpt: (row.querySelector('[data-f="excerpt"]') || {}).value || '',
-              href: (row.querySelector('[data-f="href"]') || {}).value || ''
-            });
-          });
-        }
-        next.push(block);
-      });
-      blocks = next;
+    function editable(name, value, ph, extraClass) {
+      return '<div class="' + (extraClass || '') + '" contenteditable="true" data-f="' + name + '" data-ph="' + escape(ph || '') + '">' + escape(value || '') + '</div>';
+    }
+
+    function tools() {
+      return '<div class="admin-nl-vblock-tools">' +
+        '<button type="button" data-nl-drag draggable="true" aria-label="Déplacer" title="Glisser pour déplacer">⋮⋮</button>' +
+        '<button type="button" data-nl-del aria-label="Supprimer" title="Supprimer">×</button>' +
+        '</div>';
+    }
+
+    function slotHtml(at) {
+      return '<div class="admin-nl-slot" data-nl-slot="' + at + '"><button type="button" data-nl-plus="' + at + '" aria-label="Insérer un bloc">+</button></div>';
+    }
+
+    function imageSrc(block) {
+      return block._url || (/^https:\/\//i.test(block.src || '') ? block.src : '') || '';
+    }
+
+    function blockHtml(block) {
+      var type = block.type;
+      var on = block.id === selectedId ? ' is-on' : '';
+      var body = '';
+      if (type === 'heading') {
+        body = editable('text', block.text, 'Écrire le titre', 'admin-nl-vhead')
+          .replace('data-f="text"', 'data-f="text" data-level="' + escape(block.level || 'h2') + '"');
+      } else if (type === 'text') {
+        body = '<div class="admin-nl-vtext"><div class="wysiwyg" data-wysiwyg>' +
+          '<div class="wysiwyg-toolbar" hidden>' +
+          '<button type="button" data-wysiwyg-cmd="bold" aria-label="Gras"><strong>G</strong></button>' +
+          '<button type="button" data-wysiwyg-cmd="italic" aria-label="Italique"><em>I</em></button>' +
+          '<button type="button" data-wysiwyg-cmd="insertUnorderedList" aria-label="Liste">•</button>' +
+          '<button type="button" data-wysiwyg-cmd="createLink" aria-label="Lien">Lien</button>' +
+          '</div>' +
+          '<textarea class="textarea wysiwyg-source" data-f="html" hidden>' + escape(block.html || '') + '</textarea>' +
+          '<div class="wysiwyg-editor" contenteditable="true" role="textbox" aria-multiline="true" data-placeholder="Écrire le texte…" hidden></div>' +
+          '</div></div>';
+      } else if (type === 'image') {
+        var src = imageSrc(block);
+        body = '<div class="admin-nl-vimg" data-src="' + escape(block.src || '') + '">' +
+          (src
+            ? '<img src="' + escape(src) + '" alt="' + escape(block.alt || '') + '">'
+            : '<div class="admin-nl-vimg-empty" data-nl-pick>Déposez une image<br>ou cliquez pour en choisir une</div>') +
+          '<input type="file" accept="image/jpeg,image/png,image/webp" data-nl-upload hidden>' +
+          '</div>';
+      } else if (type === 'button') {
+        body = '<div class="admin-nl-vbtn" data-align="' + escape(block.align || 'left') + '">' +
+          '<div class="admin-nl-vbtn-cta" contenteditable="true" data-f="label" data-ph="En savoir plus">' + escape(block.label || '') + '</div></div>';
+      } else if (type === 'divider') {
+        body = '<hr class="admin-nl-vdiv">';
+      } else if (type === 'spacer') {
+        var h = parseInt(block.height, 10) || 28;
+        body = '<div class="admin-nl-vspace" style="height:' + h + 'px"><div class="admin-nl-vspace-bar" style="height:' + h + 'px">' + h + ' px</div></div>';
+      } else if (type === 'quote') {
+        body = '<div class="admin-nl-vquote">' +
+          editable('text', block.text, 'Votre citation') +
+          editable('cite', block.cite, 'Auteur', 'admin-nl-vquote-cite') +
+          '</div>';
+      } else if (type === 'cards') {
+        var items = (block.items && block.items.length) ? block.items : [{ title: '', meta: '', excerpt: '', href: '' }];
+        body = editable('title', block.title, 'Titre de la liste', 'admin-nl-vcards-title');
+        items.forEach(function (item) {
+          body += '<div class="admin-nl-vcard" data-nl-card>' +
+            editable('title', item.title, 'Titre du lien', 'admin-nl-vcard-name') +
+            editable('meta', item.meta, 'Accroche', 'admin-nl-vcard-meta') +
+            editable('excerpt', item.excerpt, 'Texte') +
+            '<input class="admin-nl-vcard-href" data-f="href" value="' + escape(item.href || '') + '" placeholder="https://">' +
+            '<button type="button" class="admin-nl-vcard-del" data-nl-card-del>Retirer</button>' +
+            '</div>';
+        });
+      }
+      return '<article class="admin-nl-vblock' + on + '" data-nl-block data-nl-type="' + escape(type) + '" data-nl-id="' + escape(block.id || uid()) + '">' +
+        tools() + body + '</article>';
+    }
+
+    function persist() {
       var json = JSON.stringify(blocks);
       if (hidden) hidden.value = json;
       document.querySelectorAll('[data-nl-sync] [name="blocks"]').forEach(function (el) { el.value = json; });
@@ -2021,248 +2151,346 @@
       var preheader = (form.querySelector('[name="preheader"]') || {}).value || '';
       document.querySelectorAll('[data-nl-sync] [name="subject"]').forEach(function (el) { el.value = subject; });
       document.querySelectorAll('[data-nl-sync] [name="preheader"]').forEach(function (el) { el.value = preheader; });
-      renderPreview();
     }
 
-    function renderPreview() {
-      if (!preview) return;
-      var html = '';
-      var pre = (form.querySelector('[name="preheader"]') || {}).value || '';
-      if (pre) html += '<p style="display:none">' + escape(pre) + '</p>';
-      blocks.forEach(function (block) {
-        if (block.type === 'heading' && block.text) {
-          var tag = block.level === 'h3' ? 'h3' : 'h2';
-          html += '<' + tag + '>' + escape(block.text) + '</' + tag + '>';
-        } else if (block.type === 'text' && block.html) {
-          html += '<div>' + sanitizeEditorHtml(block.html) + '</div>';
-        } else if (block.type === 'image' && block.src) {
-          var src = block._url || block.src;
-          var img = '<img src="' + escape(src) + '" alt="' + escape(block.alt || '') + '">';
-          html += block.href ? '<p><a href="' + escape(block.href) + '">' + img + '</a></p>' : '<p>' + img + '</p>';
-        } else if (block.type === 'button' && block.href) {
-          html += '<p style="text-align:' + (block.align === 'center' ? 'center' : 'left') + '"><a href="' + escape(block.href) + '" style="display:inline-block;background:#D85D3F;color:#fff;text-decoration:none;font-weight:600;padding:10px 16px;border-radius:10px;">' + escape(block.label || 'En savoir plus') + '</a></p>';
-        } else if (block.type === 'divider') {
-          html += '<hr style="border:0;border-top:1px solid #E8ECF1;margin:18px 0;">';
-        } else if (block.type === 'spacer') {
-          html += '<div style="height:' + (parseInt(block.height, 10) || 24) + 'px"></div>';
-        } else if (block.type === 'quote' && block.text) {
-          html += '<blockquote style="margin:16px 0;padding-left:14px;border-left:3px solid #D85D3F;color:#4A5A6B;"><p>' + escape(block.text) + '</p>' + (block.cite ? '<p style="font-size:13px;color:#8496A8;">— ' + escape(block.cite) + '</p>' : '') + '</blockquote>';
-        } else if (block.type === 'cards' && block.items && block.items.length) {
-          if (block.title) html += '<h2>' + escape(block.title) + '</h2>';
-          block.items.forEach(function (item) {
-            if (!item.title && !item.href) return;
-            html += '<p>';
-            html += item.href ? '<a href="' + escape(item.href) + '"><strong>' + escape(item.title || 'À voir') + '</strong></a>' : '<strong>' + escape(item.title || 'À voir') + '</strong>';
-            if (item.meta) html += '<br><span style="color:#66768A;font-size:13px;">' + escape(item.meta) + '</span>';
-            if (item.excerpt) html += '<br>' + escape(item.excerpt);
-            html += '</p>';
+    function readDom() {
+      canvas.querySelectorAll('[data-nl-block]').forEach(function (el) {
+        var block = findBlock(el.getAttribute('data-nl-id'));
+        if (!block) return;
+        if (block.type === 'heading') {
+          var h = el.querySelector('[data-f="text"]');
+          block.text = h ? (h.textContent || '').replace(/\s+/g, ' ').trim() : '';
+          block.level = (h && h.getAttribute('data-level')) || block.level || 'h2';
+        } else if (block.type === 'text') {
+          var wys = el.querySelector('[data-wysiwyg]');
+          if (wys) {
+            var ed = wys.querySelector('.wysiwyg-editor');
+            var src = wys.querySelector('.wysiwyg-source');
+            if (ed && src) src.value = editorIsEmpty(ed) ? '' : sanitizeEditorHtml(ed.innerHTML);
+            block.html = src ? src.value : '';
+          }
+        } else if (block.type === 'image') {
+          var box = el.querySelector('.admin-nl-vimg');
+          if (box && box.getAttribute('data-src')) block.src = box.getAttribute('data-src') || block.src;
+        } else if (block.type === 'button') {
+          var lab = el.querySelector('[data-f="label"]');
+          block.label = lab ? (lab.textContent || '').replace(/\s+/g, ' ').trim() : block.label;
+        } else if (block.type === 'quote') {
+          var q = el.querySelector('[data-f="text"]');
+          var c = el.querySelector('[data-f="cite"]');
+          block.text = q ? (q.textContent || '').trim() : '';
+          block.cite = c ? (c.textContent || '').trim() : '';
+        } else if (block.type === 'cards') {
+          var title = el.querySelector('[data-f="title"]');
+          block.title = title && !title.closest('[data-nl-card]') ? (title.textContent || '').trim() : block.title;
+          block.items = [];
+          el.querySelectorAll('[data-nl-card]').forEach(function (row) {
+            block.items.push({
+              title: ((row.querySelector('[data-f="title"]') || {}).textContent || '').trim(),
+              meta: ((row.querySelector('[data-f="meta"]') || {}).textContent || '').trim(),
+              excerpt: ((row.querySelector('[data-f="excerpt"]') || {}).textContent || '').trim(),
+              href: (row.querySelector('[data-f="href"]') || {}).value || ''
+            });
           });
         }
       });
-      preview.innerHTML = html || '<p class="admin-muted">L’aperçu apparaîtra au fur et à mesure.</p>';
+      persist();
     }
 
-    function field(label, name, value, extra) {
-      extra = extra || {};
-      var id = 'nl-' + name + '-' + Math.random().toString(16).slice(2, 6);
-      if (extra.area) {
-        return '<label class="field" for="' + id + '">' + escape(label) + '</label><textarea class="textarea" id="' + id + '" data-f="' + name + '" rows="' + (extra.rows || 3) + '">' + escape(value || '') + '</textarea>';
-      }
-      var type = extra.type || 'text';
-      return '<label class="field" for="' + id + '">' + escape(label) + '</label><input class="input" id="' + id + '" data-f="' + name + '" type="' + type + '" value="' + escape(value || '') + '"' + (extra.placeholder ? ' placeholder="' + escape(extra.placeholder) + '"' : '') + (extra.min ? ' min="' + extra.min + '"' : '') + (extra.max ? ' max="' + extra.max + '"' : '') + '>';
-    }
-
-    function wysiwygField(value) {
-      return '<div class="wysiwyg" data-wysiwyg>' +
-        '<div class="wysiwyg-toolbar" hidden>' +
-        '<button type="button" data-wysiwyg-cmd="bold" aria-label="Gras" title="Gras"><strong>G</strong></button>' +
-        '<button type="button" data-wysiwyg-cmd="italic" aria-label="Italique" title="Italique"><em>I</em></button>' +
-        '<button type="button" data-wysiwyg-cmd="insertUnorderedList" aria-label="Liste à puces" title="Liste">• Liste</button>' +
-        '<button type="button" data-wysiwyg-cmd="createLink" aria-label="Lien" title="Lien">Lien</button>' +
-        '</div>' +
-        '<textarea class="textarea wysiwyg-source" data-f="html" rows="5" hidden>' + escape(value || '') + '</textarea>' +
-        '<div class="wysiwyg-editor" contenteditable="true" role="textbox" aria-multiline="true" hidden></div>' +
-        '</div>';
-    }
-
-    function cardFields(item, index) {
-      item = item || {};
-      return '<div class="admin-nl-card-item" data-nl-card>' +
-        '<div class="admin-nl-block-top"><span class="admin-nl-block-type">Lien ' + (index + 1) + '</span>' +
-        '<div class="admin-nl-block-tools"><button type="button" data-nl-card-del aria-label="Retirer ce lien">×</button></div></div>' +
-        field('Titre', 'title', item.title || '') +
-        field('Accroche', 'meta', item.meta || '') +
-        field('Texte', 'excerpt', item.excerpt || '', { area: true, rows: 2 }) +
-        field('Lien', 'href', item.href || '', { placeholder: 'https://' }) +
-        '</div>';
-    }
-
-    function blockHtml(block) {
-      var type = block.type;
-      var body = '';
-      if (type === 'heading') {
-        body = field('Texte', 'text', block.text || '') +
-          '<label class="field">Niveau</label><select class="input" data-f="level">' +
-          '<option value="h2"' + (block.level !== 'h3' ? ' selected' : '') + '>Titre</option>' +
-          '<option value="h3"' + (block.level === 'h3' ? ' selected' : '') + '>Sous-titre</option></select>';
-      } else if (type === 'text') {
-        body = wysiwygField(block.html || '');
-      } else if (type === 'image') {
-        body = '<input type="hidden" data-f="src" value="' + escape(block.src || '') + '">' +
-          field('Adresse de l’image', 'srcurl', block._url || block.src || '', { placeholder: 'https://… ou téléversez' }) +
-          '<label class="field">Téléverser</label><input class="input" type="file" accept="image/jpeg,image/png,image/webp" data-nl-upload>' +
-          field('Texte alternatif', 'alt', block.alt || '') +
-          field('Lien au clic', 'href', block.href || '', { placeholder: 'https:// (optionnel)' });
-      } else if (type === 'button') {
-        body = field('Libellé', 'label', block.label || 'En savoir plus') +
-          field('Lien', 'href', block.href || '', { placeholder: 'https://' }) +
-          '<label class="field">Alignement</label><select class="input" data-f="align">' +
-          '<option value="left"' + (block.align !== 'center' ? ' selected' : '') + '>Gauche</option>' +
-          '<option value="center"' + (block.align === 'center' ? ' selected' : '') + '>Centre</option></select>';
-      } else if (type === 'divider') {
-        body = '<p class="field-help">Une ligne de séparation.</p>';
-      } else if (type === 'spacer') {
-        body = field('Hauteur (px)', 'height', String(block.height || 24), { type: 'number', min: '8', max: '80' });
-      } else if (type === 'quote') {
-        body = field('Citation', 'text', block.text || '', { area: true, rows: 3 }) +
-          field('Auteur', 'cite', block.cite || '');
-      } else if (type === 'cards') {
-        var items = (block.items && block.items.length) ? block.items : [{ title: '', meta: '', excerpt: '', href: '' }];
-        body = field('Titre de la section', 'title', block.title || '') +
-          items.map(cardFields).join('') +
-          '<p style="margin:12px 0 0;"><button type="button" class="admin-ghost" data-nl-card-add>Ajouter un lien</button></p>';
-      }
-      return '<article class="admin-nl-block-card" data-nl-block data-nl-type="' + escape(type) + '" data-nl-id="' + escape(block.id || uid()) + '"' + (type === 'image' && block.src ? ' data-src="' + escape(block.src) + '"' : '') + '>' +
-        '<div class="admin-nl-block-top"><span class="admin-nl-block-type">' + escape(labels[type] || type) + '</span>' +
-        '<div class="admin-nl-block-tools">' +
-        '<button type="button" data-nl-move="-1" aria-label="Monter">↑</button>' +
-        '<button type="button" data-nl-move="1" aria-label="Descendre">↓</button>' +
-        '<button type="button" data-nl-del aria-label="Supprimer">×</button>' +
-        '</div></div>' + body + '</article>';
-    }
-
-    function paint() {
-      if (!blocks.length) {
-        canvas.innerHTML = '<p class="admin-nl-empty">Ajoutez un bloc pour commencer la lettre.</p>';
+    function inspectorHtml(block) {
+      if (!block) return '<p class="admin-nl-inspector-empty">Sélectionnez un bloc dans la lettre pour le régler.</p>';
+      var html = '<h2>' + escape(labels[block.type] || 'Bloc') + '</h2>';
+      if (block.type === 'heading') {
+        html += '<p class="field">Style</p><div class="admin-nl-inspector-row">' +
+          '<button type="button" class="admin-nl-chip' + (block.level !== 'h3' ? ' is-on' : '') + '" data-nl-set="level" data-v="h2">Titre</button>' +
+          '<button type="button" class="admin-nl-chip' + (block.level === 'h3' ? ' is-on' : '') + '" data-nl-set="level" data-v="h3">Sous-titre</button></div>';
+      } else if (block.type === 'image') {
+        html += '<label class="field">Image</label><input class="input" type="file" accept="image/jpeg,image/png,image/webp" data-nl-upload>' +
+          '<label class="field">ou adresse</label><input class="input" data-nl-set="src" value="' + escape(imageSrc(block) || block.src || '') + '" placeholder="https://">' +
+          '<label class="field">Texte alternatif</label><input class="input" data-nl-set="alt" value="' + escape(block.alt || '') + '">' +
+          '<label class="field">Lien au clic</label><input class="input" data-nl-set="href" value="' + escape(block.href || '') + '" placeholder="https://">';
+      } else if (block.type === 'button') {
+        html += '<label class="field">Lien du bouton</label><input class="input" data-nl-set="href" value="' + escape(block.href || '') + '" placeholder="https://">' +
+          '<p class="field">Alignement</p><div class="admin-nl-inspector-row">' +
+          '<button type="button" class="admin-nl-chip' + (block.align !== 'center' ? ' is-on' : '') + '" data-nl-set="align" data-v="left">Gauche</button>' +
+          '<button type="button" class="admin-nl-chip' + (block.align === 'center' ? ' is-on' : '') + '" data-nl-set="align" data-v="center">Centre</button></div>';
+      } else if (block.type === 'spacer') {
+        html += '<label class="field">Hauteur (' + (block.height || 28) + ' px)</label>' +
+          '<input class="input" type="range" min="8" max="80" data-nl-set="height" value="' + (block.height || 28) + '">';
+      } else if (block.type === 'cards') {
+        html += '<button type="button" class="btn-navy" data-nl-card-add>Ajouter un lien</button>';
+      } else if (block.type === 'text') {
+        html += '<p class="admin-nl-inspector-empty">Écrivez directement dans la lettre. La barre au-dessus du texte sert au gras, à l’italique et aux liens.</p>';
+      } else if (block.type === 'divider') {
+        html += '<p class="admin-nl-inspector-empty">Une ligne de séparation. Supprimez-la avec × sur le bloc.</p>';
       } else {
-        canvas.innerHTML = blocks.map(blockHtml).join('');
+        html += '<p class="admin-nl-inspector-empty">Écrivez directement dans la lettre.</p>';
+      }
+      return html;
+    }
+
+    function renderInspector() {
+      if (!inspector) return;
+      inspector.innerHTML = inspectorHtml(findBlock(selectedId));
+    }
+
+    function select(id) {
+      selectedId = id || '';
+      canvas.querySelectorAll('[data-nl-block]').forEach(function (el) {
+        el.classList.toggle('is-on', el.getAttribute('data-nl-id') === selectedId);
+      });
+      renderInspector();
+    }
+
+    function paint(keepId) {
+      if (keepId) selectedId = keepId;
+      if (!blocks.length) {
+        canvas.innerHTML = '<p class="admin-nl-empty">Cliquez un bloc à gauche, ou le + entre deux éléments, pour composer la lettre.</p>' + slotHtml(0);
+      } else {
+        var html = slotHtml(0);
+        blocks.forEach(function (block, i) {
+          html += blockHtml(block) + slotHtml(i + 1);
+        });
+        canvas.innerHTML = html;
         canvas.querySelectorAll('[data-wysiwyg]').forEach(initWysiwyg);
       }
-      collect();
+      persist();
+      renderInspector();
     }
 
-    function move(index, dir) {
-      var to = index + dir;
-      if (to < 0 || to >= blocks.length) return;
-      var tmp = blocks[index];
-      blocks[index] = blocks[to];
-      blocks[to] = tmp;
-      paint();
+    function addBlock(type, at) {
+      readDom();
+      if (blocks.length >= 40) return;
+      var block = defaultBlock(type);
+      var idx = typeof at === 'number' ? at : (selectedId ? indexOf(selectedId) + 1 : blocks.length);
+      if (idx < 0) idx = blocks.length;
+      blocks.splice(idx, 0, block);
+      paint(block.id);
     }
 
-    form.querySelector('[data-nl-palette]').addEventListener('click', function (event) {
-      var add = event.target.closest('[data-nl-add]');
-      var insert = event.target.closest('[data-nl-insert]');
-      if (add) {
-        collect();
-        if (blocks.length >= 40) return;
-        blocks.push(defaultBlock(add.getAttribute('data-nl-add')));
-        paint();
+    function insertCatalog(key) {
+      readDom();
+      var items = catalog[key] || [];
+      var titles = { missions: 'Dernières recherches', people: 'Nouveaux profils', articles: 'À lire' };
+      if (!items.length) {
+        window.alert('Rien à insérer pour le moment.');
+        return;
       }
-      if (insert) {
-        collect();
-        var key = insert.getAttribute('data-nl-insert');
-        var items = catalog[key] || [];
-        var titles = { missions: 'Dernières recherches', people: 'Nouveaux profils', articles: 'À lire' };
-        if (!items.length) {
-          window.alert('Rien à insérer pour le moment.');
-          return;
-        }
-        if (blocks.length >= 40) return;
-        blocks.push({ id: uid(), type: 'cards', title: titles[key] || '', items: items.slice(0, 12) });
-        paint();
-      }
-    });
+      if (blocks.length >= 40) return;
+      var block = { id: uid(), type: 'cards', title: titles[key] || '', items: items.slice(0, 12) };
+      var idx = selectedId ? indexOf(selectedId) + 1 : blocks.length;
+      blocks.splice(idx, 0, block);
+      paint(block.id);
+    }
 
-    canvas.addEventListener('click', function (event) {
-      var card = event.target.closest('[data-nl-block]');
-      if (!card) return;
-      var index = Array.prototype.indexOf.call(canvas.querySelectorAll('[data-nl-block]'), card);
-      if (event.target.closest('[data-nl-del]')) {
-        collect();
-        blocks.splice(index, 1);
-        paint();
-        return;
-      }
-      if (event.target.closest('[data-nl-move]')) {
-        collect();
-        move(index, parseInt(event.target.closest('[data-nl-move]').getAttribute('data-nl-move'), 10));
-        return;
-      }
-      if (event.target.closest('[data-nl-card-add]')) {
-        var holder = document.createElement('div');
-        holder.innerHTML = cardFields({}, card.querySelectorAll('[data-nl-card]').length);
-        var addBtn = event.target.closest('[data-nl-card-add]').parentNode;
-        card.insertBefore(holder.firstChild, addBtn);
-        collect();
-        return;
-      }
-      if (event.target.closest('[data-nl-card-del]')) {
-        var row = event.target.closest('[data-nl-card]');
-        if (row) row.remove();
-        collect();
-      }
-    });
-
-    canvas.addEventListener('input', collect);
-    canvas.addEventListener('change', function (event) {
-      var file = event.target.closest('[data-nl-upload]');
-      if (!file || !file.files || !file.files[0]) {
-        var srcUrl = event.target.closest('[data-f="srcurl"]');
-        if (srcUrl) {
-          var card = event.target.closest('[data-nl-block]');
-          if (card) {
-            card.setAttribute('data-src', srcUrl.value || '');
-            var hiddenSrc = card.querySelector('[data-f="src"]');
-            if (hiddenSrc) hiddenSrc.value = srcUrl.value || '';
-          }
-        }
-        collect();
-        return;
-      }
-      if (!data.uploadUrl) return;
-      var card = file.closest('[data-nl-block]');
+    function uploadFile(file, blockId) {
+      if (!file || !data.uploadUrl) return;
       var body = new FormData();
       body.append('_token', data.token || '');
-      body.append('image', file.files[0]);
+      body.append('image', file);
       fetch(data.uploadUrl, { method: 'POST', body: body, credentials: 'same-origin' })
         .then(function (r) { return r.json(); })
         .then(function (res) {
           if (!res || !res.ok) throw new Error((res && res.error) || 'Téléversement impossible.');
-          if (card) {
-            card.setAttribute('data-src', res.src || '');
-            var hiddenSrc = card.querySelector('[data-f="src"]');
-            var urlField = card.querySelector('[data-f="srcurl"]');
-            if (hiddenSrc) hiddenSrc.value = res.src || '';
-            if (urlField) urlField.value = res.url || res.src || '';
-            var idx = Array.prototype.indexOf.call(canvas.querySelectorAll('[data-nl-block]'), card);
-            if (idx >= 0 && blocks[idx]) blocks[idx]._url = res.url || '';
-          }
-          collect();
+          var block = findBlock(blockId);
+          if (!block) return;
+          block.src = res.src || '';
+          block._url = res.url || '';
+          paint(blockId);
         })
         .catch(function (err) {
           window.alert(err.message || 'Téléversement impossible.');
         });
+    }
+
+    if (palette) {
+      palette.addEventListener('click', function (event) {
+        var add = event.target.closest('[data-nl-add]');
+        var insert = event.target.closest('[data-nl-insert]');
+        if (add) addBlock(add.getAttribute('data-nl-add'));
+        if (insert) insertCatalog(insert.getAttribute('data-nl-insert'));
+      });
+    }
+
+    canvas.addEventListener('click', function (event) {
+      var plus = event.target.closest('[data-nl-plus]');
+      if (plus) {
+        addBlock('text', parseInt(plus.getAttribute('data-nl-plus'), 10) || 0);
+        return;
+      }
+      var card = event.target.closest('[data-nl-block]');
+      if (!card) {
+        select('');
+        return;
+      }
+      var id = card.getAttribute('data-nl-id');
+      if (event.target.closest('[data-nl-del]')) {
+        readDom();
+        blocks = blocks.filter(function (b) { return b.id !== id; });
+        paint('');
+        return;
+      }
+      if (event.target.closest('[data-nl-card-del]')) {
+        readDom();
+        var block = findBlock(id);
+        var row = event.target.closest('[data-nl-card]');
+        var rows = Array.prototype.slice.call(card.querySelectorAll('[data-nl-card]'));
+        if (block && row) {
+          block.items.splice(rows.indexOf(row), 1);
+          if (!block.items.length) block.items = [{ title: '', meta: '', excerpt: '', href: '' }];
+        }
+        paint(id);
+        return;
+      }
+      if (event.target.closest('[data-nl-pick]')) {
+        var input = card.querySelector('[data-nl-upload]');
+        if (input) input.click();
+      }
+      select(id);
     });
 
-    form.addEventListener('submit', collect);
-    form.querySelector('[name="subject"]').addEventListener('input', collect);
-    form.querySelector('[name="preheader"]').addEventListener('input', collect);
+    canvas.addEventListener('input', function () {
+      readDom();
+    });
+
+    canvas.addEventListener('paste', function (event) {
+      var ed = event.target.closest('[contenteditable]');
+      if (!ed || ed.classList.contains('wysiwyg-editor')) return;
+      event.preventDefault();
+      var text = (event.clipboardData && event.clipboardData.getData('text/plain')) || '';
+      document.execCommand('insertText', false, text);
+    });
+
+    canvas.addEventListener('change', function (event) {
+      var file = event.target.closest('[data-nl-upload]');
+      if (!file || !file.files || !file.files[0]) return;
+      var card = file.closest('[data-nl-block]');
+      if (card) uploadFile(file.files[0], card.getAttribute('data-nl-id'));
+    });
+
+    canvas.addEventListener('dragover', function (event) {
+      if (event.dataTransfer && Array.prototype.slice.call(event.dataTransfer.types).indexOf('Files') !== -1) {
+        event.preventDefault();
+      }
+    });
+    canvas.addEventListener('drop', function (event) {
+      var card = event.target.closest('[data-nl-block]');
+      if (!card || card.getAttribute('data-nl-type') !== 'image') return;
+      var file = event.dataTransfer && event.dataTransfer.files && event.dataTransfer.files[0];
+      if (!file) return;
+      event.preventDefault();
+      uploadFile(file, card.getAttribute('data-nl-id'));
+    });
+
+    var dragId = '';
+    canvas.addEventListener('dragstart', function (event) {
+      var handle = event.target.closest('[data-nl-drag]');
+      if (!handle) return;
+      var card = handle.closest('[data-nl-block]');
+      if (!card) return;
+      dragId = card.getAttribute('data-nl-id');
+      card.classList.add('is-drag');
+      event.dataTransfer.effectAllowed = 'move';
+      event.dataTransfer.setData('text/plain', dragId);
+    });
+    canvas.addEventListener('dragend', function () {
+      dragId = '';
+      canvas.querySelectorAll('.is-drag').forEach(function (el) { el.classList.remove('is-drag'); });
+      canvas.querySelectorAll('.is-over').forEach(function (el) { el.classList.remove('is-over'); });
+    });
+    canvas.addEventListener('dragover', function (event) {
+      if (!dragId) return;
+      var slot = event.target.closest('[data-nl-slot]');
+      if (!slot) return;
+      event.preventDefault();
+      canvas.querySelectorAll('.is-over').forEach(function (el) { el.classList.remove('is-over'); });
+      slot.classList.add('is-over');
+    });
+    canvas.addEventListener('drop', function (event) {
+      var slot = event.target.closest('[data-nl-slot]');
+      if (!slot || !dragId) return;
+      event.preventDefault();
+      readDom();
+      var from = indexOf(dragId);
+      var to = parseInt(slot.getAttribute('data-nl-slot'), 10) || 0;
+      if (from < 0) return;
+      if (to > from) to -= 1;
+      var moved = blocks.splice(from, 1)[0];
+      blocks.splice(to, 0, moved);
+      paint(moved.id);
+    });
+
+    if (inspector) {
+      inspector.addEventListener('click', function (event) {
+        var addCard = event.target.closest('[data-nl-card-add]');
+        if (addCard) {
+          readDom();
+          var block = findBlock(selectedId);
+          if (!block || block.type !== 'cards') return;
+          if (!block.items) block.items = [];
+          if (block.items.length >= 12) return;
+          block.items.push({ title: '', meta: '', excerpt: '', href: '' });
+          paint(selectedId);
+          return;
+        }
+        var chip = event.target.closest('[data-nl-set]');
+        if (!chip || chip.tagName !== 'BUTTON') return;
+        var block = findBlock(selectedId);
+        if (!block) return;
+        readDom();
+        block[chip.getAttribute('data-nl-set')] = chip.getAttribute('data-v');
+        paint(selectedId);
+      });
+      inspector.addEventListener('input', function (event) {
+        var field = event.target.closest('[data-nl-set]');
+        if (!field || field.tagName === 'BUTTON') return;
+        var block = findBlock(selectedId);
+        if (!block) return;
+        var key = field.getAttribute('data-nl-set');
+        var value = field.value;
+        if (key === 'height') {
+          block.height = parseInt(value, 10) || 28;
+          var bar = canvas.querySelector('[data-nl-id="' + selectedId + '"] .admin-nl-vspace');
+          if (bar) {
+            bar.style.height = block.height + 'px';
+            var label = bar.querySelector('.admin-nl-vspace-bar');
+            if (label) {
+              label.style.height = block.height + 'px';
+              label.textContent = block.height + ' px';
+            }
+          }
+          var cap = inspector.querySelector('.field');
+          if (cap) cap.textContent = 'Hauteur (' + block.height + ' px)';
+        } else if (key === 'src') {
+          block.src = value;
+          block._url = /^https:\/\//i.test(value) ? value : block._url;
+          var img = canvas.querySelector('[data-nl-id="' + selectedId + '"] img');
+          var box = canvas.querySelector('[data-nl-id="' + selectedId + '"] .admin-nl-vimg');
+          if (img && /^https:\/\//i.test(value)) img.src = value;
+          if (box) box.setAttribute('data-src', value);
+        } else {
+          block[key] = value;
+        }
+        persist();
+      });
+      inspector.addEventListener('change', function (event) {
+        var file = event.target.closest('[data-nl-upload]');
+        if (file && file.files && file.files[0] && selectedId) {
+          uploadFile(file.files[0], selectedId);
+        }
+        var src = event.target.closest('[data-nl-set="src"]');
+        if (src) paint(selectedId);
+      });
+    }
+
+    form.addEventListener('submit', readDom);
+    form.querySelector('[name="subject"]').addEventListener('input', persist);
+    form.querySelector('[name="preheader"]').addEventListener('input', persist);
     document.querySelectorAll('[data-nl-sync]').forEach(function (extra) {
-      extra.addEventListener('submit', collect);
+      extra.addEventListener('submit', readDom);
     });
 
-    paint();
+    paint(blocks[0] ? blocks[0].id : '');
   })();
 
   function initQuoteRecap() {
@@ -2695,18 +2923,43 @@
 
   document.querySelectorAll('[data-forum-compose]').forEach(function (form) {
     var ta = form.querySelector('textarea[name="body"]');
+    var editor = form.querySelector('.wysiwyg-editor');
     var count = form.querySelector('[data-draft-count]');
     var parent = form.querySelector('[data-parent-id]');
     var hint = form.querySelector('[data-cite-hint]');
+    function plainLen() {
+      if (editor && wrapReady(editor)) {
+        return (editor.innerText || '').replace(/\u00a0/g, ' ').trim().length;
+      }
+      return ((ta && ta.value) || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().length;
+    }
+    function wrapReady(el) {
+      var wrap = el.closest('[data-wysiwyg]');
+      return !!(wrap && wrap.classList.contains('is-ready') && !el.hidden);
+    }
     function updateCount() {
-      if (!count || !ta) return;
-      var n = (ta.value || '').trim().length;
+      if (!count) return;
+      var n = plainLen();
       count.textContent = n ? (n + ' caractères') : 'Minimum 80 caractères';
     }
-    if (ta) {
-      ta.addEventListener('input', updateCount);
-      updateCount();
+    if (ta) ta.addEventListener('input', updateCount);
+    if (editor) {
+      editor.addEventListener('input', updateCount);
+      editor.addEventListener('blur', updateCount);
     }
+    form.addEventListener('submit', function (event) {
+      if (editor && wrapReady(editor) && ta) {
+        ta.value = editorIsEmpty(editor) ? '' : sanitizeEditorHtml(editor.innerHTML);
+      }
+      if (plainLen() < 80) {
+        event.preventDefault();
+        updateCount();
+        if (count) count.textContent = 'Minimum 80 caractères — encore ' + Math.max(0, 80 - plainLen()) + ' à écrire';
+        if (editor && wrapReady(editor)) editor.focus();
+        else if (ta) ta.focus();
+      }
+    });
+    updateCount();
     document.querySelectorAll('[data-cite]').forEach(function (btn) {
       btn.addEventListener('click', function () {
         if (!parent) return;
@@ -2716,7 +2969,67 @@
           hint.hidden = false;
           hint.textContent = name ? ('En réponse à ' + name) : 'Réponse citée';
         }
+        if (editor && wrapReady(editor)) editor.focus();
+        else if (ta) ta.focus();
       });
     });
+  });
+
+  document.querySelectorAll('[data-forum-similar]').forEach(function (root) {
+    var api = root.getAttribute('data-api');
+    var titleInput = root.querySelector('[data-similar-title]');
+    var categorySelect = root.querySelector('[data-similar-category]');
+    var idle = root.querySelector('[data-similar-idle]');
+    var panel = root.querySelector('[data-similar-panel]');
+    var empty = root.querySelector('[data-similar-empty]');
+    var list = root.querySelector('[data-similar-list]');
+    if (!api || !titleInput || !list) return;
+
+    var seq = 0;
+
+    function showState(state) {
+      if (idle) idle.hidden = state !== 'idle';
+      if (panel) panel.hidden = state !== 'results';
+      if (empty) empty.hidden = state !== 'empty';
+    }
+
+    function renderItems(items) {
+      list.innerHTML = items.map(function (item) {
+        var meta = [item.subtitle || item.kind_label || '', item.meta || ''].filter(Boolean).join(' · ');
+        return '<a href="' + escapeHtml(item.href || '#') + '" target="_blank" rel="noopener">' +
+          '<div class="forum-aside-link">' + escapeHtml(item.title || '') + '</div>' +
+          (meta ? '<div class="forum-aside-meta">' + escapeHtml(meta) + '</div>' : '') +
+          '</a>';
+      }).join('');
+    }
+
+    var run = debounce(function () {
+      var q = (titleInput.value || '').trim();
+      if (q.length < 4) {
+        list.innerHTML = '';
+        showState('idle');
+        return;
+      }
+      var mySeq = ++seq;
+      var params = new URLSearchParams({ q: q, limit: '6' });
+      if (categorySelect && categorySelect.value) {
+        params.set('category_id', categorySelect.value);
+      }
+      fetchSearch(api, params, function (data) {
+        if (mySeq !== seq) return;
+        var items = data.suggestions || data.results || [];
+        if (!items.length) {
+          list.innerHTML = '';
+          showState('empty');
+          return;
+        }
+        renderItems(items);
+        showState('results');
+      });
+    }, 220);
+
+    titleInput.addEventListener('input', run);
+    if (categorySelect) categorySelect.addEventListener('change', run);
+    if ((titleInput.value || '').trim().length >= 4) run();
   });
 })();

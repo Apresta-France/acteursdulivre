@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Adl\Models;
 
 use Adl\Core\Database;
+use Adl\Core\ProfanityFilter;
 use RuntimeException;
 
 final class ForumPost
@@ -16,7 +17,7 @@ final class ForumPost
     {
         $row = Database::fetch(
             'SELECT p.*,
-                    u.first_name, u.last_name, u.avatar_url, u.created_at AS user_created_at,
+                    u.first_name, u.last_name, u.avatar_url, u.platform_cofounder, u.created_at AS user_created_at,
                     pr.title AS profile_title, pr.city AS profile_city, pr.verification_status,
                     pr.trades_json, pr.slug AS profile_slug,
                     parent_u.first_name AS parent_first_name, parent_u.last_name AS parent_last_name
@@ -55,7 +56,7 @@ final class ForumPost
 
         $rows = Database::fetchAll(
             "SELECT p.*,
-                    u.first_name, u.last_name, u.avatar_url, u.created_at AS user_created_at,
+                    u.first_name, u.last_name, u.avatar_url, u.platform_cofounder, u.created_at AS user_created_at,
                     pr.title AS profile_title, pr.city AS profile_city, pr.verification_status,
                     pr.trades_json, pr.slug AS profile_slug,
                     parent_u.first_name AS parent_first_name, parent_u.last_name AS parent_last_name
@@ -90,7 +91,7 @@ final class ForumPost
     {
         $row = Database::fetch(
             'SELECT p.*,
-                    u.first_name, u.last_name, u.avatar_url, u.created_at AS user_created_at,
+                    u.first_name, u.last_name, u.avatar_url, u.platform_cofounder, u.created_at AS user_created_at,
                     pr.title AS profile_title, pr.city AS profile_city, pr.verification_status,
                     pr.trades_json, pr.slug AS profile_slug
              FROM forum_posts p
@@ -167,6 +168,8 @@ final class ForumPost
             throw new RuntimeException('Confirmez que votre réponse n\'a pas été générée par IA.');
         }
 
+        ProfanityFilter::assertClean($body);
+
         $parentId = (int) ($data['parent_id'] ?? 0);
         if ($parentId > 0) {
             $parent = self::find($parentId);
@@ -202,8 +205,10 @@ final class ForumPost
                 [$userId, $topicId]
             );
             Database::query(
-                'INSERT IGNORE INTO forum_topic_follows (topic_id, user_id, created_at) VALUES (?, ?, NOW())',
-                [$topicId, $userId]
+                'INSERT INTO forum_topic_follows (topic_id, user_id, created_at, last_read_at, last_read_post_id)
+                 VALUES (?, ?, NOW(), NOW(), ?)
+                 ON DUPLICATE KEY UPDATE last_read_at = NOW(), last_read_post_id = VALUES(last_read_post_id)',
+                [$topicId, $userId, $postId]
             );
             Database::query(
                 'UPDATE forum_topics t
@@ -324,6 +329,7 @@ final class ForumPost
             'city' => $city,
             'meta' => $meta,
             'verified' => $verified,
+            'is_platform_cofounder' => (int) ($row['platform_cofounder'] ?? 0) === 1,
             'profile_href' => $profileSlug !== '' ? '/prestataires/' . $profileSlug : null,
             'member_since' => self::memberSinceLabel($row['user_created_at'] ?? null),
         ];

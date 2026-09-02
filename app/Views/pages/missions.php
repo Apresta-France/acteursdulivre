@@ -1,6 +1,13 @@
 <?php
 $missions = $liveMissions ?? [];
 $count = (int) ($searchCount ?? count($missions));
+$pager = $pager ?? ['page' => 1, 'pages' => 1, 'total' => $count];
+$page = (int) ($pager['page'] ?? 1);
+$pages = (int) ($pager['pages'] ?? 1);
+$countLabel = '· ' . $count . ' recherche' . ($count > 1 ? 's' : '');
+if ($pages > 1) {
+    $countLabel .= ' · page ' . $page . ' / ' . $pages;
+}
 $viewer = \Adl\Core\Auth::user();
 $canPublish = $viewer && \Adl\Models\User::seeksServices($viewer);
 $publishHref = !$viewer
@@ -42,7 +49,7 @@ if ((int) $bmin !== \Adl\Data\Catalog::BUDGET_MIN || (int) $bmax !== \Adl\Data\C
      data-search-standalone
      data-results="rows"
      data-count-unit="recherche"
-     data-search-limit="48"
+     data-search-limit="<?= (int) \Adl\Data\Catalog::PER_PAGE ?>"
      data-type="missions"
      data-api="<?= e(url('/api/recherche')) ?>"
      data-initial="<?= e(json_encode($searchState ?? ['results' => $missions, 'count' => $count, 'type' => 'missions', 'filters' => $filters], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)) ?>">
@@ -96,7 +103,7 @@ if ((int) $bmin !== \Adl\Data\Catalog::BUDGET_MIN || (int) $bmax !== \Adl\Data\C
       <div class="search-crumb"><a href="<?= e(url('/')) ?>">Accueil</a> · Appels d'offres</div>
       <div class="search-head missions-head">
         <div>
-          <h1>Appels d'offres <span data-search-count>· <?= $count ?> recherche<?= $count > 1 ? 's' : '' ?></span></h1>
+          <h1>Appels d'offres <span data-search-count><?= e($countLabel) ?></span></h1>
           <p class="missions-lead">Parcourez les recherches ouvertes et candidatez avec votre devis.</p>
         </div>
         <?php if ($publishHref !== ''): ?>
@@ -136,6 +143,11 @@ if ((int) $bmin !== \Adl\Data\Catalog::BUDGET_MIN || (int) $bmax !== \Adl\Data\C
           </div>
         <?php endif; ?>
       </div>
+      <?php
+        $pagerPath = '/missions';
+        $pagerLabel = 'Pagination des appels d’offres';
+        require ADL_ROOT . '/app/Views/partials/search-pager.php';
+      ?>
     </div>
   </div>
 </div>

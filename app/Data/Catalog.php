@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Adl\Data;
 
 use Adl\Models\Article;
+use Adl\Models\ForumTopic;
 use Adl\Models\Mission;
 use Adl\Models\PortfolioItem;
 use Adl\Models\Profile;
@@ -12,7 +13,6 @@ use Adl\Models\Review;
 use Adl\Models\Service;
 use Adl\Models\Setting;
 use Adl\Models\Taxonomy;
-use Adl\Models\User;
 
 final class Catalog
 {
@@ -22,6 +22,8 @@ final class Catalog
         'prestataires' => 'Prestataires',
         'missions' => 'Recherches',
     ];
+
+    public const PER_PAGE = 24;
 
     /** Volume utile pour les métiers quantifiables ; absent = champ masqué (le brief suffit). */
     public const VOLUME_HINTS = [
@@ -986,10 +988,13 @@ final class Catalog
      *   available_only: bool,
      *   filters: array<string, mixed>,
      *   facets: array<string, list<array{v: string, l: string, n: int}>>,
-     *   city: string
+     *   city: string,
+     *   page: int,
+     *   pages: int,
+     *   per_page: int
      * }
      */
-    public static function search(string $q, string $type = 'all', string $cat = '', int $limit = 48, bool $availableOnly = false, array $filters = []): array
+    public static function search(string $q, string $type = 'all', string $cat = '', int $limit = 48, bool $availableOnly = false, array $filters = [], int $page = 1): array
     {
         $type = array_key_exists($type, self::TYPES) ? $type : 'all';
         $filters = self::normalizeFilters($filters, $availableOnly);
@@ -1045,7 +1050,11 @@ final class Catalog
             return ($b['score'] <=> $a['score']) ?: strcmp((string) $a['title'], (string) $b['title']);
         });
 
-        $results = array_slice($scored, 0, $limit);
+        $perPage = max(1, $limit);
+        $total = count($scored);
+        $pages = max(1, (int) ceil($total / $perPage));
+        $page = max(1, min($page, $pages));
+        $results = array_slice($scored, ($page - 1) * $perPage, $perPage);
         $groups = ['prestations' => [], 'prestataires' => [], 'missions' => []];
         foreach ($results as $item) {
             $groups[$item['kind']][] = $item;
@@ -1055,7 +1064,7 @@ final class Catalog
             'query' => $q,
             'type' => $type,
             'cat' => $cat,
-            'count' => count($scored),
+            'count' => $total,
             'results' => $results,
             'groups' => $groups,
             'suggestions' => array_slice($results, 0, 8),
@@ -1063,6 +1072,9 @@ final class Catalog
             'filters' => $filters,
             'facets' => $facets,
             'city' => (string) ($filters['city'] ?? ''),
+            'page' => $page,
+            'pages' => $pages,
+            'per_page' => $perPage,
         ];
     }
 
@@ -1680,7 +1692,7 @@ final class Catalog
     public static function homeStats(): array
     {
         try {
-            $pros = User::countOfferers();
+            $pros = Profile::countPublished();
             $services = Service::countPublished();
             $missions = Mission::countOpen();
             $commission = Setting::get('commission_percent', '8') ?: '8';
@@ -1690,7 +1702,7 @@ final class Catalog
         }
 
         return [
-            ['v' => format_int($pros), 'k' => $pros > 1 ? 'professionnels du livre inscrits' : 'professionnel du livre inscrit'],
+            ['v' => format_int($pros), 'k' => $pros > 1 ? 'professionnels du livre en ligne' : 'professionnel du livre en ligne'],
             ['v' => format_int($services), 'k' => $services > 1 ? 'prestations à prix affiché' : 'prestation à prix affiché'],
             ['v' => format_int($missions), 'k' => $missions > 1 ? 'missions ouvertes' : 'mission ouverte'],
             ['v' => $commission . ' %', 'k' => 'dès la 2ᵉ mission, sans abonnement'],
@@ -1752,6 +1764,16 @@ final class Catalog
                 $item['go'] = true;
             }
             return $items;
+        } catch (\Throwable) {
+            return [];
+        }
+    }
+
+    /** @return list<array<string, mixed>> */
+    public static function homeForum(int $limit = 3): array
+    {
+        try {
+            return ForumTopic::recentForHome($limit);
         } catch (\Throwable) {
             return [];
         }
@@ -1823,6 +1845,7 @@ final class Catalog
             'socials' => $profile['socials'] ?? [],
             'href' => Profile::publicHref($profile),
             'is_founder' => !empty($profile['is_founder']),
+            'is_platform_cofounder' => !empty($profile['is_platform_cofounder']),
             'user_id' => (int) ($profile['user_id'] ?? 0),
             'is_verified' => !empty($profile['is_verified']),
             'reviews' => Review::forTarget((int) ($profile['user_id'] ?? 0), 8),

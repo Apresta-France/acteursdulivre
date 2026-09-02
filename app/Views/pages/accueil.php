@@ -11,6 +11,7 @@ $iaPoints = $iaPoints ?? [];
 $mega = $mega ?? [];
 $homeTemoins = $homeTemoins ?? [];
 $journal = $journal ?? [];
+$homeForum = $homeForum ?? [];
 $aideFaq = $aideFaq ?? [];
 $homeQuick = $homeQuick ?? [];
 $query = (string) ($query ?? '');
@@ -309,6 +310,51 @@ $query = (string) ($query ?? '');
             <div class="mk-kicker"><?= e((string) ($a['cat'] ?? '')) ?> · <?= e((string) ($a['read'] ?? '')) ?></div>
             <strong><?= e((string) $a['title']) ?></strong>
             <span><?= e((string) ($a['chapo'] ?? '')) ?></span>
+          </a>
+        <?php endforeach; ?>
+      </div>
+    <?php endif; ?>
+  </section>
+
+  <section class="mk-block mk-wash-cool">
+    <div class="mk-head">
+      <div>
+        <h2>Derniers échanges du forum</h2>
+        <p>Tarifs, contrats, papier, délais : les réponses viennent de gens qui font le métier.</p>
+      </div>
+      <a href="<?= e(url('/forum')) ?>">Toutes les discussions →</a>
+    </div>
+    <?php if ($homeForum === []): ?>
+      <p class="mk-empty">Aucune discussion pour le moment. <a href="<?= e(url('/forum')) ?>">Ouvrir le forum</a></p>
+    <?php else: ?>
+      <div class="mk-forum">
+        <?php foreach ($homeForum as $t): ?>
+          <?php
+            $replies = (int) ($t['reply_count'] ?? 0);
+            $lastAuthor = is_array($t['last_author'] ?? null) ? $t['last_author'] : ($t['author'] ?? []);
+            $who = (string) ($lastAuthor['name'] ?? $t['last_by'] ?? '');
+            $when = (string) ($t['last_when'] ?? $t['when'] ?? '');
+            $verb = !empty($t['last_is_op']) || $replies === 0 ? 'a ouvert' : 'a répondu';
+          ?>
+          <a class="mk-forum-row" href="<?= e(url((string) ($t['href'] ?? '/forum'))) ?>">
+            <?= avatar_html($lastAuthor, 42, 'mk-forum-avatar') ?>
+            <div class="mk-forum-main">
+              <div class="mk-forum-line">
+                <span class="mk-tag"><?= e((string) ($t['category_short'] ?? '')) ?></span>
+                <?php if (!empty($t['badge'])): ?>
+                  <span class="forum-badge forum-badge-<?= e(slugify((string) $t['badge'])) ?>"><?= e((string) $t['badge']) ?></span>
+                <?php endif; ?>
+              </div>
+              <strong><?= e((string) ($t['title'] ?? '')) ?></strong>
+              <?php if (!empty($t['excerpt'])): ?>
+                <p><?= e((string) $t['excerpt']) ?></p>
+              <?php endif; ?>
+              <span class="mk-forum-meta"><?= e(trim($who . ($who !== '' ? ' ' . $verb : '') . ($when !== '' ? ' · ' . $when : ''))) ?></span>
+            </div>
+            <div class="mk-forum-count">
+              <strong><?= $replies ?></strong>
+              <span><?= $replies > 1 ? 'réponses' : 'réponse' ?></span>
+            </div>
           </a>
         <?php endforeach; ?>
       </div>

@@ -184,7 +184,7 @@ final class Profile
     {
         $row = Database::fetch(
             'SELECT p.*, u.first_name, u.last_name, u.avatar_url, u.offers_services, u.founder,
-                    u.created_at AS member_since
+                    u.platform_cofounder, u.created_at AS member_since
              FROM profiles p
              JOIN users u ON u.id = p.user_id
              WHERE p.user_id = ?',
@@ -197,7 +197,7 @@ final class Profile
     {
         $row = Database::fetch(
             'SELECT p.*, u.first_name, u.last_name, u.avatar_url, u.offers_services, u.founder,
-                    u.created_at AS member_since
+                    u.platform_cofounder, u.created_at AS member_since
              FROM profiles p
              JOIN users u ON u.id = p.user_id
              WHERE p.slug = ?',
@@ -399,12 +399,29 @@ final class Profile
         return $note !== '' ? $label . ' · ' . $note : $label;
     }
 
+    public static function countPublished(): int
+    {
+        $row = Database::fetch('SELECT COUNT(*) AS n ' . self::publishedFromWhere());
+        return (int) ($row['n'] ?? 0);
+    }
+
     /** @return list<array<string, mixed>> */
     public static function searchPublished(): array
     {
         $rows = Database::fetchAll(
-            'SELECT p.*, u.first_name, u.last_name, u.avatar_url, u.created_at AS member_since
-             FROM profiles p
+            'SELECT p.*, u.first_name, u.last_name, u.avatar_url, u.founder, u.platform_cofounder,
+                    u.created_at AS member_since
+             ' . self::publishedFromWhere() . '
+             ORDER BY p.updated_at DESC, p.id DESC'
+        );
+
+        return array_map([self::class, 'hydrate'], $rows);
+    }
+
+    /** Même périmètre que l’annuaire : compte actif, vitrine renseignée, pas de facture échue. */
+    private static function publishedFromWhere(): string
+    {
+        return 'FROM profiles p
              JOIN users u ON u.id = p.user_id
              WHERE u.offers_services = 1
                AND u.status = "active"
@@ -418,11 +435,7 @@ final class Profile
                     (p.title IS NOT NULL AND p.title != "")
                  OR (p.presentation IS NOT NULL AND p.presentation != "")
                  OR (p.trades_json IS NOT NULL AND p.trades_json != "" AND p.trades_json != "[]")
-               )
-             ORDER BY p.updated_at DESC, p.id DESC'
-        );
-
-        return array_map([self::class, 'hydrate'], $rows);
+               )';
     }
 
     public static function completeness(array $profile): int
@@ -868,6 +881,7 @@ final class Profile
         $row['avatar_src'] = user_avatar_src($row);
         $row['initials'] = self::initials($row);
         $row['is_founder'] = (int) ($row['founder'] ?? 0) === 1;
+        $row['is_platform_cofounder'] = (int) ($row['platform_cofounder'] ?? 0) === 1;
         $row['verification_status'] = (string) ($row['verification_status'] ?? '');
         $row['is_verified'] = $row['verification_status'] === self::VERIFY_VERIFIED;
         $row['verification_doc_href'] = !empty($row['verification_doc_path'])

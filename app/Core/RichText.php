@@ -49,9 +49,11 @@ final class RichText
             'b' => [],
             'em' => [],
             'i' => [],
+            'u' => [],
             'ul' => [],
             'ol' => [],
             'li' => [],
+            'blockquote' => [],
             'a' => ['href', 'title', 'rel', 'target'],
         ],
     ];

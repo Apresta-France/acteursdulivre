@@ -53,7 +53,7 @@ if ($offers && $profileCompletion < 80) {
   <div class="espace-page-head">
     <div>
       <h1>Bonjour <?= e($first) ?></h1>
-      <p><?= e($subtitle) ?><?php if (!empty($isFounder)): ?> <span class="profile-badge profile-badge-founder">Membre fondateur</span><?php endif; ?></p>
+      <p><?= e($subtitle) ?><?php if (!empty($isPlatformCofounder)): ?> <span class="profile-badge profile-badge-cofounder">Co-fondateur de la plateforme</span><?php endif; ?><?php if (!empty($isFounder)): ?> <span class="profile-badge profile-badge-founder">Membre fondateur</span><?php endif; ?></p>
     </div>
     <div class="dash-hero-actions">
       <?php if ($seeks): ?>

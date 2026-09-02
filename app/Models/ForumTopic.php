@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Adl\Models;
 
 use Adl\Core\Database;
+use Adl\Core\ProfanityFilter;
 use RuntimeException;
 
 final class ForumTopic
@@ -84,7 +85,7 @@ final class ForumTopic
         $rows = Database::fetchAll(
             "SELECT t.*,
                     c.name AS category_name, c.slug AS category_slug,
-                    u.first_name, u.last_name, u.avatar_url, u.created_at AS user_created_at,
+                    u.first_name, u.last_name, u.avatar_url, u.platform_cofounder, u.created_at AS user_created_at,
                     p.title AS profile_title, p.city AS profile_city, p.verification_status,
                     p.trades_json, p.slug AS profile_slug,
                     lu.first_name AS last_first_name, lu.last_name AS last_last_name
@@ -115,6 +116,62 @@ final class ForumTopic
         return $found['items'];
     }
 
+    /**
+     * Discussions à l'activité la plus récente, avec extrait du dernier message.
+     *
+     * @return list<array<string, mixed>>
+     */
+    public static function recentForHome(int $limit = 3): array
+    {
+        $limit = max(1, min(10, $limit));
+        $rows = Database::fetchAll(
+            'SELECT t.*,
+                    c.name AS category_name, c.slug AS category_slug,
+                    u.first_name, u.last_name, u.avatar_url, u.platform_cofounder, u.created_at AS user_created_at,
+                    p.title AS profile_title, p.city AS profile_city, p.verification_status,
+                    p.trades_json, p.slug AS profile_slug,
+                    lu.first_name AS last_first_name, lu.last_name AS last_last_name,
+                    lu.avatar_url AS last_avatar_url,
+                    lp.body AS last_body, lp.is_op AS last_is_op
+             FROM forum_topics t
+             INNER JOIN forum_categories c ON c.id = t.category_id
+             INNER JOIN users u ON u.id = t.user_id
+             LEFT JOIN profiles p ON p.user_id = u.id
+             LEFT JOIN users lu ON lu.id = t.last_post_user_id
+             LEFT JOIN forum_posts lp ON lp.topic_id = t.id AND lp.status = "visible"
+               AND lp.id = (SELECT MAX(id) FROM forum_posts WHERE topic_id = t.id AND status = "visible")
+             WHERE t.status = "visible"
+             ORDER BY t.last_post_at DESC
+             LIMIT ' . $limit
+        );
+
+        $out = [];
+        foreach ($rows as $row) {
+            $topic = self::present($row);
+            $excerpt = trim(plain_text((string) ($row['last_body'] ?? '')));
+            if (mb_strlen($excerpt) > 160) {
+                $excerpt = rtrim(mb_substr($excerpt, 0, 157)) . '…';
+            }
+            $lastName = trim(((string) ($row['last_first_name'] ?? '')) . ' ' . ((string) ($row['last_last_name'] ?? '')));
+            $lastAuthor = [
+                'name' => $lastName,
+                'initials' => User::initials([
+                    'first_name' => $row['last_first_name'] ?? '',
+                    'last_name' => $row['last_last_name'] ?? '',
+                ]),
+                'avatar_url' => $row['last_avatar_url'] ?? null,
+            ];
+            if ($lastName === '') {
+                $lastAuthor = $topic['author'] ?? $lastAuthor;
+            }
+            $topic['excerpt'] = $excerpt;
+            $topic['last_author'] = $lastAuthor;
+            $topic['last_is_op'] = !empty($row['last_is_op']);
+            $out[] = $topic;
+        }
+        return $out;
+    }
+
     public static function unanswered(int $limit = 4): array
     {
         $found = self::list(['filter' => 'unanswered', 'per_page' => $limit, 'page' => 1]);
@@ -126,7 +183,7 @@ final class ForumTopic
         $rows = Database::fetchAll(
             'SELECT t.*,
                     c.name AS category_name, c.slug AS category_slug,
-                    u.first_name, u.last_name, u.avatar_url, u.created_at AS user_created_at,
+                    u.first_name, u.last_name, u.avatar_url, u.platform_cofounder, u.created_at AS user_created_at,
                     p.title AS profile_title, p.city AS profile_city, p.verification_status,
                     p.trades_json, p.slug AS profile_slug,
                     lu.first_name AS last_first_name, lu.last_name AS last_last_name
@@ -141,6 +198,142 @@ final class ForumTopic
             [$categoryId, $excludeId]
         );
         return array_map([self::class, 'present'], $rows);
+    }
+
+    /**
+     * Suggestions de discussions proches d'un titre en cours de saisie.
+     *
+     * @return list<array{href: string, title: string, subtitle: string, kind_label: string, meta: string}>
+     */
+    public static function suggestSimilar(string $q, int $categoryId = 0, int $limit = 6): array
+    {
+        $limit = max(1, min(10, $limit));
+        $tokens = self::titleTokens($q);
+        if ($tokens === []) {
+            return [];
+        }
+
+        $ors = [];
+        $params = [];
+        foreach ($tokens as $token) {
+            $like = '%' . addcslashes($token, '%_\\') . '%';
+            $ors[] = '(t.title LIKE ? OR t.tags_json LIKE ?)';
+            $params[] = $like;
+            $params[] = $like;
+        }
+        $where = 't.status = "visible" AND (' . implode(' OR ', $ors) . ')';
+        $rows = Database::fetchAll(
+            "SELECT t.*,
+                    c.name AS category_name, c.slug AS category_slug,
+                    u.first_name, u.last_name, u.avatar_url, u.platform_cofounder, u.created_at AS user_created_at,
+                    p.title AS profile_title, p.city AS profile_city, p.verification_status,
+                    p.trades_json, p.slug AS profile_slug,
+                    lu.first_name AS last_first_name, lu.last_name AS last_last_name
+             FROM forum_topics t
+             INNER JOIN forum_categories c ON c.id = t.category_id
+             INNER JOIN users u ON u.id = t.user_id
+             LEFT JOIN profiles p ON p.user_id = u.id
+             LEFT JOIN users lu ON lu.id = t.last_post_user_id
+             WHERE $where
+             ORDER BY t.last_post_at DESC
+             LIMIT 48",
+            $params
+        );
+
+        $scored = [];
+        foreach ($rows as $row) {
+            $topic = self::present($row);
+            $hayTitle = search_norm((string) ($topic['title'] ?? ''));
+            $hayTags = search_norm(implode(' ', $topic['tags'] ?? []));
+            $score = 0;
+            $matched = 0;
+            foreach ($tokens as $token) {
+                $inTitle = str_contains($hayTitle, $token);
+                $inTags = str_contains($hayTags, $token);
+                if ($inTitle) {
+                    $score += 3;
+                    $matched++;
+                } elseif ($inTags) {
+                    $score += 1;
+                    $matched++;
+                }
+            }
+            if ($matched === 0) {
+                continue;
+            }
+            if ($categoryId > 0 && (int) ($topic['category_id'] ?? 0) === $categoryId) {
+                $score += 2;
+            }
+            $score += min(2, (int) ($topic['reply_count'] ?? 0) > 0 ? 1 : 0);
+            $scored[] = ['score' => $score, 'matched' => $matched, 'topic' => $topic];
+        }
+
+        usort($scored, static function (array $a, array $b): int {
+            if ($a['score'] !== $b['score']) {
+                return $b['score'] <=> $a['score'];
+            }
+            if ($a['matched'] !== $b['matched']) {
+                return $b['matched'] <=> $a['matched'];
+            }
+            return ((int) ($b['topic']['id'] ?? 0)) <=> ((int) ($a['topic']['id'] ?? 0));
+        });
+
+        $out = [];
+        foreach (array_slice($scored, 0, $limit) as $item) {
+            $topic = $item['topic'];
+            $replies = (int) ($topic['reply_count'] ?? 0);
+            $out[] = [
+                'href' => (string) ($topic['href'] ?? '/forum'),
+                'title' => (string) ($topic['title'] ?? ''),
+                'subtitle' => (string) ($topic['category_short'] ?? $topic['category_name'] ?? ''),
+                'kind_label' => (string) ($topic['category_short'] ?? 'Forum'),
+                'meta' => $replies === 0
+                    ? 'sans réponse · ' . (string) ($topic['when'] ?? '')
+                    : format_int($replies) . ' réponse' . ($replies > 1 ? 's' : '') . ' · ' . (string) ($topic['last_when'] ?? $topic['when'] ?? ''),
+            ];
+        }
+        return $out;
+    }
+
+    /** @return list<string> */
+    public static function titleTokens(string $q): array
+    {
+        $q = trim($q);
+        if (mb_strlen($q) < 3) {
+            return [];
+        }
+        $norm = search_norm($q);
+        $parts = preg_split('/[^a-z0-9]+/', $norm) ?: [];
+        $stop = [
+            'le', 'la', 'les', 'un', 'une', 'des', 'de', 'du', 'et', 'ou', 'au', 'aux',
+            'pour', 'dans', 'sur', 'avec', 'sans', 'que', 'qui', 'quoi', 'quel', 'quelle',
+            'quels', 'quelles', 'ce', 'cet', 'cette', 'ces', 'en', 'est', 'sont', 'ont',
+            'mon', 'ma', 'mes', 'ton', 'ta', 'tes', 'son', 'sa', 'ses', 'notre', 'nos',
+            'votre', 'vos', 'leur', 'leurs', 'je', 'tu', 'il', 'elle', 'nous', 'vous',
+            'ils', 'elles', 'ne', 'pas', 'plus', 'moins', 'tres', 'aussi', 'comme',
+            'dont', 'ou', 'si', 'se', 'me', 'te', 'y', 'd', 'l', 'n', 's', 'c',
+            'par', 'vers', 'chez', 'entre', 'sous', 'donc', 'car', 'mais', 'alors',
+            'comment', 'quand', 'combien', 'pourquoi', 'quelqu', 'toute', 'tous',
+            'tout', 'toutes', 'faire', 'fait', 'etre', 'avoir', 'peut', 'peuton',
+            'faut', 'ilfaut', 'bonne', 'bon', 'bien', 'mal', 'ca', 'cela',
+        ];
+        $out = [];
+        foreach ($parts as $part) {
+            if ($part === '' || mb_strlen($part) < 3 || in_array($part, $stop, true)) {
+                continue;
+            }
+            $out[$part] = $part;
+            if (count($out) >= 8) {
+                break;
+            }
+        }
+        if ($out === [] && mb_strlen($norm) >= 3) {
+            $compact = preg_replace('/[^a-z0-9]+/', '', $norm) ?? '';
+            if (mb_strlen($compact) >= 3) {
+                $out[$compact] = $compact;
+            }
+        }
+        return array_values($out);
     }
 
     public static function stats(): array
@@ -204,7 +397,7 @@ final class ForumTopic
     public static function topContributors(int $limit = 5): array
     {
         $rows = Database::fetchAll(
-            'SELECT u.id, u.first_name, u.last_name, u.avatar_url,
+            'SELECT u.id, u.first_name, u.last_name, u.avatar_url, u.platform_cofounder,
                     p.title AS profile_title, p.city AS profile_city, p.verification_status,
                     p.trades_json, p.slug AS profile_slug,
                     COUNT(fp.id) AS post_count
@@ -268,6 +461,8 @@ final class ForumTopic
             throw new RuntimeException('Confirmez que votre message n\'a pas été généré par IA.');
         }
 
+        ProfanityFilter::assertClean($title, $body, implode(' ', $tags));
+
         $safeBody = sanitize_user_html($body);
         $slug = unique_slug(
             $title,
@@ -292,9 +487,12 @@ final class ForumTopic
                  VALUES (?, ?, ?, 1, 1, "visible", NOW(), NOW())',
                 [$topicId, $userId, $safeBody]
             );
+            $postId = (int) Database::lastId();
             Database::query(
-                'INSERT IGNORE INTO forum_topic_follows (topic_id, user_id, created_at) VALUES (?, ?, NOW())',
-                [$topicId, $userId]
+                'INSERT INTO forum_topic_follows (topic_id, user_id, created_at, last_read_at, last_read_post_id)
+                 VALUES (?, ?, NOW(), NOW(), ?)
+                 ON DUPLICATE KEY UPDATE topic_id = topic_id',
+                [$topicId, $userId, $postId]
             );
             Database::query(
                 'UPDATE forum_topics SET follow_count = 1 WHERE id = ?',
@@ -344,6 +542,76 @@ final class ForumTopic
         ) !== null;
     }
 
+    public static function markRead(int $topicId, int $userId): void
+    {
+        if ($userId <= 0 || $topicId <= 0) {
+            return;
+        }
+        if (!self::isFollowing($topicId, $userId)) {
+            return;
+        }
+        $max = Database::fetch(
+            'SELECT MAX(id) AS n FROM forum_posts WHERE topic_id = ? AND status = "visible"',
+            [$topicId]
+        );
+        Database::query(
+            'UPDATE forum_topic_follows
+             SET last_read_at = NOW(), last_read_post_id = ?
+             WHERE topic_id = ? AND user_id = ?',
+            [(int) ($max['n'] ?? 0), $topicId, $userId]
+        );
+    }
+
+    public static function unreadReplyCount(int $userId): int
+    {
+        if ($userId <= 0) {
+            return 0;
+        }
+        $row = Database::fetch(
+            'SELECT COUNT(*) AS n
+             FROM forum_posts p
+             INNER JOIN forum_topic_follows f ON f.topic_id = p.topic_id AND f.user_id = ?
+             INNER JOIN forum_topics t ON t.id = p.topic_id AND t.status = "visible"
+             WHERE p.status = "visible"
+               AND p.is_op = 0
+               AND p.user_id != ?
+               AND p.id > COALESCE(f.last_read_post_id, 0)',
+            [$userId, $userId]
+        );
+        return (int) ($row['n'] ?? 0);
+    }
+
+    /**
+     * @param list<int> $topicIds
+     * @return array<int, int>
+     */
+    public static function unreadCountsForTopics(int $userId, array $topicIds): array
+    {
+        $topicIds = array_values(array_unique(array_filter(array_map('intval', $topicIds))));
+        if ($userId <= 0 || $topicIds === []) {
+            return [];
+        }
+        $placeholders = implode(',', array_fill(0, count($topicIds), '?'));
+        $params = array_merge([$userId, $userId], $topicIds);
+        $rows = Database::fetchAll(
+            "SELECT p.topic_id, COUNT(*) AS n
+             FROM forum_posts p
+             INNER JOIN forum_topic_follows f ON f.topic_id = p.topic_id AND f.user_id = ?
+             WHERE p.status = \"visible\"
+               AND p.is_op = 0
+               AND p.user_id != ?
+               AND p.topic_id IN ($placeholders)
+               AND p.id > COALESCE(f.last_read_post_id, 0)
+             GROUP BY p.topic_id",
+            $params
+        );
+        $out = [];
+        foreach ($rows as $row) {
+            $out[(int) $row['topic_id']] = (int) ($row['n'] ?? 0);
+        }
+        return $out;
+    }
+
     public static function toggleFollow(int $topicId, int $userId): bool
     {
         if (self::isFollowing($topicId, $userId)) {
@@ -357,9 +625,16 @@ final class ForumTopic
             );
             return false;
         }
+        $max = Database::fetch(
+            'SELECT MAX(id) AS n FROM forum_posts WHERE topic_id = ? AND status = "visible"',
+            [$topicId]
+        );
         Database::query(
-            'INSERT IGNORE INTO forum_topic_follows (topic_id, user_id, created_at) VALUES (?, ?, NOW())',
-            [$topicId, $userId]
+            'INSERT INTO forum_topic_follows (topic_id, user_id, created_at, last_read_at, last_read_post_id)
+             VALUES (?, ?, NOW(), NOW(), ?)
+             ON DUPLICATE KEY UPDATE last_read_at = COALESCE(last_read_at, NOW()),
+                                     last_read_post_id = COALESCE(last_read_post_id, VALUES(last_read_post_id))',
+            [$topicId, $userId, (int) ($max['n'] ?? 0)]
         );
         Database::query('UPDATE forum_topics SET follow_count = follow_count + 1 WHERE id = ?', [$topicId]);
         return true;
@@ -496,7 +771,7 @@ final class ForumTopic
         return Database::fetch(
             "SELECT t.*,
                     c.name AS category_name, c.slug AS category_slug,
-                    u.first_name, u.last_name, u.avatar_url, u.created_at AS user_created_at,
+                    u.first_name, u.last_name, u.avatar_url, u.platform_cofounder, u.created_at AS user_created_at,
                     p.title AS profile_title, p.city AS profile_city, p.verification_status,
                     p.trades_json, p.slug AS profile_slug,
                     lu.first_name AS last_first_name, lu.last_name AS last_last_name

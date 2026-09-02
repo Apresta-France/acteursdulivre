@@ -86,6 +86,68 @@ function journal_listing_url(string $q = '', string $category = '', int $page = 
     return $href;
 }
 
+/** @param array<string, mixed>|null $query */
+function catalog_listing_url(string $path, int $page = 1, ?array $query = null): string
+{
+    $query = $query ?? $_GET;
+    unset($query['page']);
+    $clean = [];
+    foreach ($query as $key => $value) {
+        if ($value === null || $value === '') {
+            continue;
+        }
+        $clean[$key] = $value;
+    }
+    $path = '/' . ltrim($path, '/');
+    if ($path !== '/') {
+        $path = rtrim($path, '/');
+    }
+    if ($page > 1) {
+        $clean['page'] = $page;
+    }
+    if ($clean === []) {
+        return $path;
+    }
+    return $path . '?' . http_build_query($clean);
+}
+
+/** @param array<string, mixed>|null $query */
+function catalog_listing_href(string $path, int $page = 1, ?array $query = null): string
+{
+    $internal = catalog_listing_url($path, $page, $query);
+    $parts = explode('?', $internal, 2);
+    return url($parts[0]) . (isset($parts[1]) ? '?' . $parts[1] : '');
+}
+
+/** @return list<int|null> */
+function pager_page_items(int $page, int $pages): array
+{
+    $pages = max(1, $pages);
+    $page = max(1, min($page, $pages));
+    if ($pages <= 7) {
+        return range(1, $pages);
+    }
+    $keep = [1, $pages, $page];
+    if ($page > 1) {
+        $keep[] = $page - 1;
+    }
+    if ($page < $pages) {
+        $keep[] = $page + 1;
+    }
+    $keep = array_values(array_unique(array_filter($keep, static fn (int $n): bool => $n >= 1 && $n <= $pages)));
+    sort($keep);
+    $items = [];
+    $prev = 0;
+    foreach ($keep as $n) {
+        if ($prev !== 0 && $n > $prev + 1) {
+            $items[] = null;
+        }
+        $items[] = $n;
+        $prev = $n;
+    }
+    return $items;
+}
+
 function asset(string $path): string
 {
     return url('public/assets/' . ltrim($path, '/'));
@@ -886,6 +948,10 @@ function icon(string $name, int $size = 20): string
         'share-copy' => '<path d="M8 4h9.2A1.8 1.8 0 0 1 19 5.8V16h-1.8V6.6H8V4zm-3 3.4h9.2A1.8 1.8 0 0 1 16 9.2v9A1.8 1.8 0 0 1 14.2 20H5.8A1.8 1.8 0 0 1 4 18.2v-9A1.8 1.8 0 0 1 5.8 7.4zM6 9.2v9h8.2v-9H6z"/>',
         'download' => '<path d="M11 3h2v10.2l3.4-3.4 1.4 1.4L12 17.4 6.2 11.2l1.4-1.4L11 13.2V3zM4 19h16v2H4v-2z"/>',
         'dot' => '<circle cx="12" cy="12" r="3.4"/>',
+        'star' => '<path d="M12 2.6 14.5 8.4l6.3.6-4.8 4.1 1.5 6.1L12 16.4 6.5 19.2l1.5-6.1-4.8-4.1 6.3-.6L12 2.6z"/>',
+        'check' => '<path d="M9.1 16.5 4.8 12.2l1.6-1.6 2.7 2.7 8.4-8.4 1.6 1.6-10 10z"/>',
+        'check-circle' => '<path fill-rule="evenodd" d="M12 2a10 10 0 1 1 0 20 10 10 0 0 1 0-20zm-1.5 13.3-3.6-3.6 1.5-1.5 2.1 2.1 5.2-5.2 1.5 1.5-6.7 6.7z"/>',
+        'pause' => '<path d="M7 5h3.2v14H7V5zm6.8 0H17v14h-3.2V5z"/>',
         'play' => '<path d="M8 5.4v13.2L19.2 12 8 5.4z"/>',
         'trade-ecriture' => '<path d="M14.5 3.2 20.8 9.5 8.9 21.4H2.6v-6.3L14.5 3.2zm1.5 2.9-1.3 1.3 2.9 2.9 1.3-1.3-2.9-2.9zM5 16.1v2.9h2.9l8.2-8.2-2.9-2.9L5 16.1z"/>',
         'trade-correction' => '<path d="M3.6 4.2h12.2v2.2H3.6V4.2zm0 4.6h10.4v2.2H3.6V8.8zm0 4.6h8.2v2.2H3.6v-2.2zm10.2 1.4 2.3 2.3 5.1-5.1 1.6 1.6-6.7 6.7-3.9-3.9 1.6-1.6z"/>',
@@ -914,4 +980,17 @@ function icon(string $name, int $size = 20): string
 function trade_icon(string $trade, int $size = 18): string
 {
     return icon(\Adl\Data\Catalog::tradeIcon($trade), $size);
+}
+
+/** @param array<string, mixed>|null $person */
+function forum_cofounder_star(?array $person): string
+{
+    if (empty($person['is_platform_cofounder'])) {
+        return '';
+    }
+
+    return '<span class="forum-cofounder-star" title="Co-fondateur de la plateforme">'
+        . icon('star', 13)
+        . '<span class="sr-only">Co-fondateur de la plateforme</span>'
+        . '</span>';
 }

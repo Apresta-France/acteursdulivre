@@ -74,7 +74,7 @@ $canReply = $logged && empty($topic['is_locked']);
         <article class="forum-post" id="post-<?= (int) $op['id'] ?>">
           <aside class="forum-post-side">
             <?= avatar_html($op['author'] ?? [], 54, 'forum-avatar') ?>
-            <div class="forum-post-name"><?= e((string) ($op['author']['name'] ?? '')) ?></div>
+            <div class="forum-post-name"><?= e((string) ($op['author']['name'] ?? '')) ?><?= forum_cofounder_star($op['author'] ?? null) ?></div>
             <div class="forum-aside-meta"><?= e((string) ($op['author']['meta'] ?? '')) ?></div>
             <div class="forum-aside-meta forum-post-joined">
               <?php if (!empty($op['author']['member_since'])): ?>Membre depuis <?= e((string) $op['author']['member_since']) ?><br><?php endif; ?>
@@ -126,7 +126,7 @@ $canReply = $logged && empty($topic['is_locked']);
             <article class="forum-post<?= !empty($r['is_solution']) ? ' is-solution' : '' ?>" id="post-<?= (int) $r['id'] ?>">
               <aside class="forum-post-side">
                 <?= avatar_html($r['author'] ?? [], 46, 'forum-avatar') ?>
-                <div class="forum-post-name"><?= e((string) ($r['author']['name'] ?? '')) ?></div>
+                <div class="forum-post-name"><?= e((string) ($r['author']['name'] ?? '')) ?><?= forum_cofounder_star($r['author'] ?? null) ?></div>
                 <div class="forum-aside-meta"><?= e((string) ($r['author']['meta'] ?? '')) ?></div>
                 <?php if (!empty($r['author']['verified'])): ?>
                   <span class="forum-verif">Profil vérifié</span>
@@ -217,7 +217,14 @@ $canReply = $logged && empty($topic['is_locked']);
           </div>
           <div class="forum-compose-body">
             <p class="forum-cite-hint" data-cite-hint hidden></p>
-            <textarea name="body" rows="7" minlength="80" required placeholder="Partagez un chiffre, une expérience, une clause précise. Les réponses vagues n'aident personne."><?= e((string) ($old['body'] ?? '')) ?></textarea>
+            <?php
+              $forumWysiwygName = 'body';
+              $forumWysiwygValue = (string) ($old['body'] ?? '');
+              $forumWysiwygPlaceholder = 'Partagez un chiffre, une expérience, une clause précise. Les réponses vagues n\'aident personne.';
+              $forumWysiwygRows = 7;
+              $forumWysiwygRequired = true;
+              require ADL_ROOT . '/app/Views/partials/forum-wysiwyg.php';
+            ?>
             <label class="forum-engage">
               <input type="checkbox" name="no_ai" value="1" required>
               <span>Je confirme que cette réponse est de ma main et qu'aucune IA générative n'a été utilisée pour la produire.</span>

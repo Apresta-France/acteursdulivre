@@ -29,6 +29,13 @@ $groups = [
     ['name' => 'level', 'label' => 'Niveau du prestataire', 'key' => 'levels', 'facet' => 'level'],
     ['name' => 'trust', 'label' => 'Confiance', 'key' => 'trust', 'facet' => 'trust'],
 ];
+$pager = $pager ?? ['page' => 1, 'pages' => 1, 'total' => $count];
+$page = (int) ($pager['page'] ?? 1);
+$pages = (int) ($pager['pages'] ?? 1);
+$countLabel = '· ' . (int) $count . ' résultat' . ($count > 1 ? 's' : '');
+if ($pages > 1) {
+    $countLabel .= ' · page ' . $page . ' / ' . $pages;
+}
 $active = [];
 foreach ($groups as $group) {
     foreach ($filters[$group['key']] ?? [] as $value) {
@@ -52,7 +59,8 @@ if ($searchCity !== '') {
 <div class="search-page" data-search-page
      data-api="<?= e(url('/api/recherche')) ?>"
      data-type="<?= e($type) ?>"
-     data-initial="<?= e(json_encode($searchState ?? ['results' => $results, 'count' => $count, 'query' => $q, 'type' => $type, 'cat' => $cat, 'city' => $searchCity, 'available_only' => !empty($availableOnly)], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)) ?>">
+     data-search-limit="<?= (int) \Adl\Data\Catalog::PER_PAGE ?>"
+     data-initial="<?= e(json_encode($searchState ?? ['results' => $results, 'count' => $count, 'query' => $q, 'type' => $type, 'cat' => $cat, 'city' => $searchCity, 'available_only' => !empty($availableOnly), 'page' => $page, 'pages' => $pages], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)) ?>">
   <div class="search-banner">
     <span class="search-banner-badge">Annuaire</span>
     Les résultats se mettent à jour pendant que vous tapez — prestations, profils et recherches au même endroit.
@@ -115,7 +123,7 @@ if ($searchCity !== '') {
       <div class="search-crumb">Accueil · Annuaire</div>
       <div class="search-head">
         <div>
-          <h1><?= e($heading) ?> <span data-search-count>· <?= (int) $count ?> résultat<?= $count > 1 ? 's' : '' ?></span></h1>
+          <h1><?= e($heading) ?> <span data-search-count><?= e($countLabel) ?></span></h1>
         </div>
         <?php
           $shareUrl = $meta['url'] ?? \Adl\Data\Share::current();
@@ -137,6 +145,11 @@ if ($searchCity !== '') {
           <?php endforeach; ?>
         <?php endif; ?>
       </div>
+      <?php
+        $pagerPath = $typeHub;
+        $pagerLabel = 'Pagination de l’annuaire';
+        require ADL_ROOT . '/app/Views/partials/search-pager.php';
+      ?>
     </div>
   </div>
 </div>

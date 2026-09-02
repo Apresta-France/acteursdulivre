@@ -103,7 +103,7 @@ $catUrl = static function (string $filtre = 'recent', int $p = 1) use ($catHref)
                 </div>
                 <div class="forum-table-author">
                   <?= avatar_html($s['author'] ?? [], 28, 'forum-avatar') ?>
-                  <span><?= e((string) ($s['author']['name'] ?? '')) ?></span>
+                  <span><?= e((string) ($s['author']['name'] ?? '')) ?><?= forum_cofounder_star($s['author'] ?? null) ?></span>
                 </div>
                 <span class="forum-row-num is-right"><?= (int) ($s['reply_count'] ?? 0) ?></span>
                 <span class="forum-row-num is-muted is-right"><?= e((string) ($s['views_label'] ?? '0')) ?></span>
@@ -150,7 +150,9 @@ $catUrl = static function (string $filtre = 'recent', int $p = 1) use ($catHref)
                 <div class="forum-contrib-row">
                   <?= avatar_html($c, 38, 'forum-avatar') ?>
                   <div class="forum-contrib-copy">
-                    <div class="forum-contrib-name"><?= e((string) ($c['name'] ?? '')) ?></div>
+                    <div class="forum-contrib-name">
+                      <?= e((string) ($c['name'] ?? '')) ?><?= forum_cofounder_star($c) ?>
+                    </div>
                     <div class="forum-aside-meta"><?= e((string) ($c['meta'] ?? '')) ?></div>
                   </div>
                   <span class="forum-contrib-n"><?= e(format_int((int) ($c['post_count'] ?? 0))) ?></span>

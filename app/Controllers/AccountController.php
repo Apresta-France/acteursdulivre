@@ -119,6 +119,7 @@ final class AccountController
             'billingBlock' => $billing['block'],
             'billingWarning' => $billing['warning'],
             'isFounder' => User::isFounder($user),
+            'isPlatformCofounder' => User::isPlatformCofounder($user),
             'commissionRate' => $commissionRate,
             'jalonTodos' => self::jalonTodos((int) $user['id']),
             'forumStats' => $forumStats,
@@ -153,6 +154,13 @@ final class AccountController
                 'page' => $page,
                 'per_page' => 15,
             ]);
+            $unreadMap = ForumTopic::unreadCountsForTopics(
+                $userId,
+                array_map(static fn (array $t): int => (int) ($t['id'] ?? 0), $listing['items'])
+            );
+            foreach ($listing['items'] as $i => $topic) {
+                $listing['items'][$i]['unread_replies'] = $unreadMap[(int) ($topic['id'] ?? 0)] ?? 0;
+            }
         } catch (\Throwable) {
         }
 

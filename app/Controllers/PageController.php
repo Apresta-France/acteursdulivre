@@ -88,9 +88,10 @@ final class PageController
             self::requestSearchQuery($request),
             $request->string('type', 'all'),
             $cat,
-            max(1, min(48, $request->int('limit', 24) ?? 24)),
+            max(1, min(48, $request->int('limit', Catalog::PER_PAGE) ?? Catalog::PER_PAGE)),
             $request->bool('dispo'),
-            $filters
+            $filters,
+            max(1, $request->int('page', 1) ?? 1)
         );
         foreach (['results', 'suggestions'] as $key) {
             foreach ($found[$key] as $i => $item) {
@@ -331,9 +332,13 @@ final class PageController
                 $filters['metiers'] = [Catalog::resolveTrade($legacy) ?? $legacy];
             }
         }
-        $found = Catalog::search('', 'missions', '', 48, false, $filters);
+        $page = max(1, $request->int('page', 1) ?? 1);
+        $found = Catalog::search('', 'missions', '', Catalog::PER_PAGE, false, $filters, $page);
         $filters = $found['filters'] ?? $filters;
         $filtered = Catalog::hasFacetFilters($filters);
+        if (isset($_GET['page']) && ((int) $_GET['page'] !== (int) $found['page'] || (int) $found['page'] === 1)) {
+            redirect(catalog_listing_url($request->path(), (int) $found['page']));
+        }
 
         View::page('missions', [
             'title' => 'Appels d\'offres',
@@ -342,6 +347,11 @@ final class PageController
             'searchFilters' => $filters,
             'searchFacets' => $found['facets'] ?? [],
             'searchState' => $found,
+            'pager' => [
+                'page' => (int) ($found['page'] ?? 1),
+                'pages' => (int) ($found['pages'] ?? 1),
+                'total' => (int) ($found['count'] ?? 0),
+            ],
             'meta' => Seo::build(
                 'Appels d\'offres du livre',
                 'Missions ouvertes : correction, illustration, traduction, impression. Candidatez sans commission sur la candidature.',
@@ -349,8 +359,8 @@ final class PageController
                 'website',
                 null,
                 [
-                    'robots' => $filtered ? 'noindex, follow' : Seo::ROBOTS_INDEX,
-                    'json_ld' => $filtered ? [] : Seo::webPageGraph(
+                    'robots' => ($filtered || (int) ($found['page'] ?? 1) > 1) ? 'noindex, follow' : Seo::ROBOTS_INDEX,
+                    'json_ld' => ($filtered || (int) ($found['page'] ?? 1) > 1) ? [] : Seo::webPageGraph(
                         'Appels d\'offres du livre',
                         'Missions ouvertes des métiers du livre.',
                         '/missions',
@@ -786,7 +796,11 @@ final class PageController
             redirect($target, 301);
         }
 
-        $found = Catalog::search($query, $type, $cat, 48, $availableOnly, $filters);
+        $page = max(1, $request->int('page', 1) ?? 1);
+        $found = Catalog::search($query, $type, $cat, Catalog::PER_PAGE, $availableOnly, $filters, $page);
+        if (isset($_GET['page']) && ((int) $_GET['page'] !== (int) $found['page'] || (int) $found['page'] === 1)) {
+            redirect(catalog_listing_url($request->path(), (int) $found['page']));
+        }
         $cityForStats = (string) ($found['filters']['city'] ?? $filters['city'] ?? '');
         if ($query !== '' || $cat !== '' || $cityForStats !== '' || Catalog::hasFacetFilters($filters)) {
             Analytics::search($query, (string) ($found['type'] ?? $type), (int) ($found['count'] ?? 0), $cityForStats);
@@ -798,8 +812,9 @@ final class PageController
         if ($query === '' && $cat !== '' && $cityLabel !== '' && !$availableOnly && !Catalog::hasFacetFilters($filters)) {
             $geoCopy = Seo::tradeCityCopy($cat, $cityLabel);
         }
-        $indexable = ($query === '' && $cat === '' && $citySlug === '' && !$availableOnly && !Catalog::hasFacetFilters($filters))
-            || $geoCopy !== null;
+        $indexable = (($query === '' && $cat === '' && $citySlug === '' && !$availableOnly && !Catalog::hasFacetFilters($filters))
+            || $geoCopy !== null)
+            && (int) ($found['page'] ?? 1) === 1;
         $copy = match ($type) {
             'prestations' => [
                 'title' => 'Prestations des métiers du livre',
@@ -843,6 +858,11 @@ final class PageController
             'catalogHeading' => $heading,
             'searchCity' => $citySlug,
             'searchCityLabel' => $cityLabel,
+            'pager' => [
+                'page' => (int) ($found['page'] ?? 1),
+                'pages' => (int) ($found['pages'] ?? 1),
+                'total' => (int) ($found['count'] ?? 0),
+            ],
             'meta' => Seo::build(
                 $query !== '' ? 'Recherche : ' . $heading : $pageTitle,
                 $pageDescription,

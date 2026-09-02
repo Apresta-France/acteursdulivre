@@ -430,8 +430,15 @@ final class AdminController
     {
         $actor = Auth::requireAdmin();
         try {
-            User::updateAccess((int) $id, $request->string('role'), $request->string('status'), (int) $actor['id']);
-            flash('saved', 'Compte mis à jour.');
+            if ($request->string('section') === 'badges') {
+                User::setPlatformCofounder((int) $id, $request->bool('platform_cofounder'));
+                flash('saved', $request->bool('platform_cofounder')
+                    ? 'Badge « Co-fondateur de la plateforme » attribué.'
+                    : 'Badge « Co-fondateur de la plateforme » retiré.');
+            } else {
+                User::updateAccess((int) $id, $request->string('role'), $request->string('status'), (int) $actor['id']);
+                flash('saved', 'Compte mis à jour.');
+            }
         } catch (Throwable $e) {
             flash('error', $e->getMessage());
         }

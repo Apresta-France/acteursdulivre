@@ -29,6 +29,9 @@ $fmt = static function (string $dt, string $empty = '—'): string {
     <div class="admin-user-hero-text">
       <h1><?= e(User::displayName($account)) ?></h1>
       <p class="admin-lead" style="margin: 4px 0 0;"><?= e((string) ($account['email'] ?? '')) ?></p>
+      <?php if (!empty($account['platform_cofounder'])): ?>
+        <span class="profile-badge profile-badge-cofounder">Co-fondateur de la plateforme</span>
+      <?php endif; ?>
       <?php if ($closed): ?>
         <p class="admin-user-closed">Compte clôturé<?= !empty($account['deleted_at']) ? ' le ' . e($fmt((string) $account['deleted_at'])) : '' ?>.</p>
       <?php endif; ?>
@@ -125,9 +128,30 @@ $fmt = static function (string $dt, string $empty = '—'): string {
           <div><dt>Routage</dt><dd><?= e((string) $account['einvoice_routing']) ?></dd></div>
         <?php endif; ?>
         <div><dt>Statut</dt><dd><?= e(User::accountStatusLabel($account)) ?></dd></div>
+        <div>
+          <dt>Membre fondateur</dt>
+          <dd><?= User::isFounder($account) ? 'Oui' : 'Non' ?></dd>
+        </div>
       </dl>
     </div>
   </div>
+
+  <?php if (!$closed): ?>
+    <form class="admin-user-card" method="post" action="<?= e(url('/admin/utilisateurs/' . (int) ($account['id'] ?? 0))) ?>" style="margin-top: 18px;">
+      <?= csrf_field() ?>
+      <input type="hidden" name="section" value="badges">
+      <h2>Badges</h2>
+      <p class="admin-user-help">Le badge « Co-fondateur de la plateforme » est attribué à la main. Il est distinct du statut membre fondateur (100 premiers inscrits, commission réduite).</p>
+      <label class="admin-sso-switch">
+        <input type="checkbox" name="platform_cofounder" value="1"<?= User::isPlatformCofounder($account) ? ' checked' : '' ?>>
+        <span>
+          <strong>Co-fondateur de la plateforme</strong>
+          <em>Affiché sur le profil public, la vitrine, le tableau de bord et le forum.</em>
+        </span>
+      </label>
+      <button class="btn-orange" type="submit" style="margin-top: 18px;">Enregistrer le badge</button>
+    </form>
+  <?php endif; ?>
 
   <div class="admin-user-card admin-user-danger">
     <h2>Supprimer le compte</h2>

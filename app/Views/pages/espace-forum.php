@@ -77,7 +77,7 @@ $pages = (int) ($pager['pages'] ?? 1);
       <?php foreach ($topics as $t): ?>
         <div class="dash-forum-item">
           <a href="<?= e(url((string) ($t['href'] ?? '/forum'))) ?>">
-            <strong><?= e((string) ($t['title'] ?? '')) ?></strong>
+            <strong><?= e((string) ($t['title'] ?? '')) ?><?php if ((int) ($t['unread_replies'] ?? 0) > 0): ?> <span class="badge-orange"><?= (int) $t['unread_replies'] ?></span><?php endif; ?></strong>
             <em><?= e((string) (($t['category_name'] ?? '') . ' · ' . format_int((int) ($t['reply_count'] ?? 0)) . ' rép. · ' . ($t['last_when'] ?? ''))) ?></em>
           </a>
           <?php if ($tab === 'suivis'): ?>

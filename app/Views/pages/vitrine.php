@@ -35,7 +35,7 @@ if ($rateKind === \Adl\Models\Profile::RATE_PERCENT || str_contains($rateValue, 
   <div class="espace-page-head">
     <div>
       <h1>Ma vitrine</h1>
-      <p>Profil complété à <?= $completion ?> %. Les vitrines précises reçoivent nettement plus de demandes.<?php if (!empty($p['is_founder'])): ?> <span class="profile-badge profile-badge-founder">Membre fondateur</span><?php endif; ?></p>
+      <p>Profil complété à <?= $completion ?> %. Les vitrines précises reçoivent nettement plus de demandes.<?php if (!empty($p['is_platform_cofounder'])): ?> <span class="profile-badge profile-badge-cofounder">Co-fondateur de la plateforme</span><?php endif; ?><?php if (!empty($p['is_founder'])): ?> <span class="profile-badge profile-badge-founder">Membre fondateur</span><?php endif; ?></p>
     </div>
     <div class="vitrine-head-actions">
       <a class="btn-ghost" href="<?= e(url('/espace/statistiques')) ?>">Statistiques</a>

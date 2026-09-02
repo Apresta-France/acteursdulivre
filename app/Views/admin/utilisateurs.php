@@ -39,7 +39,12 @@ $filters = $userFilters ?? [];
         <div class="admin-users-who">
           <?= avatar_html($u, 30) ?>
           <div>
-            <div class="admin-users-name"><?= e(User::displayName($u)) ?></div>
+            <div class="admin-users-name">
+              <?= e(User::displayName($u)) ?>
+              <?php if (!empty($u['platform_cofounder'])): ?>
+                <span class="admin-mini-badge">Co-fondateur</span>
+              <?php endif; ?>
+            </div>
             <div class="admin-users-mail"><?= e((string) $u['email']) ?></div>
           </div>
         </div>

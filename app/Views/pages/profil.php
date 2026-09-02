@@ -11,15 +11,24 @@ $isOwnProfile = $viewer && (int) ($viewer['id'] ?? 0) === (int) ($p['user_id'] ?
     <?= avatar_html($p, 104, 'avatar profile-avatar') ?>
     <div class="profile-hero-main">
       <div class="profile-hero-line">
-        <h1><?= e((string) $p['name']) ?></h1>
+        <div class="profile-hero-name">
+          <h1><?= e((string) $p['name']) ?></h1>
+          <?php if (!empty($p['is_verified'])): ?>
+            <span class="profile-verified" title="Profil vérifié" aria-label="Profil vérifié"><?= icon('check-circle', 20) ?></span>
+          <?php endif; ?>
+        </div>
+        <?php if (!empty($p['is_platform_cofounder'])): ?>
+          <span class="profile-badge profile-badge-cofounder">Co-fondateur de la plateforme</span>
+        <?php endif; ?>
         <?php if (!empty($p['is_founder'])): ?>
           <span class="profile-badge profile-badge-founder">Membre fondateur</span>
         <?php endif; ?>
-        <?php if (!empty($p['is_verified'])): ?>
-          <span class="profile-badge">Vérifié</span>
-        <?php endif; ?>
         <span class="profile-badge"><?= e((string) ($p['level'] ?: 'Prestataire')) ?></span>
-        <span class="profile-badge profile-badge-avail<?= !empty($p['is_busy']) ? ' is-busy' : ' is-available' ?>"><?= e((string) ($p['availability_label'] ?? (!empty($p['is_busy']) ? 'Occupé' : 'Disponible'))) ?></span>
+        <?php
+          $availBusy = !empty($p['is_busy']);
+          $availLabel = (string) ($p['availability_summary'] ?? $p['availability_label'] ?? ($availBusy ? 'Occupé' : 'Disponible'));
+        ?>
+        <span class="profile-mark<?= $availBusy ? ' is-busy' : ' is-available' ?>" title="<?= e($availLabel) ?>" aria-label="<?= e($availLabel) ?>"><?= icon($availBusy ? 'pause' : 'check', 15) ?></span>
       </div>
       <div class="profile-hero-sub">
         <?= e(trim(($p['title'] ?? '') . (!empty($p['location_label']) ? ' · ' . $p['location_label'] : ($p['city'] ? ' · ' . $p['city'] : '')) . ($p['languages'] ? ' · ' . $p['languages'] : ''))) ?>
