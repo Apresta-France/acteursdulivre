@@ -90,10 +90,10 @@ $forumListUrl = static function (string $filtre = 'recent', int $p = 1, string $
         <div class="forum-notice-title">
           <span class="forum-pin">Épinglé</span>
           <span>Charte du forum : aucune réponse générée par IA</span>
+          <a class="forum-notice-link" href="<?= e(url('/regles-ia')) ?>">Lire la charte →</a>
         </div>
         <p>Les réponses sont écrites par des humains qui exercent le métier. Un message généré est retiré, et l'engagement signé à l'inscription s'applique ici comme sur les prestations.</p>
       </div>
-      <a class="forum-notice-link" href="<?= e(url('/regles-ia')) ?>">Lire la charte →</a>
     </div>
 
     <?php if ($recent !== []): ?>

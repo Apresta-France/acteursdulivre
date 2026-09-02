@@ -3063,10 +3063,11 @@
       if (count) {
         var n = plainLen();
         var missing = Math.max(0, minChars - n);
-        count.classList.toggle('is-error', attempted && missing > 0);
-        if (n === 0) count.textContent = 'Minimum ' + minChars + ' caractères';
-        else if (missing > 0) count.textContent = n + ' caractères — encore ' + missing + ' pour publier';
-        else count.textContent = n + ' caractères';
+        count.classList.toggle('is-error', missing > 0);
+        count.classList.toggle('is-ready', missing === 0);
+        if (n === 0) count.textContent = 'Minimum ' + minChars + ' caractères pour publier';
+        else if (missing > 0) count.textContent = 'Encore ' + missing + ' caractère' + (missing > 1 ? 's' : '') + ' pour pouvoir publier';
+        else count.textContent = n + ' caractères — vous pouvez publier';
       }
     }
     function refresh() {

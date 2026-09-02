@@ -214,7 +214,7 @@ $forumFlashError = trim((string) ($forumFlashError ?? ''));
       <?php endif; ?>
 
       <?php if ($canReply): ?>
-        <form class="forum-compose" id="repondre" method="post" action="<?= e(url($topicHref . '/repondre')) ?>" data-forum-compose data-min-chars="80">
+        <form class="forum-compose" id="repondre" method="post" action="<?= e(url($topicHref . '/repondre')) ?>" data-forum-compose data-min-chars="<?= (int) \Adl\Models\ForumPost::MIN_BODY ?>">
           <?= csrf_field() ?>
           <input type="hidden" name="parent_id" value="" data-parent-id>
           <div class="forum-compose-head">
@@ -247,7 +247,7 @@ $forumFlashError = trim((string) ($forumFlashError ?? ''));
             <p class="forum-compose-block" data-compose-block hidden role="status" aria-live="polite"></p>
             <div class="forum-compose-actions">
               <button type="submit" class="btn-orange">Publier la réponse</button>
-              <span class="forum-muted" data-draft-count>Minimum 80 caractères</span>
+              <span class="forum-draft-count" data-draft-count role="status" aria-live="polite">Minimum <?= (int) \Adl\Models\ForumPost::MIN_BODY ?> caractères pour publier</span>
             </div>
           </div>
         </form>

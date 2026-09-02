@@ -82,7 +82,7 @@ if ($oldCat <= 0 && $preselect !== '') {
           <div class="forum-compose-actions">
             <button type="submit" class="btn-orange">Publier la discussion</button>
             <a class="btn-ghost" href="<?= e(url('/forum')) ?>">Annuler</a>
-            <span class="forum-muted" data-draft-count>Minimum 80 caractères</span>
+            <span class="forum-draft-count" data-draft-count role="status" aria-live="polite">Minimum 80 caractères pour publier</span>
           </div>
         </div>
       </form>

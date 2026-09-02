@@ -11,7 +11,7 @@ use RuntimeException;
 final class ForumPost
 {
     public const PER_PAGE = 20;
-    public const MIN_BODY = 80;
+    public const MIN_BODY = 40;
 
     public static function find(int $id): ?array
     {
