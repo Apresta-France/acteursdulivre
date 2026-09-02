@@ -266,6 +266,62 @@ final class ForumPost
         ];
     }
 
+    public static function hide(int $postId, int $topicId, bool $isAdmin): void
+    {
+        if (!$isAdmin) {
+            throw new RuntimeException('Seul un administrateur peut supprimer une réponse.');
+        }
+
+        $post = self::find($postId);
+        if (
+            !$post
+            || (int) ($post['topic_id'] ?? 0) !== $topicId
+            || ($post['status'] ?? '') !== 'visible'
+            || !empty($post['is_op'])
+        ) {
+            throw new RuntimeException('Réponse invalide.');
+        }
+
+        $wasSolution = !empty($post['is_solution']);
+
+        Database::transaction(static function () use ($postId, $topicId, $wasSolution): void {
+            Database::query(
+                'UPDATE forum_posts SET status = "hidden", is_solution = 0, updated_at = NOW() WHERE id = ?',
+                [$postId]
+            );
+
+            $last = Database::fetch(
+                'SELECT user_id, created_at FROM forum_posts
+                 WHERE topic_id = ? AND status = "visible"
+                 ORDER BY created_at DESC, id DESC
+                 LIMIT 1',
+                [$topicId]
+            );
+            $count = Database::fetch(
+                'SELECT COUNT(*) AS n FROM forum_posts
+                 WHERE topic_id = ? AND status = "visible" AND is_op = 0',
+                [$topicId]
+            );
+
+            $sql = 'UPDATE forum_topics
+                    SET reply_count = ?,
+                        last_post_at = ?,
+                        last_post_user_id = ?,
+                        updated_at = NOW()';
+            $params = [
+                (int) ($count['n'] ?? 0),
+                $last['created_at'] ?? date('Y-m-d H:i:s'),
+                $last ? (int) $last['user_id'] : null,
+            ];
+            if ($wasSolution) {
+                $sql .= ', is_solved = 0, solved_post_id = NULL';
+            }
+            $sql .= ' WHERE id = ?';
+            $params[] = $topicId;
+            Database::query($sql, $params);
+        });
+    }
+
     /** @return array<int, true> */
     private static function votedIds(int $topicId, int $userId): array
     {

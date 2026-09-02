@@ -713,6 +713,8 @@ final class ForumTopic
             'Vie de prestataire' => 'Métier',
             'Charte et IA' => 'Charte',
             'La plateforme' => 'Plateforme',
+            'Édition' => 'Édition',
+            'Divers' => 'Divers',
         ];
         return $map[$categoryName] ?? $categoryName;
     }

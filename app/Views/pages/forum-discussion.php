@@ -155,6 +155,12 @@ $canReply = $logged && empty($topic['is_locked']);
                         <button type="submit" class="forum-text-btn">Signaler</button>
                       </form>
                     <?php endif; ?>
+                    <?php if ($isAdmin): ?>
+                      <form class="forum-inline-form" method="post" action="<?= e(url($topicHref . '/supprimer/' . (int) $r['id'])) ?>" onsubmit="return confirm('Supprimer cette réponse ? Elle ne sera plus visible.');">
+                        <?= csrf_field() ?>
+                        <button type="submit" class="forum-text-btn forum-text-btn-danger">Supprimer</button>
+                      </form>
+                    <?php endif; ?>
                   </div>
                 </div>
                 <div class="forum-post-content"><?= $r['body_html'] ?? '' ?></div>

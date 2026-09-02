@@ -47,6 +47,7 @@ return static function (Router $router): void {
     $router->post('/forum/{slug}/{topic}/suivre', [ForumController::class, 'follow']);
     $router->post('/forum/{slug}/{topic}/utile/{id}', [ForumController::class, 'useful']);
     $router->post('/forum/{slug}/{topic}/retenir/{id}', [ForumController::class, 'solve']);
+    $router->post('/forum/{slug}/{topic}/supprimer/{id}', [ForumController::class, 'deleteReply']);
 
     $router->get('/comment-ca-marche', [PageController::class, 'comment']);
     $router->get('/tarifs', [PageController::class, 'tarifs']);

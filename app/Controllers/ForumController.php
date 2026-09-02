@@ -394,6 +394,22 @@ final class ForumController
         redirect((string) $topic['href'] . '#post-' . (int) $postId);
     }
 
+    public function deleteReply(Request $request, string $categorySlug, string $topicSlug, string $postId): void
+    {
+        Auth::requireUser();
+        $user = Auth::user();
+        $isAdmin = ($user['role'] ?? '') === 'admin';
+        $topic = $this->resolveTopic($categorySlug, $topicSlug);
+
+        try {
+            ForumPost::hide((int) $postId, (int) $topic['id'], $isAdmin);
+            flash('saved', 'Réponse supprimée.');
+        } catch (\Throwable $e) {
+            flash('error', user_error_message($e, 'Impossible de supprimer cette réponse.'));
+        }
+        redirect((string) $topic['href'] . '#reponses');
+    }
+
     /** @return array<string, mixed> */
     private function resolveTopic(string $categorySlug, string $topicSlug): array
     {

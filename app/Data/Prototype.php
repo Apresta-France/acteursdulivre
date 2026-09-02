@@ -628,6 +628,10 @@ final class Prototype
                 ['title' => 'Charte & confidentialité', 'desc' => 'Manuscrits, IA générative, mentions obligatoires.', 'n' => 11],
             ],
             'aideFaq' => self::aideFaq(),
+            'homeFaq' => self::faqItems(array_map(
+                static fn (array $row): array => [$row['q'], $row['a']],
+                Seo::homeFaqs()
+            )),
             'commentFaq' => self::faqItems(array_map(
                 static fn (array $row): array => [$row['q'], $row['a']],
                 Seo::commentFaqs()

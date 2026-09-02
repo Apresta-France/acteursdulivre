@@ -12,7 +12,7 @@ $mega = $mega ?? [];
 $homeTemoins = $homeTemoins ?? [];
 $journal = $journal ?? [];
 $homeForum = $homeForum ?? [];
-$aideFaq = $aideFaq ?? [];
+$homeFaq = $homeFaq ?? [];
 $homeQuick = $homeQuick ?? [];
 $query = (string) ($query ?? '');
 ?>
@@ -379,7 +379,7 @@ $query = (string) ($query ?? '');
       <a href="<?= e(url('/questions')) ?>">Toutes les questions →</a>
     </div>
     <div class="mk-faq-list">
-      <?php foreach ($aideFaq as $f): ?>
+      <?php foreach ($homeFaq as $f): ?>
         <div>
           <button type="button" data-accordion aria-expanded="<?= e((string) ($f['expanded'] ?? 'false')) ?>" class="faq-q">
             <?= e((string) $f['q']) ?><span data-accordion-sign><?= e((string) ($f['sign'] ?? '+')) ?></span>

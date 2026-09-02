@@ -96,6 +96,8 @@ return static function (PDO $pdo): void {
         ['Vie de prestataire', 'vie-de-prestataire', 'Statut, factures, clients difficiles, charge de travail.', 6],
         ['Charte et IA', 'charte-et-ia', 'Application de l\'interdiction, cas litigieux, signalements.', 7],
         ['La plateforme', 'la-plateforme', 'Nouveautés, retours, pré-ouverture, demandes de fonctions.', 8],
+        ['Édition', 'edition', 'Maisons, collections, manuscrits, relation auteur-éditeur.', 9],
+        ['Divers', 'divers', 'Sujets transverses, questions hors cadre, discussions ouvertes.', 10],
     ];
 
     $find = $pdo->prepare('SELECT id FROM forum_categories WHERE slug = ? LIMIT 1');
