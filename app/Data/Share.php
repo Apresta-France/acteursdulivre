@@ -16,7 +16,7 @@ final class Share
 
         $base = rtrim(Env::get('APP_URL', ''), '/');
         if ($base === '') {
-            $base = 'https://www.acteursdulivre.fr';
+            $base = 'https://acteursdulivre.fr';
         }
 
         if ($path === '' || $path === '/') {

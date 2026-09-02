@@ -22,7 +22,19 @@ $formulePriceLabel = is_array($selectedPackage)
     : (string) $service['price'];
 ?>
 <div class="fiche-page">
-  <div class="search-crumb">Prestations · <?= e((string) ($service['cat'] ?: 'Offre')) ?><?php if (!empty($service['specialty'])): ?> · <?= e((string) $service['specialty']) ?><?php endif; ?></div>
+  <nav class="search-crumb" aria-label="Fil d'Ariane">
+    <a href="<?= e(url('/')) ?>">Accueil</a>
+    <span aria-hidden="true"> · </span>
+    <a href="<?= e(url('/prestations')) ?>">Prestations</a>
+    <?php if (!empty($service['cat'])): ?>
+      <span aria-hidden="true"> · </span>
+      <a href="<?= e(url(\Adl\Data\Catalog::tradePath((string) $service['cat']))) ?>"><?= e((string) (\Adl\Data\Catalog::tradeTitle((string) $service['cat']))) ?></a>
+    <?php endif; ?>
+    <?php if (!empty($service['specialty'])): ?>
+      <span aria-hidden="true"> · </span>
+      <span><?= e((string) $service['specialty']) ?></span>
+    <?php endif; ?>
+  </nav>
   <div class="publish-grid">
     <div>
       <?php

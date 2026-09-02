@@ -1,0 +1,15 @@
+User-agent: *
+Allow: /
+Disallow: /espace
+Disallow: /espace/
+Disallow: /admin
+Disallow: /admin/
+Disallow: /install
+Disallow: /install/
+Disallow: /api/
+Disallow: /cron
+Disallow: /cron/
+Disallow: /connexion
+Disallow: /inscription/sso
+
+Sitemap: https://acteursdulivre.fr/sitemap.xml

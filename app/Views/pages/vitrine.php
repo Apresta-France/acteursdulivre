@@ -75,11 +75,11 @@ if ($rateKind === \Adl\Models\Profile::RATE_PERCENT || str_contains($rateValue, 
   <?php endif; ?>
 
   <div class="tab-row" data-tabs>
-    <button type="button" class="tab<?= $tab === 'identite' ? ' is-on' : '' ?>" data-tab="identite">Identité</button>
-    <button type="button" class="tab<?= $tab === 'competences' ? ' is-on' : '' ?>" data-tab="competences">Compétences</button>
-    <button type="button" class="tab<?= $tab === 'parcours' ? ' is-on' : '' ?>" data-tab="parcours">Parcours</button>
-    <button type="button" class="tab<?= $tab === 'portfolio' ? ' is-on' : '' ?>" data-tab="portfolio">Créations &amp; exemples</button>
-    <button type="button" class="tab<?= $tab === 'avis' ? ' is-on' : '' ?>" data-tab="avis">Avis<?php if ($avisBadge > 0): ?> <span class="tab-count"><?= (int) $avisBadge ?></span><?php endif; ?></button>
+    <a class="tab<?= $tab === 'identite' ? ' is-on' : '' ?>" href="<?= e(url('/espace/vitrine')) ?>" data-tab="identite">Identité</a>
+    <a class="tab<?= $tab === 'competences' ? ' is-on' : '' ?>" href="<?= e(url('/espace/vitrine?onglet=competences')) ?>" data-tab="competences">Compétences</a>
+    <a class="tab<?= $tab === 'parcours' ? ' is-on' : '' ?>" href="<?= e(url('/espace/vitrine?onglet=parcours')) ?>" data-tab="parcours">Parcours</a>
+    <a class="tab<?= $tab === 'portfolio' ? ' is-on' : '' ?>" href="<?= e(url('/espace/vitrine?onglet=portfolio')) ?>" data-tab="portfolio">Créations &amp; exemples</a>
+    <a class="tab<?= $tab === 'avis' ? ' is-on' : '' ?>" href="<?= e(url('/espace/vitrine?onglet=avis')) ?>" data-tab="avis">Avis<?php if ($avisBadge > 0): ?> <span class="tab-count"><?= (int) $avisBadge ?></span><?php endif; ?></a>
   </div>
 
   <form id="vitrine-form" class="vitrine-form" method="post" action="<?= e(url('/espace/vitrine')) ?>" enctype="multipart/form-data" data-hide-on-tab="avis"<?= $tab === 'avis' ? ' hidden' : '' ?>>

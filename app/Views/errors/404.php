@@ -13,7 +13,7 @@ $notes = [
       <h1>Cette page n'est pas dans le sommaire.</h1>
       <p class="mk-lead"><?= e((string) ($message ?? 'Le lien est peut-être ancien, ou la page a été retirée.')) ?></p>
       <form class="mk-search" method="get" action="<?= e(url('/recherche')) ?>">
-        <input name="q" placeholder="Retrouver un métier, une prestation, une mission…" aria-label="Recherche">
+        <input name="q" placeholder="Retrouver un métier, une prestation, une mission…" aria-label="Rechercher un métier, une prestation ou une mission">
         <button class="btn-orange" type="submit">Chercher</button>
       </form>
       <div class="mk-chips">

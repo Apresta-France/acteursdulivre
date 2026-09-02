@@ -8,7 +8,7 @@ final class Seo
 {
     public const BRAND = 'Acteurs du Livre';
     public const BRAND_HOST = 'acteursdulivre.fr';
-    public const DEFAULT_DESC = 'Place de marché des métiers du livre : correcteurs, illustrateurs, traducteurs, imprimeurs. Prestations à prix affiché, suivi à jalons, règlement hors plateforme. Sans IA générative.';
+    public const DEFAULT_DESC = 'Place de marché des métiers du livre : correcteurs, illustrateurs, traducteurs, imprimeurs. Prix affichés, suivi à jalons, sans IA générative.';
     public const ROBOTS_INDEX = 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1';
     public const ROBOTS_NONE = 'noindex, nofollow';
     public const OG_W = 1200;
@@ -367,6 +367,11 @@ final class Seo
         $image = $image ?: asset('img/og-default.jpg') . '?v=2';
         $url = $url ?? Share::current();
         $fullTitle = self::documentTitle($title);
+        $jsonLd = $extra['json_ld'] ?? [];
+        if (is_array($jsonLd) && $jsonLd !== [] && !self::graphHasPage($jsonLd)) {
+            array_unshift($jsonLd, self::webPage($fullTitle, $description, $url));
+            $extra['json_ld'] = $jsonLd;
+        }
 
         return array_merge([
             'title' => $fullTitle,
@@ -421,7 +426,7 @@ final class Seo
      */
     public static function webPageGraph(string $title, string $description, string $path, string $screen, array $data = []): array
     {
-        $graph = [self::organization(), self::website()];
+        $graph = [self::organization(), self::website(), self::webPage($title, $description, $path)];
         $crumbs = $data['breadcrumbs'] ?? self::defaultCrumbs($screen, $title, $path);
         if ($crumbs !== []) {
             $graph[] = self::breadcrumb($crumbs);
@@ -580,6 +585,36 @@ final class Seo
             ],
             'sameAs' => Socials::sameAs(),
         ];
+    }
+
+    /** @return array<string, mixed> */
+    public static function webPage(string $title, string $description, string $path, string $type = 'WebPage'): array
+    {
+        $url = Share::absolute($path);
+        return [
+            '@type' => $type,
+            '@id' => $url . '#webpage',
+            'url' => $url,
+            'name' => $title,
+            'description' => self::clip($description, 200),
+            'isPartOf' => ['@id' => Share::absolute('/') . '#website'],
+            'about' => ['@id' => Share::absolute('/') . '#organization'],
+            'inLanguage' => 'fr-FR',
+        ];
+    }
+
+    /**
+     * @param list<array<string, mixed>> $graph
+     */
+    private static function graphHasPage(array $graph): bool
+    {
+        foreach ($graph as $node) {
+            $type = $node['@type'] ?? '';
+            if (in_array($type, ['WebPage', 'CollectionPage', 'ProfilePage', 'AboutPage', 'ContactPage', 'ItemPage'], true)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /** @return array<string, mixed> */

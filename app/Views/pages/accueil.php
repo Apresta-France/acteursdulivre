@@ -23,7 +23,8 @@ $query = (string) ($query ?? '');
       <h1>Un livre, ça se fait à plusieurs.</h1>
       <p class="mk-lead">Dix-huit métiers, de l'écriture au coaching : trouvez les bonnes personnes, comparez des prestations à prix affichés, ou publiez votre recherche.</p>
       <form class="mk-search" method="get" action="<?= e(url('/recherche')) ?>" role="search" data-live-search data-api="<?= e(url('/api/recherche')) ?>" autocomplete="off" toolname="search_home" tooldescription="Rechercher depuis l'accueil un prestataire, une prestation ou un besoin lié à un livre.">
-        <input type="search" name="q" value="<?= e($query) ?>" placeholder="De quoi votre livre a-t-il besoin ?" aria-label="Recherche" data-live-input autocomplete="off" toolparamdescription="Mots-clés décrivant le besoin du livre.">
+        <label class="sr-only" for="home-search-q">Rechercher un prestataire ou une prestation</label>
+        <input id="home-search-q" type="search" name="q" value="<?= e($query) ?>" placeholder="De quoi votre livre a-t-il besoin ?" aria-label="Rechercher un prestataire ou une prestation" data-live-input autocomplete="off" toolparamdescription="Mots-clés décrivant le besoin du livre.">
         <button class="btn-orange" type="submit">Chercher</button>
         <div class="search-suggest" data-live-panel hidden></div>
       </form>
@@ -88,7 +89,7 @@ $query = (string) ($query ?? '');
   <section class="mk-block">
     <div class="mk-head">
       <h2>Les métiers du livre</h2>
-      <a href="<?= e(url('/prestataires')) ?>">Parcourir l'annuaire →</a>
+      <a href="<?= e(url('/prestataires')) ?>">Parcourir l'annuaire des prestataires →</a>
     </div>
     <div class="mk-trades">
       <?php foreach ($homeMetiers as $m): ?>
@@ -109,7 +110,7 @@ $query = (string) ($query ?? '');
         <h2>Prestations mises en avant</h2>
         <p>Prix, délai et périmètre annoncés. Vous ouvrez un suivi à jalons : le règlement se fait hors plateforme.</p>
       </div>
-      <a href="<?= e(url('/prestations')) ?>">Tout voir →</a>
+      <a href="<?= e(url('/prestations')) ?>">Voir toutes les prestations →</a>
     </div>
     <?php if ($homeFeatured === []): ?>
       <p class="mk-empty">Aucune prestation publiée pour le moment.</p>
@@ -118,7 +119,7 @@ $query = (string) ($query ?? '');
         <?php foreach ($homeFeatured as $s): ?>
           <a class="mk-card" href="<?= e(url((string) $s['href'])) ?>">
             <?= !empty($s['has_image'])
-              ? '<div class="mk-card-media" style="background-image:url(\'' . e((string) $s['img']) . '\')"></div>'
+              ? '<img class="mk-card-media" src="' . e((string) $s['img']) . '" alt="' . e((string) ($s['title'] ?? '')) . '" width="400" height="168" loading="lazy" decoding="async">'
               : service_cover_html((string) ($s['cat'] ?? ''), 'mk-card-cover') ?>
             <div class="mk-card-body">
               <div class="mk-card-by"><?= avatar_html($s, 26) ?><span><?= e((string) ($s['by'] ?? '')) ?></span></div>
@@ -147,7 +148,7 @@ $query = (string) ($query ?? '');
         <?php foreach ($homeEntry as $s): ?>
           <a class="mk-card" href="<?= e(url((string) $s['href'])) ?>">
             <?= !empty($s['has_image'])
-              ? '<div class="mk-card-media" style="background-image:url(\'' . e((string) $s['img']) . '\')"></div>'
+              ? '<img class="mk-card-media" src="' . e((string) $s['img']) . '" alt="' . e((string) ($s['title'] ?? '')) . '" width="400" height="168" loading="lazy" decoding="async">'
               : service_cover_html((string) ($s['cat'] ?? ''), 'mk-card-cover') ?>
             <div class="mk-card-body">
               <div class="mk-card-by"><?= avatar_html($s, 26) ?><span><?= e((string) ($s['by'] ?? '')) ?></span></div>
@@ -305,7 +306,7 @@ $query = (string) ($query ?? '');
         <?php foreach ($journal as $a): ?>
           <a class="mk-journal" href="<?= e(url((string) $a['href'])) ?>">
             <?php if (!empty($a['img'])): ?>
-              <div class="mk-card-media" style="background-image:url('<?= e((string) $a['img']) ?>')"></div>
+              <img class="mk-card-media" src="<?= e((string) $a['img']) ?>" alt="<?= e((string) ($a['image_alt'] ?? $a['title'] ?? '')) ?>" width="400" height="168" loading="lazy" decoding="async">
             <?php endif; ?>
             <div class="mk-kicker"><?= e((string) ($a['cat'] ?? '')) ?> · <?= e((string) ($a['read'] ?? '')) ?></div>
             <strong><?= e((string) $a['title']) ?></strong>

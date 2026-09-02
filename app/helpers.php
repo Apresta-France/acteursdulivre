@@ -372,7 +372,8 @@ function service_brand_cover_url(string $category = ''): string
 function search_card_media(array $item): string
 {
     if (!empty($item['thumb'])) {
-        return '<div class="search-card-media" style="background-image:url(\'' . e((string) $item['thumb']) . '\')"></div>';
+        $alt = trim((string) ($item['title'] ?? $item['name'] ?? ''));
+        return '<img class="search-card-media" src="' . e((string) $item['thumb']) . '" alt="' . e($alt) . '" width="400" height="140" loading="lazy" decoding="async">';
     }
     if (($item['kind'] ?? '') === 'prestations') {
         return service_cover_html((string) ($item['cat'] ?? ''), 'search-card-media');

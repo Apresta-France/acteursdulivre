@@ -216,7 +216,7 @@ if ($cityPage) {
           <h2><?= e((string) $block['title']) ?></h2>
           <p><?= e((string) $block['countLabel']) ?><?php if ((int) $block['count'] > 0): ?><?= $cityPage ? ' à ' . e($cityName) : ' sur la plateforme' ?>.<?php else: ?>.<?php endif; ?></p>
         </div>
-        <a href="<?= e((string) $block['href']) ?>">Tout voir →</a>
+        <a href="<?= e((string) $block['href']) ?>">Voir <?= e(mb_strtolower((string) $block['title'])) ?> →</a>
       </div>
       <?php if ($block['items'] === []): ?>
         <div class="search-empty">

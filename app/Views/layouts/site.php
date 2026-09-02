@@ -43,6 +43,8 @@
   <meta name="robots" content="<?= e($metaRobots) ?>">
   <meta name="author" content="EDITIONS TESSERACT">
   <link rel="canonical" href="<?= e($metaUrl) ?>">
+  <link rel="alternate" hreflang="fr" href="<?= e($metaUrl) ?>">
+  <link rel="alternate" hreflang="x-default" href="<?= e($metaUrl) ?>">
   <link rel="sitemap" type="application/xml" title="Sitemap" href="<?= e(\Adl\Data\Share::absolute('/sitemap.xml')) ?>">
   <link rel="alternate" type="text/plain" href="<?= e(\Adl\Data\Share::absolute('/llms.txt')) ?>" title="llms.txt">
   <meta property="og:type" content="<?= e($metaType) ?>">
@@ -78,7 +80,7 @@
   <?php if (!empty($isArticle) && !empty($article['img'])): ?>
   <link rel="preload" as="image" href="<?= e((string) $article['img']) ?>">
   <?php endif; ?>
-  <link rel="stylesheet" href="<?= e(asset('css/app.css')) ?>?v=m165">
+  <link rel="stylesheet" href="<?= e(asset('css/app.css')) ?>?v=m168">
   <link rel="icon" href="<?= e(asset('img/favicon.ico')) ?>?v=3" sizes="any">
   <link rel="icon" type="image/png" href="<?= e(asset('img/favicon-32x32.png')) ?>?v=3" sizes="32x32">
   <link rel="apple-touch-icon" href="<?= e(asset('img/apple-touch-icon.png')) ?>?v=3">
@@ -90,6 +92,7 @@
   <?php endif; ?>
 </head>
 <body<?= $bodyClass !== [] ? ' class="' . e(implode(' ', $bodyClass)) . '"' : '' ?> data-stats="<?= e(url('/api/stats')) ?>">
+  <a class="skip-link" href="#contenu">Aller au contenu</a>
   <?php require ADL_ROOT . '/app/Views/partials/impersonation-bar.php'; ?>
   <div class="nav-backdrop" data-nav-close hidden></div>
   <div class="site-shell">
@@ -142,7 +145,8 @@
           <?php if ($headerSearchType !== '' && $headerSearchType !== 'all' && array_key_exists($headerSearchType, \Adl\Data\Catalog::TYPES)): ?>
             <input type="hidden" name="type" value="<?= e($headerSearchType) ?>">
           <?php endif; ?>
-          <input type="search" name="q" value="<?= e($query ?? '') ?>" placeholder="correcteur roman, illustration jeunesse…" autocomplete="off" data-live-input aria-label="Rechercher un prestataire ou une prestation" toolparamdescription="Mots-clés : métier, genre littéraire ou besoin.">
+          <label class="sr-only" for="header-search-q">Rechercher un prestataire, une prestation ou un appel d'offres</label>
+          <input id="header-search-q" type="search" name="q" value="<?= e($query ?? '') ?>" placeholder="correcteur roman, illustration jeunesse…" autocomplete="off" data-live-input aria-label="Rechercher un prestataire, une prestation ou un appel d'offres" toolparamdescription="Mots-clés : métier, genre littéraire ou besoin.">
           <input type="hidden" name="ville" value="<?= e($searchCity ?? '') ?>" data-header-ville>
           <button type="submit">Chercher</button>
           <div class="search-suggest" data-live-panel hidden></div>
@@ -245,7 +249,7 @@
         <?php endforeach; ?>
       </div>
 
-      <main>
+      <main id="contenu">
         <?php if ($siteFlash = flash('saved')): ?>
           <div class="flash flash-ok" style="margin: 16px 24px 0;"><?= e(is_string($siteFlash) ? $siteFlash : 'Enregistré.') ?></div>
         <?php endif; ?>
@@ -354,6 +358,6 @@
       <?php endif; ?>
     </div>
   <?php endif; ?>
-  <script src="<?= e(asset('js/app.js')) ?>?v=m84"></script>
+  <script src="<?= e(asset('js/app.js')) ?>?v=m85"></script>
 </body>
 </html>

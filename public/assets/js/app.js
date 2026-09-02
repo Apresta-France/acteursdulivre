@@ -1408,10 +1408,10 @@
   });
 
   function showVitrineTab(tab) {
-    var nav = document.querySelector('[data-tabs]');
     var page = document.querySelector('.vitrine-page');
+    var nav = (page && page.querySelector('[data-tabs]')) || document.querySelector('[data-tabs]');
     var root = page || (nav && nav.parentElement) || document;
-    var hiddenTab = document.querySelector('[data-vitrine-tab]');
+    var hiddenTab = root.querySelector('[data-vitrine-tab]');
     if (!tab) return;
     if (nav) {
       nav.querySelectorAll('[data-tab]').forEach(function (other) {
@@ -1426,7 +1426,7 @@
       el.hidden = hideOn.indexOf(tab) !== -1;
     });
     if (hiddenTab) hiddenTab.value = tab;
-    if (hiddenTab && history.replaceState) {
+    if (history.replaceState) {
       try {
         var url = new URL(window.location.href);
         if (tab === 'identite') url.searchParams.delete('onglet');
@@ -1436,13 +1436,23 @@
     }
   }
 
-  document.querySelectorAll('[data-tabs]').forEach(function (nav) {
-    nav.querySelectorAll('[data-tab]').forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        showVitrineTab(btn.getAttribute('data-tab'));
-      });
+  document.querySelectorAll('.vitrine-page [data-tabs] [data-tab]').forEach(function (btn) {
+    btn.addEventListener('click', function (e) {
+      var tab = btn.getAttribute('data-tab');
+      if (!tab) return;
+      if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button) return;
+      e.preventDefault();
+      showVitrineTab(tab);
     });
   });
+  (function syncVitrineTab() {
+    var page = document.querySelector('.vitrine-page');
+    if (!page) return;
+    var fromUrl = '';
+    try { fromUrl = new URL(window.location.href).searchParams.get('onglet') || ''; } catch (err) {}
+    var current = page.querySelector('[data-tabs] .tab.is-on');
+    showVitrineTab(fromUrl || (current && current.getAttribute('data-tab')) || 'identite');
+  })();
 
   (function bindHiddenTabValidation() {
     var form = document.getElementById('vitrine-form');

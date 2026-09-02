@@ -1,5 +1,12 @@
 RewriteEngine On
 
+# Canonique production : www → apex (évite le contenu dupliqué)
+RewriteCond %{HTTP_HOST} ^www\.acteursdulivre\.fr$ [NC]
+RewriteRule ^ https://acteursdulivre.fr%{REQUEST_URI} [R=301,L]
+
+# robots / sitemap / llms toujours via PHP (un robots.txt de panel ne doit pas gagner)
+RewriteRule ^(robots\.txt|sitemap\.xml|llms\.txt)$ index.php [L]
+
 <FilesMatch "(^\.env|^\.git|composer\.(json|lock)$)">
   Require all denied
 </FilesMatch>

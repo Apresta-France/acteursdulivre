@@ -7,6 +7,13 @@ $viewer = \Adl\Core\Auth::user();
 $isOwnProfile = $viewer && (int) ($viewer['id'] ?? 0) === (int) ($p['user_id'] ?? 0);
 ?>
 <div class="profile-page">
+  <nav class="search-crumb" aria-label="Fil d'Ariane">
+    <a href="<?= e(url('/')) ?>">Accueil</a>
+    <span aria-hidden="true"> · </span>
+    <a href="<?= e(url('/prestataires')) ?>">Prestataires</a>
+    <span aria-hidden="true"> · </span>
+    <span><?= e((string) $p['name']) ?></span>
+  </nav>
   <div class="profile-hero">
     <?= avatar_html($p, 104, 'avatar profile-avatar') ?>
     <div class="profile-hero-main">

@@ -120,7 +120,31 @@ if ($searchCity !== '') {
     </aside>
 
     <div>
-      <div class="search-crumb">Accueil · Annuaire</div>
+      <nav class="search-crumb" aria-label="Fil d'Ariane">
+        <a href="<?= e(url('/')) ?>">Accueil</a>
+        <span aria-hidden="true"> · </span>
+        <?php
+          $crumbType = match ($type) {
+              'prestations' => ['label' => 'Prestations', 'href' => '/prestations'],
+              'prestataires' => ['label' => 'Prestataires', 'href' => '/prestataires'],
+              'missions' => ['label' => 'Appels d\'offres', 'href' => '/missions'],
+              default => ['label' => 'Annuaire', 'href' => '/recherche'],
+          };
+        ?>
+        <?php if ($cat !== '' || $searchCityLabel !== ''): ?>
+          <a href="<?= e(url($crumbType['href'])) ?>"><?= e($crumbType['label']) ?></a>
+          <?php if ($cat !== ''): ?>
+            <span aria-hidden="true"> · </span>
+            <span><?= e(\Adl\Data\Catalog::tradeTitle($cat)) ?></span>
+          <?php endif; ?>
+          <?php if ($searchCityLabel !== ''): ?>
+            <span aria-hidden="true"> · </span>
+            <span><?= e($searchCityLabel) ?></span>
+          <?php endif; ?>
+        <?php else: ?>
+          <span><?= e($crumbType['label']) ?></span>
+        <?php endif; ?>
+      </nav>
       <div class="search-head">
         <div>
           <h1><?= e($heading) ?> <span data-search-count><?= e($countLabel) ?></span></h1>

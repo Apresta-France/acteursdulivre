@@ -76,6 +76,22 @@ img { max-width: 100%; }
   white-space: nowrap;
   border: 0;
 }
+.skip-link {
+  position: absolute;
+  left: 12px;
+  top: -56px;
+  z-index: 200;
+  padding: 10px 16px;
+  background: var(--navy);
+  color: #fff;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+}
+.skip-link:focus {
+  top: 12px;
+  color: #fff;
+}
 
 .site-shell {
   min-height: 100vh;
@@ -1174,6 +1190,7 @@ main, main > * { min-width: 0; }
   .mega { grid-template-columns: 1fr 1fr; }
   .footer-cols { grid-template-columns: 1fr 1fr; }
   .legal-page { padding: 28px 20px 44px; grid-template-columns: 1fr; gap: 22px; }
+  .recommandation-page { padding: 28px 20px 44px; }
   .legal-nav { position: static; flex-direction: row; flex-wrap: wrap; gap: 6px; }
   .legal-nav a { padding: 8px 12px; }
   .install-grid { grid-template-columns: 1fr; }
@@ -2443,6 +2460,7 @@ main, main > * { min-width: 0; }
 }
 .search-card:hover { border-color: var(--navy); color: inherit; box-shadow: 0 10px 24px rgba(2,39,70,.12); }
 .search-card-media { height: 140px; background: #F4F6F9 center/cover no-repeat; }
+img.search-card-media { width: 100%; object-fit: cover; display: block; }
 .search-card-media-plain { display: flex; align-items: center; justify-content: center; }
 .search-card-person .search-card-body { padding: 16px 16px 15px; gap: 10px; }
 .search-card-heading { display: flex; align-items: flex-start; gap: 12px; min-width: 0; }
@@ -2854,6 +2872,7 @@ a.tab {
   gap: 8px;
   max-width: 860px;
 }
+.vitrine-avis[hidden] { display: none; }
 .vitrine-avis-stats {
   display: flex;
   gap: 28px;
@@ -2910,8 +2929,8 @@ a.tab {
   margin-top: 14px;
 }
 .recommandation-page {
-  max-width: 640px;
-  padding: 48px 24px 72px;
+  max-width: 720px;
+  padding: 44px;
 }
 .recommandation-page h1 {
   font-family: var(--display);
@@ -3115,6 +3134,7 @@ a.tab {
 }
 .profile-body { padding: 30px 44px 54px; }
 .profile-page { padding: 0; }
+.profile-page > .search-crumb { padding: 16px 44px 0; }
 .profile-text { font-size: 15px; line-height: 1.75; color: #4A5A6B; max-width: 62em; }
 .profile-scope {
   display: grid;
@@ -3499,6 +3519,8 @@ a.tab {
 .journal-hero:hover { border-color: var(--navy); color: inherit; }
 .journal-hero-media, .journal-card-media { background-size: cover; background-position: center; background-color: #F4F6F9; }
 .journal-hero-media { min-height: 260px; }
+img.journal-hero-media { width: 100%; height: 100%; object-fit: cover; display: block; }
+img.journal-card-media { width: 100%; object-fit: cover; display: block; }
 .journal-hero-body { padding: 30px; display: flex; flex-direction: column; justify-content: center; }
 .journal-hero-body h2 { font-family: var(--display); font-size: 27px; color: var(--navy); margin: 12px 0; line-height: 1.25; }
 .journal-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
@@ -3949,6 +3971,7 @@ a.tab {
   .search-banner, .search-layout, .publish-page, .mission-page, .profile-body { padding-left: 20px; padding-right: 20px; }
   .mission-page .facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .profile-hero { padding: 24px 20px; }
+  .profile-page > .search-crumb { padding: 14px 20px 0; }
   .repeat-row,
   .repeat-row.is-price,
   .repeat-row.is-formule,
@@ -5301,6 +5324,7 @@ a.mk-stat:hover span { color: var(--navy); }
 .mk-card { background: #fff; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; color: inherit; display: flex; flex-direction: column; }
 .mk-card:hover { border-color: var(--navy); color: inherit; }
 .mk-card-media { height: 168px; background: #F4F6F9 center/cover no-repeat; }
+img.mk-card-media { width: 100%; object-fit: cover; display: block; }
 .mk-card-cover { height: 168px; }
 .service-cover.mk-card-cover,
 .service-cover.search-card-media {

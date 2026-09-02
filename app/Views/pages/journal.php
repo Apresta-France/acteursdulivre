@@ -52,6 +52,17 @@ if ($pages > 1) {
 }
 ?>
 <div class="journal-page">
+  <nav class="search-crumb" aria-label="Fil d'Ariane">
+    <a href="<?= e(url('/')) ?>">Accueil</a>
+    <span aria-hidden="true"> · </span>
+    <?php if ($journalCat !== ''): ?>
+      <a href="<?= e(url('/journal')) ?>">Le journal</a>
+      <span aria-hidden="true"> · </span>
+      <span><?= e($journalCat) ?></span>
+    <?php else: ?>
+      <span>Le journal</span>
+    <?php endif; ?>
+  </nav>
   <h1><?= $journalCat !== '' && $journalQ === '' ? 'Le journal — ' . e($journalCat) : 'Le journal' ?></h1>
   <p class="journal-lead">Prix, méthodes, contrats, retours d'expérience : ce qu'on apprend en regardant les métiers du livre travailler.</p>
 
@@ -100,7 +111,9 @@ if ($pages > 1) {
   <?php else: ?>
     <?php if ($hero): ?>
       <a class="journal-hero" href="<?= e(url((string) $hero['href'])) ?>">
-        <div class="journal-hero-media" style="background-image:url('<?= e((string) $hero['img']) ?>')"></div>
+        <?php if (!empty($hero['img'])): ?>
+          <img class="journal-hero-media" src="<?= e((string) $hero['img']) ?>" alt="<?= e((string) ($hero['image_alt'] ?? $hero['title'] ?? '')) ?>" width="720" height="260" decoding="async">
+        <?php endif; ?>
         <div class="journal-hero-body">
           <div class="journal-kicker"><?= e((string) $hero['cat']) ?> · <?= e((string) $hero['read']) ?> de lecture</div>
           <h2><?= e((string) $hero['title']) ?></h2>
@@ -113,7 +126,9 @@ if ($pages > 1) {
       <div class="journal-grid">
         <?php foreach ($rest as $a): ?>
           <a class="journal-card" href="<?= e(url((string) $a['href'])) ?>">
-            <div class="journal-card-media" style="background-image:url('<?= e((string) $a['img']) ?>')"></div>
+            <?php if (!empty($a['img'])): ?>
+              <img class="journal-card-media" src="<?= e((string) $a['img']) ?>" alt="<?= e((string) ($a['image_alt'] ?? $a['title'] ?? '')) ?>" width="400" height="170" loading="lazy" decoding="async">
+            <?php endif; ?>
             <div class="journal-kicker"><?= e((string) $a['cat']) ?> · <?= e((string) $a['read']) ?></div>
             <strong><?= e((string) $a['title']) ?></strong>
             <span><?= e((string) $a['chapo']) ?></span>

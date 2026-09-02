@@ -100,7 +100,11 @@ if ((int) $bmin !== \Adl\Data\Catalog::BUDGET_MIN || (int) $bmax !== \Adl\Data\C
     </aside>
 
     <div>
-      <div class="search-crumb"><a href="<?= e(url('/')) ?>">Accueil</a> · Appels d'offres</div>
+      <nav class="search-crumb" aria-label="Fil d'Ariane">
+        <a href="<?= e(url('/')) ?>">Accueil</a>
+        <span aria-hidden="true"> · </span>
+        <span>Appels d'offres</span>
+      </nav>
       <div class="search-head missions-head">
         <div>
           <h1>Appels d'offres <span data-search-count><?= e($countLabel) ?></span></h1>
