@@ -20,18 +20,19 @@ $isAuthor = $logged && (int) ($user['id'] ?? 0) === (int) ($topic['user_id'] ?? 
 $isAdmin = !empty($isAdmin);
 $topicHref = (string) ($topic['href'] ?? '/forum');
 $canReply = $logged && empty($topic['is_locked']);
+$forumFlashError = trim((string) ($forumFlashError ?? ''));
 ?>
 <div class="forum-page">
   <section class="forum-hero forum-hero-compact">
-    <div class="forum-crumb">
-      <a href="<?= e(url('/forum')) ?>">Forum</a>
-      <span>/</span>
-      <a href="<?= e(url((string) ($category['href'] ?? '/forum'))) ?>"><?= e((string) ($category['name'] ?? '')) ?></a>
-      <span>/</span>
-      <span>Discussion</span>
-    </div>
     <div class="forum-hero-grid">
       <div>
+        <div class="forum-crumb">
+          <a href="<?= e(url('/forum')) ?>">Forum</a>
+          <span>/</span>
+          <a href="<?= e(url((string) ($category['href'] ?? '/forum'))) ?>"><?= e((string) ($category['name'] ?? '')) ?></a>
+          <span>/</span>
+          <span>Discussion</span>
+        </div>
         <div class="forum-hero-badges">
           <span class="forum-cat forum-cat-soft"><?= e((string) ($topic['category_short'] ?? '')) ?></span>
           <?php if (!empty($topic['is_solved'])): ?>
@@ -70,6 +71,9 @@ $canReply = $logged && empty($topic['is_locked']);
 
   <div class="forum-body forum-split forum-split-narrow">
     <div>
+      <?php if ($forumFlashError !== ''): ?>
+        <div class="flash flash-error forum-flash-inline"><?= e($forumFlashError) ?></div>
+      <?php endif; ?>
       <?php if ($op): ?>
         <article class="forum-post" id="post-<?= (int) $op['id'] ?>">
           <aside class="forum-post-side">
@@ -210,7 +214,7 @@ $canReply = $logged && empty($topic['is_locked']);
       <?php endif; ?>
 
       <?php if ($canReply): ?>
-        <form class="forum-compose" id="repondre" method="post" action="<?= e(url($topicHref . '/repondre')) ?>" data-forum-compose>
+        <form class="forum-compose" id="repondre" method="post" action="<?= e(url($topicHref . '/repondre')) ?>" data-forum-compose data-min-chars="80">
           <?= csrf_field() ?>
           <input type="hidden" name="parent_id" value="" data-parent-id>
           <div class="forum-compose-head">
@@ -222,6 +226,11 @@ $canReply = $logged && empty($topic['is_locked']);
             <span class="forum-pin">Sans IA</span>
           </div>
           <div class="forum-compose-body">
+            <?php if ($forumFlashError !== ''): ?>
+              <p class="forum-compose-error" data-compose-error data-server-error><?= e($forumFlashError) ?></p>
+            <?php else: ?>
+              <p class="forum-compose-error" data-compose-error hidden></p>
+            <?php endif; ?>
             <p class="forum-cite-hint" data-cite-hint hidden></p>
             <?php
               $forumWysiwygName = 'body';
@@ -235,6 +244,7 @@ $canReply = $logged && empty($topic['is_locked']);
               <input type="checkbox" name="no_ai" value="1" required>
               <span>Je confirme que cette réponse est de ma main et qu'aucune IA générative n'a été utilisée pour la produire.</span>
             </label>
+            <p class="forum-compose-block" data-compose-block hidden role="status" aria-live="polite"></p>
             <div class="forum-compose-actions">
               <button type="submit" class="btn-orange">Publier la réponse</button>
               <span class="forum-muted" data-draft-count>Minimum 80 caractères</span>

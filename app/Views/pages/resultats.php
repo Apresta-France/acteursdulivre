@@ -141,7 +141,7 @@ if ($searchCity !== '') {
           </div>
         <?php else: ?>
           <?php foreach ($results as $item): ?>
-            <?= search_card_html($item, true) ?>
+            <?= search_card_html($item) ?>
           <?php endforeach; ?>
         <?php endif; ?>
       </div>

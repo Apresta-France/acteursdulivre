@@ -21,6 +21,51 @@ $citySlug = (string) ($cityPage['slug'] ?? '');
 $cityName = (string) ($cityPage['name'] ?? '');
 $villeQ = $citySlug !== '' ? '&ville=' . rawurlencode($citySlug) : '';
 
+$splitExplore = static function (array $items, int $keep, int $collapseFrom, ?callable $pinned = null): array {
+    if (count($items) <= $collapseFrom) {
+        return [$items, []];
+    }
+    $head = [];
+    $tail = [];
+    $front = [];
+    foreach ($items as $item) {
+        if ($pinned && $pinned($item)) {
+            $front[] = $item;
+            continue;
+        }
+        if (count($head) < $keep) {
+            $head[] = $item;
+        } else {
+            $tail[] = $item;
+        }
+    }
+    return [array_merge($front, $head), $tail];
+};
+
+$specChips = [];
+foreach ($tradeSpecs as $spec) {
+    $specChips[] = [
+        'href' => url('/prestations?cat=' . $catQ . '&spec=' . rawurlencode((string) $spec['v'])),
+        'label' => (string) $spec['l'],
+        'current' => false,
+    ];
+}
+$cityChips = [];
+foreach ($tradeCities as $place) {
+    $cityChips[] = [
+        'href' => url((string) $place['href']),
+        'label' => (string) $place['label'],
+        'current' => $citySlug !== '' && $citySlug === ($place['slug'] ?? ''),
+    ];
+}
+[$visibleSpecs, $extraSpecs] = $splitExplore($specChips, 6, 8);
+[$visibleCities, $extraCities] = $splitExplore(
+    $cityChips,
+    5,
+    6,
+    static fn (array $chip): bool => !empty($chip['current'])
+);
+
 $plural = static function (int $n, string $one, string $many, string $none): string {
     if ($n === 0) {
         return $none;
@@ -69,64 +114,99 @@ if ($cityPage) {
 ?>
 <div class="metier-page">
   <section class="metier-hero">
-    <div>
-      <nav class="search-crumb" aria-label="Fil d'Ariane">
-        <a href="<?= e(url('/')) ?>">Accueil</a>
-        · <a href="<?= e(url('/recherche')) ?>">Métiers</a>
-        · <a href="<?= e(url(\Adl\Data\Catalog::tradePath($trade))) ?>"><?= e($tradeTitle) ?></a>
+    <div class="metier-hero-top">
+      <div class="metier-hero-copy">
+        <nav class="search-crumb" aria-label="Fil d'Ariane">
+          <a href="<?= e(url('/')) ?>">Accueil</a>
+          · <a href="<?= e(url('/recherche')) ?>">Métiers</a>
+          · <a href="<?= e(url(\Adl\Data\Catalog::tradePath($trade))) ?>"><?= e($tradeTitle) ?></a>
+          <?php if ($cityPage): ?>
+            · <?= e($cityName) ?>
+          <?php endif; ?>
+        </nav>
         <?php if ($cityPage): ?>
-          · <?= e($cityName) ?>
+          <p class="mk-kicker">Local · <?= e($cityName) ?></p>
         <?php endif; ?>
+        <div class="metier-hero-title">
+          <span class="mk-trade-ico" aria-hidden="true"><?= trade_icon($trade, 22) ?></span>
+          <h1><?= e((string) ($geo['h1'] ?? $label)) ?></h1>
+        </div>
+        <p class="mk-lead"><?= e((string) ($geo['lead'] ?? ('Prestataires, prestations à prix affiché et missions ouvertes pour le métier « ' . $trade . ' ».'))) ?></p>
+        <div class="metier-hero-stats" role="group" aria-label="Chiffres de ce métier">
+          <div>
+            <strong><?= (int) $providerCount ?></strong>
+            <span><?= $providerCount > 1 ? 'prestataires' : 'prestataire' ?></span>
+          </div>
+          <div>
+            <strong><?= (int) $serviceCount ?></strong>
+            <span><?= $serviceCount > 1 ? 'prestations' : 'prestation' ?></span>
+          </div>
+          <?php if (!$cityPage): ?>
+          <div>
+            <strong><?= (int) $missionCount ?></strong>
+            <span><?= $missionCount > 1 ? 'recherches ouvertes' : 'recherche ouverte' ?></span>
+          </div>
+          <?php endif; ?>
+        </div>
+        <div class="metier-hero-actions">
+          <a class="btn-navy" href="<?= e(url('/prestataires?cat=' . $catQ . $villeQ)) ?>">Voir les profils</a>
+          <?php if ($cityPage && !empty($cityPage['national_href'])): ?>
+            <a class="btn-ghost" href="<?= e(url((string) $cityPage['national_href'])) ?>">Toute la France</a>
+          <?php endif; ?>
+          <a class="btn-ghost" href="<?= e(url('/espace/publier')) ?>">Publier une recherche</a>
+        </div>
+      </div>
+      <div class="metier-hero-visual" aria-hidden="true">
+        <img src="<?= e($heroImg) ?>" alt="" width="400" height="280" loading="eager" decoding="async">
+      </div>
+    </div>
+    <?php if ($specChips !== [] || $cityChips !== []): ?>
+      <nav class="metier-explore" aria-label="Affiner par spécialité ou ville">
+        <?php
+          $exploreRows = [
+              [
+                  'label' => 'Spécialités',
+                  'visible' => $visibleSpecs,
+                  'extra' => $extraSpecs,
+                  'moreOne' => 'autre spécialité',
+                  'moreMany' => 'autres spécialités',
+              ],
+              [
+                  'label' => 'Villes',
+                  'visible' => $visibleCities,
+                  'extra' => $extraCities,
+                  'moreOne' => 'autre ville',
+                  'moreMany' => 'autres villes',
+              ],
+          ];
+        ?>
+        <?php foreach ($exploreRows as $row): ?>
+          <?php if ($row['visible'] === [] && $row['extra'] === []) continue; ?>
+          <?php $extraCount = count($row['extra']); ?>
+          <div class="metier-explore-row">
+            <p class="metier-explore-label"><?= e((string) $row['label']) ?></p>
+            <div class="metier-chips">
+              <?php foreach ($row['visible'] as $chip): ?>
+                <a href="<?= e((string) $chip['href']) ?>" title="<?= e((string) $chip['label']) ?>"<?= !empty($chip['current']) ? ' aria-current="page"' : '' ?>><?= e((string) $chip['label']) ?></a>
+              <?php endforeach; ?>
+              <?php if ($extraCount > 0): ?>
+                <details class="metier-more">
+                  <summary>
+                    <span class="metier-more-closed">+ <?= $extraCount ?> <?= $extraCount > 1 ? $row['moreMany'] : $row['moreOne'] ?></span>
+                    <span class="metier-more-open">Réduire</span>
+                  </summary>
+                  <div class="metier-chips metier-chips-extra">
+                    <?php foreach ($row['extra'] as $chip): ?>
+                      <a href="<?= e((string) $chip['href']) ?>" title="<?= e((string) $chip['label']) ?>"<?= !empty($chip['current']) ? ' aria-current="page"' : '' ?>><?= e((string) $chip['label']) ?></a>
+                    <?php endforeach; ?>
+                  </div>
+                </details>
+              <?php endif; ?>
+            </div>
+          </div>
+        <?php endforeach; ?>
       </nav>
-      <?php if ($cityPage): ?>
-        <p class="mk-kicker">Local · <?= e($cityName) ?></p>
-      <?php endif; ?>
-      <div class="metier-hero-title">
-        <span class="mk-trade-ico" aria-hidden="true"><?= trade_icon($trade, 22) ?></span>
-        <h1><?= e((string) ($geo['h1'] ?? $label)) ?></h1>
-      </div>
-      <p class="mk-lead"><?= e((string) ($geo['lead'] ?? ('Prestataires, prestations à prix affiché et missions ouvertes pour le métier « ' . $trade . ' ».'))) ?></p>
-      <div class="metier-hero-stats" role="group" aria-label="Chiffres de ce métier">
-        <div>
-          <strong><?= (int) $providerCount ?></strong>
-          <span><?= $providerCount > 1 ? 'prestataires' : 'prestataire' ?></span>
-        </div>
-        <div>
-          <strong><?= (int) $serviceCount ?></strong>
-          <span><?= $serviceCount > 1 ? 'prestations' : 'prestation' ?></span>
-        </div>
-        <?php if (!$cityPage): ?>
-        <div>
-          <strong><?= (int) $missionCount ?></strong>
-          <span><?= $missionCount > 1 ? 'recherches ouvertes' : 'recherche ouverte' ?></span>
-        </div>
-        <?php endif; ?>
-      </div>
-      <div class="metier-hero-actions">
-        <a class="btn-navy" href="<?= e(url('/prestataires?cat=' . $catQ . $villeQ)) ?>">Voir les profils</a>
-        <?php if ($cityPage && !empty($cityPage['national_href'])): ?>
-          <a class="btn-ghost" href="<?= e(url((string) $cityPage['national_href'])) ?>">Toute la France</a>
-        <?php endif; ?>
-        <a class="btn-ghost" href="<?= e(url('/espace/publier')) ?>">Publier une recherche</a>
-      </div>
-      <?php if ($tradeSpecs !== []): ?>
-        <div class="metier-chips">
-          <?php foreach ($tradeSpecs as $spec): ?>
-            <a href="<?= e(url('/prestations?cat=' . $catQ . '&spec=' . rawurlencode((string) $spec['v']))) ?>"><?= e((string) $spec['l']) ?></a>
-          <?php endforeach; ?>
-        </div>
-      <?php endif; ?>
-      <?php if ($tradeCities !== []): ?>
-        <div class="metier-chips" role="group" aria-label="Villes">
-          <?php foreach ($tradeCities as $place): ?>
-            <a href="<?= e(url((string) $place['href'])) ?>"<?= $citySlug === ($place['slug'] ?? '') ? ' aria-current="page"' : '' ?>><?= e((string) $place['label']) ?></a>
-          <?php endforeach; ?>
-        </div>
-      <?php endif; ?>
-    </div>
-    <div class="metier-hero-visual" aria-hidden="true">
-      <img src="<?= e($heroImg) ?>" alt="" width="400" height="280" loading="eager" decoding="async">
-    </div>
+    <?php endif; ?>
   </section>
 
   <?php foreach ($blocks as $block): ?>

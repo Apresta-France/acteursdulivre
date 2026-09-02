@@ -332,7 +332,7 @@ function search_card_media(array $item): string
 }
 
 /** @param array<string, mixed> $item */
-function search_card_html(array $item, bool $showNetwork = false): string
+function search_card_html(array $item): string
 {
     $kind = (string) ($item['kind'] ?? '');
     $isPerson = $kind === 'prestataires';
@@ -346,12 +346,14 @@ function search_card_html(array $item, bool $showNetwork = false): string
         $class .= ' search-card-person';
     }
 
-    $kicker = '<div class="search-card-kicker"><span>' . e((string) ($item['kind_label'] ?? '')) . '</span>';
-    if (!empty($item['cat'])) {
-        $kicker .= '<span>' . e((string) $item['cat']) . '</span>';
+    $kindLabel = (string) ($item['kind_label'] ?? '');
+    $cat = (string) ($item['cat'] ?? '');
+    $kicker = '<div class="search-card-kicker">';
+    if (!$isPerson && $kindLabel !== '') {
+        $kicker .= '<span>' . e($kindLabel) . '</span>';
     }
-    if ($showNetwork && !empty($item['live'])) {
-        $kicker .= '<span class="search-live">Votre réseau</span>';
+    if ($cat !== '' && strcasecmp($cat, 'Prestataire') !== 0) {
+        $kicker .= '<span>' . e($cat) . '</span>';
     }
     if ($isPerson && !empty($item['availability_label'])) {
         $kicker .= '<span class="status-pill' . ($isBusy ? ' is-busy' : ' is-available') . '">'

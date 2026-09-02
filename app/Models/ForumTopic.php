@@ -336,6 +336,12 @@ final class ForumTopic
         return array_values($out);
     }
 
+    public static function countVisible(): int
+    {
+        $row = Database::fetch('SELECT COUNT(*) AS n FROM forum_topics WHERE status = "visible"');
+        return (int) ($row['n'] ?? 0);
+    }
+
     public static function stats(): array
     {
         $topics = Database::fetch('SELECT COUNT(*) AS n FROM forum_topics WHERE status = "visible"');

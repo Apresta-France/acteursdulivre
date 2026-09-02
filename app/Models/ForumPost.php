@@ -207,8 +207,8 @@ final class ForumPost
             Database::query(
                 'INSERT INTO forum_topic_follows (topic_id, user_id, created_at, last_read_at, last_read_post_id)
                  VALUES (?, ?, NOW(), NOW(), ?)
-                 ON DUPLICATE KEY UPDATE last_read_at = NOW(), last_read_post_id = VALUES(last_read_post_id)',
-                [$topicId, $userId, $postId]
+                 ON DUPLICATE KEY UPDATE last_read_at = NOW(), last_read_post_id = ?',
+                [$topicId, $userId, $postId, $postId]
             );
             Database::query(
                 'UPDATE forum_topics t

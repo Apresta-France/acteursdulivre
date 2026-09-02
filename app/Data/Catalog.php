@@ -13,6 +13,7 @@ use Adl\Models\Review;
 use Adl\Models\Service;
 use Adl\Models\Setting;
 use Adl\Models\Taxonomy;
+use Adl\Models\User;
 
 final class Catalog
 {
@@ -1688,24 +1689,23 @@ final class Catalog
         return $counts;
     }
 
-    /** @return list<array{v: string, k: string}> */
+    /** @return list<array{v: string, k: string, href: string}> */
     public static function homeStats(): array
     {
         try {
-            $pros = Profile::countPublished();
+            $pros = User::countOfferers();
             $services = Service::countPublished();
             $missions = Mission::countOpen();
-            $commission = Setting::get('commission_percent', '8') ?: '8';
+            $topics = ForumTopic::countVisible();
         } catch (\Throwable) {
-            $pros = $services = $missions = 0;
-            $commission = '8';
+            $pros = $services = $missions = $topics = 0;
         }
 
         return [
-            ['v' => format_int($pros), 'k' => $pros > 1 ? 'professionnels du livre en ligne' : 'professionnel du livre en ligne'],
-            ['v' => format_int($services), 'k' => $services > 1 ? 'prestations à prix affiché' : 'prestation à prix affiché'],
-            ['v' => format_int($missions), 'k' => $missions > 1 ? 'missions ouvertes' : 'mission ouverte'],
-            ['v' => $commission . ' %', 'k' => 'dès la 2ᵉ mission, sans abonnement'],
+            ['v' => format_int($pros), 'k' => $pros > 1 ? 'professionnels du livre' : 'professionnel du livre', 'href' => '/prestataires'],
+            ['v' => format_int($services), 'k' => $services > 1 ? 'prestations à prix affiché' : 'prestation à prix affiché', 'href' => '/prestations'],
+            ['v' => format_int($missions), 'k' => $missions > 1 ? 'missions ouvertes' : 'mission ouverte', 'href' => '/missions'],
+            ['v' => format_int($topics), 'k' => $topics > 1 ? 'sujets du forum' : 'sujet du forum', 'href' => '/forum'],
         ];
     }
 

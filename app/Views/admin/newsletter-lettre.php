@@ -37,7 +37,7 @@ $tiles = [
     <div>
       <p class="admin-back"><a href="<?= e(url('/admin/newsletter')) ?>">← Toutes les lettres</a></p>
       <h1><?= $id ? 'Modifier la lettre' : 'Nouvelle lettre' ?></h1>
-      <p class="admin-lead">Cliquez dans la lettre pour écrire. Glissez un bloc pour le déplacer.</p>
+      <p class="admin-lead">Cliquez un bloc à gauche pour l’ajouter. Cliquez ensuite dans la lettre pour écrire.</p>
     </div>
     <div class="admin-nl-studio-bar-actions">
       <?php if ($id): ?>
@@ -75,9 +75,10 @@ $tiles = [
     <div class="admin-nl-studio-grid">
       <aside class="admin-nl-palette" data-nl-palette>
         <p class="admin-nl-palette-kicker">Blocs</p>
+        <p class="admin-nl-palette-hint">Cliquez pour ajouter</p>
         <div class="admin-nl-tiles">
           <?php foreach ($tiles as [$type, $label, $skin]): ?>
-            <button type="button" class="admin-nl-tile" data-nl-add="<?= e($type) ?>">
+            <button type="button" class="admin-nl-tile" data-nl-add="<?= e($type) ?>" draggable="true" title="Cliquer pour ajouter">
               <span class="admin-nl-tile-preview admin-nl-tile-<?= e($skin) ?>" aria-hidden="true"></span>
               <span><?= e($label) ?></span>
             </button>
@@ -92,14 +93,12 @@ $tiles = [
       </aside>
 
       <div class="admin-nl-stage">
-        <div class="admin-nl-inbox">
-          <span class="admin-nl-inbox-dot" aria-hidden="true"></span>
-          <div>
-            <label class="sr-only" for="nl-subject">Sujet</label>
-            <input class="admin-nl-inbox-subject" id="nl-subject" name="subject" required maxlength="180" value="<?= e((string) ($letter['subject'] ?? '')) ?>" placeholder="Sujet de la lettre">
-            <label class="sr-only" for="nl-preheader">Pré-en-tête</label>
-            <input class="admin-nl-inbox-pre" id="nl-preheader" name="preheader" maxlength="180" value="<?= e((string) ($letter['preheader'] ?? '')) ?>" placeholder="Aperçu dans la boîte de réception">
-          </div>
+        <div class="admin-nl-meta">
+          <label class="field" for="nl-subject">Sujet de la lettre</label>
+          <input class="input" id="nl-subject" name="subject" required maxlength="180" value="<?= e((string) ($letter['subject'] ?? '')) ?>" placeholder="Ex. : Le point de la semaine — 2 septembre" autocomplete="off">
+          <p class="field-help">Titre affiché dans la boîte de réception du destinataire.</p>
+          <label class="field" for="nl-preheader">Aperçu sous le sujet <span class="admin-nl-optional">(facultatif)</span></label>
+          <input class="input" id="nl-preheader" name="preheader" maxlength="180" value="<?= e((string) ($letter['preheader'] ?? '')) ?>" placeholder="Une ligne visible sous le sujet, chez le destinataire" autocomplete="off">
         </div>
 
         <div class="admin-nl-mail" data-nl-mail>

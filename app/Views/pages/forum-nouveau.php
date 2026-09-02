@@ -2,6 +2,7 @@
 $categories = $forumCategories ?? [];
 $preselect = (string) ($forumCategorySlug ?? '');
 $old = is_array($old ?? null) ? $old : [];
+$forumFlashError = trim((string) ($forumFlashError ?? ''));
 $oldCat = (int) ($old['category_id'] ?? 0);
 if ($oldCat <= 0 && $preselect !== '') {
     foreach ($categories as $c) {
@@ -25,7 +26,7 @@ if ($oldCat <= 0 && $preselect !== '') {
 
   <div class="forum-body">
     <div class="forum-split forum-split-narrow" data-forum-similar data-api="<?= e(url('/api/forum/similaires')) ?>">
-      <form class="forum-compose forum-compose-new" method="post" action="<?= e(url('/forum/nouveau')) ?>" data-forum-compose>
+      <form class="forum-compose forum-compose-new" method="post" action="<?= e(url('/forum/nouveau')) ?>" data-forum-compose data-min-chars="80">
         <?= csrf_field() ?>
         <div class="forum-compose-head">
           <div class="forum-compose-who">
@@ -35,6 +36,11 @@ if ($oldCat <= 0 && $preselect !== '') {
           <span class="forum-pin">Sans IA</span>
         </div>
         <div class="forum-compose-body">
+          <?php if ($forumFlashError !== ''): ?>
+            <p class="forum-compose-error" data-compose-error data-server-error><?= e($forumFlashError) ?></p>
+          <?php else: ?>
+            <p class="forum-compose-error" data-compose-error hidden></p>
+          <?php endif; ?>
           <label class="forum-field">
             <span>Rubrique</span>
             <select name="category_id" required data-similar-category>
@@ -72,6 +78,7 @@ if ($oldCat <= 0 && $preselect !== '') {
             <span>Je confirme que ce message est de ma main et qu'aucune IA générative n'a été utilisée pour le produire.</span>
           </label>
 
+          <p class="forum-compose-block" data-compose-block hidden role="status" aria-live="polite"></p>
           <div class="forum-compose-actions">
             <button type="submit" class="btn-orange">Publier la discussion</button>
             <a class="btn-ghost" href="<?= e(url('/forum')) ?>">Annuler</a>

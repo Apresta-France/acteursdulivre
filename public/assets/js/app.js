@@ -594,9 +594,9 @@
         : title + sub;
       return '<a class="search-card' + (item.is_busy ? ' is-busy' : '') + (isPerson ? ' search-card-person' : '') + '" href="' + escapeHtml(item.href) + '">' + media +
         '<div class="search-card-body">' +
-          '<div class="search-card-kicker"><span>' + escapeHtml(item.kind_label) + '</span>' +
-            (item.cat ? '<span>' + escapeHtml(item.cat) + '</span>' : '') +
-            (item.live ? '<span class="search-live">Votre réseau</span>' : '') +
+          '<div class="search-card-kicker">' +
+            (!isPerson && item.kind_label ? '<span>' + escapeHtml(item.kind_label) + '</span>' : '') +
+            (item.cat && String(item.cat).toLowerCase() !== 'prestataire' ? '<span>' + escapeHtml(item.cat) + '</span>' : '') +
             (isPerson && item.availability_label
               ? '<span class="status-pill' + (item.is_busy ? ' is-busy' : ' is-available') + '">' + escapeHtml(item.availability_label) + '</span>'
               : '') +
@@ -1955,6 +1955,9 @@
     editor.setAttribute('data-placeholder', source.getAttribute('placeholder') || '');
     toolbar.hidden = false;
     editor.hidden = false;
+    source.removeAttribute('required');
+    source.setAttribute('tabindex', '-1');
+    source.setAttribute('aria-hidden', 'true');
     wrap.classList.add('is-ready');
 
     function sync() {
@@ -2017,10 +2020,10 @@
   (function initNewsletterBuilder() {
     var form = document.querySelector('[data-nl-builder]');
     if (!form) return;
-    var canvas = form.querySelector('[data-nl-canvas]');
+    var canvas = form.querySelector('[data-nl-canvas]') || form.querySelector('.admin-nl-mail-body');
+    if (!canvas) return;
     var inspector = form.querySelector('[data-nl-inspector]');
     var hidden = form.querySelector('[data-nl-blocks]');
-    var palette = form.querySelector('[data-nl-palette]');
     var dataEl = document.getElementById('nl-builder-data');
     var data = { blocks: [], catalog: {}, uploadUrl: '', token: '' };
     try {
@@ -2252,17 +2255,28 @@
           html += blockHtml(block) + slotHtml(i + 1);
         });
         canvas.innerHTML = html;
-        canvas.querySelectorAll('[data-wysiwyg]').forEach(initWysiwyg);
+        canvas.querySelectorAll('[data-wysiwyg]').forEach(function (wrap) {
+          try { initWysiwyg(wrap); } catch (err) {}
+        });
       }
       persist();
       renderInspector();
+      if (selectedId) {
+        var on = canvas.querySelector('[data-nl-id="' + selectedId + '"]');
+        if (on && on.scrollIntoView) on.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      }
     }
 
     function addBlock(type, at) {
+      type = String(type || '').trim();
+      if (!type) return;
       readDom();
-      if (blocks.length >= 40) return;
+      if (blocks.length >= 40) {
+        window.alert('Cette lettre a déjà 40 blocs.');
+        return;
+      }
       var block = defaultBlock(type);
-      var idx = typeof at === 'number' ? at : (selectedId ? indexOf(selectedId) + 1 : blocks.length);
+      var idx = typeof at === 'number' && !isNaN(at) ? at : (selectedId ? indexOf(selectedId) + 1 : blocks.length);
       if (idx < 0) idx = blocks.length;
       blocks.splice(idx, 0, block);
       paint(block.id);
@@ -2303,14 +2317,34 @@
         });
     }
 
-    if (palette) {
-      palette.addEventListener('click', function (event) {
-        var add = event.target.closest('[data-nl-add]');
-        var insert = event.target.closest('[data-nl-insert]');
-        if (add) addBlock(add.getAttribute('data-nl-add'));
-        if (insert) insertCatalog(insert.getAttribute('data-nl-insert'));
-      });
-    }
+    var paletteDrag = false;
+    form.addEventListener('click', function (event) {
+      if (paletteDrag) return;
+      var add = event.target.closest('[data-nl-add]');
+      if (add && form.contains(add)) {
+        event.preventDefault();
+        addBlock(add.getAttribute('data-nl-add'));
+        return;
+      }
+      var insert = event.target.closest('[data-nl-insert]');
+      if (insert && form.contains(insert)) {
+        event.preventDefault();
+        insertCatalog(insert.getAttribute('data-nl-insert'));
+      }
+    });
+    form.addEventListener('dragstart', function (event) {
+      var tile = event.target.closest('[data-nl-add]');
+      if (!tile || !form.contains(tile)) return;
+      var type = tile.getAttribute('data-nl-add') || '';
+      if (!type) return;
+      paletteDrag = true;
+      event.dataTransfer.effectAllowed = 'copy';
+      event.dataTransfer.setData('text/plain', type);
+      event.dataTransfer.setData('text/nl-type', type);
+    });
+    form.addEventListener('dragend', function () {
+      window.setTimeout(function () { paletteDrag = false; }, 0);
+    });
 
     canvas.addEventListener('click', function (event) {
       var plus = event.target.closest('[data-nl-plus]');
@@ -2368,8 +2402,13 @@
       if (card) uploadFile(file.files[0], card.getAttribute('data-nl-id'));
     });
 
+    function transferHas(event, type) {
+      var types = event.dataTransfer && event.dataTransfer.types;
+      return !!(types && Array.prototype.indexOf.call(types, type) !== -1);
+    }
+
     canvas.addEventListener('dragover', function (event) {
-      if (event.dataTransfer && Array.prototype.slice.call(event.dataTransfer.types).indexOf('Files') !== -1) {
+      if (transferHas(event, 'Files') || transferHas(event, 'text/nl-type') || transferHas(event, 'text/plain')) {
         event.preventDefault();
       }
     });
@@ -2399,14 +2438,26 @@
       canvas.querySelectorAll('.is-over').forEach(function (el) { el.classList.remove('is-over'); });
     });
     canvas.addEventListener('dragover', function (event) {
-      if (!dragId) return;
-      var slot = event.target.closest('[data-nl-slot]');
+      if (!dragId && !transferHas(event, 'text/nl-type')) return;
+      var slot = event.target.closest('[data-nl-slot]') || event.target.closest('[data-nl-canvas]') || canvas;
       if (!slot) return;
       event.preventDefault();
       canvas.querySelectorAll('.is-over').forEach(function (el) { el.classList.remove('is-over'); });
-      slot.classList.add('is-over');
+      var mark = event.target.closest('[data-nl-slot]');
+      if (mark) mark.classList.add('is-over');
     });
     canvas.addEventListener('drop', function (event) {
+      var droppedType = '';
+      try {
+        droppedType = (event.dataTransfer && (event.dataTransfer.getData('text/nl-type') || '')) || '';
+      } catch (err) {}
+      if (droppedType && !dragId) {
+        event.preventDefault();
+        var slot = event.target.closest('[data-nl-slot]');
+        var at = slot ? parseInt(slot.getAttribute('data-nl-slot'), 10) : NaN;
+        addBlock(droppedType, isNaN(at) ? undefined : at);
+        return;
+      }
       var slot = event.target.closest('[data-nl-slot]');
       if (!slot || !dragId) return;
       event.preventDefault();
@@ -2484,13 +2535,19 @@
     }
 
     form.addEventListener('submit', readDom);
-    form.querySelector('[name="subject"]').addEventListener('input', persist);
-    form.querySelector('[name="preheader"]').addEventListener('input', persist);
+    var subject = form.querySelector('[name="subject"]');
+    var preheader = form.querySelector('[name="preheader"]');
+    if (subject) subject.addEventListener('input', persist);
+    if (preheader) preheader.addEventListener('input', persist);
     document.querySelectorAll('[data-nl-sync]').forEach(function (extra) {
       extra.addEventListener('submit', readDom);
     });
 
-    paint(blocks[0] ? blocks[0].id : '');
+    try {
+      paint(blocks[0] ? blocks[0].id : '');
+    } catch (err) {
+      canvas.innerHTML = '<p class="admin-nl-empty">Cliquez un bloc à gauche pour composer la lettre.</p>' + slotHtml(0);
+    }
   })();
 
   function initQuoteRecap() {
@@ -2927,6 +2984,15 @@
     var count = form.querySelector('[data-draft-count]');
     var parent = form.querySelector('[data-parent-id]');
     var hint = form.querySelector('[data-cite-hint]');
+    var errorBox = form.querySelector('[data-compose-error]');
+    var blockBox = form.querySelector('[data-compose-block]');
+    var noAi = form.querySelector('[name="no_ai"]');
+    var engage = noAi && noAi.closest('.forum-engage');
+    var category = form.querySelector('[name="category_id"]');
+    var title = form.querySelector('[name="title"]');
+    var minChars = parseInt(form.getAttribute('data-min-chars'), 10) || 80;
+    var attempted = false;
+    form.setAttribute('novalidate', '');
     function plainLen() {
       if (editor && wrapReady(editor)) {
         return (editor.innerText || '').replace(/\u00a0/g, ' ').trim().length;
@@ -2937,29 +3003,97 @@
       var wrap = el.closest('[data-wysiwyg]');
       return !!(wrap && wrap.classList.contains('is-ready') && !el.hidden);
     }
-    function updateCount() {
-      if (!count) return;
-      var n = plainLen();
-      count.textContent = n ? (n + ' caractères') : 'Minimum 80 caractères';
-    }
-    if (ta) ta.addEventListener('input', updateCount);
-    if (editor) {
-      editor.addEventListener('input', updateCount);
-      editor.addEventListener('blur', updateCount);
-    }
-    form.addEventListener('submit', function (event) {
+    function syncBody() {
       if (editor && wrapReady(editor) && ta) {
         ta.value = editorIsEmpty(editor) ? '' : sanitizeEditorHtml(editor.innerHTML);
       }
-      if (plainLen() < 80) {
-        event.preventDefault();
-        updateCount();
-        if (count) count.textContent = 'Minimum 80 caractères — encore ' + Math.max(0, 80 - plainLen()) + ' à écrire';
-        if (editor && wrapReady(editor)) editor.focus();
-        else if (ta) ta.focus();
+    }
+    function blockers() {
+      var items = [];
+      if (category && !String(category.value || '').trim()) {
+        items.push({ field: 'category', message: 'Choisissez une rubrique.' });
       }
+      if (title) {
+        var titleLen = String(title.value || '').trim().length;
+        if (titleLen < 8) {
+          items.push({
+            field: 'title',
+            message: titleLen ? 'Le titre doit faire au moins 8 caractères.' : 'Indiquez un titre.'
+          });
+        }
+      }
+      var n = plainLen();
+      var missing = Math.max(0, minChars - n);
+      if (missing > 0) {
+        items.push({
+          field: 'body',
+          message: n
+            ? 'Encore ' + missing + ' caractère' + (missing > 1 ? 's' : '') + ' (minimum ' + minChars + ').'
+            : 'Écrivez un message d’au moins ' + minChars + ' caractères.'
+        });
+      }
+      if (noAi && !noAi.checked) {
+        items.push({ field: 'no_ai', message: 'Cochez la confirmation « écrite de votre main, sans IA ».' });
+      }
+      return items;
+    }
+    function focusField(field) {
+      if (field === 'category' && category) category.focus();
+      else if (field === 'title' && title) title.focus();
+      else if (field === 'no_ai' && noAi) noAi.focus();
+      else if (editor && wrapReady(editor)) editor.focus();
+      else if (ta) ta.focus();
+    }
+    function renderBlock(items) {
+      var list = items || [];
+      form.classList.toggle('is-invalid', attempted && list.length > 0);
+      form.classList.toggle('is-short', list.some(function (item) { return item.field === 'body'; }));
+      if (engage) engage.classList.toggle('is-warn', attempted && list.some(function (item) { return item.field === 'no_ai'; }));
+      if (blockBox) {
+        if (attempted && list.length) {
+          blockBox.hidden = false;
+          blockBox.textContent = list.length === 1
+            ? 'Publication bloquée : ' + list[0].message
+            : 'Publication bloquée : ' + list.map(function (item) { return item.message.replace(/\.$/, ''); }).join(' · ') + '.';
+        } else {
+          blockBox.hidden = true;
+          blockBox.textContent = '';
+        }
+      }
+      if (count) {
+        var n = plainLen();
+        var missing = Math.max(0, minChars - n);
+        count.classList.toggle('is-error', attempted && missing > 0);
+        if (n === 0) count.textContent = 'Minimum ' + minChars + ' caractères';
+        else if (missing > 0) count.textContent = n + ' caractères — encore ' + missing + ' pour publier';
+        else count.textContent = n + ' caractères';
+      }
+    }
+    function refresh() {
+      syncBody();
+      renderBlock(blockers());
+    }
+    if (ta) ta.addEventListener('input', refresh);
+    if (editor) {
+      editor.addEventListener('input', refresh);
+      editor.addEventListener('blur', refresh);
+    }
+    if (noAi) noAi.addEventListener('change', refresh);
+    if (category) category.addEventListener('change', refresh);
+    if (title) title.addEventListener('input', refresh);
+    form.querySelectorAll('[type="submit"]').forEach(function (btn) {
+      btn.addEventListener('pointerdown', syncBody);
+      btn.addEventListener('click', syncBody);
     });
-    updateCount();
+    form.addEventListener('submit', function (event) {
+      attempted = true;
+      var items = blockers();
+      if (!items.length) return;
+      event.preventDefault();
+      renderBlock(items);
+      focusField(items[0].field);
+    });
+    refresh();
     document.querySelectorAll('[data-cite]').forEach(function (btn) {
       btn.addEventListener('click', function () {
         if (!parent) return;
@@ -2969,8 +3103,7 @@
           hint.hidden = false;
           hint.textContent = name ? ('En réponse à ' + name) : 'Réponse citée';
         }
-        if (editor && wrapReady(editor)) editor.focus();
-        else if (ta) ta.focus();
+        focusField('body');
       });
     });
   });

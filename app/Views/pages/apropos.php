@@ -13,10 +13,10 @@ $equipe = $equipe ?? [];
   <?php if ($homeStats !== []): ?>
     <section class="mk-stats">
       <?php foreach ($homeStats as $s): ?>
-        <div>
+        <a class="mk-stat" href="<?= e(url((string) ($s['href'] ?? '#'))) ?>">
           <strong><?= e((string) $s['v']) ?></strong>
           <span><?= e((string) $s['k']) ?></span>
-        </div>
+        </a>
       <?php endforeach; ?>
     </section>
   <?php endif; ?>

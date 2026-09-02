@@ -6,6 +6,7 @@ namespace Adl\Controllers;
 
 use Adl\Core\Env;
 use Adl\Core\HourlyCron;
+use Adl\Core\MissionMatchCron;
 use Adl\Core\NewsletterCron;
 use Adl\Core\Request;
 
@@ -20,6 +21,10 @@ final class CronController
         'newsletter' => [
             'label' => 'Newsletter hebdomadaire et file d’envoi',
             'runner' => [NewsletterCron::class, 'run'],
+        ],
+        'alertes-missions' => [
+            'label' => 'Alertes métier : nouvelle recherche pour prestataires disponibles sans mission gagnée',
+            'runner' => [MissionMatchCron::class, 'run'],
         ],
     ];
 

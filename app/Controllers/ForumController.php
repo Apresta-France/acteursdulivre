@@ -227,6 +227,7 @@ final class ForumController
             'forumFollowing' => $following,
             'forumAuthorPostCount' => $authorPostCount,
             'forumReportReasons' => Report::REASONS,
+            'forumFlashError' => flash('error'),
             'old' => flash('old') ?: [],
             'pager' => [
                 'page' => $replies['page'],
@@ -259,6 +260,7 @@ final class ForumController
             ),
             'forumCategories' => $categories,
             'forumCategorySlug' => $preselect,
+            'forumFlashError' => flash('error'),
             'old' => $old,
         ]);
     }
