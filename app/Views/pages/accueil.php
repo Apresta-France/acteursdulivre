@@ -361,18 +361,7 @@ $query = (string) ($query ?? '');
     <?php endif; ?>
   </section>
 
-  <section class="mk-cta">
-    <div>
-      <h2>Vous exercez un métier du livre ?</h2>
-      <p>Créez votre vitrine, fixez vos tarifs, recevez des demandes qualifiées. Le client vous règle hors plateforme. Aucun abonnement : la première mission est offerte, puis 8 % de commission hors taxes (hors TVA) facturés au prestataire lorsqu'il confirme et note.</p>
-    </div>
-    <div class="mk-cta-actions">
-      <a class="btn-orange" href="<?= e(url('/inscription')) ?>">Proposer mes services</a>
-      <a class="btn-ghost" href="<?= e(url('/tarifs')) ?>">Voir les tarifs</a>
-    </div>
-  </section>
-
-  <section class="mk-faq mk-wash-cool">
+  <section class="mk-faq">
     <div>
       <h2>Questions fréquentes</h2>
       <p>Commission, clients, règlement : les réponses au même endroit.</p>
