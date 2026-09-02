@@ -38,6 +38,13 @@ final class AuthController
         $email = $request->string('email');
         $password = $request->string('password');
 
+        $ip = (string) ($_SERVER['REMOTE_ADDR'] ?? '0');
+        if (rate_limited('login-ip', $ip, 12, 900) || rate_limited('login-email', strtolower($email), 8, 900)) {
+            flash('error', 'Trop de tentatives. Réessayez dans quelques minutes.');
+            $_SESSION['_old'] = ['email' => $email];
+            redirect('/connexion');
+        }
+
         $existing = User::findByEmail($email);
         if ($existing && User::isOauthOnly($existing)) {
             flash('error', 'Ce compte se connecte avec Google ou Facebook.');
@@ -188,6 +195,11 @@ final class AuthController
     public function forgot(Request $request): void
     {
         $email = strtolower($request->string('email'));
+        $ip = (string) ($_SERVER['REMOTE_ADDR'] ?? '0');
+        if (rate_limited('reset-ip', $ip, 8, 3600) || rate_limited('reset-email', $email, 3, 3600)) {
+            flash('error', 'Trop de demandes. Réessayez plus tard.');
+            redirect('/mot-de-passe-oublie');
+        }
         if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
             flash('error', 'Indiquez l\'e-mail de votre compte.');
             redirect('/mot-de-passe-oublie');

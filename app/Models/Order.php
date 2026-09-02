@@ -169,10 +169,14 @@ final class Order
         if (!in_array($current, ['pending', 'in_progress', 'delivered'], true)) {
             throw new \RuntimeException('Un litige ne peut être ouvert que sur une commande en cours ou livrée.');
         }
-        Database::query(
-            'UPDATE orders SET status = "dispute", dispute_reason = ?, dispute_opened_by = ?, dispute_at = NOW() WHERE id = ?',
+        $updated = Database::query(
+            'UPDATE orders SET status = "dispute", dispute_reason = ?, dispute_opened_by = ?, dispute_at = NOW()
+             WHERE id = ? AND status IN ("pending", "in_progress", "delivered")',
             [$reason, $userId, $id]
         );
+        if ($updated->rowCount() < 1) {
+            throw new \RuntimeException('Un litige ne peut plus être ouvert sur cette commande.');
+        }
         $otherId = (int) $order['buyer_id'] === $userId ? (int) $order['seller_id'] : (int) $order['buyer_id'];
         Notification::create(
             $otherId,
@@ -204,6 +208,50 @@ final class Order
             [$buyerId, $serviceId]
         );
         return $row ? self::find((int) $row['id']) : null;
+    }
+
+    /**
+     * @param array<string, mixed> $service
+     * @param array<string, mixed>|null $selected
+     * @param list<array<string, mixed>> $pickedOptions
+     * @return array{order: ?array<string, mixed>, existing: ?array<string, mixed>}
+     */
+    public static function openPendingForService(
+        int $buyerId,
+        array $service,
+        int $amount,
+        string $brief,
+        ?array $selected,
+        array $pickedOptions
+    ): array {
+        $serviceId = (int) ($service['id'] ?? 0);
+        $lock = 'adl-ord-' . $buyerId . '-' . $serviceId;
+
+        return Database::transaction(static function () use ($buyerId, $service, $serviceId, $amount, $brief, $selected, $pickedOptions, $lock) {
+            $got = Database::fetch('SELECT GET_LOCK(?, 8) AS ok', [$lock]);
+            if ((int) ($got['ok'] ?? 0) !== 1) {
+                throw new \RuntimeException('Cette commande est déjà en cours d’ouverture. Réessayez.');
+            }
+            try {
+                $existing = self::findPendingForService($buyerId, $serviceId);
+                if ($existing) {
+                    return ['order' => null, 'existing' => $existing];
+                }
+                $order = self::create(array_merge([
+                    'buyer_id' => $buyerId,
+                    'seller_id' => (int) $service['user_id'],
+                    'service_id' => $serviceId,
+                    'amount' => $amount,
+                    'brief' => $brief,
+                    'package_name' => $selected['name'] ?? null,
+                    'options' => $pickedOptions,
+                ], Service::startupSnapshot($service, $amount)));
+
+                return ['order' => $order, 'existing' => null];
+            } finally {
+                Database::fetch('SELECT RELEASE_LOCK(?) AS ok', [$lock]);
+            }
+        });
     }
 
     /**
@@ -262,21 +310,10 @@ final class Order
 
     public static function touchAccepted(int $id): void
     {
-        $before = self::fetchRow($id);
         Database::query(
             'UPDATE orders SET accepted_at = COALESCE(accepted_at, NOW()) WHERE id = ?',
             [$id]
         );
-        if ($before && empty($before['accepted_at'])) {
-            $order = self::find($id);
-            if ($order) {
-                Mailer::notify(User::find((int) $order['buyer_id']), 'jalons', 'commande-acceptee', [
-                    'numero' => (string) $order['num'],
-                    'titre' => (string) $order['title'],
-                    'lien' => url('/espace/suivi/' . $id),
-                ]);
-            }
-        }
     }
 
     public static function touchInProgress(int $id): void
@@ -320,7 +357,9 @@ final class Order
     {
         $row = Database::fetch(
             'SELECT COUNT(*) AS n FROM orders
-             WHERE seller_id = ? AND (confirmed_at IS NOT NULL OR status IN ("confirmed", "paid"))',
+             WHERE seller_id = ?
+               AND status NOT IN ("cancelled")
+               AND (confirmed_at IS NOT NULL OR status IN ("confirmed", "paid"))',
             [$sellerId]
         );
         return (int) ($row['n'] ?? 0);
@@ -442,7 +481,7 @@ final class Order
             Notification::create(
                 (int) $order['seller_id'],
                 'Facture de commission ' . $invoice['number'],
-                'Le client a validé la mission. Votre facture de commission (' . $invoice['amount_label'] . ') est à régler avant le ' . $invoice['due_label'] . '.',
+                'Le client a validé la mission. Votre facture de commission (' . ($invoice['amount_due_label'] ?? $invoice['amount_label']) . ') est à régler avant le ' . $invoice['due_label'] . '.',
                 '/espace/facturation',
                 'invoice_issued',
                 'invoice',
@@ -450,7 +489,7 @@ final class Order
             );
             Mailer::notify(User::find((int) $order['seller_id']), 'jalons', 'facture-commission', [
                 'numero' => (string) ($invoice['number'] ?? ''),
-                'montant' => (string) ($invoice['amount_label'] ?? ''),
+                'montant' => (string) ($invoice['amount_due_label'] ?? $invoice['amount_label'] ?? ''),
                 'echeance' => (string) ($invoice['due_label'] ?? ''),
                 'lien' => url('/espace/facturation'),
             ]);
@@ -484,7 +523,13 @@ final class Order
             if (!in_array($current, ['pending', 'in_progress', 'delivered'], true)) {
                 throw new \RuntimeException('Un litige ne peut être ouvert que sur une commande en cours ou livrée.');
             }
-            Database::query('UPDATE orders SET status = ? WHERE id = ?', [$status, $id]);
+            $updated = Database::query(
+                'UPDATE orders SET status = ? WHERE id = ? AND status IN ("pending", "in_progress", "delivered")',
+                [$status, $id]
+            );
+            if ($updated->rowCount() < 1) {
+                throw new \RuntimeException('Un litige ne peut plus être ouvert sur cette commande.');
+            }
             return;
         }
 
@@ -492,6 +537,7 @@ final class Order
             Database::transaction(static function () use ($id): void {
                 Database::query('UPDATE orders SET status = ? WHERE id = ?', ['cancelled', $id]);
                 Invoice::cancelOpenForOrder($id);
+                OrderMilestone::skipOpen($id);
             });
             if ($current === 'dispute') {
                 self::notifyParties($id, 'Commande annulée après médiation', 'La commande ' . $order['num'] . ' a été annulée par l\'équipe.');
@@ -500,12 +546,21 @@ final class Order
         }
 
         if ($status === 'in_progress' && $current === 'dispute') {
-            $restore = 'pending';
-            if (!empty($order['accepted_at']) || !empty($order['delivered_at'])) {
-                $restore = !empty($order['delivered_at']) ? 'delivered' : 'in_progress';
+            $depositAcked = false;
+            foreach ($order['milestones'] ?? [] as $milestone) {
+                if (($milestone['code'] ?? '') === 'deposit_ack' && ($milestone['status'] ?? '') === 'done') {
+                    $depositAcked = true;
+                    break;
+                }
             }
             if (!empty($order['confirmed_at'])) {
                 $restore = 'confirmed';
+            } elseif (!empty($order['delivered_at'])) {
+                $restore = 'delivered';
+            } elseif ($depositAcked || ((int) ($order['deposit_amount'] ?? 0) < 1 && !empty($order['accepted_at']))) {
+                $restore = 'in_progress';
+            } else {
+                $restore = 'pending';
             }
             Database::query('UPDATE orders SET status = ? WHERE id = ?', [$restore, $id]);
             self::notifyParties($id, 'Litige clôturé — suivi repris', 'L\'équipe a repris le suivi de ' . $order['num'] . '. Les jalons peuvent reprendre.');
@@ -708,9 +763,15 @@ final class Order
         $row['dispute_reason'] = trim((string) ($row['dispute_reason'] ?? ''));
         $row['dispute_admin_note'] = trim((string) ($row['dispute_admin_note'] ?? ''));
         $row['dispute_when'] = !empty($row['dispute_at']) ? time_ago($row['dispute_at']) : '';
+        $commissionHt = (int) ($row['commission_amount'] ?? 0);
         $row['commission_label'] = !empty($row['confirmed_at']) || ($row['commission_percent'] ?? null) !== null
-            ? format_euros((int) ($row['commission_amount'] ?? 0))
+            ? format_euros($commissionHt)
             : '';
+        $row['commission_due_label'] = $row['commission_label'] === ''
+            ? ''
+            : ($commissionHt <= 0
+                ? format_euros(0)
+                : Commission::formatMoney(Commission::ttcOn((float) $commissionHt)) . ' TTC');
         $row['service_excerpt'] = self::htmlToQuoteNote((string) ($row['service_excerpt'] ?? ''));
         $row['service_delay'] = trim((string) ($row['service_delay'] ?? ''));
         $row['package_delay'] = trim((string) ($row['package_delay'] ?? ''));

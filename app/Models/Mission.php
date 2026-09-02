@@ -290,6 +290,15 @@ final class Mission
             delete_upload($attachment);
         }
 
+        if ($pending !== []) {
+            EmailTemplate::ensure(
+                'recherche-retiree',
+                'Recherche retirée',
+                'La recherche « {{ titre }} » a été retirée',
+                '<p>Bonjour {{ prenom }},</p><p>La recherche « {{ titre }} » a été retirée par le porteur de projet. Votre candidature n’est plus en attente.</p><p><a href="{{ lien }}">Voir mes candidatures</a></p>',
+                'prenom, titre, lien'
+            );
+        }
         foreach ($pending as $other) {
             Notification::create(
                 (int) $other['user_id'],
@@ -300,7 +309,7 @@ final class Mission
                 'application',
                 (int) ($other['id'] ?? 0)
             );
-            Mailer::notify(User::find((int) $other['user_id']), 'missions', 'candidature-refusee', [
+            Mailer::notify(User::find((int) $other['user_id']), 'missions', 'recherche-retiree', [
                 'titre' => $title,
                 'lien' => url('/espace/candidatures'),
             ]);
@@ -327,14 +336,7 @@ final class Mission
         if ($status === 'draft') {
             return false;
         }
-        if (Application::findForUserOnMission((int) ($mission['id'] ?? 0), $userId)) {
-            return true;
-        }
-        if ($status !== 'open' || !User::offersServices($user)) {
-            return false;
-        }
-        $owner = User::find((int) ($mission['user_id'] ?? 0));
-        return $owner !== null && ($owner['status'] ?? '') === 'active';
+        return Application::findForUserOnMission((int) ($mission['id'] ?? 0), $userId) !== null;
     }
 
     public static function budgetLabel(?int $min, ?int $max): string

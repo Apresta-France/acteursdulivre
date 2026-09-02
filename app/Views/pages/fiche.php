@@ -161,6 +161,7 @@ $formulePriceLabel = is_array($selectedPackage)
                   <?php $optionId = (int) ($option['id'] ?? 0); ?>
                   <label class="option-row">
                     <input type="checkbox" name="options[]" value="<?= $optionId ?>"
+                           form="fiche-order-form"
                            data-price="<?= (int) ($option['price'] ?? 0) ?>"
                            <?= $isOwner ? ' disabled' : '' ?>>
                     <span><?= e((string) ($option['name'] ?? '')) ?></span>
@@ -178,7 +179,13 @@ $formulePriceLabel = is_array($selectedPackage)
             <p class="field-help" style="margin: 8px 0 0;">Accompagnement de démarrage : <?= e((string) $service['startup_label']) ?></p>
           <?php endif; ?>
           <?php if ($canOrder): ?>
-            <a class="btn-orange" data-order-cta data-order-cta-label href="<?= e(url($orderHref)) ?>"><?= e($ctaLabel) ?></a>
+            <form id="fiche-order-form" method="get" action="<?= e(url('/espace/commande')) ?>">
+              <input type="hidden" name="prestation" value="<?= e((string) ($service['slug'] ?? '')) ?>">
+              <?php if ($selectedPackage): ?>
+                <input type="hidden" name="formule" value="<?= (int) ($selectedPackage['id'] ?? 0) ?>" data-order-formule-input>
+              <?php endif; ?>
+              <button class="btn-orange" type="submit" data-order-cta-label><?= e($ctaLabel) ?></button>
+            </form>
             <form method="post" action="<?= e(url('/espace/messages')) ?>">
               <?= csrf_field() ?>
               <input type="hidden" name="avec" value="<?= (int) ($service['user_id'] ?? 0) ?>">
@@ -225,7 +232,7 @@ $formulePriceLabel = is_array($selectedPackage)
       <?php if ($canOrder): ?>
         <div class="fiche-buy-bar">
           <strong data-order-total-value><?= e(format_euros_ttc($baseAmount)) ?></strong>
-          <a class="btn-orange" data-order-cta data-order-cta-label href="<?= e(url($orderHref)) ?>"><?= e($ctaLabel) ?></a>
+          <button class="btn-orange" type="submit" form="fiche-order-form" data-order-cta-label><?= e($ctaLabel) ?></button>
         </div>
       <?php endif; ?>
     </aside>

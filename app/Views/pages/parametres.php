@@ -38,6 +38,11 @@ $oauthProviders = OAuth::enabledProviders();
       <label class="field" for="email" data-email-label><?= !empty($offersChecked) ? 'E-mail professionnel' : 'E-mail' ?></label>
       <input class="input" id="email" type="email" name="email" value="<?= e((string) ($email ?? '')) ?>" required>
     </div>
+    <div>
+      <label class="field" for="account_password">Mot de passe (pour changer d’e-mail)</label>
+      <input class="input" id="account_password" type="password" name="account_password" autocomplete="current-password">
+      <p class="field-help">Requis uniquement si vous modifiez l’adresse e-mail.</p>
+    </div>
 
     <div>
       <p class="field" style="margin-bottom: 10px;">Mes usages</p>
@@ -190,12 +195,24 @@ $oauthProviders = OAuth::enabledProviders();
       <p class="field">Connexions sociales</p>
       <p class="espace-page-lead" style="margin-top: 0;">Liez Google ou Facebook pour vous connecter sans mot de passe.</p>
       <div class="oauth-stack oauth-stack-inline">
+        <?php
+          $hasPassword = !empty($hasPassword);
+          $linkedCount = (int) !empty($linkedProviders['google']) + (int) !empty($linkedProviders['facebook']);
+        ?>
         <?php foreach ($oauthProviders as $provider):
           $linked = !empty($linkedProviders[$provider]);
+          $canUnlink = $linked && ($hasPassword || $linkedCount > 1);
           ?>
           <?php if ($linked): ?>
             <div class="oauth-btn oauth-<?= e($provider) ?> is-linked">
               <span>Compte <?= e(OAuth::label($provider)) ?> lié</span>
+              <?php if ($canUnlink): ?>
+                <form method="post" action="<?= e(url('/espace/parametres/oauth/unlink')) ?>">
+                  <?= csrf_field() ?>
+                  <input type="hidden" name="provider" value="<?= e($provider) ?>">
+                  <button type="submit" class="oauth-unlink">Délier</button>
+                </form>
+              <?php endif; ?>
             </div>
           <?php else: ?>
             <a class="oauth-btn oauth-<?= e($provider) ?>" href="<?= e(url('/auth/' . $provider . '?next=parametres')) ?>">

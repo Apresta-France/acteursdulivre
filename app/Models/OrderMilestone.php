@@ -450,12 +450,7 @@ final class OrderMilestone
             }
 
             Order::setStatus($orderId, 'cancelled');
-            Database::query(
-                'UPDATE order_milestones
-                 SET status = CASE WHEN status IN ("done", "skipped") THEN status ELSE "skipped" END
-                 WHERE order_id = ? AND status IN ("pending", "current", "declared")',
-                [$orderId]
-            );
+            self::skipOpen($orderId);
 
             Notification::create(
                 (int) $order['seller_id'],
@@ -496,18 +491,26 @@ final class OrderMilestone
             [$orderId]
         );
         if ($validate && !in_array((string) $validate['status'], [self::STATUS_DONE, self::STATUS_SKIPPED], true)) {
-            self::markDone($orderId, 'validate', $buyerId, []);
+            self::markDone($orderId, 'validate', $buyerId, [], [self::STATUS_CURRENT, self::STATUS_PENDING]);
         }
+
+        self::refreshCurrent($orderId);
 
         $commissionAmount = (int) ($invoice['amount'] ?? $order['commission_amount'] ?? 0);
         $waived = !empty($order['first_mission_free'])
             || $commissionAmount <= 0
             || ($invoice['status'] ?? '') === 'waived';
 
-        self::markDone($orderId, 'commission', null, [
-            'amount' => $commissionAmount,
-            'note' => $waived ? 'Première mission offerte : aucune commission due.' : null,
-        ]);
+        $commission = Database::fetch(
+            'SELECT status FROM order_milestones WHERE order_id = ? AND code = "commission"',
+            [$orderId]
+        );
+        if ($commission && !in_array((string) $commission['status'], [self::STATUS_DONE, self::STATUS_SKIPPED], true)) {
+            self::markDone($orderId, 'commission', null, [
+                'amount' => $commissionAmount,
+                'note' => $waived ? 'Première mission offerte : aucune commission due.' : null,
+            ], [self::STATUS_CURRENT, self::STATUS_PENDING]);
+        }
 
         if ($waived) {
             self::skip($orderId, ['commission_paid']);
@@ -540,7 +543,7 @@ final class OrderMilestone
             self::markDone($orderId, 'commission_paid', null, [
                 'amount' => (int) ($invoice['amount'] ?? 0),
                 'note' => 'Règlement confirmé par la plateforme.',
-            ]);
+            ], [self::STATUS_CURRENT, self::STATUS_DECLARED]);
         }
         Order::touchPaid($orderId);
         self::refreshCurrent($orderId);
@@ -875,19 +878,14 @@ final class OrderMilestone
             ];
         }
 
-        if ($code === 'deposit_invoice') {
+        if ($code === 'deposit_invoice' || $code === 'final_invoice') {
+            if ($filePath === null || $filePath === '') {
+                throw new RuntimeException('Joignez la facture (PDF ou image) pour passer ce jalon.');
+            }
             return [
-                'amount' => (int) ($order['deposit_amount'] ?? 0),
-                'delay' => null,
-                'note' => $note,
-                'file_name' => $fileName,
-                'file_path' => $filePath,
-            ];
-        }
-
-        if ($code === 'final_invoice') {
-            return [
-                'amount' => max(0, (int) ($order['amount'] ?? 0) - (int) ($order['deposit_amount'] ?? 0)),
+                'amount' => $code === 'deposit_invoice'
+                    ? (int) ($order['deposit_amount'] ?? 0)
+                    : max(0, (int) ($order['amount'] ?? 0) - (int) ($order['deposit_amount'] ?? 0)),
                 'delay' => null,
                 'note' => $note,
                 'file_name' => $fileName,
@@ -917,25 +915,53 @@ final class OrderMilestone
     /**
      * @param array<string, mixed> $fields
      */
-    private static function markDone(int $orderId, string $code, ?int $userId, array $fields): void
+    public static function skipOpen(int $orderId): void
     {
         Database::query(
             'UPDATE order_milestones
+             SET status = CASE WHEN status IN ("done", "skipped") THEN status ELSE "skipped" END
+             WHERE order_id = ? AND status IN ("pending", "current", "declared")',
+            [$orderId]
+        );
+    }
+
+    /**
+     * @param array<string, mixed> $fields
+     */
+    /**
+     * @param array<string, mixed> $fields
+     * @param list<string> $fromStatuses
+     */
+    private static function markDone(int $orderId, string $code, ?int $userId, array $fields, array $fromStatuses = [self::STATUS_CURRENT]): void
+    {
+        $fromStatuses = array_values(array_unique(array_filter($fromStatuses, static fn ($status): bool => is_string($status) && $status !== '')));
+        if ($fromStatuses === []) {
+            $fromStatuses = [self::STATUS_CURRENT];
+        }
+        $placeholders = implode(', ', array_fill(0, count($fromStatuses), '?'));
+        $updated = Database::query(
+            'UPDATE order_milestones
              SET status = ?, amount = ?, delay = ?, note = ?, file_name = ?, file_path = ?,
                  completed_at = NOW(), completed_by = ?
-             WHERE order_id = ? AND code = ?',
-            [
-                self::STATUS_DONE,
-                $fields['amount'] ?? null,
-                $fields['delay'] ?? null,
-                $fields['note'] ?? null,
-                $fields['file_name'] ?? null,
-                $fields['file_path'] ?? null,
-                $userId,
-                $orderId,
-                $code,
-            ]
+             WHERE order_id = ? AND code = ? AND status IN (' . $placeholders . ')',
+            array_merge(
+                [
+                    self::STATUS_DONE,
+                    $fields['amount'] ?? null,
+                    $fields['delay'] ?? null,
+                    $fields['note'] ?? null,
+                    $fields['file_name'] ?? null,
+                    $fields['file_path'] ?? null,
+                    $userId,
+                    $orderId,
+                    $code,
+                ],
+                $fromStatuses
+            )
         );
+        if ($updated->rowCount() < 1) {
+            throw new RuntimeException('Ce jalon vient d’être traité.');
+        }
     }
 
     /** @param list<string> $codes */

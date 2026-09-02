@@ -257,8 +257,11 @@ final class Article
         $row['has_cover'] = $imagePath !== '';
         $row['image_alt'] = trim((string) ($row['image_alt'] ?? '')) ?: (string) ($row['title'] ?? '');
         $row['slotId'] = 'jr-' . ($row['id'] ?? '0');
-        $row['published'] = !empty($row['published_at']);
-        $row['status'] = $row['published'] ? 'Publié' : 'Brouillon';
+        $publishedAt = (string) ($row['published_at'] ?? '');
+        $publishedTs = $publishedAt !== '' ? strtotime($publishedAt) : false;
+        $row['published'] = $publishedTs !== false && $publishedTs <= time();
+        $row['scheduled'] = $publishedTs !== false && $publishedTs > time();
+        $row['status'] = $row['published'] ? 'Publié' : ($row['scheduled'] ? 'Programmé' : 'Brouillon');
         $row['when'] = $row['published_at'] ? format_deadline(substr((string) $row['published_at'], 0, 10)) : '';
         $row['live'] = true;
         return $row;

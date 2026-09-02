@@ -684,7 +684,16 @@ final class AccountController
         $brief = $request->string('brief');
 
         try {
-            $existing = Order::findPendingForService((int) $user['id'], (int) $service['id']);
+            $opened = Order::openPendingForService(
+                (int) $user['id'],
+                $service,
+                $amount,
+                $brief,
+                $selected,
+                $pickedOptions
+            );
+            $order = $opened['order'];
+            $existing = $opened['existing'];
             if ($existing) {
                 Conversation::open((int) $user['id'], (int) $service['user_id'], [
                     'subject' => (string) $service['title'],
@@ -713,15 +722,9 @@ final class AccountController
                 }
                 redirect('/espace/suivi/' . (int) $existing['id']);
             }
-            $order = Order::create(array_merge([
-                'buyer_id' => (int) $user['id'],
-                'seller_id' => (int) $service['user_id'],
-                'service_id' => (int) $service['id'],
-                'amount' => $amount,
-                'brief' => $brief,
-                'package_name' => $selected['name'] ?? null,
-                'options' => $pickedOptions,
-            ], Service::startupSnapshot($service, $amount)));
+            if (!$order) {
+                throw new \RuntimeException('Impossible d’ouvrir cette commande.');
+            }
             Analytics::action('commande');
             Conversation::open((int) $user['id'], (int) $service['user_id'], [
                 'subject' => (string) $service['title'],
@@ -1870,6 +1873,7 @@ final class AccountController
             'portfolioKinds' => Profile::PORTFOLIO_KINDS,
             'socialNetworks' => Profile::SOCIAL_NETWORKS,
             'completion' => $profile['completion'] ?? 0,
+            'tab' => self::vitrineTab($request),
             'saved' => flash('saved') ? true : false,
             'error' => flash('error'),
         ]);
@@ -1976,11 +1980,11 @@ final class AccountController
             PortfolioItem::replace((int) $profile['id'], $items);
         } catch (\Throwable $e) {
             flash('error', user_error_message($e));
-            redirect('/espace/vitrine');
+            redirect(self::vitrinePath($request));
         }
 
         flash('saved', true);
-        redirect('/espace/vitrine');
+        redirect(self::vitrinePath($request));
     }
 
     public function disponibiliteSave(Request $request): void
@@ -2033,6 +2037,7 @@ final class AccountController
             'einvoiceRouting' => (string) ($user['einvoice_routing'] ?? ''),
             'billingAddress' => (string) ($user['billing_address'] ?? ''),
             'iban' => (string) ($user['iban'] ?? ''),
+            'hasPassword' => (string) ($user['password'] ?? '') !== '',
             'linkedProviders' => [
                 'google' => (string) ($user['google_id'] ?? '') !== '',
                 'facebook' => (string) ($user['facebook_id'] ?? '') !== '',
@@ -2062,6 +2067,17 @@ final class AccountController
         if ($taken && (int) $taken['id'] !== (int) $user['id']) {
             flash('error', 'Un compte existe déjà avec cet e-mail.');
             redirect('/espace/parametres');
+        }
+        if ($email !== strtolower((string) ($user['email'] ?? ''))) {
+            $hash = (string) ($user['password'] ?? '');
+            if ($hash === '') {
+                flash('error', 'Définissez un mot de passe avant de changer d’e-mail.');
+                redirect('/espace/parametres');
+            }
+            if (!password_verify($request->string('account_password'), $hash)) {
+                flash('error', 'Le mot de passe est requis pour changer d’e-mail.');
+                redirect('/espace/parametres');
+            }
         }
 
         $wasOffering = User::offersServices($user);
@@ -2234,6 +2250,31 @@ final class AccountController
             redirect('/espace/parametres');
         }
         User::setPassword((int) $user['id'], $password);
+        Auth::refreshStamp();
+        flash('saved', true);
+        redirect('/espace/parametres');
+    }
+
+    public function parametresOauthUnlink(Request $request): void
+    {
+        $user = Auth::requireUser();
+        $provider = $request->string('provider');
+        if (!in_array($provider, ['google', 'facebook'], true)) {
+            flash('error', 'Cette connexion n’est pas reconnue.');
+            redirect('/espace/parametres');
+        }
+        $col = $provider === 'facebook' ? 'facebook_id' : 'google_id';
+        if ((string) ($user[$col] ?? '') === '') {
+            redirect('/espace/parametres');
+        }
+        $other = $provider === 'facebook' ? 'google_id' : 'facebook_id';
+        $hasPassword = (string) ($user['password'] ?? '') !== '';
+        $hasOther = (string) ($user[$other] ?? '') !== '';
+        if (!$hasPassword && !$hasOther) {
+            flash('error', 'Définissez un mot de passe avant de délier ce compte.');
+            redirect('/espace/parametres');
+        }
+        User::unlinkProvider((int) $user['id'], $provider);
         flash('saved', true);
         redirect('/espace/parametres');
     }
@@ -2248,6 +2289,25 @@ final class AccountController
             flash('error', user_error_message($e));
         }
         redirect('/espace/vitrine');
+    }
+
+    /** @return 'identite'|'competences'|'parcours'|'portfolio' */
+    private static function vitrineTab(Request $request): string
+    {
+        $tab = $request->string('onglet');
+
+        return in_array($tab, ['identite', 'competences', 'parcours', 'portfolio'], true)
+            ? $tab
+            : 'identite';
+    }
+
+    private static function vitrinePath(Request $request): string
+    {
+        $tab = self::vitrineTab($request);
+
+        return $tab === 'identite'
+            ? '/espace/vitrine'
+            : '/espace/vitrine?onglet=' . rawurlencode($tab);
     }
 
     public function facturation(Request $request): void
@@ -2269,10 +2329,10 @@ final class AccountController
                 $total += (int) ($order['amount'] ?? 0);
             }
         }
-        $due = 0;
+        $due = 0.0;
         foreach ($invoices as $invoice) {
             if (!empty($invoice['is_open'])) {
-                $due += (int) ($invoice['amount'] ?? 0);
+                $due += (float) ($invoice['amount_ttc'] ?? $invoice['amount'] ?? 0);
             }
         }
         $billing = self::billingState((int) $user['id']);
@@ -2287,6 +2347,7 @@ final class AccountController
             'invoices' => $invoices,
             'totalAmount' => $total,
             'dueAmount' => $due,
+            'dueAmountLabel' => $due <= 0 ? format_euros(0) : Commission::formatMoney($due),
             'billingBlock' => $billing['block'],
             'billingWarning' => $billing['warning'],
             'commissionRate' => $commissionRate,
@@ -2388,7 +2449,7 @@ final class AccountController
             $publicUpload = $code === 'deliver' && trim((string) ($file['path'] ?? '')) !== ''
                 ? $file
                 : null;
-            Conversation::send((int) $thread['id'], $userId, $body, null, $publicUpload);
+            Conversation::send((int) $thread['id'], $userId, $body, null, $publicUpload, $code !== 'deliver');
         } catch (\Throwable) {
         }
     }
@@ -2605,7 +2666,7 @@ final class AccountController
         }
         $normalized = str_replace(',', '.', $value);
         if (is_numeric($normalized)) {
-            $amount = (int) round((float) $normalized);
+            $amount = (int) $normalized;
             return $amount < 0 ? null : $amount;
         }
         $clean = preg_replace('/[^\d]/', '', $value) ?? '';

@@ -10,6 +10,9 @@ final class Auth
 {
     public static function user(): ?array
     {
+        if (session_status() !== PHP_SESSION_ACTIVE) {
+            return null;
+        }
         $id = $_SESSION['user_id'] ?? null;
         if (!$id) {
             $id = self::resumeRemember();
@@ -26,6 +29,10 @@ final class Auth
             return null;
         }
         if (self::isImpersonating() && self::impersonator() === null) {
+            self::logout();
+            return null;
+        }
+        if (!self::credentialsMatch($user)) {
             self::logout();
             return null;
         }
@@ -60,10 +67,15 @@ final class Auth
 
     public static function login(array $user, bool $remember = false): void
     {
+        $fresh = User::find((int) $user['id']);
+        if ($fresh) {
+            $user = $fresh;
+        }
         session_regenerate_id(true);
         $_SESSION['user_id'] = (int) $user['id'];
         $_SESSION['_user_cache'] = $user;
-        unset($_SESSION['_oauth_pending'], $_SESSION['_impersonator_id']);
+        self::stampCredentials($user);
+        unset($_SESSION['_oauth_pending'], $_SESSION['_oauth_return'], $_SESSION['_impersonator_id']);
         User::touchLastLogin((int) $user['id']);
         self::forgetRemember();
         if ($remember) {
@@ -80,7 +92,7 @@ final class Auth
     public static function logout(): void
     {
         self::forgetRemember();
-        unset($_SESSION['user_id'], $_SESSION['_user_cache'], $_SESSION['_impersonator_id']);
+        unset($_SESSION['user_id'], $_SESSION['_user_cache'], $_SESSION['_impersonator_id'], $_SESSION['_auth_pw']);
         session_regenerate_id(true);
     }
 
@@ -108,10 +120,14 @@ final class Auth
         $_SESSION['_impersonator_id'] = $adminId;
         $_SESSION['user_id'] = $targetId;
         $_SESSION['_user_cache'] = $target;
+        self::stampCredentials($target);
     }
 
     public static function isImpersonating(): bool
     {
+        if (session_status() !== PHP_SESSION_ACTIVE) {
+            return false;
+        }
         return (int) ($_SESSION['_impersonator_id'] ?? 0) > 0;
     }
 
@@ -144,6 +160,7 @@ final class Auth
         session_regenerate_id(true);
         $_SESSION['user_id'] = $adminId;
         $_SESSION['_user_cache'] = $admin;
+        self::stampCredentials($admin);
         return true;
     }
 
@@ -206,6 +223,36 @@ final class Auth
         return $user;
     }
 
+    public static function refreshStamp(?array $user = null): void
+    {
+        if (session_status() !== PHP_SESSION_ACTIVE) {
+            return;
+        }
+        if ($user === null) {
+            $id = (int) ($_SESSION['user_id'] ?? 0);
+            $user = $id > 0 ? User::find($id) : null;
+        }
+        if ($user) {
+            self::stampCredentials($user);
+        }
+    }
+
+    /** @param array<string, mixed> $user */
+    private static function stampCredentials(array $user): void
+    {
+        $_SESSION['_auth_pw'] = (string) ($user['password'] ?? '');
+    }
+
+    /** @param array<string, mixed> $user */
+    private static function credentialsMatch(array $user): bool
+    {
+        if (!array_key_exists('_auth_pw', $_SESSION)) {
+            self::stampCredentials($user);
+            return true;
+        }
+        return hash_equals((string) $_SESSION['_auth_pw'], (string) ($user['password'] ?? ''));
+    }
+
     private static function issueRemember(int $userId): void
     {
         try {
@@ -252,8 +299,13 @@ final class Auth
             Database::query('DELETE FROM remember_tokens WHERE selector = ?', [$selector]);
         } catch (\Throwable) {
         }
+        $user = User::find($userId);
         session_regenerate_id(true);
         $_SESSION['user_id'] = $userId;
+        unset($_SESSION['_oauth_pending'], $_SESSION['_oauth_return']);
+        if ($user) {
+            self::stampCredentials($user);
+        }
         self::issueRemember($userId);
         return $userId;
     }

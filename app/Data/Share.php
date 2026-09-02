@@ -16,29 +16,34 @@ final class Share
 
         $base = rtrim(Env::get('APP_URL', ''), '/');
         if ($base === '') {
-            $https = request_is_https();
-            $host = (string) ($_SERVER['HTTP_HOST'] ?? 'www.acteursdulivre.fr');
-            $base = ($https ? 'https' : 'http') . '://' . $host;
+            $base = 'https://www.acteursdulivre.fr';
         }
 
         if ($path === '' || $path === '/') {
             return $base . '/';
         }
 
-        return $base . '/' . ltrim($path, '/');
+        $path = '/' . ltrim($path, '/');
+        if ($path !== '/') {
+            $path = rtrim($path, '/');
+        }
+
+        return $base . $path;
     }
 
     public static function current(): string
     {
         $uri = (string) ($_SERVER['REQUEST_URI'] ?? '/');
+        $path = parse_url($uri, PHP_URL_PATH) ?: '/';
         $base = rtrim(Env::get('APP_URL', ''), '/');
         if ($base !== '') {
-            return $base . $uri;
+            $basePath = rtrim((string) (parse_url($base, PHP_URL_PATH) ?: ''), '/');
+            if ($basePath !== '' && ($path === $basePath || str_starts_with($path, $basePath . '/'))) {
+                $path = substr($path, strlen($basePath)) ?: '/';
+            }
         }
 
-        $path = parse_url($uri, PHP_URL_PATH) ?: '/';
-        $query = parse_url($uri, PHP_URL_QUERY);
-        return self::absolute((string) $path) . ($query ? '?' . $query : '');
+        return self::absolute((string) $path);
     }
 
     /**

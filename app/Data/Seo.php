@@ -135,28 +135,28 @@ final class Seo
                 'lead' => 'Traducteurs pour roman, essai, jeunesse ou document. Langues, public et contraintes éditoriales cadrés dès le brief.',
             ],
             'Maquette' => [
-                'h1' => 'Maquette intérieure et direction artistique',
-                'lead' => 'Maquettistes pour la mise en pages, la typographie et le PDF d\'impression. Format, papier et contraintes graphiques annoncés.',
+                'h1' => 'Maquette, graphisme et direction artistique',
+                'lead' => 'Maquettistes, graphistes et DA pour la mise en pages, la typo et le PDF d\'impression. Un graphiste livre se trouve ici, pas en illustration.',
             ],
             'Édition' => [
                 'h1' => 'Édition et direction de collection',
-                'lead' => 'Accompagnement éditorial : ligne, calendrier, fabrication. La plateforme met en relation, elle n\'édite pas les ouvrages.',
+                'lead' => 'Accompagnement éditorial : ligne, calendrier, assistant d\'édition. La plateforme met en relation, elle n\'édite pas les ouvrages.',
             ],
             'Impression' => [
-                'h1' => 'Impression de livres offset et numérique',
-                'lead' => 'Imprimeurs pour tirage court ou offset : format, papier, façonnage et quantité. Devis comparables, sans abonnement.',
+                'h1' => 'Impression et fabrication de livres',
+                'lead' => 'Imprimeurs et fabricants pour tirage court ou offset : format, papier, façonnage et suivi de production. Devis comparables, sans abonnement.',
             ],
             'Presse & com' => [
-                'h1' => 'Attachés de presse et communication du livre',
-                'lead' => 'Porteurs de projet : service de presse, réseaux, communauté. Prestataires spécialisés livre, pas d\'agence généraliste imposée.',
+                'h1' => 'Presse, promotion et community du livre',
+                'lead' => 'Attachés de presse, community managers et promotion : service de presse, réseaux, marketing. Prestataires spécialisés livre.',
             ],
             'Librairie' => [
                 'h1' => 'Libraires et diffusion en librairie',
-                'lead' => 'Diffusion, dépôt et événements en librairie. Mettez-vous d\'accord sur la zone, le titre et le calendrier.',
+                'lead' => 'Diffusion, dépôt, e-commerce et événements en librairie. Mettez-vous d\'accord sur la zone, le titre et le calendrier.',
             ],
             'Audio' => [
                 'h1' => 'Narration et livre audio',
-                'lead' => 'Narrateurs pour livre audio : ton, durée, public. Voix humaine uniquement, pas de synthèse vocale générative.',
+                'lead' => 'Narration et prise de son pour livre audio : ton, durée, public. Voix humaine uniquement — pas de synthèse, pas de production phonographique.',
             ],
             'Agent littéraire' => [
                 'h1' => 'Agents littéraires',
@@ -183,8 +183,8 @@ final class Seo
                 'lead' => 'Relieurs pour reliure artisanale, restauration ou petits tirages soignés. Matériaux et quantité précisés.',
             ],
             'Juridique' => [
-                'h1' => 'Juristes du livre et droits d\'auteur',
-                'lead' => 'Contrats d\'édition, cessions, image et litiges. Un conseil juridique spécialisé livre, pas un cabinet généraliste imposé.',
+                'h1' => 'Juristes, droits d\'auteur et cessions',
+                'lead' => 'Contrats d\'édition, cessions, copyright et gestion des droits. Juriste PLA ou gestionnaire de droits : un conseil spécialisé livre.',
             ],
         ];
 
@@ -664,7 +664,7 @@ final class Seo
             '@type' => 'Article',
             '@id' => $url . '#article',
             'headline' => (string) ($article['title'] ?? ''),
-            'description' => (string) ($article['excerpt'] ?: ($article['chapo'] ?? '')),
+            'description' => (string) (($article['excerpt'] ?? '') ?: ($article['chapo'] ?? '')),
             'url' => $url,
             'inLanguage' => 'fr-FR',
             'isAccessibleForFree' => true,
@@ -692,9 +692,14 @@ final class Seo
             ],
         ];
         if ($published !== '') {
-            $iso = date('c', strtotime($published) ?: time());
-            $body['datePublished'] = $iso;
-            $body['dateModified'] = $iso;
+            $ts = strtotime($published);
+            if ($ts !== false) {
+                $iso = date('c', $ts);
+                $body['datePublished'] = $iso;
+                $modified = (string) ($article['updated_at'] ?? '');
+                $modifiedTs = $modified !== '' ? strtotime($modified) : false;
+                $body['dateModified'] = $modifiedTs !== false ? date('c', $modifiedTs) : $iso;
+            }
         }
         return $body;
     }
@@ -829,45 +834,35 @@ final class Seo
     public static function robotsTxt(): string
     {
         $sitemap = Share::absolute('/sitemap.xml');
-        return <<<TXT
-User-agent: *
-Allow: /
-Disallow: /espace
-Disallow: /espace/
-Disallow: /admin
-Disallow: /admin/
-Disallow: /install
-Disallow: /install/
-Disallow: /api/
-Disallow: /cron
-Disallow: /cron/
-Disallow: /connexion
-Disallow: /inscription/sso
+        $deny = implode("\n", [
+            'Disallow: /espace',
+            'Disallow: /espace/',
+            'Disallow: /admin',
+            'Disallow: /admin/',
+            'Disallow: /install',
+            'Disallow: /install/',
+            'Disallow: /api/',
+            'Disallow: /cron',
+            'Disallow: /cron/',
+            'Disallow: /connexion',
+            'Disallow: /inscription/sso',
+        ]);
+        $agents = [
+            '*',
+            'Google-Extended',
+            'GPTBot',
+            'ChatGPT-User',
+            'PerplexityBot',
+            'ClaudeBot',
+            'anthropic-ai',
+            'Applebot-Extended',
+        ];
+        $blocks = [];
+        foreach ($agents as $agent) {
+            $blocks[] = "User-agent: {$agent}\nAllow: /\n{$deny}";
+        }
 
-User-agent: Google-Extended
-Allow: /
-
-User-agent: GPTBot
-Allow: /
-
-User-agent: ChatGPT-User
-Allow: /
-
-User-agent: PerplexityBot
-Allow: /
-
-User-agent: ClaudeBot
-Allow: /
-
-User-agent: anthropic-ai
-Allow: /
-
-User-agent: Applebot-Extended
-Allow: /
-
-Sitemap: {$sitemap}
-
-TXT;
+        return implode("\n\n", $blocks) . "\n\nSitemap: {$sitemap}\n";
     }
 
     public static function llmsTxt(): string

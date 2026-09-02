@@ -57,29 +57,34 @@ final class NewsletterCron
                     Setting::set('newsletter_last_weekly_at', date('Y-m-d'));
                 } catch (Throwable $e) {
                     $errors[] = $e->getMessage();
-                    Setting::set('newsletter_last_weekly_at', date('Y-m-d'));
                 }
             }
 
             $stats['skipped'] = NewsletterCampaign::skipUnsubscribedPending();
-            $batch = NewsletterCampaign::pendingBatch(Newsletter::batchSize());
-            foreach ($batch as $row) {
-                $campaignId = (int) $row['campaign_id'];
-                NewsletterCampaign::markSending($campaignId);
-                $unsub = url('/newsletter/desinscription/' . (string) $row['unsub_token']);
-                try {
-                    NewsletterMailer::send(
-                        (string) $row['email'],
-                        (string) $row['subject'],
-                        (string) $row['body_html'],
-                        $unsub
-                    );
-                    NewsletterCampaign::markDelivery((int) $row['id'], $campaignId, 'sent');
-                    $stats['sent']++;
-                } catch (Throwable $e) {
-                    NewsletterCampaign::markDelivery((int) $row['id'], $campaignId, 'failed', $e->getMessage());
-                    $stats['failed']++;
-                    $errors[] = $e->getMessage();
+            if (Newsletter::enabled()) {
+                $batch = NewsletterCampaign::pendingBatch(Newsletter::batchSize());
+                foreach ($batch as $row) {
+                    $deliveryId = (int) $row['id'];
+                    $campaignId = (int) $row['campaign_id'];
+                    if (!NewsletterCampaign::claimDelivery($deliveryId)) {
+                        continue;
+                    }
+                    NewsletterCampaign::markSending($campaignId);
+                    $unsub = url('/newsletter/desinscription/' . (string) $row['unsub_token']);
+                    try {
+                        NewsletterMailer::send(
+                            (string) $row['email'],
+                            (string) $row['subject'],
+                            (string) $row['body_html'],
+                            $unsub
+                        );
+                        NewsletterCampaign::markDelivery($deliveryId, $campaignId, 'sent');
+                        $stats['sent']++;
+                    } catch (Throwable $e) {
+                        NewsletterCampaign::markDelivery($deliveryId, $campaignId, 'failed', $e->getMessage());
+                        $stats['failed']++;
+                        $errors[] = $e->getMessage();
+                    }
                 }
             }
             $stats['pending'] = NewsletterCampaign::pendingCount();

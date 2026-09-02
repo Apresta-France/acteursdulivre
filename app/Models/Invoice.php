@@ -218,15 +218,17 @@ final class Invoice
 
     public static function markPaid(int $id): ?array
     {
-        Database::query(
-            'UPDATE invoices SET status = "paid", paid_at = NOW() WHERE id = ? AND status IN ("issued", "overdue")',
-            [$id]
-        );
-        $invoice = self::find($id);
-        if ($invoice) {
-            OrderMilestone::closeAfterCommissionPaid($invoice);
-        }
-        return $invoice;
+        return Database::transaction(static function () use ($id) {
+            Database::query(
+                'UPDATE invoices SET status = "paid", paid_at = NOW() WHERE id = ? AND status IN ("issued", "overdue")',
+                [$id]
+            );
+            $invoice = self::find($id);
+            if ($invoice) {
+                OrderMilestone::closeAfterCommissionPaid($invoice);
+            }
+            return $invoice;
+        });
     }
 
     public static function nextNumber(): string

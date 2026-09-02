@@ -31,6 +31,9 @@ RewriteEngine On
 # Anciennes PJ de mission : plus de téléchargement direct
 RewriteRule ^public/uploads/missions(/|$) - [F,L]
 
+# Scripts et dépendances hors front public
+RewriteRule ^(bin|vendor|tests|node_modules)(/|$) - [F,L]
+
 # Fichiers et dossiers existants (assets, etc.)
 RewriteCond %{REQUEST_FILENAME} -f [OR]
 RewriteCond %{REQUEST_FILENAME} -d

@@ -1,18 +1,67 @@
 (function () {
+  function syncFounderBannerHeight() {
+    var banner = document.querySelector('.founder-banner');
+    if (!banner) {
+      document.documentElement.style.removeProperty('--founder-banner-h');
+      return;
+    }
+    document.documentElement.style.setProperty('--founder-banner-h', banner.offsetHeight + 'px');
+  }
+  syncFounderBannerHeight();
+  if (window.ResizeObserver) {
+    var founderBanner = document.querySelector('.founder-banner');
+    if (founderBanner) new ResizeObserver(syncFounderBannerHeight).observe(founderBanner);
+  }
+  window.addEventListener('resize', syncFounderBannerHeight);
+
   document.querySelectorAll('[data-go]').forEach(function (el) {
     el.addEventListener('click', function () {
       if (el.tagName === 'A' || el.closest('a') || el.closest('form')) return;
       var href = el.getAttribute('data-go');
-      if (href && href.charAt(0) !== '#') window.location.href = href;
+      if (href && href.charAt(0) === '/' && href.charAt(1) !== '/') window.location.href = href;
     });
   });
 
   var mega = document.querySelector('.mega');
   var toggle = document.querySelector('[data-mega-toggle]');
+
+  function setMegaOpen(open) {
+    if (!mega || !toggle) return;
+    mega.hidden = !open;
+    toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+  }
+
+  function setNavOpen(open) {
+    var header = document.querySelector('.site-header');
+    document.body.classList.toggle('is-nav-open', open);
+    if (header) header.classList.toggle('is-open', open);
+    var backdrop = document.querySelector('.nav-backdrop');
+    if (backdrop) backdrop.hidden = !open;
+    document.querySelectorAll('[data-nav-toggle]').forEach(function (btn) {
+      btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+      btn.setAttribute('aria-label', open ? 'Fermer le menu' : 'Ouvrir le menu');
+    });
+  }
+
+  function setUserMenusOpen(open) {
+    document.querySelectorAll('[data-user-menu]').forEach(function (btn) {
+      var menu = btn.closest('.user-menu');
+      var panel = menu && menu.querySelector('.user-menu-panel');
+      if (!menu || !panel) return;
+      panel.hidden = !open;
+      menu.classList.toggle('is-open', open);
+      btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    });
+  }
+
   if (mega && toggle) {
     toggle.addEventListener('click', function () {
-      mega.hidden = !mega.hidden;
-      toggle.setAttribute('aria-expanded', mega.hidden ? 'false' : 'true');
+      var willOpen = mega.hidden;
+      if (willOpen) {
+        setNavOpen(false);
+        setUserMenusOpen(false);
+      }
+      setMegaOpen(willOpen);
     });
   }
 
@@ -114,7 +163,12 @@
     }
     btn.addEventListener('click', function (event) {
       event.stopPropagation();
-      setOpen(panel.hidden);
+      var willOpen = panel.hidden;
+      if (willOpen) {
+        setNavOpen(false);
+        setMegaOpen(false);
+      }
+      setOpen(willOpen);
     });
     document.addEventListener('click', function (event) {
       if (!menu.contains(event.target)) setOpen(false);
@@ -140,7 +194,12 @@
     }
     openers.forEach(function (btn) {
       btn.addEventListener('click', function () {
-        set(!document.body.classList.contains(className));
+        var willOpen = !document.body.classList.contains(className);
+        if (willOpen && className === 'is-nav-open') {
+          setUserMenusOpen(false);
+          setMegaOpen(false);
+        }
+        set(willOpen);
       });
     });
     closers.forEach(function (el) {
@@ -1149,14 +1208,34 @@
     sync();
   });
 
+  function showVitrineTab(tab) {
+    var nav = document.querySelector('[data-tabs]');
+    var form = document.getElementById('vitrine-form') || (nav && nav.parentElement) || document;
+    var hiddenTab = document.querySelector('[data-vitrine-tab]');
+    if (!tab) return;
+    if (nav) {
+      nav.querySelectorAll('[data-tab]').forEach(function (other) {
+        other.classList.toggle('is-on', other.getAttribute('data-tab') === tab);
+      });
+    }
+    form.querySelectorAll('[data-tab-panel]').forEach(function (panel) {
+      panel.hidden = panel.getAttribute('data-tab-panel') !== tab;
+    });
+    if (hiddenTab) hiddenTab.value = tab;
+    if (hiddenTab && history.replaceState) {
+      try {
+        var url = new URL(window.location.href);
+        if (tab === 'identite') url.searchParams.delete('onglet');
+        else url.searchParams.set('onglet', tab);
+        history.replaceState(null, '', url.pathname + url.search + url.hash);
+      } catch (err) {}
+    }
+  }
+
   document.querySelectorAll('[data-tabs]').forEach(function (nav) {
-    var form = nav.parentElement;
     nav.querySelectorAll('[data-tab]').forEach(function (btn) {
       btn.addEventListener('click', function () {
-        nav.querySelectorAll('[data-tab]').forEach(function (other) { other.classList.toggle('is-on', other === btn); });
-        (form || document).querySelectorAll('[data-tab-panel]').forEach(function (panel) {
-          panel.hidden = panel.getAttribute('data-tab-panel') !== btn.getAttribute('data-tab');
-        });
+        showVitrineTab(btn.getAttribute('data-tab'));
       });
     });
   });
@@ -1172,16 +1251,7 @@
       if (!field || !field.closest) return;
       var panel = field.closest('[data-tab-panel]');
       if (!panel) return;
-      var tab = panel.getAttribute('data-tab-panel');
-      var nav = document.querySelector('[data-tabs]');
-      if (nav) {
-        nav.querySelectorAll('[data-tab]').forEach(function (btn) {
-          btn.classList.toggle('is-on', btn.getAttribute('data-tab') === tab);
-        });
-      }
-      form.querySelectorAll('[data-tab-panel]').forEach(function (p) {
-        p.hidden = p.getAttribute('data-tab-panel') !== tab;
-      });
+      showVitrineTab(panel.getAttribute('data-tab-panel'));
     }, true);
     form.addEventListener('submit', function () {
       firstInvalid = false;
@@ -2025,6 +2095,12 @@
     source.removeAttribute('required');
     source.setAttribute('tabindex', '-1');
     source.setAttribute('aria-hidden', 'true');
+    if (source.id) {
+      if (!editor.id) editor.id = source.id + '-editor';
+      document.querySelectorAll('label[for="' + source.id + '"]').forEach(function (label) {
+        label.setAttribute('for', editor.id);
+      });
+    }
     wrap.classList.add('is-ready');
 
     function sync() {
@@ -2624,8 +2700,12 @@
     if (!amountInput || !recap) return;
 
     function parseEuros(value) {
-      var s = String(value || '').trim().replace(/\s/g, '').replace(',', '.');
+      var s = String(value || '').trim().replace(/[\u00A0\s]/g, '');
       if (!s) return 0;
+      if (/^\d{1,3}(?:\.\d{3})+(?:,\d+)?$/.test(s)) {
+        s = s.replace(/\./g, '');
+      }
+      s = s.replace(',', '.');
       var n = parseFloat(s);
       if (isNaN(n) || n < 0) return 0;
       return Math.floor(n);
@@ -2645,14 +2725,15 @@
     }
 
     var lastAutoDeposit = depositInput ? parseEuros(depositInput.value) : 0;
-    var ready = false;
     var customized = false;
+    var depositTouched = false;
 
     function sync() {
       var amount = parseEuros(amountInput.value);
-      if (ready && !customized && depositInput && depositInput.getAttribute('data-startup-kind')) {
+      if (!customized && depositInput && depositInput.getAttribute('data-startup-kind')) {
         var current = parseEuros(depositInput.value);
-        if (current === lastAutoDeposit || current === 0) {
+        var fieldEmpty = String(depositInput.value || '').trim() === '';
+        if (!depositTouched && (fieldEmpty || current === lastAutoDeposit)) {
           var next = computedStartup(amount);
           depositInput.value = next > 0 ? String(next) : '';
           lastAutoDeposit = next;
@@ -2663,7 +2744,7 @@
       var depositEl = recap.querySelector('[data-quote-recap-deposit]');
       var balanceEl = recap.querySelector('[data-quote-recap-balance]');
       if (amountEl) amountEl.textContent = amount > 0 ? formatEuros(amount) : '—';
-      if (depositEl) depositEl.textContent = deposit > 0 ? formatEuros(deposit) : '—';
+      if (depositEl) depositEl.textContent = deposit > 0 ? formatEuros(deposit) : (String(depositInput && depositInput.value || '').trim() === '0' ? formatEuros(0) : '—');
       if (balanceEl) {
         balanceEl.textContent = amount > 0 ? formatEuros(Math.max(0, amount - deposit)) : '—';
       }
@@ -2671,14 +2752,14 @@
 
     amountInput.addEventListener('input', sync);
     if (depositInput) depositInput.addEventListener('input', function () {
+      depositTouched = true;
       var computed = computedStartup(parseEuros(amountInput.value));
       var current = parseEuros(depositInput.value);
-      customized = current !== computed && current !== 0;
+      customized = current !== computed;
       lastAutoDeposit = computed;
       sync();
     });
     sync();
-    ready = true;
   }
   initQuoteRecap();
 
@@ -2778,10 +2859,13 @@
           descEl.hidden = desc === '';
         }
         if (priceEl) priceEl.textContent = formatEuros(base);
+        var packageId = tab.getAttribute('data-id') || '';
+        root.querySelectorAll('[data-order-formule-input]').forEach(function (el) {
+          el.value = packageId;
+        });
         if (orderHref) {
           try {
             var next = new URL(orderHref, window.location.origin);
-            var packageId = tab.getAttribute('data-id') || '';
             if (packageId && packageId !== '0') next.searchParams.set('formule', packageId);
             else next.searchParams.delete('formule');
             orderHref = next.pathname + next.search;

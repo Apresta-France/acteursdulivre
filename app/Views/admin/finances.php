@@ -68,7 +68,7 @@ $invoices = $invoices ?? [];
             <td><?= e($i['number'] ?? '') ?></td>
             <td><?= e($i['seller'] ?: '—') ?></td>
             <td><?= e($i['order_number'] ?? '') ?></td>
-            <td><?= e($i['amount_label']) ?></td>
+            <td><?= e((string) ($i['amount_due_label'] ?? $i['amount_label'])) ?></td>
             <td><?= e($i['due_label'] ?: '—') ?></td>
             <td><?= e($i['status_label']) ?></td>
             <td>

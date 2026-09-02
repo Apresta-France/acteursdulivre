@@ -192,6 +192,7 @@ $mine = !empty($action['mine']);
                   $filePickName = 'document';
                   $filePickAccept = '.pdf,.doc,.docx,.odt,image/jpeg,image/png,image/webp';
                   $filePickButton = 'Choisir une facture';
+                  $filePickRequired = true;
                   $filePickDrop = true;
                   $filePickAttrs = 'aria-labelledby="jalon-doc-invoice-label"';
                   require ADL_ROOT . '/app/Views/partials/file-pick.php';
@@ -247,7 +248,7 @@ $mine = !empty($action['mine']);
               </div>
             </form>
           <?php elseif ($form === 'commission'): ?>
-            <p class="jalon-amount">Commission : <strong><?= e((string) (($order['commission_label'] ?? '') !== '' ? $order['commission_label'] : format_euros((int) ($order['commission_amount'] ?? 0)))) ?></strong></p>
+            <p class="jalon-amount">Commission : <strong><?= e((string) (($order['commission_due_label'] ?? '') !== '' ? $order['commission_due_label'] : (($order['commission_label'] ?? '') !== '' ? $order['commission_label'] : format_euros((int) ($order['commission_amount'] ?? 0))))) ?></strong></p>
             <form class="jalon-form" method="post" action="<?= e($actionUrl) ?>">
               <?= csrf_field() ?>
               <input type="hidden" name="code" value="commission_paid">
@@ -355,7 +356,7 @@ $mine = !empty($action['mine']);
           <div class="jalon-recap-row"><span><?= e($depositTitle) ?></span><strong data-quote-recap-deposit><?= (int) ($order['deposit_amount'] ?? 0) > 0 ? e((string) $order['deposit_label']) : '—' ?></strong></div>
           <div class="jalon-recap-row"><span>Solde</span><strong data-quote-recap-balance><?= e((string) ($order['balance_label'] ?? '—')) ?></strong></div>
           <?php if (!empty($order['commission_label'])): ?>
-            <div class="jalon-recap-row"><span>Commission</span><strong><?= e((string) $order['commission_label']) ?></strong></div>
+            <div class="jalon-recap-row"><span>Commission</span><strong><?= e((string) (($order['commission_due_label'] ?? '') !== '' ? $order['commission_due_label'] : $order['commission_label'])) ?></strong></div>
           <?php endif; ?>
         </div>
       </div>

@@ -2,13 +2,13 @@
 $orders = $orders ?? [];
 $invoices = $invoices ?? [];
 $total = (int) ($totalAmount ?? 0);
-$due = (int) ($dueAmount ?? 0);
+$dueLabel = (string) ($dueAmountLabel ?? format_euros((int) ($dueAmount ?? 0)));
 ?>
 <div class="espace-page">
   <div class="espace-page-head">
     <div>
       <h1>Facturation</h1>
-      <p><?= count($invoices) ?> facture<?= count($invoices) > 1 ? 's' : '' ?> de commission · <?= e(format_euros($due)) ?> en attente · <?= e(format_euros($total)) ?> de missions. Commission calculée hors taxes. C’est le dernier jalon après validation client.</p>
+      <p><?= count($invoices) ?> facture<?= count($invoices) > 1 ? 's' : '' ?> de commission · <?= e($dueLabel) ?> TTC en attente · <?= e(format_euros($total)) ?> de missions. Commission calculée hors taxes, due TTC. C’est le dernier jalon après validation client.</p>
     </div>
   </div>
 
@@ -53,7 +53,7 @@ $due = (int) ($dueAmount ?? 0);
   <h2 class="espace-section-title">Missions réalisées</h2>
   <?php if ($orders === []): ?>
     <div class="search-empty">
-      <strong>Aucune facture de commission pour le moment.</strong>
+      <strong>Aucune mission réalisée pour le moment.</strong>
       <span>Quand un client confirmera une mission et la notera, la facture de commission — dernier jalon — apparaîtra ici. La première mission est offerte. La commission est calculée hors taxes. Le prix de la mission se règle hors plateforme.</span>
     </div>
   <?php else: ?>
@@ -68,7 +68,7 @@ $due = (int) ($dueAmount ?? 0);
             <?= e((string) $order['num']) ?> · <?= e((string) $order['parties']) ?> · <?= e((string) $order['when']) ?>
           </div>
           <div class="side-foot">
-            <span>Montant mission<?= !empty($order['commission_label']) ? ' · commission ' . e((string) $order['commission_label']) : '' ?></span>
+            <span>Montant mission<?= !empty($order['commission_due_label']) ? ' · commission ' . e((string) $order['commission_due_label']) : (!empty($order['commission_label']) ? ' · commission ' . e((string) $order['commission_label']) : '') ?></span>
             <strong><?= e((string) $order['amount_label']) ?></strong>
           </div>
         </article>

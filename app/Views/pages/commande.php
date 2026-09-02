@@ -7,6 +7,14 @@ $selectedOptionIds = is_array($selectedOptionIds ?? null) ? $selectedOptionIds :
 $baseAmount = $package
     ? (int) ($package['price'] ?? 0)
     : ($service !== null ? (int) ($service['price_from'] ?? 0) : 0);
+$optionsTotal = 0;
+foreach ($serviceOptions as $option) {
+    $optionId = (int) ($option['id'] ?? 0);
+    if (in_array($optionId, $selectedOptionIds, true)) {
+        $optionsTotal += (int) ($option['price'] ?? 0);
+    }
+}
+$displayTotal = $baseAmount + $optionsTotal;
 ?>
 <div class="espace-page">
   <div class="espace-page-head">
@@ -79,7 +87,7 @@ $baseAmount = $package
           <?php if ($serviceOptions !== []): ?>
             <div class="side-foot">
               <span>Total</span>
-              <strong data-order-total-value><?= e(format_euros_ttc($baseAmount)) ?></strong>
+              <strong data-order-total-value><?= e(format_euros_ttc($displayTotal)) ?></strong>
             </div>
           <?php endif; ?>
           <?php if ($service !== null && !empty($service['startup_enabled'])): ?>

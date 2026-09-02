@@ -33,7 +33,9 @@ if (is_file($envFile)) {
 
 date_default_timezone_set(Env::get('APP_TIMEZONE', 'Europe/Paris'));
 
-if (session_status() !== PHP_SESSION_ACTIVE && PHP_SAPI !== 'cli' && !$isCron && !$isSeo && !request_is_share_crawler()) {
+$method = strtoupper((string) ($_SERVER['REQUEST_METHOD'] ?? 'GET'));
+$needsSession = !in_array($method, ['GET', 'HEAD', 'OPTIONS'], true) || !request_is_share_crawler();
+if (session_status() !== PHP_SESSION_ACTIVE && PHP_SAPI !== 'cli' && !$isCron && !$isSeo && $needsSession) {
     session_name(Env::get('SESSION_NAME', 'adl_session'));
     $secure = request_is_https();
     session_set_cookie_params([

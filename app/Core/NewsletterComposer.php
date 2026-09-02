@@ -216,27 +216,7 @@ final class NewsletterComposer
         if (!is_string($host) || $host === '') {
             throw new \RuntimeException('URL source invalide.');
         }
-        $host = strtolower($host);
-        if (self::isPrivateHost($host)) {
-            throw new \RuntimeException('Cette URL n\'est pas autorisée comme source.');
-        }
-
-        $ctx = stream_context_create([
-            'http' => [
-                'timeout' => 8,
-                'follow_location' => 1,
-                'max_redirects' => 3,
-                'header' => "User-Agent: ActeursDuLivre-Newsletter/1.0\r\nAccept: text/html,application/rss+xml,application/xml;q=0.9,*/*;q=0.8\r\n",
-            ],
-            'ssl' => [
-                'verify_peer' => true,
-                'verify_peer_name' => true,
-            ],
-        ]);
-        $raw = @file_get_contents($url, false, $ctx, 0, 400000);
-        if (!is_string($raw) || $raw === '') {
-            throw new \RuntimeException('Impossible de lire cette URL pour composer la lettre.');
-        }
+        $raw = self::downloadPublicHttps($url);
 
         if (preg_match('/<(rss|feed|rdf:RDF)\b/i', $raw)) {
             return self::parseFeed($raw);
@@ -246,15 +226,115 @@ final class NewsletterComposer
         return $item !== null ? [$item] : [];
     }
 
-    private static function isPrivateHost(string $host): bool
+    private static function downloadPublicHttps(string $url): string
     {
-        if ($host === 'localhost' || str_ends_with($host, '.localhost')) {
+        $current = $url;
+        for ($hop = 0; $hop <= 3; $hop++) {
+            if (!preg_match('#^https://#i', $current)) {
+                throw new \RuntimeException('L\'URL source doit commencer par https://.');
+            }
+            $host = parse_url($current, PHP_URL_HOST);
+            if (!is_string($host) || $host === '') {
+                throw new \RuntimeException('URL source invalide.');
+            }
+            if (self::isBlockedHost(strtolower($host))) {
+                throw new \RuntimeException('Cette URL n\'est pas autorisée comme source.');
+            }
+
+            $ctx = stream_context_create([
+                'http' => [
+                    'timeout' => 8,
+                    'follow_location' => 0,
+                    'ignore_errors' => true,
+                    'header' => "User-Agent: ActeursDuLivre-Newsletter/1.0\r\nAccept: text/html,application/rss+xml,application/xml;q=0.9,*/*;q=0.8\r\n",
+                ],
+                'ssl' => [
+                    'verify_peer' => true,
+                    'verify_peer_name' => true,
+                ],
+            ]);
+            $raw = @file_get_contents($current, false, $ctx, 0, 400000);
+            $headers = $http_response_header ?? [];
+            $status = self::httpStatus($headers);
+            $location = self::httpLocation($headers, $current);
+            if ($status >= 300 && $status < 400 && is_string($location) && $location !== '') {
+                $current = $location;
+                continue;
+            }
+            if ($status >= 400 || !is_string($raw) || $raw === '') {
+                throw new \RuntimeException('Impossible de lire cette URL pour composer la lettre.');
+            }
+            return $raw;
+        }
+        throw new \RuntimeException('Trop de redirections pour cette URL source.');
+    }
+
+    /** @param list<string> $headers */
+    private static function httpStatus(array $headers): int
+    {
+        foreach ($headers as $line) {
+            if (preg_match('#^HTTP/\S+\s+(\d+)#', $line, $m)) {
+                return (int) $m[1];
+            }
+        }
+        return 0;
+    }
+
+    /** @param list<string> $headers */
+    private static function httpLocation(array $headers, string $from): ?string
+    {
+        foreach ($headers as $line) {
+            if (!preg_match('/^Location:\s*(.+)$/i', $line, $m)) {
+                continue;
+            }
+            $location = trim($m[1]);
+            if ($location === '') {
+                return null;
+            }
+            if (preg_match('#^https?://#i', $location)) {
+                return $location;
+            }
+            $parts = parse_url($from);
+            $scheme = (string) ($parts['scheme'] ?? 'https');
+            $host = (string) ($parts['host'] ?? '');
+            if ($host === '') {
+                return null;
+            }
+            if (str_starts_with($location, '//')) {
+                return $scheme . ':' . $location;
+            }
+            if (str_starts_with($location, '/')) {
+                return $scheme . '://' . $host . $location;
+            }
+            $base = $scheme . '://' . $host . rtrim((string) ($parts['path'] ?? '/'), '/');
+            return $base . '/' . $location;
+        }
+        return null;
+    }
+
+    private static function isBlockedHost(string $host): bool
+    {
+        if ($host === 'localhost' || str_ends_with($host, '.localhost') || str_ends_with($host, '.internal')) {
             return true;
         }
         if (filter_var($host, FILTER_VALIDATE_IP)) {
-            return !filter_var($host, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE);
+            return self::isBlockedIp($host);
+        }
+        $ips = gethostbynamel($host);
+        if (!is_array($ips) || $ips === []) {
+            return true;
+        }
+        foreach ($ips as $ip) {
+            if (self::isBlockedIp($ip)) {
+                return true;
+            }
         }
         return false;
+    }
+
+    private static function isBlockedIp(string $ip): bool
+    {
+        return filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) === false;
     }
 
     /** @return list<array<string, string>> */

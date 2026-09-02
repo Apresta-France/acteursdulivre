@@ -224,10 +224,13 @@ final class ForumPost
         });
     }
 
-    public static function toggleUseful(int $postId, int $userId): array
+    public static function toggleUseful(int $postId, int $userId, ?int $topicId = null): array
     {
         $post = self::find($postId);
         if (!$post || !empty($post['is_op'])) {
+            throw new RuntimeException('Message invalide.');
+        }
+        if ($topicId !== null && (int) ($post['topic_id'] ?? 0) !== $topicId) {
             throw new RuntimeException('Message invalide.');
         }
         if ((int) $post['user_id'] === $userId) {

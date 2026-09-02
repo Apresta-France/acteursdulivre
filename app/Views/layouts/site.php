@@ -28,6 +28,9 @@
         }
     }
     $bodyClass = [];
+    if (!empty($isAccueil)) {
+        $bodyClass[] = 'is-accueil';
+    }
     if ($founderOffer) {
         $bodyClass[] = 'has-founder-banner';
     }
@@ -75,7 +78,7 @@
   <?php if (!empty($isArticle) && !empty($article['img'])): ?>
   <link rel="preload" as="image" href="<?= e((string) $article['img']) ?>">
   <?php endif; ?>
-  <link rel="stylesheet" href="<?= e(asset('css/app.css')) ?>?v=m155">
+  <link rel="stylesheet" href="<?= e(asset('css/app.css')) ?>?v=m162">
   <link rel="icon" href="<?= e(asset('img/favicon.ico')) ?>?v=3" sizes="any">
   <link rel="icon" type="image/png" href="<?= e(asset('img/favicon-32x32.png')) ?>?v=3" sizes="32x32">
   <link rel="apple-touch-icon" href="<?= e(asset('img/apple-touch-icon.png')) ?>?v=3">
@@ -94,7 +97,7 @@
       <div class="preopen">
         <span class="preopen-badge">Pré-ouverture</span>
         <span class="preopen-text">La plateforme accueille dès maintenant les <strong>auteurs et les professionnels du livre</strong> — ouverture aux clients en octobre 2026. Sans IA générative sur les missions, jamais.</span>
-        <span class="preopen-short">Inscriptions ouvertes — clients en octobre 2026. Sans IA générative sur les missions.</span>
+        <span class="preopen-short">Ouvert aux pros — clients en octobre 2026.</span>
         <a href="<?= e(url('/inscription')) ?>">Réserver ma place</a>
       </div>
       <div class="topbar">
@@ -189,10 +192,12 @@
               <div class="header-icons">
                 <a href="<?= e(url('/espace/messages')) ?>" class="header-icon-link" aria-label="<?= $headerUnreadMessages > 0 ? 'Messages (' . $headerUnreadMessages . ' non lus)' : 'Messages' ?>" title="Messages">
                   <?= icon('chat', 22) ?>
+                  <span class="header-icon-label">Messages</span>
                   <?php if ($headerUnreadMessages > 0): ?><span class="badge-orange"><?= $headerUnreadMessages ?></span><?php endif; ?>
                 </a>
                 <a href="<?= e(url('/espace/notifications')) ?>" class="header-icon-link" aria-label="<?= $headerUnreadAlerts > 0 ? 'Notifications (' . $headerUnreadAlerts . ')' : 'Notifications' ?>" title="Notifications">
                   <?= icon('bell', 22) ?>
+                  <span class="header-icon-label">Notifications</span>
                   <?php if ($headerUnreadAlerts > 0): ?><span class="badge-orange"><?= $headerUnreadAlerts ?></span><?php endif; ?>
                 </a>
               </div>
@@ -349,6 +354,6 @@
       <?php endif; ?>
     </div>
   <?php endif; ?>
-  <script src="<?= e(asset('js/app.js')) ?>?v=m78"></script>
+  <script src="<?= e(asset('js/app.js')) ?>?v=m83"></script>
 </body>
 </html>

@@ -44,7 +44,7 @@ Relances (profil incomplet, message sans réponse, livraison à valider, facture
 php -r "require 'vendor/autoload.php';" # si Composer est utilisé pour l’autoload
 ```
 
-L’entrée HTTP est `GET /cron` et `GET /cron/{tache}`. Prévoir un appel horaire depuis le planificateur de l’hébergeur.
+L’entrée HTTP est `GET /cron/{tache}` (sans secret dans l’URL). Le CLI `php bin/cron.php {tache}` reste disponible.
 
 ## SSO
 

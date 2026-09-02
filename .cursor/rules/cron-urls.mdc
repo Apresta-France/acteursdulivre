@@ -1,0 +1,13 @@
+---
+description: Les URL de cron restent sans secret
+alwaysApply: true
+---
+
+# Cron HTTP sans secret
+
+Les tâches planifiées s’appellent en clair : `GET /cron/{tache}` (`/cron/relances`, `/cron/newsletter`, `/cron/alertes-missions`).
+
+- Ne pas exiger `CRON_SECRET`, `?key=`, `?token=`, `X-Cron-Key` ni `Authorization` sur ces URL.
+- Ne pas proposer d’ajouter un secret, un token ou une authentification sur les URL de cron.
+- Ne pas générer `CRON_SECRET` à l’install ni le documenter comme obligatoire.
+- Le CLI `php bin/cron.php {tache}` reste un complément, pas un remplacement pour « sécuriser » l’URL.

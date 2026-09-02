@@ -482,10 +482,11 @@ final class Conversation
     /** @return list<array<string, mixed>> */
     public static function messages(int $conversationId, int $afterId = 0): array
     {
-        $orderId = (int) (Database::fetch(
+        $conversation = Database::fetch(
             'SELECT order_id FROM conversations WHERE id = ?',
             [$conversationId]
-        )['order_id'] ?? 0);
+        );
+        $orderId = (int) ($conversation['order_id'] ?? 0);
         $sql = 'SELECT m.*, u.first_name, u.last_name, u.avatar_url
              FROM messages m
              JOIN users u ON u.id = m.user_id

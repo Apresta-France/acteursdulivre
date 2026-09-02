@@ -152,7 +152,7 @@ $forumListUrl = static function (string $filtre = 'recent', int $p = 1, string $
 
         <div class="forum-tabs">
           <?php foreach ($filterTabs as $key => $label): ?>
-            <a class="chip<?= $filter === $key && $q === '' ? ' is-on' : '' ?>" href="<?= e(url($forumListUrl($key))) ?>"><?= e($label) ?></a>
+            <a class="chip<?= $filter === $key ? ' is-on' : '' ?>" href="<?= e(url($forumListUrl($key))) ?>"><?= e($label) ?></a>
           <?php endforeach; ?>
           <div class="forum-section-spacer"></div>
           <span class="forum-muted"><?= e($q !== '' ? (format_int($total) . ' résultat' . ($total > 1 ? 's' : '')) : ($sortLabels[$filter] ?? '')) ?></span>
@@ -160,7 +160,7 @@ $forumListUrl = static function (string $filtre = 'recent', int $p = 1, string $
 
         <?php if ($topics === []): ?>
           <div class="search-empty forum-empty">
-            <strong><?= $q !== '' ? 'Aucune discussion pour cette recherche.' : 'Aucune aucune discussion pour le moment.' ?></strong>
+            <strong><?= $q !== '' ? 'Aucune discussion pour cette recherche.' : 'Aucune discussion pour le moment.' ?></strong>
             <span><?php if ($logged): ?>Soyez le premier à <a href="<?= e(url('/forum/nouveau')) ?>">ouvrir une discussion</a>.<?php else: ?><a href="<?= e(url('/connexion')) ?>">Connectez-vous</a> pour lancer la première discussion.<?php endif; ?></span>
           </div>
         <?php else: ?>

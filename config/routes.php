@@ -153,6 +153,7 @@ return static function (Router $router): void {
     $router->post('/espace/parametres/facturation', [AccountController::class, 'parametresBilling']);
     $router->post('/espace/parametres/export', [AccountController::class, 'parametresExport']);
     $router->post('/espace/parametres/cloture', [AccountController::class, 'parametresClose']);
+    $router->post('/espace/parametres/oauth/unlink', [AccountController::class, 'parametresOauthUnlink']);
     $router->get('/espace/facturation', [AccountController::class, 'facturation']);
     $router->get('/espace/facturation/{id}/pdf', [AccountController::class, 'facturePdf']);
 

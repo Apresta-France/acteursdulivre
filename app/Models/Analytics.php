@@ -815,9 +815,9 @@ final class Analytics
     {
         $appHost = parse_url((string) Env::get('APP_URL', ''), PHP_URL_HOST);
         if (!is_string($appHost) || $appHost === '') {
-            return true;
+            return false;
         }
-        foreach (['HTTP_ORIGIN' => true, 'HTTP_REFERER' => true] as $header => $_) {
+        foreach (['HTTP_ORIGIN', 'HTTP_REFERER'] as $header) {
             $raw = (string) ($_SERVER[$header] ?? '');
             if ($raw === '') {
                 continue;
@@ -825,7 +825,7 @@ final class Analytics
             $host = parse_url($raw, PHP_URL_HOST);
             return is_string($host) && strcasecmp($host, $appHost) === 0;
         }
-        return true;
+        return false;
     }
 
     private static function visitorId(): string

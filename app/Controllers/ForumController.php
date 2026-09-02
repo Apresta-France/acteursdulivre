@@ -390,7 +390,7 @@ final class ForumController
         $topic = $this->resolveTopic($categorySlug, $topicSlug);
 
         try {
-            ForumPost::toggleUseful((int) $postId, $userId);
+            ForumPost::toggleUseful((int) $postId, $userId, (int) $topic['id']);
         } catch (\Throwable $e) {
             flash('error', user_error_message($e, 'Impossible d\'enregistrer ce vote.'));
         }

@@ -90,7 +90,7 @@ final class AdminController
 
         $this->page('dash', 'admin/dashboard', [
             'kpis' => [
-                ['k' => 'Prestataires actifs', 'v' => format_int(User::countOfferers())],
+                ['k' => 'Prestataires actifs', 'v' => format_int(User::countActiveOfferers())],
                 ['k' => 'Porteurs de projet', 'v' => format_int(User::countSeekers())],
                 ['k' => 'Missions ouvertes', 'v' => format_int($openMissions)],
                 ['k' => 'Commandes', 'v' => format_int(Order::countAll())],

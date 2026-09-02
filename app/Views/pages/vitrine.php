@@ -24,6 +24,9 @@ $socials = !empty($p['socials']) ? $p['socials'] : [['network' => '', 'url' => '
 $socialNetworks = $socialNetworks ?? \Adl\Models\Profile::SOCIAL_NETWORKS;
 $completion = (int) ($completion ?? ($p['completion'] ?? 0));
 $publicHref = !empty($p['slug']) ? url('/prestataires/' . $p['slug']) : '';
+$tab = in_array(($tab ?? ''), ['identite', 'competences', 'parcours', 'portfolio'], true)
+    ? (string) $tab
+    : 'identite';
 $rateKind = \Adl\Models\Profile::rateKind($p);
 $rateHelp = \Adl\Models\Profile::rateHelp($p);
 $rateValue = (string) ($p['hourly_rate'] ?? '');
@@ -35,7 +38,17 @@ if ($rateKind === \Adl\Models\Profile::RATE_PERCENT || str_contains($rateValue, 
   <div class="espace-page-head">
     <div>
       <h1>Ma vitrine</h1>
-      <p>Profil complété à <?= $completion ?> %. Les vitrines précises reçoivent nettement plus de demandes.<?php if (!empty($p['is_platform_cofounder'])): ?> <span class="profile-badge profile-badge-cofounder">Co-fondateur de la plateforme</span><?php endif; ?><?php if (!empty($p['is_founder'])): ?> <span class="profile-badge profile-badge-founder">Membre fondateur</span><?php endif; ?></p>
+      <p>Profil complété à <?= $completion ?> %. Les vitrines précises reçoivent nettement plus de demandes.</p>
+      <?php if (!empty($p['is_platform_cofounder']) || !empty($p['is_founder'])): ?>
+        <div class="espace-page-badges">
+          <?php if (!empty($p['is_platform_cofounder'])): ?>
+            <span class="profile-badge profile-badge-cofounder">Co-fondateur de la plateforme</span>
+          <?php endif; ?>
+          <?php if (!empty($p['is_founder'])): ?>
+            <span class="profile-badge profile-badge-founder">Membre fondateur</span>
+          <?php endif; ?>
+        </div>
+      <?php endif; ?>
     </div>
     <div class="vitrine-head-actions">
       <a class="btn-ghost" href="<?= e(url('/espace/statistiques')) ?>">Statistiques</a>
@@ -56,16 +69,17 @@ if ($rateKind === \Adl\Models\Profile::RATE_PERCENT || str_contains($rateValue, 
   <?php endif; ?>
 
   <div class="tab-row" data-tabs>
-    <button type="button" class="tab is-on" data-tab="identite">Identité</button>
-    <button type="button" class="tab" data-tab="competences">Compétences</button>
-    <button type="button" class="tab" data-tab="parcours">Parcours</button>
-    <button type="button" class="tab" data-tab="portfolio">Créations &amp; exemples</button>
+    <button type="button" class="tab<?= $tab === 'identite' ? ' is-on' : '' ?>" data-tab="identite">Identité</button>
+    <button type="button" class="tab<?= $tab === 'competences' ? ' is-on' : '' ?>" data-tab="competences">Compétences</button>
+    <button type="button" class="tab<?= $tab === 'parcours' ? ' is-on' : '' ?>" data-tab="parcours">Parcours</button>
+    <button type="button" class="tab<?= $tab === 'portfolio' ? ' is-on' : '' ?>" data-tab="portfolio">Créations &amp; exemples</button>
   </div>
 
   <form id="vitrine-form" class="vitrine-form" method="post" action="<?= e(url('/espace/vitrine')) ?>" enctype="multipart/form-data">
     <?= csrf_field() ?>
+    <input type="hidden" name="onglet" value="<?= e($tab) ?>" data-vitrine-tab>
 
-    <div data-tab-panel="identite">
+    <div data-tab-panel="identite"<?= $tab === 'identite' ? '' : ' hidden' ?>>
       <?php
         $avatarSrc = (string) ($profile['avatar_src'] ?? $userAvatarUrl ?? '');
         $initials = (string) ($userInitials ?? \Adl\Models\Profile::initials($p));
@@ -292,7 +306,7 @@ if ($rateKind === \Adl\Models\Profile::RATE_PERCENT || str_contains($rateValue, 
       </div>
     </div>
 
-    <div data-tab-panel="competences" hidden>
+    <div data-tab-panel="competences"<?= $tab === 'competences' ? '' : ' hidden' ?>>
       <div>
         <span class="field">Mes métiers</span>
         <p class="field-help">Trois maximum : ce sont eux qui vous font apparaître dans l'annuaire.</p>
@@ -373,7 +387,7 @@ if ($rateKind === \Adl\Models\Profile::RATE_PERCENT || str_contains($rateValue, 
       </div>
     </div>
 
-    <div data-tab-panel="parcours" hidden>
+    <div data-tab-panel="parcours"<?= $tab === 'parcours' ? '' : ' hidden' ?>>
       <div>
         <span class="field">Expériences</span>
         <div class="repeat-list" data-repeat="experiences">
@@ -408,7 +422,7 @@ if ($rateKind === \Adl\Models\Profile::RATE_PERCENT || str_contains($rateValue, 
       </div>
     </div>
 
-    <div data-tab-panel="portfolio" hidden>
+    <div data-tab-panel="portfolio"<?= $tab === 'portfolio' ? '' : ' hidden' ?>>
       <div class="side-card side-card-warm" style="margin-bottom: 18px;">
         Ajoutez des créations déjà réalisées et des exemples : un titre, une année, une courte description, et un visuel (fichier ou lien). Chaque pièce doit être une réalisation humaine dont vous détenez les droits.
       </div>
@@ -473,9 +487,12 @@ if ($rateKind === \Adl\Models\Profile::RATE_PERCENT || str_contains($rateValue, 
         $filePickId = 'justificatif';
         $filePickName = 'justificatif';
         $filePickAccept = '.pdf,image/jpeg,image/png,image/webp';
-        $filePickRequired = true;
+        $filePickRequired = empty($p['verification_doc_name']);
         $filePickButton = 'Choisir un justificatif';
-        $filePickEmpty = !empty($p['verification_doc_name']) ? (string) $p['verification_doc_name'] : null;
+        $filePickEmpty = null;
+        $filePickHint = !empty($p['verification_doc_name'])
+            ? 'Fichier actuel : ' . (string) $p['verification_doc_name']
+            : '';
         $filePickDrop = true;
         $filePickAttrs = 'aria-labelledby="justificatif-label"';
         require ADL_ROOT . '/app/Views/partials/file-pick.php';

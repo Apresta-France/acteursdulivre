@@ -40,6 +40,12 @@ final class User
         self::update($id, $data);
     }
 
+    public static function unlinkProvider(int $id, string $provider): void
+    {
+        $col = $provider === 'facebook' ? 'facebook_id' : 'google_id';
+        self::update($id, [$col => null]);
+    }
+
     public static function isOauthOnly(array $user): bool
     {
         $hash = (string) ($user['password'] ?? '');
@@ -364,6 +370,17 @@ final class User
             'SELECT COUNT(*) AS n FROM users
              WHERE offers_services = 1
                AND status IN ("active", "pending")
+               AND deleted_at IS NULL'
+        );
+        return (int) ($row['n'] ?? 0);
+    }
+
+    public static function countActiveOfferers(): int
+    {
+        $row = Database::fetch(
+            'SELECT COUNT(*) AS n FROM users
+             WHERE offers_services = 1
+               AND status = "active"
                AND deleted_at IS NULL'
         );
         return (int) ($row['n'] ?? 0);

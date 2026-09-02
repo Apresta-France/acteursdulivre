@@ -64,10 +64,43 @@ function request_is_share_crawler(): bool
         return false;
     }
 
-    return preg_match(
-        '/facebookexternalhit|facebot|linkedinbot|twitterbot|slackbot|whatsapp|telegrambot|discordbot|pinterest|skypeuripreview|vkshare|redditbot|embedly|quora link preview|outbrain/i',
+    if (preg_match(
+        '/facebookexternalhit|facebot|linkedinbot|twitterbot|slackbot|telegrambot|discordbot|pinterestbot|skypeuripreview|vkshare|redditbot|embedly|quora link preview|outbrain/i',
         $ua
-    ) === 1;
+    ) === 1) {
+        return true;
+    }
+
+    // Aperçu WhatsApp uniquement — le navigateur in-app contient Mozilla/Chrome.
+    return str_contains($ua, 'whatsapp')
+        && preg_match('/mozilla|chrome|safari|applewebkit|firefox/i', $ua) !== 1;
+}
+
+function rate_limited(string $action, string $id, int $max, int $window): bool
+{
+    $safe = preg_replace('/[^a-zA-Z0-9._:-]/', '_', $action . ':' . $id) ?? $action;
+    $dir = ADL_ROOT . '/storage/rate';
+    if (!is_dir($dir) && !@mkdir($dir, 0750, true) && !is_dir($dir)) {
+        return false;
+    }
+    $file = $dir . '/' . hash('sha256', $safe) . '.json';
+    $now = time();
+    $hits = [];
+    if (is_file($file)) {
+        $raw = @file_get_contents($file);
+        $decoded = is_string($raw) ? json_decode($raw, true) : null;
+        if (is_array($decoded)) {
+            $hits = $decoded;
+        }
+    }
+    $hits = array_values(array_filter($hits, static fn ($t) => is_int($t) && $t > $now - $window));
+    if (count($hits) >= $max) {
+        @file_put_contents($file, json_encode($hits), LOCK_EX);
+        return true;
+    }
+    $hits[] = $now;
+    @file_put_contents($file, json_encode($hits), LOCK_EX);
+    return false;
 }
 
 function url(string $path = '/'): string
@@ -168,12 +201,15 @@ function asset(string $path): string
 
 function old(string $key, mixed $default = ''): mixed
 {
-    $flashed = $_SESSION['_old'][$key] ?? null;
+    $flashed = session_status() === PHP_SESSION_ACTIVE ? ($_SESSION['_old'][$key] ?? null) : null;
     return $flashed ?? ($_POST[$key] ?? $default);
 }
 
 function flash(string $key, mixed $value = null): mixed
 {
+    if (session_status() !== PHP_SESSION_ACTIVE) {
+        return $value !== null ? $value : null;
+    }
     if ($value !== null) {
         $_SESSION['_flash'][$key] = $value;
         return $value;
@@ -675,7 +711,15 @@ function copy_public_upload_to_private(string $publicRelative, string $subdir, s
     $src = ADL_ROOT . '/public/uploads/' . ltrim($publicRelative, '/');
     $publicRoot = realpath(ADL_ROOT . '/public/uploads');
     $real = realpath($src);
-    if ($publicRoot === false || $real === false || !str_starts_with($real, $publicRoot) || !is_file($real)) {
+    $rootNorm = $publicRoot !== false ? rtrim(strtolower(str_replace('\\', '/', $publicRoot)), '/') : '';
+    $realNorm = $real !== false ? strtolower(str_replace('\\', '/', $real)) : '';
+    if (
+        $publicRoot === false
+        || $real === false
+        || $rootNorm === ''
+        || ($realNorm !== $rootNorm && !str_starts_with($realNorm, $rootNorm . '/'))
+        || !is_file($real)
+    ) {
         throw new RuntimeException('Le fichier n\'a pas pu être enregistré.');
     }
 
@@ -791,9 +835,9 @@ function resolve_upload_path(string $relative, bool $privateOnly = false): ?stri
         if ($root === false || $real === false || !is_file($real)) {
             continue;
         }
-        $rootNorm = strtolower(str_replace('\\', '/', $root));
+        $rootNorm = rtrim(strtolower(str_replace('\\', '/', $root)), '/');
         $realNorm = strtolower(str_replace('\\', '/', $real));
-        if (str_starts_with($realNorm, $rootNorm)) {
+        if ($realNorm === $rootNorm || str_starts_with($realNorm, $rootNorm . '/')) {
             return $real;
         }
     }

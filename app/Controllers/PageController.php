@@ -449,8 +449,8 @@ final class PageController
                 'website',
                 null,
                 [
-                    'robots' => $isDraft ? Seo::ROBOTS_NONE : Seo::ROBOTS_INDEX,
-                    'json_ld' => $isDraft ? [] : [
+                    'robots' => ($isDraft || ($mission['status'] ?? '') !== 'open') ? Seo::ROBOTS_NONE : Seo::ROBOTS_INDEX,
+                    'json_ld' => ($isDraft || ($mission['status'] ?? '') !== 'open') ? [] : [
                         Seo::organization(),
                         Seo::website(),
                         Seo::breadcrumb([
@@ -604,7 +604,8 @@ final class PageController
         }
 
         $published = (string) ($article['published_at'] ?? '');
-        $iso = $published !== '' ? date('c', strtotime($published) ?: time()) : null;
+        $publishedTs = $published !== '' ? strtotime($published) : false;
+        $iso = $publishedTs !== false ? date('c', $publishedTs) : null;
         $cover = !empty($article['has_cover']) ? (string) $article['img'] : null;
         $jsonLd = [
             Seo::organization(),
@@ -697,17 +698,34 @@ final class PageController
 
     public function newsletterUnsubscribe(Request $request, string $token): void
     {
-        $row = Newsletter::unsubscribeByToken($token);
+        $row = Newsletter::findByUnsubToken($token);
         if ($request->isPost()) {
-            header('Content-Type: text/plain; charset=utf-8');
-            header('Cache-Control: no-store');
-            http_response_code(200);
-            echo 'OK';
+            $row = $row ? Newsletter::unsubscribeByToken($token) : null;
+            $oneClick = $request->string('List-Unsubscribe') === 'One-Click';
+            if ($oneClick) {
+                header('Content-Type: text/plain; charset=utf-8');
+                header('Cache-Control: no-store');
+                http_response_code(200);
+                echo 'OK';
+                return;
+            }
+            View::render('pages/newsletter-desinscription', [
+                'title' => 'Désinscription',
+                'ok' => $row !== null,
+                'pending' => false,
+                'token' => $token,
+                'meta' => [
+                    'title' => 'Désinscription de la lettre — acteursdulivre.fr',
+                    'robots' => Seo::ROBOTS_NONE,
+                ],
+            ]);
             return;
         }
         View::render('pages/newsletter-desinscription', [
             'title' => 'Désinscription',
-            'ok' => $row !== null,
+            'ok' => false,
+            'pending' => $row !== null,
+            'token' => $token,
             'meta' => [
                 'title' => 'Désinscription de la lettre — acteursdulivre.fr',
                 'robots' => Seo::ROBOTS_NONE,
@@ -796,9 +814,6 @@ final class PageController
         $filters = self::searchFilters($request);
         $target = Catalog::redirectPath($request->path(), $query, $type, $cat, $availableOnly, $filters);
         if ($target !== null) {
-            if ($query !== '') {
-                Analytics::search($query, $type, 1, (string) ($filters['city'] ?? ''));
-            }
             redirect($target, 301);
         }
 

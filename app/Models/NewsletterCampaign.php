@@ -80,6 +80,15 @@ final class NewsletterCampaign
         );
     }
 
+    public static function claimDelivery(int $id): bool
+    {
+        $updated = Database::query(
+            'UPDATE newsletter_deliveries SET status = "sending" WHERE id = ? AND status = "pending"',
+            [$id]
+        );
+        return $updated->rowCount() === 1;
+    }
+
     public static function markSending(int $campaignId): void
     {
         Database::query(
@@ -127,7 +136,7 @@ final class NewsletterCampaign
     private static function maybeFinish(int $campaignId): void
     {
         $left = Database::fetch(
-            'SELECT COUNT(*) AS n FROM newsletter_deliveries WHERE campaign_id = ? AND status = "pending"',
+            'SELECT COUNT(*) AS n FROM newsletter_deliveries WHERE campaign_id = ? AND status IN ("pending", "sending")',
             [$campaignId]
         );
         if ((int) ($left['n'] ?? 0) > 0) {

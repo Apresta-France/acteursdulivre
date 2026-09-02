@@ -39,7 +39,7 @@ final class InstallController
             'APP_NAME' => $request->string('APP_NAME', 'Acteurs du Livre'),
             'APP_URL' => rtrim($request->string('APP_URL', 'https://acteursdulivre.test'), '/'),
             'APP_ENV' => 'local',
-            'APP_DEBUG' => 'true',
+            'APP_DEBUG' => 'false',
             'APP_KEY' => bin2hex(random_bytes(16)),
             'APP_TIMEZONE' => 'Europe/Paris',
             'DB_HOST' => $request->string('DB_HOST', '127.0.0.1'),
@@ -89,16 +89,8 @@ final class InstallController
             Env::load(ADL_ROOT . '/.env');
             Migrator::migrate();
 
-            $existingAdmin = User::findByEmail($adminEmail);
-            if ($existingAdmin) {
-                User::setPassword((int) $existingAdmin['id'], $adminPassword);
-                User::update((int) $existingAdmin['id'], [
-                    'first_name' => $adminFirst,
-                    'last_name' => $adminLast,
-                    'role' => 'admin',
-                    'status' => 'active',
-                ]);
-            } else {
+            $usersExist = Database::fetch('SELECT id FROM users LIMIT 1') !== null;
+            if (!$usersExist) {
                 User::create([
                     'email' => $adminEmail,
                     'password' => $adminPassword,
@@ -116,22 +108,31 @@ final class InstallController
             Setting::set('mail_from_address', $values['MAIL_FROM_ADDRESS']);
             Setting::set('mail_from_name', $values['MAIL_FROM_NAME']);
 
+            if (!$usersExist) {
+                try {
+                    Mailer::sendTemplate('bienvenue', $adminEmail, [
+                        'prenom' => $adminFirst,
+                        'lien_espace' => $values['APP_URL'] . '/espace',
+                    ]);
+                } catch (Throwable) {
+                }
+            }
+        } catch (Throwable) {
+            $keepEnv = false;
             try {
-                Mailer::sendTemplate('bienvenue', $adminEmail, [
-                    'prenom' => $adminFirst,
-                    'lien_espace' => $values['APP_URL'] . '/espace',
-                ]);
+                $keepEnv = Database::fetch('SELECT id FROM users LIMIT 1') !== null;
             } catch (Throwable) {
             }
-        } catch (Throwable $e) {
-            @unlink(ADL_ROOT . '/.env');
+            if (!$keepEnv) {
+                @unlink(ADL_ROOT . '/.env');
+            }
             Database::reset();
             $_SESSION['_old'] = $values + [
                 'ADMIN_EMAIL' => $adminEmail,
                 'ADMIN_FIRST' => $adminFirst,
                 'ADMIN_LAST' => $adminLast,
             ];
-            flash('error', 'Installation interrompue : ' . $e->getMessage());
+            flash('error', 'Installation interrompue. Vérifiez les identifiants de la base de données.');
             redirect('/install');
         }
 

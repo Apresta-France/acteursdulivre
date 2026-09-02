@@ -242,7 +242,8 @@ final class HourlyCron
                    AND owner.status = 'active'
                    AND a.created_at <= DATE_SUB(NOW(), INTERVAL {$hours} HOUR)"
             );
-        } catch (Throwable) {
+        } catch (Throwable $e) {
+            $errors[] = 'candidatures : ' . $e->getMessage();
             return;
         }
 
@@ -303,7 +304,8 @@ final class HourlyCron
                  )
                  WHERE last.created_at <= DATE_SUB(NOW(), INTERVAL {$hours} HOUR)"
             );
-        } catch (Throwable) {
+        } catch (Throwable $e) {
+            $errors[] = 'messages : ' . $e->getMessage();
             return;
         }
 
@@ -361,7 +363,8 @@ final class HourlyCron
                  WHERE o.status IN ('pending', 'in_progress')
                    AND o.created_at <= DATE_SUB(NOW(), INTERVAL {$hours} HOUR)"
             );
-        } catch (Throwable) {
+        } catch (Throwable $e) {
+            $errors[] = 'projets : ' . $e->getMessage();
             $orders = [];
         }
 
@@ -447,7 +450,8 @@ final class HourlyCron
                          AND COALESCE(o.accepted_at, o.created_at) <= DATE_SUB(NOW(), INTERVAL {$hours} HOUR)
                    )"
             );
-        } catch (Throwable) {
+        } catch (Throwable $e) {
+            $errors[] = 'missions : ' . $e->getMessage();
             return;
         }
 
@@ -500,7 +504,8 @@ final class HourlyCron
                    AND o.delivered_at <= DATE_SUB(NOW(), INTERVAL {$hours} HOUR)
                    AND buyer.status = 'active'"
             );
-        } catch (Throwable) {
+        } catch (Throwable $e) {
+            $errors[] = 'validations : ' . $e->getMessage();
             return;
         }
 
@@ -648,6 +653,7 @@ final class HourlyCron
             ReminderSend::record($kind, $userId, $subjectType, $subjectId);
             return true;
         } catch (Throwable $e) {
+            ReminderSend::record($kind, $userId, $subjectType, $subjectId);
             $errors[] = $kind . ' e-mail ' . $email . ' : ' . $e->getMessage();
             return false;
         }
