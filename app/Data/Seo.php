@@ -721,6 +721,10 @@ final class Seo
             'jobTitle' => $job,
             'description' => self::clip(self::profileDescription($profile), 200),
         ];
+        $avatar = trim((string) ($profile['avatar_src'] ?? ''));
+        if ($avatar !== '') {
+            $out['image'] = Share::absolute($avatar);
+        }
         if (!empty($profile['city'])) {
             $place = [
                 '@type' => 'Place',

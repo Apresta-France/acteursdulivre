@@ -68,7 +68,7 @@ final class Share
             [
                 'id' => 'instagram',
                 'label' => 'Instagram',
-                'href' => '#',
+                'href' => $url !== '' ? $url : '#',
                 'copy' => true,
             ],
             [
@@ -89,7 +89,7 @@ final class Share
             [
                 'id' => 'copy',
                 'label' => 'Copier le lien',
-                'href' => '#',
+                'href' => $url !== '' ? $url : '#',
                 'copy' => true,
             ],
         ];

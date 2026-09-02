@@ -1288,29 +1288,44 @@
     toast.className = 'share-toast';
     toast.textContent = message;
     document.body.appendChild(toast);
-    setTimeout(function () { toast.remove(); }, 3200);
+    setTimeout(function () { toast.remove(); }, 4600);
   }
 
   function copyText(value) {
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      return navigator.clipboard.writeText(value);
+    function fallback() {
+      return new Promise(function (resolve, reject) {
+        var input = document.createElement('textarea');
+        input.value = value;
+        input.setAttribute('readonly', '');
+        input.style.position = 'fixed';
+        input.style.top = '0';
+        input.style.left = '0';
+        input.style.width = '1px';
+        input.style.height = '1px';
+        input.style.opacity = '0';
+        document.body.appendChild(input);
+        input.focus();
+        input.select();
+        input.setSelectionRange(0, value.length);
+        var ok = false;
+        try {
+          ok = document.execCommand('copy');
+        } catch (err) {
+          input.remove();
+          reject(err);
+          return;
+        }
+        input.remove();
+        if (ok) resolve();
+        else reject(new Error('copy failed'));
+      });
     }
-    return new Promise(function (resolve, reject) {
-      var input = document.createElement('textarea');
-      input.value = value;
-      input.setAttribute('readonly', '');
-      input.style.position = 'absolute';
-      input.style.left = '-9999px';
-      document.body.appendChild(input);
-      input.select();
-      try {
-        document.execCommand('copy');
-        resolve();
-      } catch (err) {
-        reject(err);
-      }
-      input.remove();
-    });
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      return navigator.clipboard.writeText(value).catch(function () {
+        return fallback();
+      });
+    }
+    return fallback();
   }
 
   function sharePayload(root) {
@@ -1321,21 +1336,56 @@
     };
   }
 
+  function isPublicShareUrl(value) {
+    try {
+      var parsed = new URL(value, window.location.href);
+      if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return false;
+      var host = parsed.hostname.toLowerCase();
+      if (!host || host === 'localhost' || host === '127.0.0.1' || host === '::1') return false;
+      if (host.endsWith('.test') || host.endsWith('.local') || host.endsWith('.localhost')) return false;
+      if (/^\d{1,3}(\.\d{1,3}){3}$/.test(host)) return false;
+      return true;
+    } catch (err) {
+      return false;
+    }
+  }
+
+  function trackShare() {
+    if (window.AdlStats) window.AdlStats.action('partage');
+  }
+
+  function copyShareLink(url, message) {
+    copyText(url).then(function () {
+      showToast(message);
+    }).catch(function () {
+      window.prompt('Copiez ce lien :', url);
+    });
+  }
+
+  function nativeShare(data) {
+    if (!navigator.share) return false;
+    navigator.share({ title: data.title, text: data.text, url: data.url }).catch(function () {});
+    trackShare();
+    return true;
+  }
+
   function refreshShareBars(scope, payload) {
     (scope || document).querySelectorAll('[data-share]').forEach(function (bar) {
       if (payload.url) bar.setAttribute('data-url', payload.url);
       if (payload.title) bar.setAttribute('data-title', payload.title);
       if (payload.text) bar.setAttribute('data-text', payload.text);
-      var url = encodeURIComponent(bar.getAttribute('data-url') || window.location.href);
+      var rawUrl = bar.getAttribute('data-url') || window.location.href;
+      var url = encodeURIComponent(rawUrl);
       var title = encodeURIComponent(bar.getAttribute('data-title') || document.title);
       var text = bar.getAttribute('data-text') || '';
-      var message = encodeURIComponent((bar.getAttribute('data-title') || document.title) + (text ? '\n' + text : '') + '\n' + decodeURIComponent(url));
+      var message = encodeURIComponent((bar.getAttribute('data-title') || document.title) + (text ? '\n' + text : '') + '\n' + rawUrl);
       bar.querySelectorAll('[data-share-network]').forEach(function (link) {
         var id = link.getAttribute('data-share-network');
         if (id === 'facebook') link.href = 'https://www.facebook.com/sharer/sharer.php?u=' + url;
         if (id === 'linkedin') link.href = 'https://www.linkedin.com/sharing/share-offsite/?url=' + url;
         if (id === 'x') link.href = 'https://twitter.com/intent/tweet?url=' + url + '&text=' + title;
         if (id === 'whatsapp') link.href = 'https://api.whatsapp.com/send?text=' + message;
+        if (id === 'instagram' || id === 'copy') link.href = rawUrl;
       });
     });
   }
@@ -1357,26 +1407,43 @@
       });
       return;
     }
-    var copyBtn = event.target.closest('[data-share-copy]');
+
+    var shareRoot = event.target.closest('[data-share]');
+    if (!shareRoot) return;
     var nativeBtn = event.target.closest('[data-share-native]');
-    if (!copyBtn && !nativeBtn) return;
-    event.preventDefault();
-    var root = (copyBtn || nativeBtn).closest('[data-share]');
-    var data = sharePayload(root);
-    if (nativeBtn && navigator.share) {
-      navigator.share({ title: data.title, text: data.text, url: data.url }).catch(function () {});
-      if (window.AdlStats) window.AdlStats.action('partage');
+    var networkBtn = event.target.closest('[data-share-network]');
+    if (!nativeBtn && !networkBtn) return;
+
+    var data = sharePayload(shareRoot);
+    var network = networkBtn ? (networkBtn.getAttribute('data-share-network') || '') : 'native';
+
+    if (nativeBtn) {
+      event.preventDefault();
+      if (!nativeShare(data)) {
+        copyShareLink(data.url, 'Lien copié.');
+        trackShare();
+      }
       return;
     }
-    var network = copyBtn ? copyBtn.getAttribute('data-share-network') : '';
-    if (window.AdlStats) window.AdlStats.action('partage');
-    copyText(data.url).then(function () {
-      showToast(network === 'instagram'
-        ? 'Lien copié. Collez-le dans Instagram (story, message ou bio).'
+
+    if (network === 'copy' || network === 'instagram') {
+      event.preventDefault();
+      if (network === 'instagram' && nativeShare(data)) return;
+      copyShareLink(data.url, network === 'instagram'
+        ? 'Lien copié. Ouvrez Instagram et collez-le dans une story, un message ou la bio.'
         : 'Lien copié.');
-    }).catch(function () {
-      showToast('Impossible de copier le lien.');
-    });
+      trackShare();
+      return;
+    }
+
+    if ((network === 'facebook' || network === 'linkedin') && !isPublicShareUrl(data.url)) {
+      event.preventDefault();
+      copyShareLink(data.url, 'Lien copié. Facebook et LinkedIn ne prévisualisent pas une adresse locale — testez le partage sur acteursdulivre.fr.');
+      trackShare();
+      return;
+    }
+
+    trackShare();
   });
 
   var rateBox = document.querySelector('[data-rate-fields]');

@@ -57,6 +57,19 @@ function request_is_https(): bool
     return str_starts_with($appUrl, 'https://');
 }
 
+function request_is_share_crawler(): bool
+{
+    $ua = strtolower((string) ($_SERVER['HTTP_USER_AGENT'] ?? ''));
+    if ($ua === '') {
+        return false;
+    }
+
+    return preg_match(
+        '/facebookexternalhit|facebot|linkedinbot|twitterbot|slackbot|whatsapp|telegrambot|discordbot|pinterest|skypeuripreview|vkshare|redditbot|embedly|quora link preview|outbrain/i',
+        $ua
+    ) === 1;
+}
+
 function url(string $path = '/'): string
 {
     $base = rtrim(Env::get('APP_URL', ''), '/');

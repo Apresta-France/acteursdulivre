@@ -97,8 +97,9 @@ $isOwnProfile = $viewer && (int) ($viewer['id'] ?? 0) === (int) ($p['user_id'] ?
         $shareUrl = $meta['url'] ?? \Adl\Data\Share::current();
         $shareTitle = $meta['title'] ?? ((string) ($p['name'] ?? 'Prestataire') . ' — acteursdulivre.fr');
         $shareText = $meta['description'] ?? trim((string) ($p['title'] ?? '') . ($p['city'] ? ' · ' . $p['city'] : ''));
+        $shareLabel = 'Partager';
         $shareCompact = true;
-        $shareNative = false;
+        $shareNative = true;
         require ADL_ROOT . '/app/Views/partials/share.php';
       ?>
     </div>

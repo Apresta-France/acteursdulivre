@@ -19,7 +19,8 @@ $networks = \Adl\Data\Share::networks($shareUrl, $shareTitle, $shareText);
          href="<?= e($network['href']) ?>"
          data-share-network="<?= e($network['id']) ?>"
          <?= !empty($network['copy']) ? 'data-share-copy' : 'target="_blank" rel="noopener noreferrer"' ?>
-         title="<?= e($network['label']) ?>">
+         title="<?= e($network['label']) ?>"
+         aria-label="<?= e($network['label']) ?>">
         <?= icon('share-' . $network['id'], $shareCompact ? 15 : 16) ?>
         <span><?= e($network['label']) ?></span>
       </a>

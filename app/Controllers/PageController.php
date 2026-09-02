@@ -297,6 +297,8 @@ final class PageController
         }
 
         $public = Catalog::profileToPublic($profile);
+        $avatar = trim((string) ($public['avatar_src'] ?? ''));
+        $ogImage = $avatar !== '' ? $avatar : null;
         View::page('profil', [
             'title' => $public['name'],
             'slug' => $slug,
@@ -306,8 +308,12 @@ final class PageController
                 Seo::profileDescription($public),
                 Share::absolute((string) $public['href']),
                 'website',
-                null,
+                $ogImage,
                 [
+                    'image_alt' => (string) ($public['name'] ?? Seo::profileTitle($public)),
+                    'image_width' => $ogImage !== null ? 400 : Seo::OG_W,
+                    'image_height' => $ogImage !== null ? 400 : Seo::OG_H,
+                    'twitter_card' => $ogImage !== null ? 'summary' : 'summary_large_image',
                     'json_ld' => [
                         Seo::organization(),
                         Seo::website(),
