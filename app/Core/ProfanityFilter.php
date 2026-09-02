@@ -12,13 +12,21 @@ use RuntimeException;
  *
  * Principes anti-faux-positifs :
  * - match sur des jetons (mots), pas sur n'importe quelle sous-chaîne du texte brut ;
- * - insultes courtes (≤ 4 lettres) : égalité stricte uniquement ;
- * - insultes plus longues : égalité, ou inclusion dans un jeton soudé (ex. grosconnard) ;
+ * - insultes : égalité stricte après normalisation (pourri ≠ pourrions, nique ≠ technique) ;
+ * - composés soudés uniquement préfixe d'insulte + terme (grosconnard, salepute),
+ *   ou deux insultes collées — jamais une sous-chaîne au milieu d'un mot courant ;
  * - formes camouflées (p*te, f.d.p, c0nnard) via normalisation + motifs.
  */
 final class ProfanityFilter
 {
     private const MESSAGE = 'Votre message contient des termes non autorisés (insultes ou propos abusifs, même déguisés). Merci de reformuler.';
+
+    /** Préfixes qui soudent une insulte (les plus longs d'abord). */
+    private const COMPOUND_PREFIXES = [
+        'grosse', 'petite', 'petites', 'petits', 'vieille', 'pauvre', 'grande',
+        'petit', 'vieux', 'super', 'hyper', 'ultra', 'archi', 'grand', 'sales',
+        'gros', 'sale', 'mega',
+    ];
 
     /** @var array<string, true>|null */
     private static ?array $words = null;
@@ -28,9 +36,6 @@ final class ProfanityFilter
 
     /** @var list<string>|null */
     private static ?array $phrases = null;
-
-    /** @var list<string>|null */
-    private static ?array $longWords = null;
 
     public static function assertClean(string ...$parts): void
     {
@@ -66,21 +71,11 @@ final class ProfanityFilter
 
         self::boot();
 
-        foreach (self::$phrases ?? [] as $phrase) {
-            if ($phrase !== '' && str_contains($norm, $phrase)) {
-                return $phrase;
-            }
-        }
-
-        $compact = preg_replace('/\s+/', '', $norm) ?? $norm;
-        foreach (self::$phrases ?? [] as $phrase) {
-            $joined = str_replace(' ', '', $phrase);
-            if ($joined !== '' && str_contains($compact, $joined)) {
-                return $phrase;
-            }
-        }
-
         $tokens = self::tokens($norm);
+        $phraseHit = self::checkPhrases($norm, $tokens);
+        if ($phraseHit !== null) {
+            return $phraseHit;
+        }
         $letterTokens = [];
         foreach ($tokens as $token) {
             $hit = self::checkToken($token);
@@ -141,15 +136,6 @@ final class ProfanityFilter
         }
         usort($phrases, static fn (string $a, string $b): int => mb_strlen($b) <=> mb_strlen($a));
         self::$phrases = $phrases;
-
-        $long = [];
-        foreach (array_keys($words) as $word) {
-            if (mb_strlen($word) >= 5) {
-                $long[] = $word;
-            }
-        }
-        usort($long, static fn (string $a, string $b): int => mb_strlen($b) <=> mb_strlen($a));
-        self::$longWords = $long;
     }
 
     private static function normalize(string $text): string
@@ -213,13 +199,98 @@ final class ProfanityFilter
             return null;
         }
 
-        // Composés type "grosconnard" : sous-chaîne uniquement pour insultes ≥ 5 lettres
         $hay = $collapsed !== '' ? $collapsed : $letters;
-        if (mb_strlen($hay) >= 6) {
-            foreach (self::$longWords ?? [] as $word) {
-                if (str_contains($hay, $word) && !isset(self::$allow[$hay])) {
-                    return $word;
+        return self::checkCompound($hay);
+    }
+
+    /**
+     * Expressions multi-mots : frontières de jetons uniquement.
+     * « gros con » matche « gros con », pas « gros contrat ».
+     *
+     * @param list<string> $tokens
+     */
+    private static function checkPhrases(string $norm, array $tokens): ?string
+    {
+        foreach (self::$phrases ?? [] as $phrase) {
+            if ($phrase === '') {
+                continue;
+            }
+            $quoted = preg_quote($phrase, '/');
+            if (preg_match('/(?<![a-z0-9])' . $quoted . '(?![a-z0-9])/', $norm) === 1) {
+                return $phrase;
+            }
+        }
+
+        $letters = [];
+        foreach ($tokens as $token) {
+            $only = self::lettersOnly($token);
+            if ($only !== '') {
+                $letters[] = $only;
+            }
+        }
+
+        $n = count($letters);
+        foreach (self::$phrases ?? [] as $phrase) {
+            $joined = str_replace(' ', '', $phrase);
+            if ($joined === '' || $joined === $phrase) {
+                continue;
+            }
+            $need = strlen($joined);
+            for ($i = 0; $i < $n; $i++) {
+                $acc = '';
+                for ($j = $i; $j < $n; $j++) {
+                    $acc .= $letters[$j];
+                    $len = strlen($acc);
+                    if ($len === $need && $acc === $joined) {
+                        return $phrase;
+                    }
+                    if ($len >= $need) {
+                        break;
+                    }
                 }
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * « gros » + « connard », « sale » + « pute », ou deux insultes collées.
+     * Pas de recherche de sous-chaîne libre (sinon pourrions → pourri, technique → nique).
+     */
+    private static function checkCompound(string $hay): ?string
+    {
+        if (strlen($hay) < 6 || isset(self::$allow[$hay])) {
+            return null;
+        }
+
+        foreach (self::COMPOUND_PREFIXES as $prefix) {
+            if (!str_starts_with($hay, $prefix)) {
+                continue;
+            }
+            $rest = substr($hay, strlen($prefix));
+            if ($rest === '' || isset(self::$allow[$rest])) {
+                continue;
+            }
+            if (isset(self::$words[$rest])) {
+                return $prefix . $rest;
+            }
+            $nested = self::checkCompound($rest);
+            if ($nested !== null) {
+                return $nested;
+            }
+        }
+
+        $len = strlen($hay);
+        for ($i = 3; $i <= $len - 3; $i++) {
+            $left = substr($hay, 0, $i);
+            $right = substr($hay, $i);
+            if (
+                isset(self::$words[$left], self::$words[$right])
+                && !isset(self::$allow[$left])
+                && !isset(self::$allow[$right])
+            ) {
+                return $left . $right;
             }
         }
 

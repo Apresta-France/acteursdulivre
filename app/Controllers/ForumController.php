@@ -284,6 +284,24 @@ final class ForumController
         ]);
     }
 
+    public function searchApi(Request $request): void
+    {
+        $q = $request->string('q');
+        $limit = max(1, min(12, $request->int('limit', 8) ?? 8));
+        try {
+            $suggestions = ForumTopic::suggestSearch($q, $limit);
+        } catch (\Throwable) {
+            $suggestions = [];
+        }
+        foreach ($suggestions as $i => $item) {
+            $suggestions[$i]['href'] = url((string) ($item['href'] ?? '/forum'));
+        }
+        json_response([
+            'suggestions' => $suggestions,
+            'results' => $suggestions,
+        ]);
+    }
+
     public function create(Request $request): void
     {
         Auth::requireUser();

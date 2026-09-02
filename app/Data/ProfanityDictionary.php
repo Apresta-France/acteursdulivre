@@ -12,7 +12,7 @@ final class ProfanityDictionary
 {
     /**
      * Insultes et termes abusifs (mot entier après normalisation).
-     * Les entrées de 1–4 lettres ne matchent qu'en égalité stricte (pas en sous-chaîne).
+     * Jamais en sous-chaîne libre : « pourri » ne bloque pas « pourrions ».
      *
      * @var list<string>
      */
@@ -35,7 +35,7 @@ final class ProfanityDictionary
         'pute', 'putes', 'putain', 'putains', 'putasse', 'putasses', 'salepute', 'grossepute',
         'putaindemerde', 'putea',
         'garce', 'garces', 'chienne', 'chiennes',
-        'petasse', 'petasses', 'pouffiasse', 'pouffiasses', 'pouffe', 'pouffes', 'pouf', 'poufs',
+        'petasse', 'petasses', 'pouffiasse', 'pouffiasses', 'pouffe', 'pouffes',
         'grognasse', 'grognasses', 'morue', 'morues', 'trainee', 'trainees',
         'encule', 'encules', 'enculer', 'enculee', 'enculees',
         'enculade', 'enculades', 'enculeur', 'enculeurs', 'enculage', 'enculages',
@@ -118,7 +118,7 @@ final class ProfanityDictionary
         'mongol', 'mongols', 'mongole', 'mongoles',
         'trisomique', 'trisomiques',
         'attarde', 'attardes', 'attardee', 'attardees',
-        'retard', 'retards', 'retarded',
+        'retarded',
         'gogol', 'gogols', 'gogole', 'gogoles',
         'simplet', 'simplets', 'simplette', 'simplettes',
 
@@ -141,7 +141,7 @@ final class ProfanityDictionary
         'dick', 'dickhead', 'dickheads', 'cock', 'cocks', 'pussy',
         'cunt', 'cunts', 'faggot', 'faggots', 'fag', 'fags',
         'moron', 'morons', 'scumbag', 'scumbags',
-        'douchebag', 'douchebags', 'douche',
+        'douchebag', 'douchebags',
         'wanker', 'wankers', 'tosser', 'tossers',
     ];
 
@@ -217,7 +217,6 @@ final class ProfanityDictionary
         'bande de merde',
         'tas de merde',
         'piece de merde',
-        'mort aux',
         'a mort les',
         'a mort les arabes',
         'a mort les juifs',

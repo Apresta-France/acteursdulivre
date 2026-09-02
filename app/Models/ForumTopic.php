@@ -45,8 +45,9 @@ final class ForumTopic
             $params[] = $categoryId;
         }
         if ($q !== '') {
-            $where[] = '(t.title LIKE ? OR p_op.body LIKE ?)';
-            $like = '%' . $q . '%';
+            $where[] = '(t.title LIKE ? OR p_op.body LIKE ? OR t.tags_json LIKE ?)';
+            $like = '%' . addcslashes($q, '%_\\') . '%';
+            $params[] = $like;
             $params[] = $like;
             $params[] = $like;
         }
@@ -280,19 +281,29 @@ final class ForumTopic
 
         $out = [];
         foreach (array_slice($scored, 0, $limit) as $item) {
-            $topic = $item['topic'];
-            $replies = (int) ($topic['reply_count'] ?? 0);
-            $out[] = [
-                'href' => (string) ($topic['href'] ?? '/forum'),
-                'title' => (string) ($topic['title'] ?? ''),
-                'subtitle' => (string) ($topic['category_short'] ?? $topic['category_name'] ?? ''),
-                'kind_label' => (string) ($topic['category_short'] ?? 'Forum'),
-                'meta' => $replies === 0
-                    ? 'sans réponse · ' . (string) ($topic['when'] ?? '')
-                    : format_int($replies) . ' réponse' . ($replies > 1 ? 's' : '') . ' · ' . (string) ($topic['last_when'] ?? $topic['when'] ?? ''),
-            ];
+            $out[] = self::toSuggestion($item['topic']);
         }
         return $out;
+    }
+
+    /**
+     * Suggestions live pour la barre de recherche du forum.
+     *
+     * @return list<array{href: string, title: string, subtitle: string, kind_label: string, meta: string}>
+     */
+    public static function suggestSearch(string $q, int $limit = 8): array
+    {
+        $q = trim($q);
+        if (mb_strlen($q) < 2) {
+            return [];
+        }
+        $found = self::list([
+            'q' => $q,
+            'filter' => 'recent',
+            'per_page' => max(1, min(12, $limit)),
+            'page' => 1,
+        ]);
+        return array_map([self::class, 'toSuggestion'], $found['items']);
     }
 
     /** @return list<string> */
@@ -771,6 +782,24 @@ final class ForumTopic
         $topic['badge'] = self::badge($topic);
         $topic['tone'] = in_array($topic['category_short'], ['Tarifs', 'Charte'], true) ? 'orange' : 'navy';
         return $topic;
+    }
+
+    /**
+     * @param array<string, mixed> $topic
+     * @return array{href: string, title: string, subtitle: string, kind_label: string, meta: string}
+     */
+    private static function toSuggestion(array $topic): array
+    {
+        $replies = (int) ($topic['reply_count'] ?? 0);
+        return [
+            'href' => (string) ($topic['href'] ?? '/forum'),
+            'title' => (string) ($topic['title'] ?? ''),
+            'subtitle' => (string) ($topic['category_short'] ?? $topic['category_name'] ?? ''),
+            'kind_label' => (string) ($topic['category_short'] ?? 'Forum'),
+            'meta' => $replies === 0
+                ? 'sans réponse · ' . (string) ($topic['when'] ?? '')
+                : format_int($replies) . ' réponse' . ($replies > 1 ? 's' : '') . ' · ' . (string) ($topic['last_when'] ?? $topic['when'] ?? ''),
+        ];
     }
 
     /** @return array<string, mixed>|null */

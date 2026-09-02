@@ -144,9 +144,10 @@ $forumListUrl = static function (string $filtre = 'recent', int $p = 1, string $
 
     <div class="forum-split">
       <div>
-        <form class="forum-search" method="get" action="<?= e(url('/forum')) ?>" role="search">
-          <input type="search" name="q" value="<?= e($q) ?>" placeholder="Chercher dans le forum : tarifs, cession de droits, imprimeur…" aria-label="Rechercher dans le forum">
+        <form class="forum-search" method="get" action="<?= e(url('/forum')) ?>" role="search" data-live-search data-api="<?= e(url('/api/forum/recherche')) ?>" data-empty="Aucune discussion pour cette recherche." autocomplete="off">
+          <input type="search" name="q" value="<?= e($q) ?>" placeholder="Chercher dans le forum : tarifs, cession de droits, imprimeur…" aria-label="Rechercher dans le forum" data-live-input autocomplete="off">
           <button type="submit" class="btn-orange">Chercher</button>
+          <div class="search-suggest" data-live-panel hidden></div>
         </form>
 
         <div class="forum-tabs">
