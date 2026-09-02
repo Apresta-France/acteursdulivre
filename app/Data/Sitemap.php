@@ -89,6 +89,28 @@ final class Sitemap
             self::push($urls, $seen, '/journal/' . $row['slug'], $row['lastmod'] ?? null, '0.6');
         }
 
+        foreach (self::rows(
+            'SELECT slug FROM forum_categories ORDER BY position ASC'
+        ) as $row) {
+            self::push($urls, $seen, '/forum/' . $row['slug'], null, '0.7');
+        }
+
+        foreach (self::rows(
+            'SELECT c.slug AS category_slug, t.slug, t.last_post_at AS lastmod
+             FROM forum_topics t
+             INNER JOIN forum_categories c ON c.id = t.category_id
+             WHERE t.status = "visible"
+               AND t.slug IS NOT NULL AND t.slug != ""'
+        ) as $row) {
+            self::push(
+                $urls,
+                $seen,
+                '/forum/' . $row['category_slug'] . '/' . $row['slug'],
+                $row['lastmod'] ?? null,
+                '0.6'
+            );
+        }
+
         return $urls;
     }
 
@@ -129,6 +151,7 @@ final class Sitemap
             ['path' => '/prestataires', 'priority' => '0.8'],
             ['path' => '/missions', 'priority' => '0.8'],
             ['path' => '/journal', 'priority' => '0.8'],
+            ['path' => '/forum', 'priority' => '0.8'],
             ['path' => '/comment-ca-marche', 'priority' => '0.7'],
             ['path' => '/tarifs', 'priority' => '0.7'],
             ['path' => '/confiance', 'priority' => '0.6'],

@@ -268,6 +268,106 @@ if ($offers && $profileCompletion < 80) {
     </div>
   <?php endif; ?>
 
+  <section class="dash-section dash-forum" id="forum">
+    <div class="dash-section-head">
+      <h2>Forum</h2>
+      <a href="<?= e(url('/espace/forum')) ?>">Gérer mon forum →</a>
+    </div>
+    <?php
+      $forumStats = $forumStats ?? ['mine' => 0, 'followed' => 0, 'posts' => 0];
+      $forumFollowed = $forumFollowed ?? [];
+      $forumMine = $forumMine ?? [];
+    ?>
+    <div class="dash-forum-grid">
+      <div class="dash-forum-main">
+        <div class="dash-forum-stats">
+          <a class="dash-stat" href="<?= e(url('/espace/forum?onglet=suivis')) ?>">
+            <span class="dash-ico"><?= icon('bell', 18) ?></span>
+            <span>
+              <strong>Discussions suivies</strong>
+              <em><?= (int) ($forumStats['followed'] ?? 0) ?></em>
+            </span>
+          </a>
+          <a class="dash-stat" href="<?= e(url('/espace/forum?onglet=mine')) ?>">
+            <span class="dash-ico"><?= icon('chat', 18) ?></span>
+            <span>
+              <strong>Mes discussions</strong>
+              <em><?= (int) ($forumStats['mine'] ?? 0) ?></em>
+            </span>
+          </a>
+          <div class="dash-stat is-static">
+            <span class="dash-ico"><?= icon('megaphone', 18) ?></span>
+            <span>
+              <strong>Mes messages</strong>
+              <em><?= (int) ($forumStats['posts'] ?? 0) ?></em>
+            </span>
+          </div>
+        </div>
+
+        <form method="post" action="<?= e(url('/espace/forum')) ?>" class="dash-forum-prefs">
+          <?= csrf_field() ?>
+          <input type="hidden" name="back" value="/espace#forum">
+          <p class="field">Notifications du forum</p>
+          <p class="espace-page-lead" style="margin: 0 0 8px;">Ces e-mails concernent uniquement le forum. Les messages privés restent dans les réglages généraux.</p>
+          <label class="check-row">
+            <input type="checkbox" name="notify_forum_followed" value="1"<?= !empty($notifyForumFollowed) ? ' checked' : '' ?>>
+            M’écrire quand une discussion que je suis reçoit une nouvelle réponse
+          </label>
+          <label class="check-row">
+            <input type="checkbox" name="notify_forum_mine" value="1"<?= !empty($notifyForumMine) ? ' checked' : '' ?>>
+            M’écrire quand quelqu’un répond à une discussion que j’ai ouverte
+          </label>
+          <div class="dash-forum-actions">
+            <button type="submit" class="btn-navy">Enregistrer</button>
+            <a class="btn-orange" href="<?= e(url('/forum/nouveau')) ?>"><?= icon('plus-box', 16) ?> Ouvrir une discussion</a>
+            <a class="btn-ghost" href="<?= e(url('/forum')) ?>">Voir le forum</a>
+          </div>
+        </form>
+      </div>
+
+      <aside class="dash-forum-side">
+        <div class="dash-forum-panel">
+          <div class="dash-forum-panel-title">Discussions suivies</div>
+          <?php if ($forumFollowed === []): ?>
+            <p class="forum-muted">Aucune discussion suivie pour l’instant. Suivez un fil pour être prévenu des réponses.</p>
+          <?php else: ?>
+            <div class="dash-forum-list">
+              <?php foreach ($forumFollowed as $t): ?>
+                <div class="dash-forum-item">
+                  <a href="<?= e(url((string) ($t['href'] ?? '/forum'))) ?>">
+                    <strong><?= e((string) ($t['title'] ?? '')) ?></strong>
+                    <em><?= e((string) (($t['category_short'] ?? '') . ' · ' . ($t['last_when'] ?? ''))) ?></em>
+                  </a>
+                  <form method="post" action="<?= e(url('/espace/forum/unfollow/' . (int) ($t['id'] ?? 0))) ?>">
+                    <?= csrf_field() ?>
+                    <input type="hidden" name="back" value="/espace#forum">
+                    <button type="submit" class="forum-text-btn" title="Ne plus suivre">Retirer</button>
+                  </form>
+                </div>
+              <?php endforeach; ?>
+            </div>
+          <?php endif; ?>
+        </div>
+
+        <div class="dash-forum-panel">
+          <div class="dash-forum-panel-title">Mes discussions</div>
+          <?php if ($forumMine === []): ?>
+            <p class="forum-muted">Vous n’avez pas encore ouvert de discussion.</p>
+          <?php else: ?>
+            <div class="dash-forum-list">
+              <?php foreach ($forumMine as $t): ?>
+                <a class="dash-forum-item is-link" href="<?= e(url((string) ($t['href'] ?? '/forum'))) ?>">
+                  <strong><?= e((string) ($t['title'] ?? '')) ?></strong>
+                  <em><?= e(format_int((int) ($t['reply_count'] ?? 0)) . ' rép. · ' . (string) ($t['last_when'] ?? '')) ?></em>
+                </a>
+              <?php endforeach; ?>
+            </div>
+          <?php endif; ?>
+        </div>
+      </aside>
+    </div>
+  </section>
+
   <section class="dash-section">
     <h2>Raccourcis</h2>
     <div class="dash-quick">
@@ -285,6 +385,7 @@ if ($offers && $profileCompletion < 80) {
           <a class="dash-chip" href="<?= e(url($profileHref)) ?>"><?= icon('store', 16) ?> Voir en public</a>
         <?php endif; ?>
       <?php endif; ?>
+      <a class="dash-chip" href="<?= e(url('/espace/forum')) ?>"><?= icon('chat', 16) ?> Forum</a>
       <a class="dash-chip" href="<?= e(url('/espace/parametres')) ?>"><?= icon('gear', 16) ?> Paramètres</a>
       <a class="dash-chip" href="<?= e(url('/aide')) ?>"><?= icon('book', 16) ?> Centre d'aide</a>
     </div>

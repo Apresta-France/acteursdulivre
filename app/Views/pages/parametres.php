@@ -103,6 +103,8 @@ $oauthProviders = OAuth::enabledProviders();
     <label class="check-row"><input type="checkbox" name="notify_jalons" value="1"<?= !empty($notifyJalons) ? ' checked' : '' ?>> Commandes : acceptation, livraison, facture de commission, facture échue</label>
     <label class="check-row"><input type="checkbox" name="notify_missions" value="1"<?= !empty($notifyMissions) ? ' checked' : '' ?>> Missions : nouvelle candidature, réponse, vitrine incomplète</label>
     <label class="check-row"><input type="checkbox" name="notify_newsletter" value="1"<?= !empty($notifyNewsletter) ? ' checked' : '' ?>> Lettre d'information hebdomadaire</label>
+    <label class="check-row"><input type="checkbox" name="notify_forum_followed" value="1"<?= !empty($notifyForumFollowed) ? ' checked' : '' ?>> Forum : nouvelle réponse sur une discussion suivie</label>
+    <label class="check-row"><input type="checkbox" name="notify_forum_mine" value="1"<?= !empty($notifyForumMine) ? ' checked' : '' ?>> Forum : nouvelle réponse sur une discussion que j’ai ouverte</label>
     <div class="auth-actions">
       <button class="btn-navy" type="submit">Enregistrer les notifications</button>
     </div>

@@ -7,6 +7,7 @@ namespace Adl\Controllers;
 use Adl\Core\Auth;
 use Adl\Core\Mailer;
 use Adl\Core\Migrator;
+use Adl\Core\NewsletterBuilder;
 use Adl\Core\NewsletterComposer;
 use Adl\Core\NewsletterCron;
 use Adl\Core\NewsletterMailer;
@@ -25,6 +26,7 @@ use Adl\Models\Invoice;
 use Adl\Models\Mission;
 use Adl\Models\Newsletter;
 use Adl\Models\NewsletterCampaign;
+use Adl\Models\NewsletterLetter;
 use Adl\Models\Order;
 use Adl\Models\Profile;
 use Adl\Models\Report;
@@ -798,7 +800,22 @@ final class AdminController
 
     public function newsletter(Request $request): void
     {
+        $onglet = $this->filtre($request, ['lettres', 'reglages', 'abonnes'], 'lettres');
+        $letters = [];
+        $letterCount = 0;
+        try {
+            $letters = NewsletterLetter::all();
+            $letterCount = NewsletterLetter::count();
+        } catch (Throwable) {
+        }
         $this->page('newsletter', 'admin/newsletter', [
+            'onglet' => $onglet,
+            'nlTabs' => $this->filterLinks('/admin/newsletter', [
+                'lettres' => 'Lettres',
+                'reglages' => 'SMTP & envoi auto',
+                'abonnes' => 'Abonnés',
+            ], $onglet),
+            'letters' => $letters,
             'settings' => [
                 'newsletter_enabled' => Newsletter::enabled(),
                 'newsletter_weekday' => (string) Newsletter::weekday(),
@@ -814,6 +831,7 @@ final class AdminController
                 'confirmed' => Newsletter::countByStatus(Newsletter::STATUS_CONFIRMED),
                 'pending' => Newsletter::countByStatus(Newsletter::STATUS_PENDING),
                 'queue' => NewsletterCampaign::pendingCount(),
+                'letters' => $letterCount,
             ],
             'campaigns' => NewsletterCampaign::recent(),
             'subscribers' => Newsletter::adminList(),
@@ -835,7 +853,7 @@ final class AdminController
         $url = $request->string('newsletter_source_url');
         if ($url !== '' && !preg_match('#^https://#i', $url) && !str_starts_with($url, '/')) {
             flash('error', 'L’URL source doit commencer par https:// ou par /.');
-            redirect('/admin/newsletter');
+            redirect('/admin/newsletter?filtre=reglages');
         }
         Setting::set('newsletter_source_url', $url);
         foreach (['newsletter_smtp_host', 'newsletter_smtp_port', 'newsletter_smtp_username', 'newsletter_smtp_encryption', 'newsletter_smtp_from_address', 'newsletter_smtp_from_name'] as $key) {
@@ -846,7 +864,7 @@ final class AdminController
             Setting::set('newsletter_smtp_password', $password);
         }
         flash('saved', 'Réglages de la newsletter enregistrés.');
-        redirect('/admin/newsletter');
+        redirect('/admin/newsletter?filtre=reglages');
     }
 
     public function newsletterPreview(Request $request): void
@@ -859,7 +877,7 @@ final class AdminController
         } catch (Throwable $e) {
             flash('error', user_error_message($e));
         }
-        redirect('/admin/newsletter');
+        redirect('/admin/newsletter?filtre=reglages');
     }
 
     public function newsletterTest(Request $request): void
@@ -868,7 +886,7 @@ final class AdminController
         $to = $request->string('test_email', Auth::user()['email'] ?? '');
         if (!filter_var($to, FILTER_VALIDATE_EMAIL)) {
             flash('error', 'Indiquez une adresse e-mail valide pour le test.');
-            redirect('/admin/newsletter');
+            redirect('/admin/newsletter?filtre=reglages');
         }
         try {
             $composed = NewsletterComposer::compose();
@@ -881,7 +899,7 @@ final class AdminController
         } catch (Throwable $e) {
             flash('error', user_error_message($e));
         }
-        redirect('/admin/newsletter');
+        redirect('/admin/newsletter?filtre=reglages');
     }
 
     public function newsletterSend(Request $request): void
@@ -895,7 +913,7 @@ final class AdminController
         } catch (Throwable $e) {
             flash('error', user_error_message($e));
         }
-        redirect('/admin/newsletter');
+        redirect('/admin/newsletter?filtre=reglages');
     }
 
     public function newsletterUnsub(Request $request): void
@@ -903,7 +921,178 @@ final class AdminController
         Auth::requireAdmin();
         Newsletter::unsubscribeEmail($request->string('email'));
         flash('saved', 'Adresse désinscrite.');
+        redirect('/admin/newsletter?filtre=abonnes');
+    }
+
+    public function newsletterLetterEdit(Request $request, string $id = 'nouvelle'): void
+    {
+        Auth::requireAdmin();
+        $letter = $this->newsletterLetterOrEmpty($id);
+        if ($letter === null) {
+            flash('error', 'Lettre introuvable.');
+            redirect('/admin/newsletter');
+        }
+        $catalog = ['missions' => [], 'people' => [], 'articles' => []];
+        try {
+            $catalog = NewsletterBuilder::catalog();
+        } catch (Throwable) {
+        }
+        $this->page('newsletter', 'admin/newsletter-lettre', [
+            'title' => $letter['id'] ? (string) $letter['subject'] : 'Nouvelle lettre',
+            'letter' => $letter,
+            'catalog' => $catalog,
+            'confirmedCount' => Newsletter::countByStatus(Newsletter::STATUS_CONFIRMED),
+            'tested' => flash('tested'),
+        ]);
+    }
+
+    public function newsletterLetterSave(Request $request, string $id = 'nouvelle'): void
+    {
+        Auth::requireAdmin();
+        try {
+            $savedId = NewsletterLetter::save(
+                $id === 'nouvelle' ? null : (int) $id,
+                $this->newsletterLetterPayload($request)
+            );
+            flash('saved', 'Lettre enregistrée.');
+            redirect('/admin/newsletter/lettre/' . $savedId);
+        } catch (Throwable $e) {
+            flash('error', user_error_message($e));
+            redirect($id === 'nouvelle' ? '/admin/newsletter/nouvelle' : '/admin/newsletter/lettre/' . (int) $id);
+        }
+    }
+
+    public function newsletterFromWeekly(Request $request): void
+    {
+        Auth::requireAdmin();
+        try {
+            $draft = NewsletterBuilder::fromWeekly();
+            $savedId = NewsletterLetter::save(null, $draft);
+            flash('saved', 'Lettre préremplie à partir du modèle hebdomadaire. Vous pouvez encore la modifier.');
+            redirect('/admin/newsletter/lettre/' . $savedId);
+        } catch (Throwable $e) {
+            flash('error', user_error_message($e));
+            redirect('/admin/newsletter');
+        }
+    }
+
+    public function newsletterLetterImage(Request $request): void
+    {
+        Auth::requireAdmin();
+        try {
+            $file = $request->file('image');
+            $path = store_upload($file, 'newsletter', ['jpg', 'jpeg', 'png', 'webp'], 5 * 1024 * 1024);
+            if ($path === null) {
+                throw new \RuntimeException('Choisissez une image JPG, PNG ou WebP (5 Mo max).');
+            }
+            json_response([
+                'ok' => true,
+                'src' => $path,
+                'url' => NewsletterBuilder::publicImageUrl($path),
+            ]);
+        } catch (Throwable $e) {
+            json_response(['ok' => false, 'error' => user_error_message($e)], 422);
+        }
+    }
+
+    public function newsletterLetterTest(Request $request, string $id): void
+    {
+        Auth::requireAdmin();
+        $letter = $this->newsletterLetterRequired($id);
+        $to = $request->string('test_email', Auth::user()['email'] ?? '');
+        if (!filter_var($to, FILTER_VALIDATE_EMAIL)) {
+            flash('error', 'Indiquez une adresse e-mail valide pour le test.');
+            redirect('/admin/newsletter/lettre/' . (int) $letter['id']);
+        }
+        try {
+            $this->newsletterPersistCurrent($request, (int) $letter['id']);
+            $letter = NewsletterLetter::find((int) $letter['id']) ?? $letter;
+            NewsletterMailer::send($to, 'Test newsletter — ' . (string) $letter['subject'], (string) $letter['body_html']);
+            if (!NewsletterMailer::usesSmtp()) {
+                flash('error', 'Aucun SMTP : le message a été écrit dans storage/mail.');
+            } else {
+                flash('tested', 'E-mail de test envoyé vers ' . $to . '.');
+            }
+        } catch (Throwable $e) {
+            flash('error', user_error_message($e));
+        }
+        redirect('/admin/newsletter/lettre/' . (int) $letter['id']);
+    }
+
+    public function newsletterLetterSend(Request $request, string $id): void
+    {
+        Auth::requireAdmin();
+        $letter = $this->newsletterLetterRequired($id);
+        try {
+            $this->newsletterPersistCurrent($request, (int) $letter['id']);
+            $letter = NewsletterLetter::find((int) $letter['id']) ?? $letter;
+            $campaignId = NewsletterCampaign::queue([
+                'subject' => (string) $letter['subject'],
+                'html' => (string) $letter['body_html'],
+            ], 'manual');
+            NewsletterLetter::markSent((int) $letter['id'], $campaignId);
+            NewsletterCron::run(false);
+            flash('saved', 'Lettre mise en file et premier lot envoyé.');
+            redirect('/admin/newsletter');
+        } catch (Throwable $e) {
+            flash('error', user_error_message($e));
+            redirect('/admin/newsletter/lettre/' . (int) $letter['id']);
+        }
+    }
+
+    public function newsletterLetterDelete(Request $request, string $id): void
+    {
+        Auth::requireAdmin();
+        NewsletterLetter::delete((int) $id);
+        flash('saved', 'Lettre supprimée.');
         redirect('/admin/newsletter');
+    }
+
+    /** @return array{subject: string, preheader: string, blocks: list<array<string, mixed>>} */
+    private function newsletterLetterPayload(Request $request): array
+    {
+        return [
+            'subject' => $request->string('subject'),
+            'preheader' => $request->string('preheader'),
+            'blocks' => NewsletterBuilder::decode($request->string('blocks', '[]')),
+        ];
+    }
+
+    private function newsletterPersistCurrent(Request $request, int $id): void
+    {
+        if ($request->string('blocks') === '') {
+            return;
+        }
+        NewsletterLetter::save($id, $this->newsletterLetterPayload($request));
+    }
+
+    /** @return array<string, mixed>|null */
+    private function newsletterLetterOrEmpty(string $id): ?array
+    {
+        if ($id === 'nouvelle') {
+            return [
+                'id' => 0,
+                'subject' => '',
+                'preheader' => '',
+                'blocks' => NewsletterBuilder::defaultBlocks(),
+                'body_html' => '',
+                'status' => NewsletterLetter::STATUS_DRAFT,
+                'status_label' => NewsletterLetter::statusLabel(NewsletterLetter::STATUS_DRAFT),
+                'status_tone' => NewsletterLetter::statusTone(NewsletterLetter::STATUS_DRAFT),
+            ];
+        }
+        return NewsletterLetter::find((int) $id);
+    }
+
+    /** @return array<string, mixed> */
+    private function newsletterLetterRequired(string $id): array
+    {
+        $letter = NewsletterLetter::find((int) $id);
+        if (!$letter) {
+            flash('error', 'Lettre introuvable.');
+            redirect('/admin/newsletter');
+        }
+        return $letter;
     }
 
     public function newsletterExport(Request $request): void

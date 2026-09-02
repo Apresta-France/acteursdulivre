@@ -9,7 +9,7 @@ use RuntimeException;
 
 final class Report
 {
-    public const TYPES = ['user', 'service', 'mission', 'order', 'review', 'conversation'];
+    public const TYPES = ['user', 'service', 'mission', 'order', 'review', 'conversation', 'forum_post'];
 
     public const REASONS = [
         'ia' => 'Contenu généré par IA',

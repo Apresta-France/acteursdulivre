@@ -40,7 +40,7 @@ final class Prototype
             'Missions', 'Mission', 'Suivi', 'Commandes', 'Creer', 'Inscription', 'Comment', 'Tarifs',
             'Confiance', 'Aide', 'Questions', 'Metier', 'Apropos', 'Journal', 'Article', 'Contact', 'Legal',
             'Connexion', 'Notifications', 'MesPrestations', 'MesMissions', 'Candidatures', 'Favoris',
-            'Avis', 'Vitrine', 'Parametres', 'Facturation', 'Bienvenue', 'Statistiques',
+            'Avis', 'Vitrine', 'Parametres', 'Facturation', 'Bienvenue', 'Statistiques', 'Forum', 'EspaceForum',
         ] as $name) {
             $key = 'is' . $name;
             if (!isset($data[$key])) {
@@ -57,12 +57,14 @@ final class Prototype
             'tarifs' => 'isTarifs', 'confiance' => 'isConfiance', 'aide' => 'isAide',
             'questions' => 'isQuestions',
             'metier' => 'isMetier', 'apropos' => 'isApropos', 'journal' => 'isJournal',
+            'forum' => 'isForum', 'forum-categorie' => 'isForum', 'forum-discussion' => 'isForum', 'forum-nouveau' => 'isForum',
             'article' => 'isArticle', 'contact' => 'isContact', 'legal' => 'isLegal',
             'connexion' => 'isConnexion', 'notifications' => 'isNotifications',
             'mesprestations' => 'isMesPrestations', 'mesmissions' => 'isMesMissions',
             'candidatures' => 'isCandidatures', 'favoris' => 'isFavoris', 'avis' => 'isAvis',
             'vitrine' => 'isVitrine', 'parametres' => 'isParametres', 'facturation' => 'isFacturation',
             'bienvenue' => 'isBienvenue', 'statistiques' => 'isStatistiques',
+            'espace-forum' => 'isEspaceForum',
         ];
         if (isset($map[$screen])) {
             $data[$map[$screen]] = true;
@@ -125,6 +127,7 @@ final class Prototype
             ['title' => 'La plateforme', 'links' => [
                 ['label' => 'Comment ça marche', 'href' => '/comment-ca-marche'],
                 ['label' => 'À propos', 'href' => '/a-propos'],
+                ['label' => 'Le forum', 'href' => '/forum'],
                 ['label' => 'Le journal', 'href' => '/journal'],
                 ['label' => 'Charte qualité', 'href' => '/confiance'],
                 ['label' => 'Règles IA', 'href' => '/regles-ia'],
@@ -1486,7 +1489,7 @@ final class Prototype
         return in_array($screen, [
             'dashboard', 'publier', 'commande', 'suivi', 'suivi-detail', 'suivi-depot', 'suivi-depot-list', 'commandes', 'mesmissions',
             'candidatures', 'mesprestations', 'creer', 'messagerie', 'notifications',
-            'favoris', 'avis', 'vitrine', 'parametres', 'facturation', 'statistiques',
+            'favoris', 'avis', 'vitrine', 'parametres', 'facturation', 'statistiques', 'espace-forum',
         ], true);
     }
 
@@ -1601,6 +1604,7 @@ final class Prototype
             'items' => [
                 $item('Messages', '/espace/messages', 'messagerie', 'mail'),
                 $item('Alertes', '/espace/notifications', 'notifications', 'bell'),
+                $item('Forum', '/espace/forum', 'espace-forum', 'chat'),
                 $item('Paramètres', '/espace/parametres', 'parametres', 'gear'),
             ],
         ];

@@ -1854,7 +1854,8 @@
     return toEditorHtml(text);
   }
 
-  document.querySelectorAll('[data-wysiwyg]').forEach(function (wrap) {
+  function initWysiwyg(wrap) {
+    if (!wrap || wrap.classList.contains('is-ready')) return;
     var source = wrap.querySelector('.wysiwyg-source');
     var editor = wrap.querySelector('.wysiwyg-editor');
     var toolbar = wrap.querySelector('.wysiwyg-toolbar');
@@ -1915,7 +1916,354 @@
       }
       sync();
     });
-  });
+  }
+
+  document.querySelectorAll('[data-wysiwyg]').forEach(initWysiwyg);
+
+  (function initNewsletterBuilder() {
+    var form = document.querySelector('[data-nl-builder]');
+    if (!form) return;
+    var canvas = form.querySelector('[data-nl-canvas]');
+    var preview = document.querySelector('[data-nl-preview]');
+    var hidden = form.querySelector('[data-nl-blocks]');
+    var dataEl = document.getElementById('nl-builder-data');
+    var data = { blocks: [], catalog: {}, uploadUrl: '', token: '' };
+    try {
+      data = JSON.parse(dataEl ? dataEl.textContent : '{}') || data;
+    } catch (err) {}
+    var blocks = Array.isArray(data.blocks) ? data.blocks : [];
+    var catalog = data.catalog || {};
+    var labels = {
+      heading: 'Titre',
+      text: 'Texte',
+      image: 'Image',
+      button: 'Bouton',
+      divider: 'Séparateur',
+      spacer: 'Espace',
+      quote: 'Citation',
+      cards: 'Liste de liens'
+    };
+
+    function uid() {
+      return 'b' + Math.random().toString(16).slice(2, 10);
+    }
+
+    function escape(value) {
+      return escapeHtml(String(value == null ? '' : value));
+    }
+
+    function defaultBlock(type) {
+      var id = uid();
+      if (type === 'heading') return { id: id, type: 'heading', text: '', level: 'h2' };
+      if (type === 'text') return { id: id, type: 'text', html: '' };
+      if (type === 'image') return { id: id, type: 'image', src: '', alt: '', href: '' };
+      if (type === 'button') return { id: id, type: 'button', label: 'En savoir plus', href: '', align: 'left' };
+      if (type === 'divider') return { id: id, type: 'divider' };
+      if (type === 'spacer') return { id: id, type: 'spacer', height: 24 };
+      if (type === 'quote') return { id: id, type: 'quote', text: '', cite: '' };
+      return { id: id, type: 'cards', title: '', items: [{ title: '', meta: '', excerpt: '', href: '' }] };
+    }
+
+    function collect() {
+      var next = [];
+      canvas.querySelectorAll('[data-nl-block]').forEach(function (card) {
+        var type = card.getAttribute('data-nl-type');
+        var id = card.getAttribute('data-nl-id') || uid();
+        var block = { id: id, type: type };
+        if (type === 'heading') {
+          block.text = (card.querySelector('[data-f="text"]') || {}).value || '';
+          block.level = (card.querySelector('[data-f="level"]') || {}).value || 'h2';
+        } else if (type === 'text') {
+          var wys = card.querySelector('[data-wysiwyg]');
+          if (wys) {
+            var ed = wys.querySelector('.wysiwyg-editor');
+            var src = wys.querySelector('.wysiwyg-source');
+            if (ed && !editorIsEmpty(ed)) {
+              if (src) src.value = sanitizeEditorHtml(ed.innerHTML);
+            }
+          }
+          block.html = (card.querySelector('[data-f="html"]') || {}).value || '';
+        } else if (type === 'image') {
+          var typedSrc = (card.querySelector('[data-f="srcurl"]') || {}).value || '';
+          var storedSrc = card.getAttribute('data-src') || (card.querySelector('[data-f="src"]') || {}).value || '';
+          block.src = storedSrc || typedSrc;
+          block._url = /^https:\/\//i.test(typedSrc) ? typedSrc : '';
+          block.alt = (card.querySelector('[data-f="alt"]') || {}).value || '';
+          block.href = (card.querySelector('[data-f="href"]') || {}).value || '';
+        } else if (type === 'button') {
+          block.label = (card.querySelector('[data-f="label"]') || {}).value || 'En savoir plus';
+          block.href = (card.querySelector('[data-f="href"]') || {}).value || '';
+          block.align = (card.querySelector('[data-f="align"]') || {}).value || 'left';
+        } else if (type === 'spacer') {
+          block.height = parseInt((card.querySelector('[data-f="height"]') || {}).value, 10) || 24;
+        } else if (type === 'quote') {
+          block.text = (card.querySelector('[data-f="text"]') || {}).value || '';
+          block.cite = (card.querySelector('[data-f="cite"]') || {}).value || '';
+        } else if (type === 'cards') {
+          block.title = (card.querySelector('[data-f="title"]') || {}).value || '';
+          block.items = [];
+          card.querySelectorAll('[data-nl-card]').forEach(function (row) {
+            block.items.push({
+              title: (row.querySelector('[data-f="title"]') || {}).value || '',
+              meta: (row.querySelector('[data-f="meta"]') || {}).value || '',
+              excerpt: (row.querySelector('[data-f="excerpt"]') || {}).value || '',
+              href: (row.querySelector('[data-f="href"]') || {}).value || ''
+            });
+          });
+        }
+        next.push(block);
+      });
+      blocks = next;
+      var json = JSON.stringify(blocks);
+      if (hidden) hidden.value = json;
+      document.querySelectorAll('[data-nl-sync] [name="blocks"]').forEach(function (el) { el.value = json; });
+      var subject = (form.querySelector('[name="subject"]') || {}).value || '';
+      var preheader = (form.querySelector('[name="preheader"]') || {}).value || '';
+      document.querySelectorAll('[data-nl-sync] [name="subject"]').forEach(function (el) { el.value = subject; });
+      document.querySelectorAll('[data-nl-sync] [name="preheader"]').forEach(function (el) { el.value = preheader; });
+      renderPreview();
+    }
+
+    function renderPreview() {
+      if (!preview) return;
+      var html = '';
+      var pre = (form.querySelector('[name="preheader"]') || {}).value || '';
+      if (pre) html += '<p style="display:none">' + escape(pre) + '</p>';
+      blocks.forEach(function (block) {
+        if (block.type === 'heading' && block.text) {
+          var tag = block.level === 'h3' ? 'h3' : 'h2';
+          html += '<' + tag + '>' + escape(block.text) + '</' + tag + '>';
+        } else if (block.type === 'text' && block.html) {
+          html += '<div>' + sanitizeEditorHtml(block.html) + '</div>';
+        } else if (block.type === 'image' && block.src) {
+          var src = block._url || block.src;
+          var img = '<img src="' + escape(src) + '" alt="' + escape(block.alt || '') + '">';
+          html += block.href ? '<p><a href="' + escape(block.href) + '">' + img + '</a></p>' : '<p>' + img + '</p>';
+        } else if (block.type === 'button' && block.href) {
+          html += '<p style="text-align:' + (block.align === 'center' ? 'center' : 'left') + '"><a href="' + escape(block.href) + '" style="display:inline-block;background:#D85D3F;color:#fff;text-decoration:none;font-weight:600;padding:10px 16px;border-radius:10px;">' + escape(block.label || 'En savoir plus') + '</a></p>';
+        } else if (block.type === 'divider') {
+          html += '<hr style="border:0;border-top:1px solid #E8ECF1;margin:18px 0;">';
+        } else if (block.type === 'spacer') {
+          html += '<div style="height:' + (parseInt(block.height, 10) || 24) + 'px"></div>';
+        } else if (block.type === 'quote' && block.text) {
+          html += '<blockquote style="margin:16px 0;padding-left:14px;border-left:3px solid #D85D3F;color:#4A5A6B;"><p>' + escape(block.text) + '</p>' + (block.cite ? '<p style="font-size:13px;color:#8496A8;">— ' + escape(block.cite) + '</p>' : '') + '</blockquote>';
+        } else if (block.type === 'cards' && block.items && block.items.length) {
+          if (block.title) html += '<h2>' + escape(block.title) + '</h2>';
+          block.items.forEach(function (item) {
+            if (!item.title && !item.href) return;
+            html += '<p>';
+            html += item.href ? '<a href="' + escape(item.href) + '"><strong>' + escape(item.title || 'À voir') + '</strong></a>' : '<strong>' + escape(item.title || 'À voir') + '</strong>';
+            if (item.meta) html += '<br><span style="color:#66768A;font-size:13px;">' + escape(item.meta) + '</span>';
+            if (item.excerpt) html += '<br>' + escape(item.excerpt);
+            html += '</p>';
+          });
+        }
+      });
+      preview.innerHTML = html || '<p class="admin-muted">L’aperçu apparaîtra au fur et à mesure.</p>';
+    }
+
+    function field(label, name, value, extra) {
+      extra = extra || {};
+      var id = 'nl-' + name + '-' + Math.random().toString(16).slice(2, 6);
+      if (extra.area) {
+        return '<label class="field" for="' + id + '">' + escape(label) + '</label><textarea class="textarea" id="' + id + '" data-f="' + name + '" rows="' + (extra.rows || 3) + '">' + escape(value || '') + '</textarea>';
+      }
+      var type = extra.type || 'text';
+      return '<label class="field" for="' + id + '">' + escape(label) + '</label><input class="input" id="' + id + '" data-f="' + name + '" type="' + type + '" value="' + escape(value || '') + '"' + (extra.placeholder ? ' placeholder="' + escape(extra.placeholder) + '"' : '') + (extra.min ? ' min="' + extra.min + '"' : '') + (extra.max ? ' max="' + extra.max + '"' : '') + '>';
+    }
+
+    function wysiwygField(value) {
+      return '<div class="wysiwyg" data-wysiwyg>' +
+        '<div class="wysiwyg-toolbar" hidden>' +
+        '<button type="button" data-wysiwyg-cmd="bold" aria-label="Gras" title="Gras"><strong>G</strong></button>' +
+        '<button type="button" data-wysiwyg-cmd="italic" aria-label="Italique" title="Italique"><em>I</em></button>' +
+        '<button type="button" data-wysiwyg-cmd="insertUnorderedList" aria-label="Liste à puces" title="Liste">• Liste</button>' +
+        '<button type="button" data-wysiwyg-cmd="createLink" aria-label="Lien" title="Lien">Lien</button>' +
+        '</div>' +
+        '<textarea class="textarea wysiwyg-source" data-f="html" rows="5" hidden>' + escape(value || '') + '</textarea>' +
+        '<div class="wysiwyg-editor" contenteditable="true" role="textbox" aria-multiline="true" hidden></div>' +
+        '</div>';
+    }
+
+    function cardFields(item, index) {
+      item = item || {};
+      return '<div class="admin-nl-card-item" data-nl-card>' +
+        '<div class="admin-nl-block-top"><span class="admin-nl-block-type">Lien ' + (index + 1) + '</span>' +
+        '<div class="admin-nl-block-tools"><button type="button" data-nl-card-del aria-label="Retirer ce lien">×</button></div></div>' +
+        field('Titre', 'title', item.title || '') +
+        field('Accroche', 'meta', item.meta || '') +
+        field('Texte', 'excerpt', item.excerpt || '', { area: true, rows: 2 }) +
+        field('Lien', 'href', item.href || '', { placeholder: 'https://' }) +
+        '</div>';
+    }
+
+    function blockHtml(block) {
+      var type = block.type;
+      var body = '';
+      if (type === 'heading') {
+        body = field('Texte', 'text', block.text || '') +
+          '<label class="field">Niveau</label><select class="input" data-f="level">' +
+          '<option value="h2"' + (block.level !== 'h3' ? ' selected' : '') + '>Titre</option>' +
+          '<option value="h3"' + (block.level === 'h3' ? ' selected' : '') + '>Sous-titre</option></select>';
+      } else if (type === 'text') {
+        body = wysiwygField(block.html || '');
+      } else if (type === 'image') {
+        body = '<input type="hidden" data-f="src" value="' + escape(block.src || '') + '">' +
+          field('Adresse de l’image', 'srcurl', block._url || block.src || '', { placeholder: 'https://… ou téléversez' }) +
+          '<label class="field">Téléverser</label><input class="input" type="file" accept="image/jpeg,image/png,image/webp" data-nl-upload>' +
+          field('Texte alternatif', 'alt', block.alt || '') +
+          field('Lien au clic', 'href', block.href || '', { placeholder: 'https:// (optionnel)' });
+      } else if (type === 'button') {
+        body = field('Libellé', 'label', block.label || 'En savoir plus') +
+          field('Lien', 'href', block.href || '', { placeholder: 'https://' }) +
+          '<label class="field">Alignement</label><select class="input" data-f="align">' +
+          '<option value="left"' + (block.align !== 'center' ? ' selected' : '') + '>Gauche</option>' +
+          '<option value="center"' + (block.align === 'center' ? ' selected' : '') + '>Centre</option></select>';
+      } else if (type === 'divider') {
+        body = '<p class="field-help">Une ligne de séparation.</p>';
+      } else if (type === 'spacer') {
+        body = field('Hauteur (px)', 'height', String(block.height || 24), { type: 'number', min: '8', max: '80' });
+      } else if (type === 'quote') {
+        body = field('Citation', 'text', block.text || '', { area: true, rows: 3 }) +
+          field('Auteur', 'cite', block.cite || '');
+      } else if (type === 'cards') {
+        var items = (block.items && block.items.length) ? block.items : [{ title: '', meta: '', excerpt: '', href: '' }];
+        body = field('Titre de la section', 'title', block.title || '') +
+          items.map(cardFields).join('') +
+          '<p style="margin:12px 0 0;"><button type="button" class="admin-ghost" data-nl-card-add>Ajouter un lien</button></p>';
+      }
+      return '<article class="admin-nl-block-card" data-nl-block data-nl-type="' + escape(type) + '" data-nl-id="' + escape(block.id || uid()) + '"' + (type === 'image' && block.src ? ' data-src="' + escape(block.src) + '"' : '') + '>' +
+        '<div class="admin-nl-block-top"><span class="admin-nl-block-type">' + escape(labels[type] || type) + '</span>' +
+        '<div class="admin-nl-block-tools">' +
+        '<button type="button" data-nl-move="-1" aria-label="Monter">↑</button>' +
+        '<button type="button" data-nl-move="1" aria-label="Descendre">↓</button>' +
+        '<button type="button" data-nl-del aria-label="Supprimer">×</button>' +
+        '</div></div>' + body + '</article>';
+    }
+
+    function paint() {
+      if (!blocks.length) {
+        canvas.innerHTML = '<p class="admin-nl-empty">Ajoutez un bloc pour commencer la lettre.</p>';
+      } else {
+        canvas.innerHTML = blocks.map(blockHtml).join('');
+        canvas.querySelectorAll('[data-wysiwyg]').forEach(initWysiwyg);
+      }
+      collect();
+    }
+
+    function move(index, dir) {
+      var to = index + dir;
+      if (to < 0 || to >= blocks.length) return;
+      var tmp = blocks[index];
+      blocks[index] = blocks[to];
+      blocks[to] = tmp;
+      paint();
+    }
+
+    form.querySelector('[data-nl-palette]').addEventListener('click', function (event) {
+      var add = event.target.closest('[data-nl-add]');
+      var insert = event.target.closest('[data-nl-insert]');
+      if (add) {
+        collect();
+        if (blocks.length >= 40) return;
+        blocks.push(defaultBlock(add.getAttribute('data-nl-add')));
+        paint();
+      }
+      if (insert) {
+        collect();
+        var key = insert.getAttribute('data-nl-insert');
+        var items = catalog[key] || [];
+        var titles = { missions: 'Dernières recherches', people: 'Nouveaux profils', articles: 'À lire' };
+        if (!items.length) {
+          window.alert('Rien à insérer pour le moment.');
+          return;
+        }
+        if (blocks.length >= 40) return;
+        blocks.push({ id: uid(), type: 'cards', title: titles[key] || '', items: items.slice(0, 12) });
+        paint();
+      }
+    });
+
+    canvas.addEventListener('click', function (event) {
+      var card = event.target.closest('[data-nl-block]');
+      if (!card) return;
+      var index = Array.prototype.indexOf.call(canvas.querySelectorAll('[data-nl-block]'), card);
+      if (event.target.closest('[data-nl-del]')) {
+        collect();
+        blocks.splice(index, 1);
+        paint();
+        return;
+      }
+      if (event.target.closest('[data-nl-move]')) {
+        collect();
+        move(index, parseInt(event.target.closest('[data-nl-move]').getAttribute('data-nl-move'), 10));
+        return;
+      }
+      if (event.target.closest('[data-nl-card-add]')) {
+        var holder = document.createElement('div');
+        holder.innerHTML = cardFields({}, card.querySelectorAll('[data-nl-card]').length);
+        var addBtn = event.target.closest('[data-nl-card-add]').parentNode;
+        card.insertBefore(holder.firstChild, addBtn);
+        collect();
+        return;
+      }
+      if (event.target.closest('[data-nl-card-del]')) {
+        var row = event.target.closest('[data-nl-card]');
+        if (row) row.remove();
+        collect();
+      }
+    });
+
+    canvas.addEventListener('input', collect);
+    canvas.addEventListener('change', function (event) {
+      var file = event.target.closest('[data-nl-upload]');
+      if (!file || !file.files || !file.files[0]) {
+        var srcUrl = event.target.closest('[data-f="srcurl"]');
+        if (srcUrl) {
+          var card = event.target.closest('[data-nl-block]');
+          if (card) {
+            card.setAttribute('data-src', srcUrl.value || '');
+            var hiddenSrc = card.querySelector('[data-f="src"]');
+            if (hiddenSrc) hiddenSrc.value = srcUrl.value || '';
+          }
+        }
+        collect();
+        return;
+      }
+      if (!data.uploadUrl) return;
+      var card = file.closest('[data-nl-block]');
+      var body = new FormData();
+      body.append('_token', data.token || '');
+      body.append('image', file.files[0]);
+      fetch(data.uploadUrl, { method: 'POST', body: body, credentials: 'same-origin' })
+        .then(function (r) { return r.json(); })
+        .then(function (res) {
+          if (!res || !res.ok) throw new Error((res && res.error) || 'Téléversement impossible.');
+          if (card) {
+            card.setAttribute('data-src', res.src || '');
+            var hiddenSrc = card.querySelector('[data-f="src"]');
+            var urlField = card.querySelector('[data-f="srcurl"]');
+            if (hiddenSrc) hiddenSrc.value = res.src || '';
+            if (urlField) urlField.value = res.url || res.src || '';
+            var idx = Array.prototype.indexOf.call(canvas.querySelectorAll('[data-nl-block]'), card);
+            if (idx >= 0 && blocks[idx]) blocks[idx]._url = res.url || '';
+          }
+          collect();
+        })
+        .catch(function (err) {
+          window.alert(err.message || 'Téléversement impossible.');
+        });
+    });
+
+    form.addEventListener('submit', collect);
+    form.querySelector('[name="subject"]').addEventListener('input', collect);
+    form.querySelector('[name="preheader"]').addEventListener('input', collect);
+    document.querySelectorAll('[data-nl-sync]').forEach(function (extra) {
+      extra.addEventListener('submit', collect);
+    });
+
+    paint();
+  })();
 
   function initQuoteRecap() {
     var amountInput = document.getElementById('jalon-amount');
@@ -2344,4 +2692,31 @@
     }
     setInterval(refreshLive, 12000);
   }
+
+  document.querySelectorAll('[data-forum-compose]').forEach(function (form) {
+    var ta = form.querySelector('textarea[name="body"]');
+    var count = form.querySelector('[data-draft-count]');
+    var parent = form.querySelector('[data-parent-id]');
+    var hint = form.querySelector('[data-cite-hint]');
+    function updateCount() {
+      if (!count || !ta) return;
+      var n = (ta.value || '').trim().length;
+      count.textContent = n ? (n + ' caractères') : 'Minimum 80 caractères';
+    }
+    if (ta) {
+      ta.addEventListener('input', updateCount);
+      updateCount();
+    }
+    document.querySelectorAll('[data-cite]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        if (!parent) return;
+        parent.value = btn.getAttribute('data-cite') || '';
+        if (hint) {
+          var name = btn.getAttribute('data-cite-name') || '';
+          hint.hidden = false;
+          hint.textContent = name ? ('En réponse à ' + name) : 'Réponse citée';
+        }
+      });
+    });
+  });
 })();

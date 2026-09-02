@@ -14,6 +14,7 @@ use Adl\Models\Application;
 use Adl\Models\Commission;
 use Adl\Models\Conversation;
 use Adl\Models\Favorite;
+use Adl\Models\ForumTopic;
 use Adl\Models\Invoice;
 use Adl\Models\LegalAcceptance;
 use Adl\Models\Mission;
@@ -80,6 +81,26 @@ final class AccountController
             $viewSummary = null;
         }
 
+        $forumStats = ['mine' => 0, 'followed' => 0, 'posts' => 0];
+        $forumFollowed = [];
+        $forumMine = [];
+        try {
+            $forumStats = ForumTopic::userStats((int) $user['id']);
+            $forumFollowed = ForumTopic::list([
+                'filter' => 'followed',
+                'user_id' => (int) $user['id'],
+                'per_page' => 5,
+                'page' => 1,
+            ])['items'];
+            $forumMine = ForumTopic::list([
+                'filter' => 'mine',
+                'user_id' => (int) $user['id'],
+                'per_page' => 5,
+                'page' => 1,
+            ])['items'];
+        } catch (\Throwable) {
+        }
+
         View::page('dashboard', [
             'title' => 'Tableau de bord',
             'error' => flash('error'),
@@ -100,7 +121,85 @@ final class AccountController
             'isFounder' => User::isFounder($user),
             'commissionRate' => $commissionRate,
             'jalonTodos' => self::jalonTodos((int) $user['id']),
+            'forumStats' => $forumStats,
+            'forumFollowed' => $forumFollowed,
+            'forumMine' => $forumMine,
+            'notifyForumFollowed' => !isset($user['notify_forum_followed']) || (int) $user['notify_forum_followed'] === 1,
+            'notifyForumMine' => !isset($user['notify_forum_mine']) || (int) $user['notify_forum_mine'] === 1,
         ]);
+    }
+
+    public function forumEspace(Request $request): void
+    {
+        $user = Auth::requireUser();
+        $userId = (int) $user['id'];
+        $tab = $request->string('onglet');
+        if (!in_array($tab, ['suivis', 'mine', ''], true)) {
+            $tab = '';
+        }
+        $filter = match ($tab) {
+            'mine' => 'mine',
+            default => 'followed',
+        };
+        $page = max(1, $request->int('page', 1) ?? 1);
+
+        $stats = ['mine' => 0, 'followed' => 0, 'posts' => 0];
+        $listing = ['items' => [], 'total' => 0, 'page' => 1, 'pages' => 1];
+        try {
+            $stats = ForumTopic::userStats($userId);
+            $listing = ForumTopic::list([
+                'filter' => $filter,
+                'user_id' => $userId,
+                'page' => $page,
+                'per_page' => 15,
+            ]);
+        } catch (\Throwable) {
+        }
+
+        View::page('espace-forum', [
+            'title' => 'Forum',
+            'error' => flash('error'),
+            'saved' => flash('saved'),
+            'forumStats' => $stats,
+            'forumTopics' => $listing['items'],
+            'forumTab' => $tab === '' ? 'suivis' : $tab,
+            'notifyForumFollowed' => !isset($user['notify_forum_followed']) || (int) $user['notify_forum_followed'] === 1,
+            'notifyForumMine' => !isset($user['notify_forum_mine']) || (int) $user['notify_forum_mine'] === 1,
+            'pager' => [
+                'page' => $listing['page'],
+                'pages' => $listing['pages'],
+                'total' => $listing['total'],
+            ],
+        ]);
+    }
+
+    public function forumSave(Request $request): void
+    {
+        $user = Auth::requireUser();
+        $back = safe_internal_path($request->string('back')) ?: '/espace';
+        try {
+            User::update((int) $user['id'], [
+                'notify_forum_followed' => $request->bool('notify_forum_followed') ? 1 : 0,
+                'notify_forum_mine' => $request->bool('notify_forum_mine') ? 1 : 0,
+            ]);
+            flash('saved', 'Réglages du forum enregistrés.');
+        } catch (\Throwable $e) {
+            flash('error', user_error_message($e));
+        }
+        redirect($back);
+    }
+
+    public function forumUnfollow(Request $request, string $id): void
+    {
+        $user = Auth::requireUser();
+        $back = safe_internal_path($request->string('back')) ?: '/espace';
+        try {
+            ForumTopic::unfollow((int) $id, (int) $user['id']);
+            flash('saved', 'Discussion retirée de vos suivis.');
+        } catch (\Throwable $e) {
+            flash('error', user_error_message($e));
+        }
+        redirect($back);
     }
 
     public function onboarding(Request $request): void
@@ -1914,6 +2013,8 @@ final class AccountController
             'notifyNewsletter' => !empty($user['notify_newsletter'])
                 || (($sub = Newsletter::findByEmail((string) ($user['email'] ?? '')))
                     && ($sub['status'] ?? '') === Newsletter::STATUS_CONFIRMED),
+            'notifyForumFollowed' => !isset($user['notify_forum_followed']) || (int) $user['notify_forum_followed'] === 1,
+            'notifyForumMine' => !isset($user['notify_forum_mine']) || (int) $user['notify_forum_mine'] === 1,
             'companyName' => (string) ($user['company_name'] ?? ''),
             'legalForm' => (string) ($user['legal_form'] ?? ''),
             'legalForms' => User::legalForms(),
@@ -2002,6 +2103,8 @@ final class AccountController
                 'notify_jalons' => $request->bool('notify_jalons') ? 1 : 0,
                 'notify_missions' => $request->bool('notify_missions') ? 1 : 0,
                 'notify_newsletter' => $wantNews ? 1 : 0,
+                'notify_forum_followed' => $request->bool('notify_forum_followed') ? 1 : 0,
+                'notify_forum_mine' => $request->bool('notify_forum_mine') ? 1 : 0,
             ]);
             try {
                 if ($wantNews) {

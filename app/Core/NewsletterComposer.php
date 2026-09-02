@@ -54,6 +54,23 @@ final class NewsletterComposer
             'people' => $people,
             'url_items' => $urlItems,
             'empty' => $empty,
+            'week' => $week,
+        ];
+    }
+
+    /**
+     * @return array{
+     *     missions: list<array<string, string>>,
+     *     people: list<array<string, string>>,
+     *     articles: list<array<string, string>>
+     * }
+     */
+    public static function catalog(): array
+    {
+        return [
+            'missions' => self::missions(),
+            'people' => self::people(),
+            'articles' => self::latestArticles(),
         ];
     }
 

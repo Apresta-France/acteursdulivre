@@ -103,6 +103,7 @@ final class User
             'seeks_services', 'offers_services', 'google_id', 'facebook_id',
             'avatar_url', 'onboarding_done_at', 'founder',
             'notify_messages', 'notify_jalons', 'notify_missions', 'notify_newsletter',
+            'notify_forum_followed', 'notify_forum_mine',
             'company_name', 'siren', 'siret', 'vat_number', 'vat_exempt',
             'legal_form', 'einvoice_routing', 'billing_address', 'iban',
             'deleted_at',
@@ -498,6 +499,8 @@ final class User
             'jalons' => 'notify_jalons',
             'missions' => 'notify_missions',
             'newsletter' => 'notify_newsletter',
+            'forum_followed' => 'notify_forum_followed',
+            'forum_mine' => 'notify_forum_mine',
             default => null,
         };
         if ($col === null) {

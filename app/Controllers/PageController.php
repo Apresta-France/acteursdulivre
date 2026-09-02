@@ -205,7 +205,7 @@ final class PageController
             'contact', 'cookies', 'cron', 'deconnexion', 'espace', 'inscription',
             'install', 'journal', 'mentions-legales', 'metiers', 'missions',
             'mot-de-passe', 'newsletter', 'prestataires', 'prestations', 'public',
-            'questions', 'recherche', 'regles-ia', 'signaler', 'tarifs',
+            'questions', 'recherche', 'regles-ia', 'signaler', 'tarifs', 'forum',
         ];
         if (in_array($slug, $reserved, true)) {
             not_found();

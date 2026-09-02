@@ -56,6 +56,11 @@ final class Seo
                 'description' => 'Prix observés, méthodes, contrats et retours d\'expérience sur la fabrication d\'un livre — du manuscrit à la librairie.',
                 'path' => '/journal',
             ],
+            'forum' => [
+                'title' => 'Le forum des métiers du livre',
+                'description' => 'Tarifs, contrats, papier, délais et cas concrets : les réponses viennent de gens qui font le métier — pas d\'une machine.',
+                'path' => '/forum',
+            ],
             'aide' => [
                 'title' => 'Centre d\'aide',
                 'description' => 'Jalons, règlement hors plateforme, commission, annulation, facturation, avis, litiges : les réponses utiles pour utiliser acteursdulivre.fr.',
@@ -801,6 +806,7 @@ final class Seo
             'confiance' => 'Confiance',
             'apropos' => 'À propos',
             'journal' => 'Le journal',
+            'forum' => 'Forum',
             'aide' => 'Centre d\'aide',
             'questions' => 'Questions fréquentes',
             'contact' => 'Contact',
