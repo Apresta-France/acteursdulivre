@@ -22,6 +22,7 @@ use Adl\Models\Invoice;
 use Adl\Models\Mission;
 use Adl\Models\Newsletter;
 use Adl\Models\Profile;
+use Adl\Models\ReviewRequest;
 use Adl\Models\Report;
 use Adl\Models\Service;
 use Adl\Models\User;
@@ -796,6 +797,66 @@ final class PageController
             'title' => 'Contact',
             'sent' => flash('contact_sent') ? true : false,
             'meta' => Seo::forScreen('contact'),
+        ]);
+    }
+
+    public function recommandation(Request $request, string $token): void
+    {
+        $this->renderRecommandation($token, false);
+    }
+
+    public function recommandationSave(Request $request, string $token): void
+    {
+        try {
+            if (!$request->bool('sincere')) {
+                throw new \RuntimeException('Confirmez que cette recommandation est sincère.');
+            }
+            $reco = ReviewRequest::completeExternal(
+                $token,
+                $request->string('name'),
+                $request->string('role'),
+                $request->string('body')
+            );
+            $profile = Profile::findByUser((int) ($reco['target_id'] ?? 0));
+            View::page('recommandation', [
+                'title' => 'Recommandation envoyée',
+                'ok' => true,
+                'request' => null,
+                'sellerName' => $profile ? Profile::displayName($profile) : '',
+                'profileHref' => $profile ? Profile::publicHref($profile) : '',
+                'error' => null,
+                'meta' => [
+                    'title' => 'Recommandation envoyée — acteursdulivre.fr',
+                    'robots' => Seo::ROBOTS_NONE,
+                ],
+            ]);
+            return;
+        } catch (\Throwable $e) {
+            flash('error', user_error_message($e));
+            $this->renderRecommandation($token, false);
+        }
+    }
+
+    private function renderRecommandation(string $token, bool $ok): void
+    {
+        $request = ReviewRequest::findByToken($token);
+        $usable = $request
+            && ($request['kind'] ?? '') === ReviewRequest::KIND_EXTERNAL
+            && ($request['status'] ?? '') === ReviewRequest::STATUS_PENDING
+            && empty($request['expired']);
+        $profile = $request ? Profile::findByUser((int) $request['seller_id']) : null;
+        View::page('recommandation', [
+            'title' => 'Laisser une recommandation',
+            'ok' => $ok,
+            'request' => $usable ? $request : null,
+            'invalid' => !$usable,
+            'sellerName' => $profile ? Profile::displayName($profile) : '',
+            'profileHref' => $profile ? Profile::publicHref($profile) : '',
+            'error' => flash('error'),
+            'meta' => [
+                'title' => 'Laisser une recommandation — acteursdulivre.fr',
+                'robots' => Seo::ROBOTS_NONE,
+            ],
         ]);
     }
 

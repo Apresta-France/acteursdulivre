@@ -159,6 +159,8 @@ final class AuthController
             // l'inscription reste valide si l'e-mail échoue
         }
 
+        self::consumePendingMessage($user ?? ['id' => $id], false);
+
         redirect(Onboarding::homePath($user ?? ['onboarding_done_at' => null]));
     }
 
@@ -415,6 +417,8 @@ final class AuthController
         } catch (Throwable) {
         }
 
+        self::consumePendingMessage($user, false);
+
         redirect(Onboarding::homePath($user));
     }
 
@@ -457,12 +461,12 @@ final class AuthController
     }
 
     /** @param array<string, mixed> $user */
-    private static function consumePendingMessage(array $user): void
+    private static function consumePendingMessage(array $user, bool $redirectToThread = true): bool
     {
         $pending = $_SESSION['_pending_message'] ?? null;
         unset($_SESSION['_pending_message']);
         if (!is_array($pending) || (int) ($pending['avec'] ?? 0) < 1) {
-            return;
+            return false;
         }
         try {
             $thread = Conversation::open((int) $user['id'], (int) $pending['avec'], [
@@ -470,8 +474,20 @@ final class AuthController
                 'service_id' => ((int) ($pending['prestation'] ?? 0)) ?: null,
                 'mission_id' => ((int) ($pending['mission'] ?? 0)) ?: null,
             ]);
-            redirect('/espace/messages/' . (int) $thread['id']);
+            $body = trim((string) ($pending['message'] ?? ''));
+            if (mb_strlen($body) > 8000) {
+                $body = mb_substr($body, 0, 8000);
+            }
+            if ($body !== '') {
+                Conversation::send((int) $thread['id'], (int) $user['id'], $body);
+                flash('saved', 'Votre question a été envoyée.');
+            }
+            if ($redirectToThread) {
+                redirect('/espace/messages/' . (int) $thread['id']);
+            }
+            return true;
         } catch (Throwable) {
+            return false;
         }
     }
 

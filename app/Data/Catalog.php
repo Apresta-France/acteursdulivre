@@ -9,6 +9,7 @@ use Adl\Models\ForumTopic;
 use Adl\Models\Mission;
 use Adl\Models\PortfolioItem;
 use Adl\Models\Profile;
+use Adl\Models\Recommendation;
 use Adl\Models\Review;
 use Adl\Models\Service;
 use Adl\Models\Setting;
@@ -1989,6 +1990,7 @@ final class Catalog
             'is_verified' => !empty($profile['is_verified']),
             'reviews' => Review::forTarget((int) ($profile['user_id'] ?? 0), 8),
             'review_stats' => Review::statsForUser((int) ($profile['user_id'] ?? 0)),
+            'recommendations' => Recommendation::forTarget((int) ($profile['user_id'] ?? 0), 8),
             'services' => array_values(array_filter(
                 Service::forUser((int) ($profile['user_id'] ?? 0)),
                 static fn (array $service): bool => ($service['status'] ?? '') === 'published'

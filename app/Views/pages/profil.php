@@ -248,7 +248,29 @@ $isOwnProfile = $viewer && (int) ($viewer['id'] ?? 0) === (int) ($p['user_id'] ?
               <?php if (!empty($review['txt'])): ?>
                 <p class="profile-text"><?= e((string) $review['txt']) ?></p>
               <?php endif; ?>
-              <div class="mission-row-sub"><?= e((string) $review['when']) ?></div>
+              <div class="mission-row-sub"><?= e((string) $review['when']) ?> · mission sur la plateforme</div>
+            </article>
+          <?php endforeach; ?>
+        </div>
+      <?php endif; ?>
+
+      <?php if (!empty($p['recommendations'])): ?>
+        <h2>Recommandations</h2>
+        <p class="profile-text" style="margin-top: -8px;">Textes de clients hors plateforme. Ils ne comptent pas dans la note.</p>
+        <div class="my-missions">
+          <?php foreach ($p['recommendations'] as $reco): ?>
+            <article class="side-card">
+              <div class="mission-row-title">
+                <?= e((string) $reco['who']) ?>
+                <?php if (!empty($reco['role'])): ?> · <?= e((string) $reco['role']) ?><?php endif; ?>
+              </div>
+              <?php if (!empty($reco['context'])): ?>
+                <div class="mission-row-sub"><?= e((string) $reco['context']) ?></div>
+              <?php endif; ?>
+              <?php if (!empty($reco['txt'])): ?>
+                <p class="profile-text"><?= e((string) $reco['txt']) ?></p>
+              <?php endif; ?>
+              <div class="mission-row-sub"><?= e((string) $reco['when']) ?> · hors plateforme</div>
             </article>
           <?php endforeach; ?>
         </div>

@@ -1409,7 +1409,8 @@
 
   function showVitrineTab(tab) {
     var nav = document.querySelector('[data-tabs]');
-    var form = document.getElementById('vitrine-form') || (nav && nav.parentElement) || document;
+    var page = document.querySelector('.vitrine-page');
+    var root = page || (nav && nav.parentElement) || document;
     var hiddenTab = document.querySelector('[data-vitrine-tab]');
     if (!tab) return;
     if (nav) {
@@ -1417,8 +1418,12 @@
         other.classList.toggle('is-on', other.getAttribute('data-tab') === tab);
       });
     }
-    form.querySelectorAll('[data-tab-panel]').forEach(function (panel) {
+    root.querySelectorAll('[data-tab-panel]').forEach(function (panel) {
       panel.hidden = panel.getAttribute('data-tab-panel') !== tab;
+    });
+    root.querySelectorAll('[data-hide-on-tab]').forEach(function (el) {
+      var hideOn = (el.getAttribute('data-hide-on-tab') || '').split(/\s+/);
+      el.hidden = hideOn.indexOf(tab) !== -1;
     });
     if (hiddenTab) hiddenTab.value = tab;
     if (hiddenTab && history.replaceState) {

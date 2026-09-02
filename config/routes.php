@@ -71,6 +71,8 @@ return static function (Router $router): void {
     $router->get('/regles-ia', [PageController::class, 'legal']);
     $router->get('/contact', [PageController::class, 'contact']);
     $router->post('/contact', [PageController::class, 'contactSubmit']);
+    $router->get('/recommandation/{token}', [PageController::class, 'recommandation']);
+    $router->post('/recommandation/{token}', [PageController::class, 'recommandationSave']);
 
     $router->get('/connexion', [AuthController::class, 'loginForm']);
     $router->post('/connexion', [AuthController::class, 'login']);
@@ -144,6 +146,7 @@ return static function (Router $router): void {
     $router->post('/espace/avis/{id}', [AccountController::class, 'avisSave']);
     $router->get('/espace/vitrine', [AccountController::class, 'vitrine']);
     $router->post('/espace/vitrine', [AccountController::class, 'vitrineSave']);
+    $router->post('/espace/vitrine/avis', [AccountController::class, 'vitrineAvis']);
     $router->post('/espace/vitrine/justificatif', [AccountController::class, 'vitrineVerification']);
     $router->post('/espace/disponibilite', [AccountController::class, 'disponibiliteSave']);
     $router->get('/espace/parametres', [AccountController::class, 'parametres']);
@@ -172,6 +175,7 @@ return static function (Router $router): void {
     $router->post('/admin/litiges/{id}', [AdminController::class, 'litigeSave']);
     $router->get('/admin/avis', [AdminController::class, 'avis']);
     $router->post('/admin/avis/{id}', [AdminController::class, 'avisSave']);
+    $router->post('/admin/recommandations/{id}', [AdminController::class, 'recommandationSave']);
     $router->get('/admin/utilisateurs', [AdminController::class, 'utilisateurs']);
     $router->get('/admin/utilisateurs/{id}', [AdminController::class, 'utilisateur']);
     $router->post('/admin/utilisateurs/{id}', [AdminController::class, 'utilisateurSave']);

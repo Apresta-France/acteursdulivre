@@ -666,6 +666,8 @@ final class User
             'messages_sent' => $safe(static fn () => Conversation::exportForUser($id)),
             'order_files' => $safe(static fn () => OrderFile::exportForUser($id)),
             'reviews_received' => $safe(static fn () => Review::forTarget($id, 200)),
+            'recommendations_received' => $safe(static fn () => Recommendation::exportForUser($id)),
+            'review_requests' => $safe(static fn () => ReviewRequest::forSeller($id)),
             'legal' => $safe(static fn () => LegalAcceptance::forUser($id)),
         ];
     }

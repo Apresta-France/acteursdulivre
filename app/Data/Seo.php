@@ -19,6 +19,7 @@ final class Seo
         'dashboard', 'publier', 'commande', 'suivi', 'commandes', 'mesmissions',
         'candidatures', 'mesprestations', 'creer', 'messagerie', 'notifications',
         'favoris', 'avis', 'vitrine', 'parametres', 'facturation', 'statistiques', 'bienvenue',
+        'recommandation',
         'connexion', 'inscription-sso',
     ];
 

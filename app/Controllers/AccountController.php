@@ -25,7 +25,9 @@ use Adl\Models\OrderFile;
 use Adl\Models\OrderMilestone;
 use Adl\Models\PortfolioItem;
 use Adl\Models\Profile;
+use Adl\Models\Recommendation;
 use Adl\Models\Review;
+use Adl\Models\ReviewRequest;
 use Adl\Models\Service;
 use Adl\Models\User;
 
@@ -1571,16 +1573,31 @@ final class AccountController
                 'service_id' => $request->int('prestation'),
                 'mission_id' => $request->int('mission'),
             ];
+            $body = $request->string('message');
+            $hasQuestion = $request->isPost() && $request->input('message') !== null;
+            $back = safe_internal_path($request->string('retour'));
             try {
+                if ($hasQuestion && $body === '') {
+                    throw new \RuntimeException('Écrivez votre question pour l’envoyer au prestataire.');
+                }
                 $thread = Conversation::findBetween((int) $user['id'], $avec, $context);
                 if (!$thread && $request->isPost()) {
                     $thread = Conversation::open((int) $user['id'], $avec, $context);
+                }
+                if ($thread && $request->isPost() && $body !== '') {
+                    Conversation::send((int) $thread['id'], (int) $user['id'], $body);
+                    Analytics::action('message');
+                    flash('saved', 'Votre question a été envoyée.');
                 }
                 if ($thread) {
                     redirect('/espace/messages/' . (int) $thread['id']);
                 }
             } catch (\Throwable $e) {
                 flash('error', user_error_message($e));
+                if ($back) {
+                    $_SESSION['_old'] = ['message' => $body];
+                    redirect($back);
+                }
             }
         }
         try {
@@ -1861,6 +1878,31 @@ final class AccountController
             flash('error', 'La vitrine n\'est pas encore disponible : ' . $e->getMessage());
             redirect('/espace');
         }
+        $userId = (int) $user['id'];
+        $pendingReviews = [];
+        $receivedReviews = [];
+        $reviewStats = ['avg' => '', 'count' => 0];
+        $pendingInvites = [];
+        $recommendations = [];
+        $requestByOrder = [];
+        try {
+            $pendingReviews = Order::awaitingReviewForSeller($userId);
+            $receivedReviews = Review::forTarget($userId, 40);
+            $reviewStats = Review::statsForUser($userId);
+            $pendingInvites = ReviewRequest::pendingExternalForSeller($userId);
+            $recommendations = Recommendation::forTarget($userId, 40, true);
+            foreach (ReviewRequest::forSeller($userId) as $req) {
+                $oid = (int) ($req['order_id'] ?? 0);
+                if ($oid > 0 && ($req['kind'] ?? '') === ReviewRequest::KIND_PLATFORM) {
+                    $requestByOrder[$oid] = $req;
+                }
+            }
+            foreach ($pendingReviews as $i => $order) {
+                $pendingReviews[$i]['review_request'] = $requestByOrder[(int) ($order['id'] ?? 0)] ?? null;
+            }
+        } catch (\Throwable) {
+        }
+        $saved = flash('saved');
         View::page('vitrine', [
             'title' => 'Ma vitrine',
             'profile' => $profile,
@@ -1875,9 +1917,15 @@ final class AccountController
             'socialNetworks' => Profile::SOCIAL_NETWORKS,
             'completion' => $profile['completion'] ?? 0,
             'tab' => self::vitrineTab($request),
-            'saved' => flash('saved') ? true : false,
+            'pendingReviews' => $pendingReviews,
+            'receivedReviews' => $receivedReviews,
+            'reviewStats' => $reviewStats,
+            'pendingInvites' => $pendingInvites,
+            'recommendations' => $recommendations,
+            'saved' => $saved,
             'error' => flash('error'),
         ]);
+        unset($_SESSION['_old']);
     }
 
     public function vitrineSave(Request $request): void
@@ -2292,12 +2340,51 @@ final class AccountController
         redirect('/espace/vitrine');
     }
 
-    /** @return 'identite'|'competences'|'parcours'|'portfolio' */
+    public function vitrineAvis(Request $request): void
+    {
+        $user = Auth::requireOfferer();
+        $sellerId = (int) $user['id'];
+        $action = $request->string('action');
+        try {
+            if ($action === 'platform') {
+                ReviewRequest::requestPlatform($sellerId, (int) $request->string('order_id'));
+                flash('saved', 'La demande d\'avis a été envoyée au client.');
+            } elseif ($action === 'external') {
+                ReviewRequest::requestExternal(
+                    $sellerId,
+                    $request->string('name'),
+                    $request->string('email'),
+                    $request->string('context')
+                );
+                flash('saved', 'L\'invitation a été envoyée. La recommandation apparaîtra sur votre vitrine dès qu\'elle sera rédigée.');
+            } elseif ($action === 'resend') {
+                ReviewRequest::resend((int) $request->string('request_id'), $sellerId);
+                flash('saved', 'Relance envoyée.');
+            } elseif ($action === 'cancel') {
+                ReviewRequest::cancel((int) $request->string('request_id'), $sellerId);
+                flash('saved', 'Invitation annulée.');
+            } else {
+                flash('error', 'Action inconnue.');
+            }
+        } catch (\Throwable $e) {
+            if ($action === 'external') {
+                $_SESSION['_old'] = [
+                    'name' => $request->string('name'),
+                    'email' => $request->string('email'),
+                    'context' => $request->string('context'),
+                ];
+            }
+            flash('error', user_error_message($e));
+        }
+        redirect('/espace/vitrine?onglet=avis');
+    }
+
+    /** @return 'identite'|'competences'|'parcours'|'portfolio'|'avis' */
     private static function vitrineTab(Request $request): string
     {
         $tab = $request->string('onglet');
 
-        return in_array($tab, ['identite', 'competences', 'parcours', 'portfolio'], true)
+        return in_array($tab, ['identite', 'competences', 'parcours', 'portfolio', 'avis'], true)
             ? $tab
             : 'identite';
     }

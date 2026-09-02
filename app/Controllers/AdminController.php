@@ -31,6 +31,7 @@ use Adl\Models\Order;
 use Adl\Models\OrderFile;
 use Adl\Models\Profile;
 use Adl\Models\Report;
+use Adl\Models\Recommendation;
 use Adl\Models\Review;
 use Adl\Models\Service;
 use Adl\Models\Setting;
@@ -326,7 +327,31 @@ final class AdminController
     {
         $this->page('avis', 'admin/avis', [
             'reviews' => Review::all(),
+            'recommendations' => Recommendation::all(),
         ]);
+    }
+
+    public function recommandationSave(Request $request, string $id): void
+    {
+        Auth::requireAdmin();
+        $action = $request->string('action');
+        try {
+            if ($action === 'hide') {
+                Recommendation::hide((int) $id, true);
+                flash('saved', 'Recommandation masquée.');
+            } elseif ($action === 'show') {
+                Recommendation::hide((int) $id, false);
+                flash('saved', 'Recommandation rétablie.');
+            } elseif ($action === 'delete') {
+                Recommendation::delete((int) $id);
+                flash('saved', 'Recommandation supprimée.');
+            } else {
+                flash('error', 'Action inconnue.');
+            }
+        } catch (Throwable $e) {
+            flash('error', $e->getMessage());
+        }
+        redirect('/admin/avis');
     }
 
     public function avisSave(Request $request, string $id): void

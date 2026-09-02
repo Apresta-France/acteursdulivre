@@ -397,6 +397,38 @@ final class Order
         return OrderMilestone::hydrateMany(array_map([self::class, 'present'], $rows));
     }
 
+    /** @return list<array<string, mixed>> */
+    public static function awaitingReviewForSeller(int $sellerId): array
+    {
+        $rows = Database::fetchAll(
+            'SELECT o.*,
+                    s.title AS service_title,
+                    m.title AS mission_title,
+                    b.first_name AS buyer_first, b.last_name AS buyer_last,
+                    sl.first_name AS seller_first, sl.last_name AS seller_last
+             FROM orders o
+             LEFT JOIN services s ON s.id = o.service_id
+             LEFT JOIN missions m ON m.id = o.mission_id
+             JOIN users b ON b.id = o.buyer_id
+             JOIN users sl ON sl.id = o.seller_id
+             LEFT JOIN reviews r ON r.order_id = o.id AND r.author_id = o.buyer_id
+             WHERE o.seller_id = ?
+               AND o.status IN ("delivered", "in_progress")
+               AND o.confirmed_at IS NULL
+               AND r.id IS NULL
+               AND (
+                    NOT EXISTS (SELECT 1 FROM order_milestones om WHERE om.order_id = o.id)
+                    OR EXISTS (
+                        SELECT 1 FROM order_milestones om
+                        WHERE om.order_id = o.id AND om.code = "validate" AND om.status = "current"
+                    )
+               )
+             ORDER BY o.created_at DESC',
+            [$sellerId]
+        );
+        return OrderMilestone::hydrateMany(array_map([self::class, 'present'], $rows));
+    }
+
     /**
      * @param array{quality: int, efficiency: int, satisfaction: int, body?: string} $ratings
      * @return array{order: array<string, mixed>, review: array<string, mixed>, invoice: array<string, mixed>}

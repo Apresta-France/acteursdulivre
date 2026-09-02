@@ -186,13 +186,6 @@ $formulePriceLabel = is_array($selectedPackage)
               <?php endif; ?>
               <button class="btn-orange" type="submit" data-order-cta-label><?= e($ctaLabel) ?></button>
             </form>
-            <form method="post" action="<?= e(url('/espace/messages')) ?>">
-              <?= csrf_field() ?>
-              <input type="hidden" name="avec" value="<?= (int) ($service['user_id'] ?? 0) ?>">
-              <input type="hidden" name="sujet" value="<?= e((string) $service['title']) ?>">
-              <input type="hidden" name="prestation" value="<?= (int) ($service['id'] ?? 0) ?>">
-              <button class="btn-ghost" type="submit">Envoyer un message</button>
-            </form>
             <p class="field-help" style="margin: 12px 0 0;">Aucun paiement ici : le prestataire envoie un devis, vous vous réglez hors plateforme, jalon par jalon.</p>
           <?php elseif ($isOwner): ?>
             <p class="field-help" style="margin: 12px 0 0;">C’est votre prestation. Connectez-vous avec un autre compte pour tester une commande.</p>
@@ -201,6 +194,32 @@ $formulePriceLabel = is_array($selectedPackage)
           <?php endif; ?>
         </div>
       </div>
+      <?php if ($canOrder): ?>
+        <?php
+          $askName = trim((string) ($service['first_name'] ?? ''));
+          if ($askName === '') {
+              $askName = (string) ($service['by'] ?? 'le prestataire');
+          }
+        ?>
+        <div class="side-card fiche-ask">
+          <div class="side-kicker">Une question ?</div>
+          <div class="side-title-sm">Écrire à <?= e($askName) ?></div>
+          <p class="field-help">Délai, adaptation, disponibilité… la réponse arrive dans votre messagerie.</p>
+          <form method="post" action="<?= e(url('/espace/messages')) ?>">
+            <?= csrf_field() ?>
+            <input type="hidden" name="avec" value="<?= (int) ($service['user_id'] ?? 0) ?>">
+            <input type="hidden" name="sujet" value="<?= e((string) $service['title']) ?>">
+            <input type="hidden" name="prestation" value="<?= (int) ($service['id'] ?? 0) ?>">
+            <input type="hidden" name="retour" value="<?= e((string) ($service['href'] ?? '')) ?>">
+            <label class="field" for="fiche-question">Votre question</label>
+            <textarea class="textarea" id="fiche-question" name="message" required maxlength="8000" rows="4" placeholder="Bonjour, je voudrais savoir…"><?= e((string) old('message')) ?></textarea>
+            <button class="btn-ghost" type="submit">Poser une question</button>
+            <?php if (!$viewer): ?>
+              <p class="field-help fiche-ask-note">Vous pourrez vous connecter ou créer un compte juste après l’envoi.</p>
+            <?php endif; ?>
+          </form>
+        </div>
+      <?php endif; ?>
       <div class="side-card side-card-warm fiche-ia">
         <div class="side-kicker">Garantie plateforme</div>
         <div class="side-title-sm">Sans IA générative</div>

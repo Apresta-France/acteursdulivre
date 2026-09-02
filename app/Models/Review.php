@@ -130,6 +130,16 @@ final class Review
             [$orderId, $authorId, $targetId, $overall, $quality, $efficiency, $satisfaction, $body !== '' ? $body : null]
         );
 
+        try {
+            Database::query(
+                'UPDATE review_requests
+                 SET status = ?, completed_at = NOW()
+                 WHERE order_id = ? AND kind = ? AND status = ?',
+                ['completed', $orderId, 'platform', 'pending']
+            );
+        } catch (\Throwable) {
+        }
+
         return Database::fetch('SELECT * FROM reviews WHERE id = ?', [(int) Database::lastId()]) ?? [];
     }
 

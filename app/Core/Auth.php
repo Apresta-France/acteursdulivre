@@ -180,11 +180,16 @@ final class Auth
             $_SESSION['_intended'] = $uri;
             $avec = (int) ($_POST['avec'] ?? 0);
             if ($avec > 0) {
+                $message = trim((string) ($_POST['message'] ?? ''));
+                if (mb_strlen($message) > 8000) {
+                    $message = mb_substr($message, 0, 8000);
+                }
                 $_SESSION['_pending_message'] = [
                     'avec' => $avec,
                     'sujet' => trim((string) ($_POST['sujet'] ?? '')),
                     'prestation' => (int) ($_POST['prestation'] ?? 0),
                     'mission' => (int) ($_POST['mission'] ?? 0),
+                    'message' => $message,
                 ];
             }
             redirect('/connexion');

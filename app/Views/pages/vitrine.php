@@ -24,9 +24,15 @@ $socials = !empty($p['socials']) ? $p['socials'] : [['network' => '', 'url' => '
 $socialNetworks = $socialNetworks ?? \Adl\Models\Profile::SOCIAL_NETWORKS;
 $completion = (int) ($completion ?? ($p['completion'] ?? 0));
 $publicHref = !empty($p['slug']) ? url('/prestataires/' . $p['slug']) : '';
-$tab = in_array(($tab ?? ''), ['identite', 'competences', 'parcours', 'portfolio'], true)
+$tab = in_array(($tab ?? ''), ['identite', 'competences', 'parcours', 'portfolio', 'avis'], true)
     ? (string) $tab
     : 'identite';
+$pendingReviews = $pendingReviews ?? [];
+$receivedReviews = $receivedReviews ?? [];
+$reviewStats = $reviewStats ?? ['avg' => '', 'count' => 0];
+$pendingInvites = $pendingInvites ?? [];
+$recommendations = $recommendations ?? [];
+$avisBadge = count($pendingReviews) + count($pendingInvites);
 $rateKind = \Adl\Models\Profile::rateKind($p);
 $rateHelp = \Adl\Models\Profile::rateHelp($p);
 $rateValue = (string) ($p['hourly_rate'] ?? '');
@@ -55,14 +61,14 @@ if ($rateKind === \Adl\Models\Profile::RATE_PERCENT || str_contains($rateValue, 
       <?php if ($publicHref): ?>
         <a class="btn-ghost" href="<?= e($publicHref) ?>">Voir en public</a>
       <?php endif; ?>
-      <button class="btn-orange" type="submit" form="vitrine-form">Enregistrer</button>
+      <button class="btn-orange" type="submit" form="vitrine-form" data-hide-on-tab="avis"<?= $tab === 'avis' ? ' hidden' : '' ?>>Enregistrer</button>
     </div>
   </div>
 
   <div class="vitrine-progress"><span style="width: <?= max(6, $completion) ?>%"></span></div>
 
   <?php if (!empty($saved)): ?>
-    <div class="flash flash-ok">Votre vitrine a été enregistrée.</div>
+    <div class="flash flash-ok"><?= e(is_string($saved) && $saved !== '1' ? $saved : 'Votre vitrine a été enregistrée.') ?></div>
   <?php endif; ?>
   <?php if (!empty($error)): ?>
     <div class="flash flash-error"><?= e((string) $error) ?></div>
@@ -73,9 +79,10 @@ if ($rateKind === \Adl\Models\Profile::RATE_PERCENT || str_contains($rateValue, 
     <button type="button" class="tab<?= $tab === 'competences' ? ' is-on' : '' ?>" data-tab="competences">Compétences</button>
     <button type="button" class="tab<?= $tab === 'parcours' ? ' is-on' : '' ?>" data-tab="parcours">Parcours</button>
     <button type="button" class="tab<?= $tab === 'portfolio' ? ' is-on' : '' ?>" data-tab="portfolio">Créations &amp; exemples</button>
+    <button type="button" class="tab<?= $tab === 'avis' ? ' is-on' : '' ?>" data-tab="avis">Avis<?php if ($avisBadge > 0): ?> <span class="tab-count"><?= (int) $avisBadge ?></span><?php endif; ?></button>
   </div>
 
-  <form id="vitrine-form" class="vitrine-form" method="post" action="<?= e(url('/espace/vitrine')) ?>" enctype="multipart/form-data">
+  <form id="vitrine-form" class="vitrine-form" method="post" action="<?= e(url('/espace/vitrine')) ?>" enctype="multipart/form-data" data-hide-on-tab="avis"<?= $tab === 'avis' ? ' hidden' : '' ?>>
     <?= csrf_field() ?>
     <input type="hidden" name="onglet" value="<?= e($tab) ?>" data-vitrine-tab>
 
@@ -485,12 +492,173 @@ if ($rateKind === \Adl\Models\Profile::RATE_PERCENT || str_contains($rateValue, 
       </div>
     </div>
 
-    <div class="auth-actions" style="margin-top: 28px;">
+    <div class="auth-actions" style="margin-top: 28px;" data-hide-on-tab="avis"<?= $tab === 'avis' ? ' hidden' : '' ?>>
       <button class="btn-orange" type="submit">Enregistrer la vitrine</button>
     </div>
   </form>
 
-  <section class="espace-panel" style="margin-top: 8px; max-width: 860px;">
+  <div data-tab-panel="avis" class="vitrine-avis"<?= $tab === 'avis' ? '' : ' hidden' ?>>
+    <section class="espace-panel">
+      <div class="espace-panel-head">
+        <h2 class="espace-section-title">Avis et recommandations</h2>
+        <p class="espace-section-lead">Les avis (étoiles) viennent uniquement des missions réalisées ici. Vous pouvez relancer un client en attente de validation, ou inviter un client externe à écrire une recommandation. Les recommandations hors plateforme s’affichent à part et ne comptent pas dans la note.</p>
+      </div>
+      <div class="vitrine-avis-stats">
+        <div>
+          <strong><?= (int) ($reviewStats['count'] ?? 0) ?></strong>
+          <span>avis plateforme<?= !empty($reviewStats['avg']) ? ' · ' . e((string) $reviewStats['avg']) . ' / 5' : '' ?></span>
+        </div>
+        <div>
+          <strong><?= count(array_filter($recommendations, static fn (array $r): bool => empty($r['hidden']))) ?></strong>
+          <span>recommandation<?= count(array_filter($recommendations, static fn (array $r): bool => empty($r['hidden']))) > 1 ? 's' : '' ?> publique<?= count(array_filter($recommendations, static fn (array $r): bool => empty($r['hidden']))) > 1 ? 's' : '' ?></span>
+        </div>
+      </div>
+    </section>
+
+    <section class="espace-panel">
+      <h2 class="espace-group-title">Clients de la plateforme</h2>
+      <p class="field-help">Après livraison et déclaration du solde, le client valide la mission et laisse un avis. Vous pouvez le relancer s’il n’a pas encore passé ce jalon.</p>
+      <?php if ($pendingReviews === []): ?>
+        <p class="mission-row-sub">Aucune mission n’attend d’avis pour le moment.</p>
+      <?php else: ?>
+        <div class="vitrine-avis-list">
+          <?php foreach ($pendingReviews as $order): ?>
+            <?php
+              $buyerName = trim((string) (($order['buyer_first'] ?? '') . ' ' . ($order['buyer_last'] ?? '')));
+              $req = is_array($order['review_request'] ?? null) ? $order['review_request'] : null;
+            ?>
+            <article class="vitrine-avis-item">
+              <div>
+                <div class="mission-row-title"><?= e((string) $order['title']) ?></div>
+                <div class="mission-row-sub">
+                  <?= e((string) $order['num']) ?><?= $buyerName !== '' ? ' · ' . e($buyerName) : '' ?>
+                  <?php if ($req): ?> · demandée <?= e((string) ($req['sent_when'] ?? '')) ?><?php endif; ?>
+                </div>
+              </div>
+              <form method="post" action="<?= e(url('/espace/vitrine/avis')) ?>">
+                <?= csrf_field() ?>
+                <?php if ($req && empty($req['can_resend'])): ?>
+                  <input type="hidden" name="action" value="resend">
+                  <input type="hidden" name="request_id" value="<?= (int) $req['id'] ?>">
+                  <button class="btn-ghost" type="submit" disabled>Relancée récemment</button>
+                <?php elseif ($req): ?>
+                  <input type="hidden" name="action" value="resend">
+                  <input type="hidden" name="request_id" value="<?= (int) $req['id'] ?>">
+                  <button class="btn-navy" type="submit">Relancer</button>
+                <?php else: ?>
+                  <input type="hidden" name="action" value="platform">
+                  <input type="hidden" name="order_id" value="<?= (int) $order['id'] ?>">
+                  <button class="btn-navy" type="submit">Demander un avis</button>
+                <?php endif; ?>
+              </form>
+            </article>
+          <?php endforeach; ?>
+        </div>
+      <?php endif; ?>
+
+      <?php if ($receivedReviews !== []): ?>
+        <h3 class="espace-group-title" style="margin-top: 22px;">Avis reçus</h3>
+        <div class="vitrine-avis-list">
+          <?php foreach ($receivedReviews as $review): ?>
+            <article class="vitrine-avis-item is-static">
+              <div>
+                <div class="mission-row-title"><?= e((string) $review['who']) ?> · <?= e((string) $review['note']) ?> / 5</div>
+                <?php if (!empty($review['txt'])): ?>
+                  <p class="profile-text"><?= e((string) $review['txt']) ?></p>
+                <?php endif; ?>
+                <div class="mission-row-sub"><?= e((string) $review['when']) ?></div>
+              </div>
+            </article>
+          <?php endforeach; ?>
+        </div>
+      <?php endif; ?>
+    </section>
+
+    <section class="espace-panel">
+      <h2 class="espace-group-title">Clients hors plateforme</h2>
+      <p class="field-help">Invitez un client avec qui vous avez travaillé ailleurs. Son texte sera publié comme recommandation, clairement distincte des avis de mission, et n’entrera pas dans votre note.</p>
+      <form method="post" action="<?= e(url('/espace/vitrine/avis')) ?>" class="vitrine-invite-form">
+        <?= csrf_field() ?>
+        <input type="hidden" name="action" value="external">
+        <div class="form-grid-2">
+          <div>
+            <label class="field" for="invite-name">Nom</label>
+            <input class="input" id="invite-name" name="name" required placeholder="Camille Dupont" value="<?= e((string) old('name')) ?>">
+          </div>
+          <div>
+            <label class="field" for="invite-email">E-mail</label>
+            <input class="input" id="invite-email" type="email" name="email" required placeholder="camille@exemple.fr" value="<?= e((string) old('email')) ?>">
+          </div>
+        </div>
+        <div>
+          <label class="field" for="invite-context">Contexte (optionnel)</label>
+          <input class="input" id="invite-context" name="context" maxlength="160" placeholder="Correction d’un roman, 90 000 signes" value="<?= e((string) old('context')) ?>">
+        </div>
+        <div class="auth-actions">
+          <button class="btn-orange" type="submit">Envoyer une invitation</button>
+        </div>
+      </form>
+
+      <?php if ($pendingInvites !== []): ?>
+        <h3 class="espace-group-title" style="margin-top: 22px;">Invitations en attente</h3>
+        <div class="vitrine-avis-list">
+          <?php foreach ($pendingInvites as $invite): ?>
+            <article class="vitrine-avis-item">
+              <div>
+                <div class="mission-row-title"><?= e((string) $invite['recipient_name']) ?></div>
+                <div class="mission-row-sub">
+                  <?= e((string) $invite['recipient_email']) ?>
+                  <?php if ($invite['context'] !== ''): ?> · <?= e((string) $invite['context']) ?><?php endif; ?>
+                  · envoyée <?= e((string) $invite['sent_when']) ?>
+                  <?php if ($invite['expires_label'] !== ''): ?> · expire le <?= e((string) $invite['expires_label']) ?><?php endif; ?>
+                </div>
+              </div>
+              <div class="vitrine-avis-actions">
+                <form method="post" action="<?= e(url('/espace/vitrine/avis')) ?>">
+                  <?= csrf_field() ?>
+                  <input type="hidden" name="action" value="resend">
+                  <input type="hidden" name="request_id" value="<?= (int) $invite['id'] ?>">
+                  <button class="btn-ghost" type="submit"<?= empty($invite['can_resend']) ? ' disabled' : '' ?>><?= empty($invite['can_resend']) ? 'Relancée récemment' : 'Relancer' ?></button>
+                </form>
+                <form method="post" action="<?= e(url('/espace/vitrine/avis')) ?>">
+                  <?= csrf_field() ?>
+                  <input type="hidden" name="action" value="cancel">
+                  <input type="hidden" name="request_id" value="<?= (int) $invite['id'] ?>">
+                  <button class="text-btn" type="submit">Annuler</button>
+                </form>
+              </div>
+            </article>
+          <?php endforeach; ?>
+        </div>
+      <?php endif; ?>
+
+      <?php if ($recommendations !== []): ?>
+        <h3 class="espace-group-title" style="margin-top: 22px;">Recommandations reçues</h3>
+        <div class="vitrine-avis-list">
+          <?php foreach ($recommendations as $reco): ?>
+            <article class="vitrine-avis-item is-static<?= !empty($reco['hidden']) ? ' is-dim' : '' ?>">
+              <div>
+                <div class="mission-row-title">
+                  <?= e((string) $reco['who']) ?>
+                  <?php if ($reco['role'] !== ''): ?> · <?= e((string) $reco['role']) ?><?php endif; ?>
+                  <?php if (!empty($reco['hidden'])): ?> · masquée<?php endif; ?>
+                </div>
+                <?php if ($reco['context'] !== ''): ?>
+                  <div class="mission-row-sub"><?= e((string) $reco['context']) ?></div>
+                <?php endif; ?>
+                <?php if ($reco['txt'] !== ''): ?>
+                  <p class="profile-text"><?= e((string) $reco['txt']) ?></p>
+                <?php endif; ?>
+                <div class="mission-row-sub"><?= e((string) $reco['when']) ?> · hors plateforme</div>
+              </div>
+            </article>
+          <?php endforeach; ?>
+        </div>
+      <?php endif; ?>
+    </section>
+  </div>
+
+  <section class="espace-panel" style="margin-top: 8px; max-width: 860px;" data-hide-on-tab="avis"<?= $tab === 'avis' ? ' hidden' : '' ?>>
     <div class="espace-panel-head">
       <h2 class="espace-section-title">Justificatif d'activité</h2>
     </div>
