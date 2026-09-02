@@ -2762,7 +2762,19 @@ a.tab {
   gap: 28px;
 }
 .vitrine-form [data-tab-panel][hidden] { display: none; }
-.repeat-list { display: flex; flex-direction: column; gap: 12px; margin-bottom: 12px; }
+.repeat-list { display: flex; flex-direction: column; gap: 12px; margin-bottom: 12px; overflow: visible; }
+.field-suggest { position: relative; min-width: 0; }
+.field-suggest.is-open { z-index: 20; }
+.field-suggest-panel {
+  z-index: 50;
+  max-height: 260px;
+  overflow-y: auto;
+}
+.field-suggest-panel .city-ac-item.is-on,
+.field-suggest-panel .city-ac-item:hover,
+.field-suggest-panel .city-ac-item:focus {
+  background: #FBFCFE;
+}
 .repeat-package { display: flex; flex-direction: column; gap: 8px; }
 .repeat-row { display: grid; grid-template-columns: 1fr 200px 40px; gap: 10px; align-items: center; }
 .repeat-row.is-price { grid-template-columns: 1fr 140px 40px; }

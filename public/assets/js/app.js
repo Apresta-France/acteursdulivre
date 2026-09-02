@@ -571,6 +571,205 @@
     });
   }
 
+  function foldText(value) {
+    return String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  }
+
+  function readSuggestCatalogs() {
+    var node = document.getElementById('vitrine-suggests');
+    if (!node || node.dataset.ready) {
+      return node && node._catalogs ? node._catalogs : {};
+    }
+    try {
+      node._catalogs = JSON.parse(node.textContent || '{}');
+    } catch (err) {
+      node._catalogs = {};
+    }
+    node.dataset.ready = '1';
+    return node._catalogs;
+  }
+
+  function currentSuggestToken(input, split) {
+    var raw = input.value || '';
+    if (!split) return raw.trim();
+    var caret = input.selectionStart != null ? input.selectionStart : raw.length;
+    var left = raw.slice(0, caret);
+    var match = left.match(/[^,;]*$/);
+    return (match ? match[0] : '').replace(/^\s+/, '');
+  }
+
+  function applySuggestValue(input, value, split) {
+    if (!split) {
+      input.value = value;
+      return;
+    }
+    var raw = input.value || '';
+    var caret = input.selectionStart != null ? input.selectionStart : raw.length;
+    var left = raw.slice(0, caret).replace(/[^,;]*$/, '');
+    var right = raw.slice(caret).replace(/^[^,;]*/, '');
+    if (left && /[,;]$/.test(left)) left += ' ';
+    if (right.charAt(0) === ',' || right.charAt(0) === ';') {
+      input.value = left + value + right;
+    } else {
+      input.value = left + value + ', ';
+    }
+    var pos = input.value.length;
+    if (input.setSelectionRange) {
+      try { input.setSelectionRange(pos, pos); } catch (err) {}
+    }
+  }
+
+  function takenSuggestValues(input, split) {
+    var taken = {};
+    if (split) {
+      var token = foldText(currentSuggestToken(input, split));
+      String(input.value || '').split(/[,;]+/).forEach(function (part) {
+        var key = foldText(part);
+        if (key && key !== token) taken[key] = true;
+      });
+      return taken;
+    }
+    var catalog = input.getAttribute('data-suggest');
+    var form = input.form || document;
+    var selector = catalog === 'languages'
+      ? '[data-suggest="languages"]'
+      : '[data-suggest="' + catalog + '"]';
+    form.querySelectorAll(selector).forEach(function (other) {
+      if (other === input) return;
+      var key = foldText(other.value);
+      if (key) taken[key] = true;
+    });
+    return taken;
+  }
+
+  function filterSuggestItems(items, query, taken) {
+    var needle = foldText(query);
+    var starts = [];
+    var contains = [];
+    items.forEach(function (item) {
+      var label = String(item || '').trim();
+      if (!label) return;
+      var folded = foldText(label);
+      if (taken[folded]) return;
+      if (!needle) {
+        starts.push(label);
+        return;
+      }
+      var at = folded.indexOf(needle);
+      if (at === -1) return;
+      if (at === 0) starts.push(label);
+      else contains.push(label);
+    });
+    return starts.concat(contains).slice(0, 8);
+  }
+
+  function bindFieldSuggest(input) {
+    if (!input || input.dataset.suggestBound) return;
+    input.dataset.suggestBound = '1';
+    var catalog = input.getAttribute('data-suggest');
+    var split = input.getAttribute('data-suggest-split');
+    var wrap = input.closest('.field-suggest') || input.parentElement;
+    if (!wrap) return;
+    wrap.classList.add('field-suggest');
+    var panel = wrap.querySelector('[data-suggest-panel]');
+    if (!panel) {
+      panel = document.createElement('div');
+      panel.className = 'search-suggest field-suggest-panel';
+      panel.hidden = true;
+      panel.setAttribute('role', 'listbox');
+      panel.setAttribute('data-suggest-panel', '');
+      wrap.appendChild(panel);
+    }
+    var items = [];
+    var active = -1;
+
+    function close() {
+      panel.hidden = true;
+      panel.innerHTML = '';
+      wrap.classList.remove('is-open');
+      input.setAttribute('aria-expanded', 'false');
+      active = -1;
+    }
+
+    function highlight(next) {
+      var buttons = panel.querySelectorAll('[data-suggest-pick]');
+      if (!buttons.length) return;
+      active = (next + buttons.length) % buttons.length;
+      buttons.forEach(function (btn, i) {
+        var on = i === active;
+        btn.classList.toggle('is-on', on);
+        btn.setAttribute('aria-selected', on ? 'true' : 'false');
+      });
+      buttons[active].scrollIntoView({ block: 'nearest' });
+    }
+
+    function choose(value) {
+      applySuggestValue(input, value, split);
+      input.focus();
+      if (split) render();
+      else close();
+    }
+
+    function render() {
+      var catalogs = readSuggestCatalogs();
+      var source = catalogs[catalog] || [];
+      items = filterSuggestItems(source, currentSuggestToken(input, split), takenSuggestValues(input, split));
+      if (!items.length) {
+        close();
+        return;
+      }
+      panel.innerHTML = items.map(function (label) {
+        return '<button type="button" role="option" aria-selected="false" class="city-ac-item" data-suggest-pick><strong>' +
+          escapeHtml(label) + '</strong></button>';
+      }).join('');
+      panel.querySelectorAll('[data-suggest-pick]').forEach(function (btn, i) {
+        btn.addEventListener('mousedown', function (event) {
+          event.preventDefault();
+          choose(items[i]);
+        });
+      });
+      panel.hidden = false;
+      wrap.classList.add('is-open');
+      input.setAttribute('aria-expanded', 'true');
+      active = -1;
+    }
+
+    input.addEventListener('input', render);
+    input.addEventListener('focus', render);
+    input.addEventListener('keydown', function (event) {
+      if (panel.hidden && (event.key === 'ArrowDown' || event.key === 'ArrowUp')) {
+        render();
+      }
+      if (panel.hidden) return;
+      if (event.key === 'ArrowDown') {
+        event.preventDefault();
+        highlight(active + 1);
+      } else if (event.key === 'ArrowUp') {
+        event.preventDefault();
+        highlight(active - 1);
+      } else if (event.key === 'Enter' && active >= 0 && items[active]) {
+        event.preventDefault();
+        choose(items[active]);
+      } else if (event.key === 'Escape') {
+        event.preventDefault();
+        close();
+      }
+    });
+    input.addEventListener('blur', function () {
+      setTimeout(function () {
+        if (!wrap.contains(document.activeElement)) close();
+      }, 120);
+    });
+  }
+
+  function bindFieldSuggests(root) {
+    var scope = root || document;
+    scope.querySelectorAll('[data-suggest]').forEach(bindFieldSuggest);
+    if (root && root.matches && root.matches('[data-suggest]')) bindFieldSuggest(root);
+  }
+
+  bindFieldSuggests(document);
+
   function syncChips(scope) {
     (scope || document).querySelectorAll('.chip').forEach(function (chip) {
       var input = chip.querySelector('input');
@@ -1275,6 +1474,7 @@
       var html = tpl.innerHTML.replace(/__i__/g, String(index));
       list.insertAdjacentHTML('beforeend', html);
       bindFilePicks(list.lastElementChild);
+      bindFieldSuggests(list.lastElementChild);
     });
   });
 

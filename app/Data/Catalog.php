@@ -177,6 +177,59 @@ final class Catalog
         ],
     ];
 
+    /** Compétences proposées à la saisie sur la vitrine (texte libre toujours accepté). */
+    public const SKILL_SUGGESTIONS = [
+        'Correction orthotypographique', 'Préparation de copie', 'Relecture sur épreuves',
+        'Révision linguistique', 'Homogénéisation', 'Correction d\'épreuves',
+        'Notes et appareil critique', 'Norme bibliographique', 'Indexation',
+        'Mise aux normes éditoriales', 'Réécriture et lissage', 'Prête-plume',
+        'Ghostwriting', 'Développement narratif', 'Construction de plan',
+        'Dialogues', 'Biographie', 'Bêta-lecture', 'Rapport de lecture',
+        'Lecture éditoriale', 'Fiche de lecture', 'Accompagnement de manuscrit',
+        'Traduction littéraire', 'Traduction technique', 'Retraduction',
+        'Adaptation', 'Révision de traduction', 'Localisation',
+        'Mise en pages', 'Graphisme éditorial', 'Direction artistique',
+        'Couverture', 'Maquette intérieure', 'EPUB et numérique',
+        'Identité visuelle', 'Habillage de collection', 'Illustration de couverture',
+        'Illustration intérieure', 'Character design', 'Storyboard',
+        'Colorisation', 'Lettering', 'BD et roman graphique', 'Album jeunesse',
+        'Narration', 'Enregistrement studio', 'Montage audio', 'Mixage',
+        'Direction d\'acteurs', 'Relations presse', 'Dossier de presse',
+        'Community management', 'Réseaux sociaux', 'Promotion', 'Événementiel',
+        'Recherche d\'images', 'Droits d\'images', 'Archives',
+        'Sélection iconographique', 'Portrait d\'auteur', 'Photographie d\'ouvrage',
+        'Reportage', 'Studio', 'Reliure artisanale', 'Restauration',
+        'Façonnage', 'Impression offset', 'Impression numérique',
+        'Print-on-demand', 'Suivi de fabrication', 'Contrats d\'édition',
+        'Cession de droits', 'Propriété intellectuelle', 'Gestion des droits',
+        'Coaching d\'écriture', 'Mentorat', 'Atelier d\'écriture',
+        'Conseil libraire', 'Animation en librairie', 'Suivi d\'édition',
+    ];
+
+    /** Logiciels et outils proposés à la saisie (liste à virgules). */
+    public const TOOL_SUGGESTIONS = [
+        'Antidote', 'Prolexis', 'MerciApp', 'LanguageTool', 'Le Robert Correcteur',
+        'Cordial', 'PerfectIt', 'Microsoft Word', 'LibreOffice Writer', 'Google Docs',
+        'Scrivener', 'Adobe InDesign', 'Adobe Acrobat Pro', 'Adobe Illustrator',
+        'Adobe Photoshop', 'Affinity Publisher', 'Affinity Designer', 'Affinity Photo',
+        'QuarkXPress', 'Scribus', 'Canva', 'Figma', 'Procreate', 'Clip Studio Paint',
+        'Krita', 'Adobe Fresco', 'Blender', 'Pro Tools', 'Adobe Audition',
+        'Audacity', 'Reaper', 'Logic Pro', 'iZotope RX', 'Hindenburg',
+        'Trados Studio', 'memoQ', 'DeepL', 'Phrase', 'OmegaT', 'Wordfast',
+        'Calibre', 'Sigil', 'Zotero', 'EndNote', 'Lightroom', 'Capture One',
+        'Dropbox', 'Google Drive', 'WeTransfer', 'Notion', 'Trello', 'Slack', 'Zoom',
+    ];
+
+    /** Langues proposées à la saisie sur la vitrine. */
+    public const LANGUAGE_SUGGESTIONS = [
+        'Français', 'Anglais', 'Allemand', 'Espagnol', 'Italien', 'Portugais',
+        'Néerlandais', 'Arabe', 'Chinois', 'Japonais', 'Coréen', 'Russe',
+        'Ukrainien', 'Polonais', 'Tchèque', 'Roumain', 'Hongrois', 'Grec',
+        'Turc', 'Hébreu', 'Persan', 'Hindi', 'Latin', 'Grec ancien',
+        'Breton', 'Basque', 'Catalan', 'Occitan', 'Suédois', 'Norvégien',
+        'Danois', 'Finnois', 'Langue des signes française (LSF)',
+    ];
+
     public const DELAYS = [
         'week' => 'Moins d\'une semaine',
         'mid' => '1 à 3 semaines',
@@ -309,6 +362,20 @@ final class Catalog
     public static function tradeIcon(string $trade): string
     {
         return self::TRADE_ICONS[$trade] ?? 'book';
+    }
+
+    /**
+     * Catalogues d’autocomplétion des champs libres de la vitrine.
+     *
+     * @return array{skills: list<string>, tools: list<string>, languages: list<string>}
+     */
+    public static function profileSuggests(): array
+    {
+        return [
+            'skills' => self::SKILL_SUGGESTIONS,
+            'tools' => self::TOOL_SUGGESTIONS,
+            'languages' => self::LANGUAGE_SUGGESTIONS,
+        ];
     }
 
     /** @return list<string> */

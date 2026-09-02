@@ -325,7 +325,9 @@ if ($rateKind === \Adl\Models\Profile::RATE_PERCENT || str_contains($rateValue, 
         <div class="repeat-list" data-repeat="skills">
           <?php foreach ($skills as $i => $skill): ?>
             <div class="repeat-row" data-repeat-row>
-              <input class="input" name="skills[<?= $i ?>][label]" value="<?= e((string) ($skill['label'] ?? '')) ?>" placeholder="Correction orthotypographique">
+              <div class="field-suggest">
+                <input class="input" name="skills[<?= $i ?>][label]" value="<?= e((string) ($skill['label'] ?? '')) ?>" placeholder="Correction orthotypographique" autocomplete="off" autocorrect="off" spellcheck="false" data-suggest="skills" role="combobox" aria-autocomplete="list" aria-expanded="false">
+              </div>
               <select class="input" name="skills[<?= $i ?>][niveau]">
                 <?php foreach ($skillLevels as $level): ?>
                   <option value="<?= e($level) ?>"<?= (($skill['niveau'] ?? '') === $level) ? ' selected' : '' ?>><?= e($level) ?></option>
@@ -340,7 +342,9 @@ if ($rateKind === \Adl\Models\Profile::RATE_PERCENT || str_contains($rateValue, 
 
       <div>
         <label class="field" for="tools">Logiciels et outils</label>
-        <input class="input" id="tools" name="tools" value="<?= e($tools) ?>" placeholder="Antidote, InDesign, Word, Pro Tools…">
+        <div class="field-suggest">
+          <input class="input" id="tools" name="tools" value="<?= e($tools) ?>" placeholder="Antidote, InDesign, Word, Pro Tools…" autocomplete="off" autocorrect="off" spellcheck="false" data-suggest="tools" data-suggest-split="," role="combobox" aria-autocomplete="list" aria-expanded="false">
+        </div>
         <p class="field-help">Séparez les outils par une virgule.</p>
       </div>
 
@@ -350,7 +354,9 @@ if ($rateKind === \Adl\Models\Profile::RATE_PERCENT || str_contains($rateValue, 
         <div class="repeat-list" data-repeat="languages_list">
           <?php foreach ($languagesList as $i => $lang): ?>
             <div class="repeat-row" data-repeat-row>
-              <input class="input" name="languages_list[<?= $i ?>][langue]" value="<?= e((string) ($lang['langue'] ?? '')) ?>" placeholder="Français">
+              <div class="field-suggest">
+                <input class="input" name="languages_list[<?= $i ?>][langue]" value="<?= e((string) ($lang['langue'] ?? '')) ?>" placeholder="Français" autocomplete="off" autocorrect="off" spellcheck="false" data-suggest="languages" role="combobox" aria-autocomplete="list" aria-expanded="false">
+              </div>
               <select class="input" name="languages_list[<?= $i ?>][niveau]">
                 <?php foreach ($langLevels as $level): ?>
                   <option value="<?= e($level) ?>"<?= (($lang['niveau'] ?? '') === $level) ? ' selected' : '' ?>><?= e($level) ?></option>
@@ -518,7 +524,9 @@ if ($rateKind === \Adl\Models\Profile::RATE_PERCENT || str_contains($rateValue, 
 </template>
 <template id="tpl-skills">
   <div class="repeat-row" data-repeat-row>
-    <input class="input" name="skills[__i__][label]" placeholder="Correction orthotypographique">
+    <div class="field-suggest">
+      <input class="input" name="skills[__i__][label]" placeholder="Correction orthotypographique" autocomplete="off" autocorrect="off" spellcheck="false" data-suggest="skills" role="combobox" aria-autocomplete="list" aria-expanded="false">
+    </div>
     <select class="input" name="skills[__i__][niveau]">
       <?php foreach ($skillLevels as $level): ?><option value="<?= e($level) ?>"><?= e($level) ?></option><?php endforeach; ?>
     </select>
@@ -527,7 +535,9 @@ if ($rateKind === \Adl\Models\Profile::RATE_PERCENT || str_contains($rateValue, 
 </template>
 <template id="tpl-languages_list">
   <div class="repeat-row" data-repeat-row>
-    <input class="input" name="languages_list[__i__][langue]" placeholder="Français">
+    <div class="field-suggest">
+      <input class="input" name="languages_list[__i__][langue]" placeholder="Français" autocomplete="off" autocorrect="off" spellcheck="false" data-suggest="languages" role="combobox" aria-autocomplete="list" aria-expanded="false">
+    </div>
     <select class="input" name="languages_list[__i__][niveau]">
       <?php foreach ($langLevels as $level): ?><option value="<?= e($level) ?>"><?= e($level) ?></option><?php endforeach; ?>
     </select>
@@ -579,3 +589,4 @@ if ($rateKind === \Adl\Models\Profile::RATE_PERCENT || str_contains($rateValue, 
     <button type="button" class="text-btn" data-repeat-remove>Retirer cette pièce</button>
   </div>
 </template>
+<script type="application/json" id="vitrine-suggests"><?= json_encode($profileSuggests ?? \Adl\Data\Catalog::profileSuggests(), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS) ?></script>

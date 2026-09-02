@@ -1870,6 +1870,7 @@ final class AccountController
             'genres' => Catalog::specialties(),
             'skillLevels' => Profile::SKILL_LEVELS,
             'langLevels' => Profile::LANG_LEVELS,
+            'profileSuggests' => Catalog::profileSuggests(),
             'portfolioKinds' => Profile::PORTFOLIO_KINDS,
             'socialNetworks' => Profile::SOCIAL_NETWORKS,
             'completion' => $profile['completion'] ?? 0,
