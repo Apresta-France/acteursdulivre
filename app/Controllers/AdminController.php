@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Adl\Controllers;
 
 use Adl\Core\Auth;
+use Adl\Core\Env;
 use Adl\Core\Mailer;
 use Adl\Core\Migrator;
 use Adl\Core\NewsletterBuilder;
@@ -1245,6 +1246,12 @@ final class AdminController
         $this->page('emails', 'admin/email-edit', [
             'title' => $template['name'],
             'template' => $template,
+            'previewHtml' => View::fetch('emails/layout', [
+                'subject' => (string) $template['subject'],
+                'content' => (string) $template['body_html'],
+                'appName' => Env::get('APP_NAME', 'Acteurs du Livre'),
+                'appUrl' => Env::get('APP_URL', 'https://acteursdulivre.fr'),
+            ]),
         ]);
     }
 

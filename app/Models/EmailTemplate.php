@@ -41,4 +41,12 @@ final class EmailTemplate
             [$slug, $name, $subject, $body, $variables]
         );
     }
+
+    public static function replaceContent(string $slug, string $subject, string $body): void
+    {
+        Database::query(
+            'UPDATE email_templates SET subject = ?, body_html = ?, updated_at = NOW() WHERE slug = ?',
+            [$subject, $body, $slug]
+        );
+    }
 }

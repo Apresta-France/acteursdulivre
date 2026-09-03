@@ -397,7 +397,7 @@ final class ReviewRequest
         }
         $context = trim((string) ($request['context'] ?? ''));
         $vars = [
-            'prenom' => (string) ($request['recipient_name'] ?? ''),
+            'prenom' => self::greetingName((string) ($request['recipient_name'] ?? '')),
             'prestataire' => self::sellerLabel((int) $request['seller_id']),
             'contexte' => $context !== '' ? ' — à propos de « ' . $context . ' »' : '',
             'lien' => url('/recommandation/' . rawurlencode((string) $request['token'])),
@@ -431,5 +431,16 @@ final class ReviewRequest
         }
         $user = User::find($sellerId);
         return $user ? User::displayName($user) : 'Un prestataire';
+    }
+
+    private static function greetingName(string $fullName): string
+    {
+        $fullName = trim($fullName);
+        if ($fullName === '') {
+            return '';
+        }
+        $parts = preg_split('/\s+/u', $fullName, 2) ?: [];
+        $first = trim((string) ($parts[0] ?? ''));
+        return $first !== '' ? $first : $fullName;
     }
 }

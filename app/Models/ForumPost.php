@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Adl\Models;
 
 use Adl\Core\Database;
+use Adl\Core\Mailer;
 use Adl\Core\ProfanityFilter;
 use RuntimeException;
 
@@ -182,7 +183,7 @@ final class ForumPost
 
         $safeBody = sanitize_user_html($body);
 
-        return Database::transaction(static function () use ($topicId, $userId, $safeBody, $parentId): array {
+        $post = Database::transaction(static function () use ($topicId, $userId, $safeBody, $parentId): array {
             $max = Database::fetch(
                 'SELECT MAX(position) AS n FROM forum_posts WHERE topic_id = ?',
                 [$topicId]
@@ -222,6 +223,75 @@ final class ForumPost
             }
             return $post;
         });
+
+        try {
+            self::notifyNewReply($topic, $post, $userId);
+        } catch (\Throwable) {
+        }
+
+        return $post;
+    }
+
+    /**
+     * @param array<string, mixed> $topic
+     * @param array<string, mixed> $post
+     */
+    private static function notifyNewReply(array $topic, array $post, int $authorId): void
+    {
+        $topicId = (int) ($topic['id'] ?? 0);
+        $ownerId = (int) ($topic['user_id'] ?? 0);
+        $title = (string) ($topic['title'] ?? '');
+        $href = (string) ($topic['href'] ?? '/forum');
+        if ($topicId < 1 || $title === '') {
+            return;
+        }
+
+        $followerIds = [];
+        $rows = Database::fetchAll(
+            'SELECT user_id FROM forum_topic_follows WHERE topic_id = ? AND user_id != ?',
+            [$topicId, $authorId]
+        );
+        foreach ($rows as $row) {
+            $id = (int) ($row['user_id'] ?? 0);
+            if ($id > 0) {
+                $followerIds[$id] = true;
+            }
+        }
+
+        $recipientIds = $followerIds;
+        if ($ownerId > 0 && $ownerId !== $authorId) {
+            $recipientIds[$ownerId] = true;
+        }
+        if ($recipientIds === []) {
+            return;
+        }
+
+        $who = User::displayName(User::find($authorId) ?? []);
+        $anchor = (int) ($post['id'] ?? 0);
+        $vars = [
+            'qui' => $who,
+            'titre' => $title,
+            'lien' => url($href . ($anchor > 0 ? '#post-' . $anchor : '#reponses')),
+        ];
+
+        foreach (array_keys($recipientIds) as $userId) {
+            $user = User::find((int) $userId);
+            if ($user === null || User::isClosed($user)) {
+                continue;
+            }
+            $isOwner = (int) $userId === $ownerId;
+            $isFollower = isset($followerIds[(int) $userId]);
+            $channel = null;
+            if ($isOwner && User::wantsEmail($user, 'forum_mine')) {
+                $channel = 'forum_mine';
+            } elseif ($isFollower && User::wantsEmail($user, 'forum_followed')) {
+                $channel = 'forum_followed';
+            }
+            if ($channel === null) {
+                continue;
+            }
+            Mailer::notify($user, $channel, 'forum-nouvelle-reponse', $vars);
+        }
     }
 
     public static function toggleUseful(int $postId, int $userId, ?int $topicId = null): array

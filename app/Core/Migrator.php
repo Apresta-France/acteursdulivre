@@ -31,6 +31,8 @@ final class Migrator
             $applied[] = $name;
         }
 
+        self::forgetRenamed($pdo);
+
         return $applied;
     }
 
@@ -58,8 +60,10 @@ final class Migrator
         $items = [];
         $applied = 0;
         $pending = 0;
+        $currentSlugs = [];
         foreach (self::files() as $file) {
             $name = basename($file);
+            $currentSlugs[self::slug($name)] = $name;
             $at = $appliedMap[$name] ?? null;
             unset($appliedMap[$name]);
             if ($at !== null && $at !== '') {
@@ -73,6 +77,9 @@ final class Migrator
 
         $missing = 0;
         foreach ($appliedMap as $name => $at) {
+            if (isset($currentSlugs[self::slug($name)])) {
+                continue;
+            }
             $missing++;
             $items[] = ['name' => $name, 'status' => 'missing', 'applied_at' => $at !== '' ? $at : null];
         }
@@ -110,5 +117,44 @@ final class Migrator
         sort($files);
 
         return $files;
+    }
+
+    /** Nom logique après le préfixe numérique : 039_coach_litteraire.php → coach_litteraire */
+    private static function slug(string $name): string
+    {
+        $base = preg_replace('/\.php$/', '', $name) ?? $name;
+        if (preg_match('/^\d+_(.+)$/', $base, $parts) === 1) {
+            return $parts[1];
+        }
+
+        return $base;
+    }
+
+    /** Supprime les anciennes lignes après un renommage (039_foo → 040_foo). */
+    private static function forgetRenamed(PDO $pdo): void
+    {
+        $current = [];
+        foreach (self::files() as $file) {
+            $name = basename($file);
+            $current[$name] = true;
+        }
+        if ($current === []) {
+            return;
+        }
+
+        $slugs = [];
+        foreach (array_keys($current) as $name) {
+            $slugs[self::slug($name)] = true;
+        }
+
+        $done = $pdo->query('SELECT name FROM migrations')->fetchAll(PDO::FETCH_COLUMN) ?: [];
+        $delete = $pdo->prepare('DELETE FROM migrations WHERE name = ?');
+        foreach ($done as $name) {
+            $name = (string) $name;
+            if (isset($current[$name]) || !isset($slugs[self::slug($name)])) {
+                continue;
+            }
+            $delete->execute([$name]);
+        }
     }
 }

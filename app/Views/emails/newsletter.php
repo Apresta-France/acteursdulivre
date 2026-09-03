@@ -11,7 +11,7 @@ $week = (string) ($week ?? '');
   <h2 style="font-size:17px;margin:28px 0 10px;color:#022746;">Dernières recherches</h2>
   <?php foreach ($missions as $item): ?>
     <p style="margin:0 0 14px;">
-      <a href="<?= e((string) ($item['href'] ?? '#')) ?>" style="color:#D85D3F;font-weight:600;"><?= e((string) ($item['title'] ?? '')) ?></a>
+      <a href="<?= e((string) ($item['href'] ?? '#')) ?>" style="color:#022746;"><?= e((string) ($item['title'] ?? '')) ?></a>
       <?php if (!empty($item['meta'])): ?><br><span style="color:#66768A;font-size:13px;"><?= e((string) $item['meta']) ?></span><?php endif; ?>
       <?php if (!empty($item['excerpt'])): ?><br><?= e((string) $item['excerpt']) ?><?php endif; ?>
     </p>
@@ -22,7 +22,7 @@ $week = (string) ($week ?? '');
   <h2 style="font-size:17px;margin:28px 0 10px;color:#022746;">Nouveaux profils</h2>
   <?php foreach ($people as $item): ?>
     <p style="margin:0 0 14px;">
-      <a href="<?= e((string) ($item['href'] ?? '#')) ?>" style="color:#D85D3F;font-weight:600;"><?= e((string) ($item['title'] ?? '')) ?></a>
+      <a href="<?= e((string) ($item['href'] ?? '#')) ?>" style="color:#022746;"><?= e((string) ($item['title'] ?? '')) ?></a>
       <?php if (!empty($item['meta'])): ?><br><span style="color:#66768A;font-size:13px;"><?= e((string) $item['meta']) ?></span><?php endif; ?>
       <?php if (!empty($item['excerpt'])): ?><br><?= e((string) $item['excerpt']) ?><?php endif; ?>
     </p>
@@ -33,7 +33,7 @@ $week = (string) ($week ?? '');
   <h2 style="font-size:17px;margin:28px 0 10px;color:#022746;">À lire</h2>
   <?php foreach ($urlItems as $item): ?>
     <p style="margin:0 0 14px;">
-      <a href="<?= e((string) ($item['href'] ?? '#')) ?>" style="color:#D85D3F;font-weight:600;"><?= e((string) ($item['title'] ?? '')) ?></a>
+      <a href="<?= e((string) ($item['href'] ?? '#')) ?>" style="color:#022746;"><?= e((string) ($item['title'] ?? '')) ?></a>
       <?php if (!empty($item['meta'])): ?><br><span style="color:#66768A;font-size:13px;"><?= e((string) $item['meta']) ?></span><?php endif; ?>
       <?php if (!empty($item['excerpt'])): ?><br><?= e((string) $item['excerpt']) ?><?php endif; ?>
     </p>

@@ -23,6 +23,7 @@ final class NewsletterMailer
             'appName' => Env::get('APP_NAME', 'Acteurs du Livre'),
             'appUrl' => Env::get('APP_URL', 'https://acteursdulivre.fr'),
             'unsubscribeUrl' => $unsubUrl,
+            'kind' => 'newsletter',
         ]);
 
         $headers = [];

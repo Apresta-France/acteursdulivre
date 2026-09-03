@@ -21,12 +21,14 @@ final class Mailer
         $fromName = self::fromName();
         $host = self::host();
 
+        $source = (string) ($options['source'] ?? 'transactional');
         $wrapped = View::fetch('emails/layout', [
             'subject' => $subject,
             'content' => $html,
             'appName' => Env::get('APP_NAME', 'Acteurs du Livre'),
             'appUrl' => Env::get('APP_URL', 'https://acteursdulivre.fr'),
             'unsubscribeUrl' => (string) ($options['unsubscribe_url'] ?? ''),
+            'kind' => $source === 'newsletter' ? 'newsletter' : 'transactional',
         ]);
 
         $headers = is_array($options['headers'] ?? null) ? $options['headers'] : [];
