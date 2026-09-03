@@ -1497,7 +1497,9 @@ main, main > * { min-width: 0; }
   gap: 14px;
 }
 .intent-card {
-  display: block;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: 10px;
   border: 1.5px solid var(--line);
   background: #fff;
   border-radius: 12px;
@@ -1510,7 +1512,9 @@ main, main > * { min-width: 0; }
 }
 .espace-panel .intent-card,
 .espace-panel .intent-card.is-on { background: #fff; }
-.intent-card input { margin-bottom: 8px; }
+.intent-card input {
+  margin: 0.3em 0 0;
+}
 .intent-card-title {
   font-family: var(--display);
   font-size: 17px;
@@ -1518,6 +1522,7 @@ main, main > * { min-width: 0; }
   color: var(--navy);
 }
 .intent-card p {
+  grid-column: 2;
   font-size: 14px;
   color: var(--muted-2);
   line-height: 1.55;
