@@ -35,6 +35,8 @@ return static function (Router $router): void {
     $router->get('/prestations/{slug}', [PageController::class, 'fiche']);
     $router->get('/prestataires', [PageController::class, 'prestatairesIndex']);
     $router->get('/prestataires/{slug}', [PageController::class, 'profil']);
+    $router->get('/auteurs', [PageController::class, 'auteursIndex']);
+    $router->get('/auteurs/{slug}', [PageController::class, 'auteur']);
     $router->get('/missions', [PageController::class, 'missions']);
     $router->get('/missions/{slug}', [PageController::class, 'mission']);
     $router->get('/missions/{slug}/fichier', [PageController::class, 'missionFile']);
@@ -149,6 +151,16 @@ return static function (Router $router): void {
     $router->post('/espace/vitrine/avis', [AccountController::class, 'vitrineAvis']);
     $router->post('/espace/vitrine/justificatif', [AccountController::class, 'vitrineVerification']);
     $router->post('/espace/disponibilite', [AccountController::class, 'disponibiliteSave']);
+    $router->get('/espace/auteur', [AccountController::class, 'auteur']);
+    $router->post('/espace/auteur', [AccountController::class, 'auteurSave']);
+    $router->post('/espace/auteur/publication', [AccountController::class, 'auteurPublication']);
+    $router->get('/espace/auteur/oeuvres', [AccountController::class, 'auteurOeuvres']);
+    $router->get('/espace/auteur/oeuvres/creer', [AccountController::class, 'auteurOeuvreCreate']);
+    $router->post('/espace/auteur/oeuvres/creer', [AccountController::class, 'auteurOeuvreCreateSave']);
+    $router->get('/espace/auteur/oeuvres/{id}', [AccountController::class, 'auteurOeuvreEdit']);
+    $router->post('/espace/auteur/oeuvres/{id}', [AccountController::class, 'auteurOeuvreEditSave']);
+    $router->post('/espace/auteur/oeuvres/{id}/supprimer', [AccountController::class, 'auteurOeuvreDelete']);
+    $router->post('/espace/auteur/oeuvres/{id}/deplacer', [AccountController::class, 'auteurOeuvreMove']);
     $router->get('/espace/parametres', [AccountController::class, 'parametres']);
     $router->post('/espace/parametres', [AccountController::class, 'parametresSave']);
     $router->post('/espace/parametres/mot-de-passe', [AccountController::class, 'parametresPassword']);

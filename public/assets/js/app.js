@@ -63,6 +63,14 @@
       }
       setMegaOpen(willOpen);
     });
+    document.addEventListener('click', function (event) {
+      if (mega.hidden) return;
+      if (mega.contains(event.target) || toggle.contains(event.target)) return;
+      setMegaOpen(false);
+    });
+    window.addEventListener('keydown', function (event) {
+      if (event.key === 'Escape') setMegaOpen(false);
+    });
   }
 
   function initRail() {
@@ -212,6 +220,13 @@
 
   bindToggle('[data-nav-toggle]', '[data-nav-close]', 'is-nav-open', '[data-nav-toggle]');
   bindToggle('[data-admin-toggle]', '[data-admin-close]', 'is-admin-open', '[data-admin-toggle]');
+
+  var navCollapse = window.matchMedia('(max-width: 1320px)');
+  function syncNavCollapse(event) {
+    if (event && !event.matches) setNavOpen(false);
+  }
+  if (navCollapse.addEventListener) navCollapse.addEventListener('change', syncNavCollapse);
+  else if (navCollapse.addListener) navCollapse.addListener(syncNavCollapse);
 
   function initHomeVideo() {
     var dialog = document.getElementById('home-video');
@@ -773,7 +788,8 @@
   function syncChips(scope) {
     (scope || document).querySelectorAll('.chip').forEach(function (chip) {
       var input = chip.querySelector('input');
-      chip.classList.toggle('is-on', !!(input && input.checked));
+      if (!input) return;
+      chip.classList.toggle('is-on', !!input.checked);
     });
   }
 
@@ -841,7 +857,7 @@
     return items.map(function (item) {
       var isPerson = item.kind === 'prestataires';
       var media = item.thumb
-        ? '<div class="search-card-media" style="background-image:url(\'' + escapeHtml(item.thumb) + '\')"></div>'
+        ? '<img class="search-card-media" src="' + escapeHtml(item.thumb) + '" alt="' + escapeHtml(item.title || '') + '" width="400" height="140" loading="lazy" decoding="async">'
         : (item.kind === 'prestations'
           ? '<div class="search-card-media service-cover"' + (item.cover ? ' style="--service-cover-photo:url(\'' + escapeHtml(item.cover) + '\')"' : '') + ' role="img" aria-label="Visuel ' + escapeHtml(item.cat || 'Prestation') + '"><span class="service-cover-photo" aria-hidden="true"></span><span class="service-cover-kicker">acteursdulivre.fr</span><span class="service-cover-type">' + escapeHtml(item.cat || 'Prestation') + '</span></div>'
           : '');
@@ -1091,6 +1107,11 @@
     var api = searchPage.getAttribute('data-api');
     var filters = searchPage.querySelector('[data-search-filters]');
     var results = searchPage.querySelector('[data-search-results]');
+    if (!api || !filters || !results) {
+      searchPage = null;
+    }
+  }
+  if (searchPage) {
     var countEl = searchPage.querySelector('[data-search-count]');
     var titleEl = searchPage.querySelector('.search-head h1');
     var headerInput = document.querySelector('[data-live-input]');
@@ -1835,8 +1856,10 @@
       box.querySelectorAll('[data-specialty-chip]').forEach(function (chip) {
         var forTrades = (chip.getAttribute('data-for-trades') || '').split(',').filter(Boolean);
         var input = chip.querySelector('input');
-        var match = trades.some(function (trade) { return forTrades.indexOf(trade) !== -1; });
-        if (!match && input) {
+        var match = forTrades.length === 0
+          ? !!(input && input.checked)
+          : trades.some(function (trade) { return forTrades.indexOf(trade) !== -1; });
+        if (!match && input && forTrades.length > 0) {
           input.checked = false;
           chip.classList.remove('is-on');
         }
@@ -2201,6 +2224,90 @@
   }
 
   bindFilePicks(document);
+
+  (function bindAuthorWorkGallery() {
+    var form = document.querySelector('[data-work-form]');
+    if (!form) return;
+    var gallery = form.querySelector('[data-work-gallery]');
+    var input = form.querySelector('[data-work-files]');
+    var max = parseInt(form.getAttribute('data-max-images'), 10) || 3;
+    if (!gallery || !input) return;
+    var pick = input.closest('[data-file-pick]');
+    var nameEl = pick && pick.querySelector('[data-file-name]');
+
+    function keptCount() {
+      return gallery.querySelectorAll('[data-keep-image]').length;
+    }
+    function toFileList(files) {
+      if (typeof DataTransfer === 'undefined') return null;
+      var transfer = new DataTransfer();
+      files.forEach(function (file) { transfer.items.add(file); });
+      return transfer.files;
+    }
+    function capFiles() {
+      var slots = Math.max(0, max - keptCount());
+      var files = input.files ? Array.prototype.slice.call(input.files) : [];
+      if (files.length > slots) {
+        var next = toFileList(files.slice(0, slots));
+        if (next) input.files = next;
+      }
+    }
+    function sync() {
+      var files = input.files ? Array.prototype.slice.call(input.files) : [];
+      gallery.querySelectorAll('[data-new-preview]').forEach(function (el) { el.remove(); });
+      files.forEach(function (file, index) {
+        var fig = document.createElement('figure');
+        fig.className = 'service-gallery-thumb';
+        fig.setAttribute('data-new-preview', '');
+        var media = document.createElement('div');
+        media.className = 'service-gallery-media';
+        media.style.backgroundImage = 'url(\'' + URL.createObjectURL(file) + '\')';
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'service-gallery-remove';
+        btn.setAttribute('aria-label', 'Retirer ce visuel');
+        btn.textContent = '✕';
+        btn.addEventListener('click', function () {
+          var kept = [];
+          Array.prototype.slice.call(input.files).forEach(function (item, i) {
+            if (i !== index) kept.push(item);
+          });
+          var next = toFileList(kept);
+          if (next) input.files = next;
+          sync();
+        });
+        fig.appendChild(media);
+        fig.appendChild(btn);
+        gallery.appendChild(fig);
+      });
+      var total = keptCount() + files.length;
+      gallery.hidden = total === 0;
+      var left = Math.max(0, max - total);
+      input.disabled = left < 1 && files.length === 0;
+      if (pick) pick.classList.toggle('is-full', input.disabled);
+      if (nameEl) {
+        if (files.length) {
+          nameEl.textContent = files.length === 1 ? files[0].name : (files.length + ' fichiers choisis');
+        } else if (left < 1) {
+          nameEl.textContent = 'Retirez un visuel pour en ajouter un autre';
+        } else {
+          nameEl.textContent = 'ou déposez-les ici (' + left + ' emplacement' + (left > 1 ? 's' : '') + ' libre' + (left > 1 ? 's' : '') + ')';
+        }
+      }
+    }
+    input.addEventListener('change', function () {
+      capFiles();
+      sync();
+    });
+    gallery.addEventListener('click', function (event) {
+      var btn = event.target.closest('[data-work-remove]');
+      if (!btn) return;
+      var fig = btn.closest('[data-keep-image]');
+      if (fig) fig.remove();
+      sync();
+    });
+    sync();
+  })();
 
   var EDITOR_TAGS = {
     p: true, br: true, strong: true, b: true, em: true, i: true, u: true,
@@ -3011,6 +3118,7 @@
 
   document.querySelectorAll('[data-order-total]').forEach(function (root) {
     var base = parseInt(root.getAttribute('data-base') || '0', 10) || 0;
+    var onQuote = root.hasAttribute('data-on-quote');
     var orderHref = root.getAttribute('data-order-href') || '';
     function formatEuros(n) {
       return n.toLocaleString('fr-FR') + ' € TTC';
@@ -3039,9 +3147,10 @@
     }
     function syncTotal() {
       var total = currentTotal();
-      var label = 'Commander — ' + formatEuros(total);
+      var totalLabel = onQuote ? 'sur devis' : formatEuros(total);
+      var label = onQuote ? 'Demander un devis' : ('Commander — ' + formatEuros(total));
       root.querySelectorAll('[data-order-total-value]').forEach(function (el) {
-        el.textContent = formatEuros(total);
+        el.textContent = totalLabel;
       });
       root.querySelectorAll('[data-order-cta-label]').forEach(function (el) {
         el.textContent = label;

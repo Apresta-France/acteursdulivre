@@ -362,6 +362,9 @@ $isOwnProfile = $viewer && (int) ($viewer['id'] ?? 0) === (int) ($p['user_id'] ?
             <?php $website = (string) $p['website']; ?>
             <div><span>Site</span><?php if (preg_match('#^https?://#i', $website)): ?><a href="<?= e($website) ?>" target="_blank" rel="noopener noreferrer"><?= e($website) ?></a><?php else: ?><strong><?= e($website) ?></strong><?php endif; ?></div>
           <?php endif; ?>
+          <?php if (!empty($authorHref)): ?>
+            <div><span>Auteur</span><a href="<?= e(url((string) $authorHref)) ?>">Voir la fiche auteur et les œuvres</a></div>
+          <?php endif; ?>
         </div>
         <?php if (!empty($p['socials'])): ?>
           <div class="profile-socials">

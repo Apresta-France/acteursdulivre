@@ -17,6 +17,8 @@ use Adl\Data\Sitemap;
 use Adl\Models\Analytics;
 use Adl\Models\Application;
 use Adl\Models\Article;
+use Adl\Models\AuthorPage;
+use Adl\Models\AuthorWork;
 use Adl\Models\Favorite;
 use Adl\Models\Invoice;
 use Adl\Models\Mission;
@@ -300,10 +302,19 @@ final class PageController
         $public = Catalog::profileToPublic($profile);
         $avatar = trim((string) ($public['avatar_src'] ?? ''));
         $ogImage = $avatar !== '' ? $avatar : null;
+        $authorHref = '';
+        try {
+            $authorPage = AuthorPage::findByUser((int) ($profile['user_id'] ?? 0));
+            if ($authorPage && AuthorPage::isPublic($authorPage)) {
+                $authorHref = (string) $authorPage['href'];
+            }
+        } catch (\Throwable) {
+        }
         View::page('profil', [
             'title' => $public['name'],
             'slug' => $slug,
             'liveProfile' => $public,
+            'authorHref' => $authorHref,
             'meta' => Seo::build(
                 Seo::profileTitle($public),
                 Seo::profileDescription($public),
@@ -325,6 +336,114 @@ final class PageController
                         ]),
                         Seo::person($public),
                     ],
+                ]
+            ),
+        ]);
+    }
+
+    public function auteursIndex(Request $request): void
+    {
+        $perPage = 24;
+        $pageNum = max(1, $request->int('page', 1) ?? 1);
+        try {
+            $found = AuthorPage::listPublic($perPage, $pageNum);
+        } catch (\Throwable) {
+            $found = ['items' => [], 'total' => 0];
+        }
+        $pages = max(1, (int) ceil($found['total'] / $perPage));
+        if ($pageNum > $pages) {
+            redirect('/auteurs' . ($pages > 1 ? '?page=' . $pages : ''));
+        }
+        $seo = Seo::catalog()['auteurs'];
+        $meta = Seo::forScreen('auteurs', [
+            'title' => $seo['title'],
+            'description' => $seo['description'],
+            'path' => $pageNum > 1 ? '/auteurs?page=' . $pageNum : '/auteurs',
+        ]);
+        if ($pageNum > 1) {
+            $meta['robots'] = 'noindex, follow';
+        }
+        View::page('auteurs', [
+            'title' => $seo['title'],
+            'authors' => $found['items'],
+            'pager' => ['page' => $pageNum, 'pages' => $pages, 'total' => (int) $found['total']],
+            'meta' => $meta,
+        ]);
+    }
+
+    public function auteur(Request $request, string $slug): void
+    {
+        try {
+            $page = AuthorPage::findBySlug($slug);
+        } catch (\Throwable) {
+            $page = null;
+        }
+        $viewer = Auth::user();
+        $isOwner = $page && $viewer && (int) ($viewer['id'] ?? 0) === (int) ($page['user_id'] ?? 0);
+        $admin = $viewer && ($viewer['role'] ?? '') === 'admin';
+        if (!$page || (!AuthorPage::isPublic($page) && !$isOwner && !$admin)) {
+            not_found('Cette fiche auteur n\'est pas publiée.');
+        }
+
+        $works = [];
+        try {
+            $works = AuthorWork::forPage((int) $page['id']);
+        } catch (\Throwable) {
+        }
+
+        $name = (string) $page['name'];
+        $tagline = trim((string) ($page['tagline'] ?? ''));
+        $description = trim((string) ($page['short_bio'] ?? ''));
+        if ($description === '') {
+            $description = trim(plain_text((string) ($page['bio'] ?? '')));
+        }
+        if ($description === '') {
+            $description = $name . ($tagline !== '' ? ', ' . $tagline : '') . ' : bibliographie, actualités et liens sur acteursdulivre.fr.';
+        }
+        $title = $tagline !== '' ? $name . ' — ' . $tagline : $name . ' — Auteur';
+        $cover = '';
+        foreach ($works as $work) {
+            if ($work['cover'] !== '') {
+                $cover = (string) $work['cover'];
+                break;
+            }
+        }
+        $avatar = trim((string) ($page['avatar_src'] ?? ''));
+        $ogImage = $avatar !== '' ? $avatar : ($cover !== '' ? $cover : null);
+
+        $jsonLd = [
+            Seo::organization(),
+            Seo::website(),
+            Seo::breadcrumb([
+                ['name' => 'Acteurs du Livre', 'url' => '/'],
+                ['name' => 'Auteurs', 'url' => '/auteurs'],
+                ['name' => $name, 'url' => (string) $page['href']],
+            ]),
+            Seo::author($page, $description),
+        ];
+        foreach ($works as $work) {
+            $jsonLd[] = Seo::book($work, $page);
+        }
+
+        View::page('auteur-public', [
+            'title' => $name,
+            'slug' => $slug,
+            'author' => $page,
+            'works' => $works,
+            'isOwner' => $isOwner,
+            'meta' => Seo::build(
+                $title,
+                $description,
+                Share::absolute((string) $page['href']),
+                'website',
+                $ogImage,
+                [
+                    'image_alt' => $name,
+                    'image_width' => $ogImage !== null ? 400 : Seo::OG_W,
+                    'image_height' => $ogImage !== null ? 400 : Seo::OG_H,
+                    'twitter_card' => $ogImage !== null ? 'summary' : 'summary_large_image',
+                    'robots' => AuthorPage::isPublic($page) ? Seo::ROBOTS_INDEX : Seo::ROBOTS_NONE,
+                    'json_ld' => $jsonLd,
                 ]
             ),
         ]);
@@ -439,7 +558,7 @@ final class PageController
             'offersServices' => $viewer && User::offersServices($viewer),
             'myApplication' => $myApplication,
             'applications' => $applications,
-            'old' => flash('old') ?: [],
+            'old' => self::consumePendingApplicationOld($slug, flash('old') ?: []),
             'error' => flash('error'),
             'saved' => flash('saved'),
             'suggestions' => Catalog::suggestionsForTrade($trade),
@@ -542,15 +661,13 @@ final class PageController
         $rest = $hero ? array_slice($items, 1) : $items;
 
         $metaExtra = [];
-        if ($cat !== '' && $q === '') {
-            $metaExtra['title'] = 'Le journal — ' . $cat;
-        }
-        $meta = Seo::forScreen('journal', $metaExtra);
         $canonical = '/journal';
         if ($cat !== '' && $q === '') {
             $canonical .= '?cat=' . rawurlencode($cat);
+            $metaExtra['title'] = 'Le journal — ' . $cat;
         }
-        $meta['url'] = Share::absolute($canonical);
+        $metaExtra['path'] = $canonical;
+        $meta = Seo::forScreen('journal', $metaExtra);
         if ($q !== '' || $found['page'] > 1) {
             $meta['robots'] = 'noindex, follow';
         }
@@ -969,7 +1086,12 @@ final class PageController
                                 $copy['title'],
                                 $copy['description'],
                                 $hub,
-                                'resultats'
+                                match ($type) {
+                                    'prestations' => 'prestations',
+                                    'prestataires' => 'prestataires',
+                                    'missions' => 'missions',
+                                    default => 'resultats',
+                                }
                             ))
                         : [],
                 ]
@@ -1063,5 +1185,25 @@ final class PageController
             return '';
         }
         return Cities::knownArea(Cities::guessFromQuery($label));
+    }
+
+    /**
+     * @param array<string, mixed> $old
+     * @return array<string, mixed>
+     */
+    private static function consumePendingApplicationOld(string $slug, array $old): array
+    {
+        $pending = $_SESSION['_pending_application'] ?? null;
+        if (!is_array($pending) || (string) ($pending['slug'] ?? '') !== $slug) {
+            return $old;
+        }
+        unset($_SESSION['_pending_application']);
+        foreach (['price', 'delay', 'message'] as $key) {
+            $value = trim((string) ($pending[$key] ?? ''));
+            if ($value !== '' && ($old[$key] ?? '') === '') {
+                $old[$key] = $value;
+            }
+        }
+        return $old;
     }
 }

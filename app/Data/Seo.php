@@ -19,7 +19,7 @@ final class Seo
         'dashboard', 'publier', 'commande', 'suivi', 'commandes', 'mesmissions',
         'candidatures', 'mesprestations', 'creer', 'messagerie', 'notifications',
         'favoris', 'avis', 'vitrine', 'parametres', 'facturation', 'statistiques', 'bienvenue',
-        'recommandation',
+        'recommandation', 'auteur', 'auteur-oeuvres', 'auteur-oeuvre',
         'connexion', 'inscription-sso',
     ];
 
@@ -96,6 +96,11 @@ final class Seo
                 'title' => 'Prestataires des métiers du livre',
                 'description' => 'Correcteurs, illustrateurs, traducteurs, maquettistes, imprimeurs : profils publics à parcourir.',
                 'path' => '/prestataires',
+            ],
+            'auteurs' => [
+                'title' => 'Les auteurs et autrices',
+                'description' => 'Fiches auteurs des membres d\'acteursdulivre.fr : bibliographie, biographie, presse, dédicaces et liens d\'achat.',
+                'path' => '/auteurs',
             ],
             'inscription' => [
                 'title' => 'Créer un compte professionnel',
@@ -335,7 +340,7 @@ final class Seo
         $page = self::catalog()[$screen] ?? null;
         $title = (string) ($data['title'] ?? ($page['title'] ?? self::BRAND));
         $description = (string) ($data['description'] ?? ($page['description'] ?? self::DEFAULT_DESC));
-        $path = (string) ($page['path'] ?? Share::current());
+        $path = (string) ($data['path'] ?? $page['path'] ?? Share::current());
         $private = in_array($screen, self::PRIVATE_SCREENS, true) || !empty($data['inEspace']);
 
         $meta = self::build($title, $description, $path, 'website', null, [
@@ -796,6 +801,121 @@ final class Seo
     }
 
     /**
+     * @param array<string, mixed> $author Fiche auteur hydratée (AuthorPage)
+     * @return array<string, mixed>
+     */
+    public static function author(array $author, string $description = ''): array
+    {
+        $url = Share::absolute((string) ($author['href'] ?? '/auteurs'));
+        $out = [
+            '@type' => 'Person',
+            '@id' => $url . '#author',
+            'name' => (string) ($author['name'] ?? ''),
+            'url' => $url,
+            'jobTitle' => trim((string) ($author['tagline'] ?? '')) !== '' ? (string) $author['tagline'] : 'Auteur',
+        ];
+        if ($description !== '') {
+            $out['description'] = self::clip($description, 200);
+        }
+        $avatar = trim((string) ($author['avatar_src'] ?? ''));
+        if ($avatar !== '') {
+            $out['image'] = Share::absolute($avatar);
+        }
+        $sameAs = [];
+        foreach ([(string) ($author['website'] ?? ''), (string) ($author['wikipedia_url'] ?? '')] as $href) {
+            if (trim($href) !== '') {
+                $sameAs[] = trim($href);
+            }
+        }
+        foreach ($author['links'] ?? [] as $link) {
+            $href = trim((string) ($link['url'] ?? ''));
+            if ($href !== '') {
+                $sameAs[] = $href;
+            }
+        }
+        if ($sameAs !== []) {
+            $out['sameAs'] = array_values(array_unique($sameAs));
+        }
+        $genres = $author['genres'] ?? [];
+        if ($genres !== []) {
+            $out['knowsAbout'] = array_values($genres);
+        }
+        $awards = [];
+        foreach ($author['awards'] ?? [] as $award) {
+            $label = trim((string) ($award['label'] ?? ''));
+            if ($label !== '') {
+                $awards[] = trim($label . (($award['year'] ?? '') !== '' ? ' (' . $award['year'] . ')' : ''));
+            }
+        }
+        if ($awards !== []) {
+            $out['award'] = $awards;
+        }
+        return $out;
+    }
+
+    /**
+     * @param array<string, mixed> $work Œuvre hydratée (AuthorWork)
+     * @param array<string, mixed> $author
+     * @return array<string, mixed>
+     */
+    public static function book(array $work, array $author): array
+    {
+        $pageUrl = Share::absolute((string) ($author['href'] ?? '/auteurs'));
+        $out = [
+            '@type' => 'Book',
+            '@id' => $pageUrl . '#oeuvre-' . (int) ($work['id'] ?? 0),
+            'name' => (string) ($work['title'] ?? ''),
+            'inLanguage' => 'fr',
+            'author' => ['@id' => $pageUrl . '#author'],
+        ];
+        $role = (string) ($work['role'] ?? 'auteur');
+        if ($role === 'illustrateur') {
+            $out['illustrator'] = ['@id' => $pageUrl . '#author'];
+            unset($out['author']);
+        } elseif ($role === 'traducteur') {
+            $out['translator'] = ['@id' => $pageUrl . '#author'];
+            unset($out['author']);
+        }
+        if (trim((string) ($work['subtitle'] ?? '')) !== '') {
+            $out['alternativeHeadline'] = (string) $work['subtitle'];
+        }
+        if (trim((string) ($work['summary'] ?? '')) !== '') {
+            $out['abstract'] = self::clip((string) $work['summary'], 300);
+        }
+        if (trim((string) ($work['isbn'] ?? '')) !== '') {
+            $out['isbn'] = str_replace('-', '', (string) $work['isbn']);
+        }
+        if (trim((string) ($work['publisher'] ?? '')) !== '') {
+            $out['publisher'] = ['@type' => 'Organization', 'name' => (string) $work['publisher']];
+        }
+        if (trim((string) ($work['year'] ?? '')) !== '') {
+            $out['datePublished'] = (string) $work['year'];
+        }
+        if ((int) ($work['pages'] ?? 0) > 0) {
+            $out['numberOfPages'] = (int) $work['pages'];
+        }
+        $genre = (string) ($work['kind_label'] ?? '');
+        if ($genre !== '') {
+            $out['genre'] = $genre;
+        }
+        $images = $work['images'] ?? [];
+        if ($images !== []) {
+            $out['image'] = array_map(static fn (string $img): string => Share::absolute($img), array_values($images));
+        }
+        $buy = trim((string) ($work['buy_url'] ?? ''));
+        if ($buy !== '') {
+            $offer = ['@type' => 'Offer', 'url' => $buy, 'availability' => 'https://schema.org/InStock'];
+            $price = self::priceAmount((string) ($work['price'] ?? ''));
+            if ($price !== null) {
+                $offer['price'] = $price;
+                $offer['priceCurrency'] = 'EUR';
+            }
+            $out['offers'] = $offer;
+        }
+        return $out;
+    }
+
+    /**
      * @param array<string, mixed> $service
      * @return array<string, mixed>
      */
@@ -856,6 +976,9 @@ final class Seo
             'questions' => 'Questions fréquentes',
             'contact' => 'Contact',
             'missions' => 'Appels d\'offres',
+            'prestations' => 'Prestations',
+            'prestataires' => 'Prestataires',
+            'auteurs' => 'Auteurs',
             'resultats' => 'Annuaire',
             'inscription' => 'Inscription',
             'legal' => $title,

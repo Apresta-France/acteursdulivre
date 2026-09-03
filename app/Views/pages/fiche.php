@@ -9,17 +9,19 @@ $viewer = \Adl\Core\Auth::user();
 $isOwner = $viewer && (int) ($viewer['id'] ?? 0) === (int) ($service['user_id'] ?? 0);
 $canOrder = !empty($canOrder) && !$isOwner;
 $selectedPackage = $packages[0] ?? null;
+$onQuote = $selectedPackage === null && !isset($service['price_from']);
 $baseAmount = $selectedPackage
     ? (int) ($selectedPackage['price'] ?? 0)
-    : (int) ($service['price_from'] ?? 0);
+    : ($onQuote ? 0 : (int) ($service['price_from'] ?? 0));
 $orderHref = '/espace/commande?prestation=' . rawurlencode((string) $service['slug']);
 if ($selectedPackage) {
     $orderHref .= '&formule=' . (int) ($selectedPackage['id'] ?? 0);
 }
-$ctaLabel = 'Commander — ' . format_euros_ttc($baseAmount);
+$ctaLabel = $onQuote ? 'Demander un devis' : ('Commander — ' . format_euros_ttc($baseAmount));
 $formulePriceLabel = is_array($selectedPackage)
     ? (string) ($selectedPackage['price_label'] ?? $service['price'])
     : (string) $service['price'];
+$totalLabel = $onQuote ? 'sur devis' : format_euros_ttc($baseAmount);
 ?>
 <div class="fiche-page">
   <nav class="search-crumb" aria-label="Fil d'Ariane">
@@ -136,7 +138,7 @@ $formulePriceLabel = is_array($selectedPackage)
         </div>
       <?php endif; ?>
     </div>
-    <aside class="publish-side fiche-side" data-order-total data-base="<?= (int) $baseAmount ?>" data-order-href="<?= e(url($orderHref)) ?>">
+    <aside class="publish-side fiche-side" data-order-total data-base="<?= (int) $baseAmount ?>"<?= $onQuote ? ' data-on-quote' : '' ?> data-order-href="<?= e(url($orderHref)) ?>">
       <div class="side-card fiche-order">
         <?php if (count($packages) > 1): ?>
           <div class="fiche-formule-tabs" role="tablist" aria-label="Formules">
@@ -185,7 +187,7 @@ $formulePriceLabel = is_array($selectedPackage)
           <?php endif; ?>
           <div class="fiche-order-total">
             <span>Total TTC</span>
-            <strong data-order-total-value><?= e(format_euros_ttc($baseAmount)) ?></strong>
+            <strong data-order-total-value><?= e($totalLabel) ?></strong>
           </div>
           <?php if (!empty($service['startup_enabled'])): ?>
             <p class="field-help" style="margin: 8px 0 0;">Accompagnement de démarrage : <?= e((string) $service['startup_label']) ?></p>
@@ -208,9 +210,9 @@ $formulePriceLabel = is_array($selectedPackage)
       </div>
       <?php if ($canOrder): ?>
         <?php
-          $askName = trim((string) ($service['first_name'] ?? ''));
+          $askName = trim((string) ($service['by'] ?? ''));
           if ($askName === '') {
-              $askName = (string) ($service['by'] ?? 'le prestataire');
+              $askName = trim((string) ($service['first_name'] ?? '')) ?: 'le prestataire';
           }
         ?>
         <div class="side-card fiche-ask">
@@ -262,7 +264,7 @@ $formulePriceLabel = is_array($selectedPackage)
       </div>
       <?php if ($canOrder): ?>
         <div class="fiche-buy-bar">
-          <strong data-order-total-value><?= e(format_euros_ttc($baseAmount)) ?></strong>
+          <strong data-order-total-value><?= e($totalLabel) ?></strong>
           <button class="btn-orange" type="submit" form="fiche-order-form" data-order-cta-label><?= e($ctaLabel) ?></button>
         </div>
       <?php endif; ?>

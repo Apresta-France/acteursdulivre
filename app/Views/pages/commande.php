@@ -4,9 +4,10 @@ $package = is_array($selectedPackage ?? null) ? $selectedPackage : null;
 $old = is_array($old ?? null) ? $old : [];
 $serviceOptions = ($service !== null && is_array($service['options'] ?? null)) ? $service['options'] : [];
 $selectedOptionIds = is_array($selectedOptionIds ?? null) ? $selectedOptionIds : [];
+$onQuote = $package === null && $service !== null && !isset($service['price_from']);
 $baseAmount = $package
     ? (int) ($package['price'] ?? 0)
-    : ($service !== null ? (int) ($service['price_from'] ?? 0) : 0);
+    : ($onQuote ? 0 : ($service !== null ? (int) ($service['price_from'] ?? 0) : 0));
 $optionsTotal = 0;
 foreach ($serviceOptions as $option) {
     $optionId = (int) ($option['id'] ?? 0);
@@ -35,7 +36,7 @@ $displayTotal = $baseAmount + $optionsTotal;
       <a class="btn-orange" href="<?= e(url('/prestations')) ?>">Parcourir les prestations</a>
     </div>
   <?php else: ?>
-    <div class="publish-grid" data-order-total data-base="<?= (int) $baseAmount ?>">
+    <div class="publish-grid" data-order-total data-base="<?= (int) $baseAmount ?>"<?= $onQuote ? ' data-on-quote' : '' ?>>
       <form class="param-form" method="post" action="<?= e(url('/espace/commande')) ?>">
         <?= csrf_field() ?>
         <input type="hidden" name="service_id" value="<?= (int) $service['id'] ?>">
@@ -87,7 +88,7 @@ $displayTotal = $baseAmount + $optionsTotal;
           <?php if ($serviceOptions !== []): ?>
             <div class="side-foot">
               <span>Total</span>
-              <strong data-order-total-value><?= e(format_euros_ttc($displayTotal)) ?></strong>
+              <strong data-order-total-value><?= $onQuote ? 'sur devis' : e(format_euros_ttc($displayTotal)) ?></strong>
             </div>
           <?php endif; ?>
           <?php if ($service !== null && !empty($service['startup_enabled'])): ?>

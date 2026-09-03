@@ -606,6 +606,10 @@ final class User
             );
         } catch (\Throwable) {
         }
+        try {
+            Database::query('UPDATE author_pages SET enabled = 0, updated_at = NOW() WHERE user_id = ?', [$id]);
+        } catch (\Throwable) {
+        }
         $token = bin2hex(random_bytes(6));
         self::update($id, [
             'first_name' => 'Compte',
@@ -669,6 +673,14 @@ final class User
             'recommendations_received' => $safe(static fn () => Recommendation::exportForUser($id)),
             'review_requests' => $safe(static fn () => ReviewRequest::forSeller($id)),
             'legal' => $safe(static fn () => LegalAcceptance::forUser($id)),
+            'author_page' => $safe(static function () use ($id): array {
+                $page = AuthorPage::findByUser($id);
+                if (!$page) {
+                    return [];
+                }
+                $page['works'] = AuthorWork::forPage((int) $page['id']);
+                return $page;
+            }),
         ];
     }
 

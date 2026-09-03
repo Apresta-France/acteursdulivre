@@ -11,6 +11,9 @@ use Adl\Data\Catalog;
 use Adl\Data\Onboarding;
 use Adl\Models\Analytics;
 use Adl\Models\Application;
+use Adl\Models\Article;
+use Adl\Models\AuthorPage;
+use Adl\Models\AuthorWork;
 use Adl\Models\Commission;
 use Adl\Models\Conversation;
 use Adl\Models\Favorite;
@@ -103,6 +106,12 @@ final class AccountController
         } catch (\Throwable) {
         }
 
+        $platformNews = [];
+        try {
+            $platformNews = Article::preview(3);
+        } catch (\Throwable) {
+        }
+
         View::page('dashboard', [
             'title' => 'Tableau de bord',
             'error' => flash('error'),
@@ -124,6 +133,7 @@ final class AccountController
             'isPlatformCofounder' => User::isPlatformCofounder($user),
             'commissionRate' => $commissionRate,
             'jalonTodos' => self::jalonTodos((int) $user['id']),
+            'platformNews' => $platformNews,
             'forumStats' => $forumStats,
             'forumFollowed' => $forumFollowed,
             'forumMine' => $forumMine,
@@ -2057,6 +2067,258 @@ final class AccountController
         redirect('/espace');
     }
 
+    public function auteur(Request $request): void
+    {
+        $user = Auth::requireUser();
+        $page = self::authorPageOrRedirect((int) $user['id']);
+        $worksCount = 0;
+        try {
+            $worksCount = AuthorWork::countForPage((int) $page['id']);
+        } catch (\Throwable) {
+        }
+        View::page('auteur', [
+            'title' => 'Ma fiche auteur',
+            'page' => $page,
+            'worksCount' => $worksCount,
+            'completion' => AuthorPage::completion($page, $worksCount),
+            'genres' => AuthorPage::GENRES,
+            'openTo' => AuthorPage::OPEN_TO,
+            'linkKinds' => AuthorPage::LINK_KINDS,
+        ]);
+    }
+
+    public function auteurSave(Request $request): void
+    {
+        $user = Auth::requireUser();
+        try {
+            AuthorPage::save((int) $user['id'], [
+                'pen_name' => $request->string('pen_name'),
+                'tagline' => $request->string('tagline'),
+                'short_bio' => $request->string('short_bio'),
+                'bio' => $request->string('bio'),
+                'genres' => $request->list('genres'),
+                'open_to' => $request->list('open_to'),
+                'website' => $request->string('website'),
+                'wikipedia_url' => $request->string('wikipedia_url'),
+                'press' => $request->list('press'),
+                'links' => $request->list('links'),
+                'awards' => $request->list('awards'),
+                'events' => $request->list('events'),
+            ]);
+            User::storeAvatar((int) $user['id'], $request->file('avatar'));
+        } catch (\Throwable $e) {
+            flash('error', user_error_message($e));
+            redirect('/espace/auteur');
+        }
+        flash('saved', 'Votre fiche auteur a été enregistrée.');
+        redirect('/espace/auteur');
+    }
+
+    public function auteurPublication(Request $request): void
+    {
+        $user = Auth::requireUser();
+        $enable = $request->string('enabled') === '1';
+        try {
+            $page = AuthorPage::ensure((int) $user['id']);
+            if ($enable && trim((string) ($page['bio'] ?? '')) === '' && AuthorWork::countForPage((int) $page['id']) === 0) {
+                throw new \RuntimeException('Ajoutez au moins une biographie ou une œuvre avant de publier votre fiche auteur.');
+            }
+            AuthorPage::setEnabled((int) $user['id'], $enable);
+        } catch (\Throwable $e) {
+            flash('error', user_error_message($e));
+            redirect('/espace/auteur');
+        }
+        flash('saved', $enable
+            ? 'Votre fiche auteur est en ligne. Elle apparaît dans l\'annuaire des auteurs.'
+            : 'Votre fiche auteur est repassée en brouillon : elle n\'est plus visible publiquement.');
+        redirect('/espace/auteur');
+    }
+
+    public function auteurOeuvres(Request $request): void
+    {
+        $user = Auth::requireUser();
+        $page = self::authorPageOrRedirect((int) $user['id']);
+        $works = [];
+        try {
+            $works = AuthorWork::forPage((int) $page['id']);
+        } catch (\Throwable) {
+        }
+        View::page('auteur-oeuvres', [
+            'title' => 'Mes œuvres',
+            'page' => $page,
+            'works' => $works,
+            'worksCount' => count($works),
+            'completion' => AuthorPage::completion($page, count($works)),
+        ]);
+    }
+
+    public function auteurOeuvreCreate(Request $request): void
+    {
+        $user = Auth::requireUser();
+        $page = self::authorPageOrRedirect((int) $user['id']);
+        self::renderAuthorWorkForm($page, null);
+    }
+
+    public function auteurOeuvreEdit(Request $request, string $id): void
+    {
+        $user = Auth::requireUser();
+        $page = self::authorPageOrRedirect((int) $user['id']);
+        $work = AuthorWork::find((int) $id, (int) $page['id']);
+        if (!$work) {
+            not_found('Cette œuvre n\'existe pas ou ne vous appartient pas.');
+        }
+        self::renderAuthorWorkForm($page, $work);
+    }
+
+    public function auteurOeuvreCreateSave(Request $request): void
+    {
+        $user = Auth::requireUser();
+        $page = self::authorPageOrRedirect((int) $user['id']);
+        try {
+            $data = self::authorWorkFromRequest($request, []);
+            AuthorWork::create((int) $page['id'], $data);
+        } catch (\Throwable $e) {
+            flash('error', user_error_message($e));
+            $_SESSION['_old'] = $request->all();
+            redirect('/espace/auteur/oeuvres/creer');
+        }
+        flash('saved', 'L\'œuvre a été ajoutée à votre fiche auteur.');
+        redirect('/espace/auteur/oeuvres');
+    }
+
+    public function auteurOeuvreEditSave(Request $request, string $id): void
+    {
+        $user = Auth::requireUser();
+        $page = self::authorPageOrRedirect((int) $user['id']);
+        $work = AuthorWork::find((int) $id, (int) $page['id']);
+        if (!$work) {
+            not_found('Cette œuvre n\'existe pas ou ne vous appartient pas.');
+        }
+        try {
+            $data = self::authorWorkFromRequest($request, $work['image_paths']);
+            AuthorWork::update((int) $work['id'], (int) $page['id'], $data);
+            foreach (array_diff($work['image_paths'], $data['images']) as $removed) {
+                if (!preg_match('#^https?://#i', $removed)) {
+                    delete_upload($removed);
+                }
+            }
+        } catch (\Throwable $e) {
+            flash('error', user_error_message($e));
+            redirect('/espace/auteur/oeuvres/' . (int) $work['id']);
+        }
+        flash('saved', 'L\'œuvre a été mise à jour.');
+        redirect('/espace/auteur/oeuvres');
+    }
+
+    public function auteurOeuvreDelete(Request $request, string $id): void
+    {
+        $user = Auth::requireUser();
+        $page = self::authorPageOrRedirect((int) $user['id']);
+        try {
+            AuthorWork::delete((int) $id, (int) $page['id']);
+        } catch (\Throwable $e) {
+            flash('error', user_error_message($e));
+            redirect('/espace/auteur/oeuvres');
+        }
+        flash('saved', 'L\'œuvre a été retirée de votre fiche.');
+        redirect('/espace/auteur/oeuvres');
+    }
+
+    public function auteurOeuvreMove(Request $request, string $id): void
+    {
+        $user = Auth::requireUser();
+        $page = self::authorPageOrRedirect((int) $user['id']);
+        $direction = $request->string('direction') === 'up' ? 'up' : 'down';
+        try {
+            AuthorWork::move((int) $id, (int) $page['id'], $direction);
+        } catch (\Throwable $e) {
+            flash('error', user_error_message($e));
+        }
+        redirect('/espace/auteur/oeuvres');
+    }
+
+    /** @return array<string, mixed> */
+    private static function authorPageOrRedirect(int $userId): array
+    {
+        try {
+            return AuthorPage::ensure($userId);
+        } catch (\Throwable $e) {
+            flash('error', 'La fiche auteur n\'est pas encore disponible : ' . user_error_message($e));
+            redirect('/espace');
+        }
+    }
+
+    /**
+     * @param array<string, mixed> $page
+     * @param array<string, mixed>|null $work
+     */
+    private static function renderAuthorWorkForm(array $page, ?array $work): void
+    {
+        $old = is_array($_SESSION['_old'] ?? null) ? $_SESSION['_old'] : [];
+        unset($_SESSION['_old']);
+        View::page('auteur-oeuvre', [
+            'title' => $work ? 'Modifier une œuvre' : 'Ajouter une œuvre',
+            'page' => $page,
+            'work' => $work,
+            'old' => $old,
+            'kinds' => AuthorWork::KINDS,
+            'roles' => AuthorWork::ROLES,
+            'statuses' => AuthorWork::STATUSES,
+            'formats' => AuthorWork::FORMATS,
+            'maxImages' => AuthorWork::MAX_IMAGES,
+        ]);
+    }
+
+    /**
+     * @param list<string> $currentImages
+     * @return array<string, mixed>
+     */
+    private static function authorWorkFromRequest(Request $request, array $currentImages): array
+    {
+        $kept = [];
+        foreach ($request->strings('keep_images') as $path) {
+            if (in_array($path, $currentImages, true) && !in_array($path, $kept, true)) {
+                $kept[] = $path;
+            }
+        }
+        $images = $kept;
+        foreach ($request->files('images') as $file) {
+            if (count($images) >= AuthorWork::MAX_IMAGES) {
+                break;
+            }
+            $stored = store_upload($file, AuthorWork::UPLOAD_DIR, AuthorWork::IMAGE_EXT, AuthorWork::IMAGE_MAX_BYTES);
+            if ($stored) {
+                $images[] = $stored;
+            }
+        }
+        $imageUrl = AuthorPage::cleanUrl($request->string('image_url'));
+        if ($imageUrl !== '' && count($images) < AuthorWork::MAX_IMAGES && !in_array($imageUrl, $images, true)) {
+            $images[] = $imageUrl;
+        }
+
+        return [
+            'title' => $request->string('title'),
+            'subtitle' => $request->string('subtitle'),
+            'kind' => $request->string('kind'),
+            'role' => $request->string('role'),
+            'status' => $request->string('status'),
+            'publisher' => $request->string('publisher'),
+            'collection' => $request->string('collection'),
+            'year' => $request->string('year'),
+            'isbn' => $request->string('isbn'),
+            'pages' => $request->int('pages', 0),
+            'language' => $request->string('language'),
+            'formats' => $request->list('formats'),
+            'price' => $request->string('price'),
+            'summary' => $request->string('summary'),
+            'excerpt' => $request->string('excerpt'),
+            'buy_url' => $request->string('buy_url'),
+            'more_url' => $request->string('more_url'),
+            'featured' => $request->bool('featured'),
+            'images' => $images,
+        ];
+    }
+
     public function parametres(Request $request): void
     {
         $user = Auth::requireUser();
@@ -2754,7 +3016,7 @@ final class AccountController
         }
         $normalized = str_replace(',', '.', $value);
         if (is_numeric($normalized)) {
-            $amount = (int) $normalized;
+            $amount = (int) round((float) $normalized);
             return $amount < 0 ? null : $amount;
         }
         $clean = preg_replace('/[^\d]/', '', $value) ?? '';

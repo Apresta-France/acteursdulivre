@@ -171,8 +171,18 @@ final class Auth
             $uri = (string) ($_SERVER['REQUEST_URI'] ?? '/espace');
             if (strtoupper((string) ($_SERVER['REQUEST_METHOD'] ?? '')) === 'POST') {
                 $path = parse_url($uri, PHP_URL_PATH) ?: '/espace';
-                if (preg_match('#^(/missions/[^/]+)/candidater$#', $path, $m)) {
+                if (preg_match('#^(/missions/([^/]+))/candidater$#', $path, $m)) {
                     $uri = $m[1];
+                    $message = trim((string) ($_POST['message'] ?? ''));
+                    if (mb_strlen($message) > 8000) {
+                        $message = mb_substr($message, 0, 8000);
+                    }
+                    $_SESSION['_pending_application'] = [
+                        'slug' => rawurldecode((string) $m[2]),
+                        'price' => trim((string) ($_POST['price'] ?? '')),
+                        'delay' => trim((string) ($_POST['delay'] ?? '')),
+                        'message' => $message,
+                    ];
                 } else {
                     $uri = $path;
                 }

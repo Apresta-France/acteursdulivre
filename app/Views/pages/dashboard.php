@@ -172,6 +172,29 @@ if ($offers && $profileCompletion < 80) {
     <?php endif; ?>
   </div>
 
+  <?php
+    $platformNews = $platformNews ?? [];
+    if ($platformNews !== []):
+  ?>
+    <section class="dash-section dash-news" id="actualite">
+      <div class="dash-section-head">
+        <h2>Actualité de la plateforme</h2>
+        <a href="<?= e(url('/journal')) ?>">Le journal →</a>
+      </div>
+      <div class="dash-news-list">
+        <?php foreach ($platformNews as $news): ?>
+          <a class="dash-news-item" href="<?= e(url((string) ($news['href'] ?? '/journal'))) ?>">
+            <span class="dash-news-meta"><?= e((string) ($news['cat'] ?? 'Journal')) ?><?php if (!empty($news['when'])): ?> · <?= e((string) $news['when']) ?><?php endif; ?></span>
+            <strong><?= e((string) ($news['title'] ?? '')) ?></strong>
+            <?php if (!empty($news['chapo'])): ?>
+              <em><?= e((string) $news['chapo']) ?></em>
+            <?php endif; ?>
+          </a>
+        <?php endforeach; ?>
+      </div>
+    </section>
+  <?php endif; ?>
+
   <?php if ($todos !== []): ?>
     <section class="dash-section">
       <h2>À faire en priorité</h2>
@@ -385,6 +408,7 @@ if ($offers && $profileCompletion < 80) {
           <a class="dash-chip" href="<?= e(url($profileHref)) ?>"><?= icon('store', 16) ?> Voir en public</a>
         <?php endif; ?>
       <?php endif; ?>
+      <a class="dash-chip" href="<?= e(url('/espace/auteur')) ?>"><?= icon('book', 16) ?> Fiche auteur</a>
       <a class="dash-chip" href="<?= e(url('/espace/forum')) ?>"><?= icon('chat', 16) ?> Forum</a>
       <a class="dash-chip" href="<?= e(url('/espace/parametres')) ?>"><?= icon('gear', 16) ?> Paramètres</a>
       <a class="dash-chip" href="<?= e(url('/aide')) ?>"><?= icon('book', 16) ?> Centre d'aide</a>

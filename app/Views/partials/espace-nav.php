@@ -9,7 +9,7 @@
           <?= icon((string) ($item['icon'] ?? 'dot'), 18) ?>
           <span><?= e($item['label']) ?></span>
           <?php if (!empty($item['badge'])): ?>
-            <span class="espace-nav-count" aria-label="<?= e((string) ($item['badge_aria'] ?: $item['badge'] . ' en attente')) ?>"><?= e((string) $item['badge']) ?></span>
+            <span class="espace-nav-count" aria-label="<?= e((string) (($item['badge_aria'] ?? '') ?: ($item['badge'] . ' en attente'))) ?>"><?= e((string) $item['badge']) ?></span>
           <?php endif; ?>
         </a>
       <?php endforeach; ?>

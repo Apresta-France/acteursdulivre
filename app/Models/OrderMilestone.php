@@ -452,6 +452,18 @@ final class OrderMilestone
             Order::setStatus($orderId, 'cancelled');
             self::skipOpen($orderId);
 
+            $missionId = (int) ($order['mission_id'] ?? 0);
+            if ($missionId > 0) {
+                $mission = Mission::find($missionId);
+                if ($mission && ($mission['status'] ?? '') === 'assigned') {
+                    Mission::setStatus($missionId, 'open');
+                    Database::query(
+                        'UPDATE applications SET status = "sent" WHERE mission_id = ? AND status = "accepted"',
+                        [$missionId]
+                    );
+                }
+            }
+
             Notification::create(
                 (int) $order['seller_id'],
                 'Commande annulée ' . $order['num'],

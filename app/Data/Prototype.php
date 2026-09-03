@@ -128,6 +128,7 @@ final class Prototype
             ]],
             ['title' => 'La plateforme', 'links' => [
                 ['label' => 'Comment ça marche', 'href' => '/comment-ca-marche'],
+                ['label' => 'Les auteurs', 'href' => '/auteurs'],
                 ['label' => 'À propos', 'href' => '/a-propos'],
                 ['label' => 'Le forum', 'href' => '/forum'],
                 ['label' => 'Le journal', 'href' => '/journal'],
@@ -208,7 +209,7 @@ final class Prototype
             'homeTemoins' => [],
             'homeForum' => [],
             'journal' => self::journalPreview(),
-            'journalCats' => self::chips(['Tout', 'Tarifs', 'Contrats', 'Métier', 'Fabrication', 'Diffusion'], 0),
+            'journalCats' => self::chips(['Tout', 'Tarifs', 'Contrats', 'Métier', 'Fabrication', 'Diffusion', 'Plateforme'], 0),
             'journalAll' => self::journalAll(),
             'services' => array_map(static function (array $x, int $i) use ($navy, $orange): array {
                 $x['img'] = photo($i);
@@ -328,6 +329,8 @@ final class Prototype
                 'homeFeatured' => [],
                 'homeEntry' => [],
                 'homeMissions' => [],
+                'homeStats' => [],
+                'homeMetiers' => [],
                 'journal' => [],
                 'homeForum' => [],
                 'journalAll' => [],
@@ -1513,6 +1516,7 @@ final class Prototype
             'dashboard', 'publier', 'commande', 'suivi', 'suivi-detail', 'suivi-depot', 'suivi-depot-list', 'commandes', 'mesmissions',
             'candidatures', 'mesprestations', 'creer', 'messagerie', 'notifications',
             'favoris', 'avis', 'vitrine', 'parametres', 'facturation', 'statistiques', 'espace-forum',
+            'auteur', 'auteur-oeuvres', 'auteur-oeuvre',
         ], true);
     }
 
@@ -1570,7 +1574,10 @@ final class Prototype
     private static function espaceNav(string $screen, bool $seeks, bool $offers, array $badges = []): array
     {
         $item = static function (string $label, string $href, string $key, string $icon = 'dot') use ($screen, $badges): array {
-            $aliases = ['suivi' => ['suivi', 'suivi-detail', 'suivi-depot', 'suivi-depot-list']];
+            $aliases = [
+                'suivi' => ['suivi', 'suivi-detail', 'suivi-depot', 'suivi-depot-list'],
+                'auteur' => ['auteur', 'auteur-oeuvres', 'auteur-oeuvre'],
+            ];
             $active = $screen === $key || in_array($screen, $aliases[$key] ?? [], true);
             $badge = $badges[$key] ?? '';
             $badgeAria = match ($key) {
@@ -1627,6 +1634,7 @@ final class Prototype
         $groups[] = [
             'title' => 'Compte',
             'items' => [
+                $item('Fiche auteur', '/espace/auteur', 'auteur', 'book'),
                 $item('Messages', '/espace/messages', 'messagerie', 'mail'),
                 $item('Alertes', '/espace/notifications', 'notifications', 'bell'),
                 $item('Forum', '/espace/forum', 'espace-forum', 'chat'),

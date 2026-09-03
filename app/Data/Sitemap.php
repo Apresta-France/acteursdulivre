@@ -70,6 +70,17 @@ final class Sitemap
         }
 
         foreach (self::rows(
+            'SELECT a.slug, COALESCE(a.updated_at, a.created_at) AS lastmod
+             FROM author_pages a
+             JOIN users u ON u.id = a.user_id
+             WHERE a.enabled = 1
+               AND u.status = "active"
+               AND a.slug IS NOT NULL AND a.slug != ""'
+        ) as $row) {
+            self::push($urls, $seen, '/auteurs/' . $row['slug'], $row['lastmod'] ?? null, '0.7');
+        }
+
+        foreach (self::rows(
             'SELECT m.slug, m.created_at AS lastmod
              FROM missions m
              JOIN users u ON u.id = m.user_id
@@ -149,6 +160,7 @@ final class Sitemap
             ['path' => '/recherche', 'priority' => '0.8'],
             ['path' => '/prestations', 'priority' => '0.8'],
             ['path' => '/prestataires', 'priority' => '0.8'],
+            ['path' => '/auteurs', 'priority' => '0.7'],
             ['path' => '/missions', 'priority' => '0.8'],
             ['path' => '/journal', 'priority' => '0.8'],
             ['path' => '/forum', 'priority' => '0.8'],
@@ -200,8 +212,8 @@ final class Sitemap
         $paths = [];
         foreach ($pairs as $trade => $cities) {
             foreach ($cities as $row) {
-                $path = Catalog::tradeCityPath((string) $trade, (string) ($row['slug'] ?? ''));
-                if ($path !== '' && substr_count($path, '/') >= 2) {
+                $path = Catalog::catalogPath('prestataires', (string) $trade, (string) ($row['slug'] ?? ''));
+                if ($path !== '' && str_contains($path, 'ville=')) {
                     $paths[] = $path;
                 }
             }

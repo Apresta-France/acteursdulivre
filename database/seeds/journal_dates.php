@@ -38,4 +38,6 @@ return [
     'prete-plume-ghostwriting-cadrer-mission' => '2026-08-29 10:05:00',
     'accompagnement-ecriture-coach-mentorat' => '2026-08-30 09:30:00',
     'a-t-on-besoin-agent-litteraire-2026' => '2026-08-31 09:00:00',
+    'forum-metiers-du-livre' => '2026-09-02 09:30:00',
+    'section-auteur-fiche-publique' => '2026-09-03 07:45:00',
 ];

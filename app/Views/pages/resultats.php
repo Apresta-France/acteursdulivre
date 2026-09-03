@@ -135,7 +135,7 @@ if ($searchCity !== '') {
           <a href="<?= e(url($crumbType['href'])) ?>"><?= e($crumbType['label']) ?></a>
           <?php if ($cat !== ''): ?>
             <span aria-hidden="true"> · </span>
-            <span><?= e(\Adl\Data\Catalog::tradeTitle($cat)) ?></span>
+            <a href="<?= e(url(\Adl\Data\Catalog::tradePath($cat))) ?>"><?= e(\Adl\Data\Catalog::tradeTitle($cat)) ?></a>
           <?php endif; ?>
           <?php if ($searchCityLabel !== ''): ?>
             <span aria-hidden="true"> · </span>
