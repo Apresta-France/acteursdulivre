@@ -133,6 +133,17 @@ final class NewsletterCampaign
         return (int) ($row['n'] ?? 0);
     }
 
+    public static function releaseStaleSending(): int
+    {
+        $row = Database::fetch('SELECT COUNT(*) AS n FROM newsletter_deliveries WHERE status = "sending"');
+        $n = (int) ($row['n'] ?? 0);
+        if ($n < 1) {
+            return 0;
+        }
+        Database::query('UPDATE newsletter_deliveries SET status = "pending" WHERE status = "sending"');
+        return $n;
+    }
+
     private static function maybeFinish(int $campaignId): void
     {
         $left = Database::fetch(

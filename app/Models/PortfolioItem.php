@@ -78,12 +78,12 @@ final class PortfolioItem
     /** @param array<string, mixed> $item */
     public static function image(array $item): string
     {
-        $path = trim((string) ($item['image_path'] ?? ''));
-        if ($path !== '') {
+        $path = trim(str_replace(['\\', "\0"], '/', (string) ($item['image_path'] ?? '')));
+        if ($path !== '' && !str_contains($path, '..')) {
             return uploaded($path);
         }
         $url = trim((string) ($item['image_url'] ?? ''));
-        if ($url !== '') {
+        if ($url !== '' && preg_match('#^https?://#i', $url) === 1) {
             return $url;
         }
         return photo((int) ($item['id'] ?? 0) % 6);

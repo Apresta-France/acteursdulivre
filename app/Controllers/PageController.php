@@ -547,6 +547,12 @@ final class PageController
             }
         } catch (\Throwable) {
         }
+        $hasAttachment = trim((string) ($mission['attachment_path'] ?? '')) !== '';
+        $canDownloadAttachment = $hasAttachment && $viewer && Mission::canAccessAttachment($mission, $viewer);
+        if ($hasAttachment && !$canDownloadAttachment) {
+            unset($mission['attachment_href']);
+            $mission['attachment_locked'] = true;
+        }
         View::page('mission', [
             'title' => $mission['title'],
             'slug' => $slug,

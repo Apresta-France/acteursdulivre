@@ -557,7 +557,12 @@ final class ForumTopic
             throw new RuntimeException('Seul l\'auteur peut retenir une réponse.');
         }
         $post = ForumPost::find($postId);
-        if (!$post || (int) $post['topic_id'] !== $topicId || !empty($post['is_op'])) {
+        if (
+            !$post
+            || (int) $post['topic_id'] !== $topicId
+            || !empty($post['is_op'])
+            || ($post['status'] ?? '') !== 'visible'
+        ) {
             throw new RuntimeException('Réponse invalide.');
         }
         Database::transaction(static function () use ($topicId, $postId): void {
@@ -660,6 +665,10 @@ final class ForumTopic
                 [$topicId]
             );
             return false;
+        }
+        $topic = self::find($topicId);
+        if (!$topic || ($topic['status'] ?? '') !== 'visible') {
+            throw new RuntimeException('Discussion introuvable.');
         }
         $max = Database::fetch(
             'SELECT MAX(id) AS n FROM forum_posts WHERE topic_id = ? AND status = "visible"',

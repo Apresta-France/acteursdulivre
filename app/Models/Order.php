@@ -385,10 +385,13 @@ final class Order
                AND o.confirmed_at IS NULL
                AND r.id IS NULL
                AND (
-                    NOT EXISTS (SELECT 1 FROM order_milestones om WHERE om.order_id = o.id)
-                    OR EXISTS (
+                    EXISTS (
                         SELECT 1 FROM order_milestones om
                         WHERE om.order_id = o.id AND om.code = "validate" AND om.status = "current"
+                    )
+                    OR (
+                        NOT EXISTS (SELECT 1 FROM order_milestones om WHERE om.order_id = o.id)
+                        AND o.status = "delivered"
                     )
                )
              ORDER BY o.created_at DESC',
@@ -417,10 +420,13 @@ final class Order
                AND o.confirmed_at IS NULL
                AND r.id IS NULL
                AND (
-                    NOT EXISTS (SELECT 1 FROM order_milestones om WHERE om.order_id = o.id)
-                    OR EXISTS (
+                    EXISTS (
                         SELECT 1 FROM order_milestones om
                         WHERE om.order_id = o.id AND om.code = "validate" AND om.status = "current"
+                    )
+                    OR (
+                        NOT EXISTS (SELECT 1 FROM order_milestones om WHERE om.order_id = o.id)
+                        AND o.status = "delivered"
                     )
                )
              ORDER BY o.created_at DESC',
@@ -863,7 +869,7 @@ final class Order
             default => 'navy',
         };
         $row['when'] = time_ago($row['created_at'] ?? null);
-        $row['can_confirm'] = empty($row['confirmed_at']) && in_array($status, self::COMPLETABLE, true);
+        $row['can_confirm'] = empty($row['confirmed_at']) && $status === 'delivered';
         $row['can_accept'] = $status === 'pending';
         $row['can_deliver'] = $status === 'in_progress';
         $row['can_dispute'] = in_array($status, ['pending', 'in_progress', 'delivered'], true);

@@ -328,17 +328,18 @@ final class OrderMilestone
         }
         try {
             self::seed($id);
+            $row = Database::fetch(
+                'SELECT status FROM order_milestones WHERE order_id = ? AND code = "validate"',
+                [$id]
+            );
         } catch (\Throwable) {
-            return in_array((string) ($order['status'] ?? ''), Order::COMPLETABLE, true);
+            $row = null;
         }
-        $row = Database::fetch(
-            'SELECT status FROM order_milestones WHERE order_id = ? AND code = "validate"',
-            [$id]
-        );
-        if (!$row) {
-            return in_array((string) ($order['status'] ?? ''), Order::COMPLETABLE, true);
+        if ($row) {
+            return ($row['status'] ?? '') === self::STATUS_CURRENT;
         }
-        return ($row['status'] ?? '') === self::STATUS_CURRENT;
+
+        return (string) ($order['status'] ?? '') === 'delivered';
     }
 
     /**
@@ -458,7 +459,7 @@ final class OrderMilestone
                 if ($mission && ($mission['status'] ?? '') === 'assigned') {
                     Mission::setStatus($missionId, 'open');
                     Database::query(
-                        'UPDATE applications SET status = "sent" WHERE mission_id = ? AND status = "accepted"',
+                        'UPDATE applications SET status = "sent" WHERE mission_id = ? AND status IN ("accepted", "rejected")',
                         [$missionId]
                     );
                 }
@@ -1080,7 +1081,7 @@ final class OrderMilestone
         $done = [];
         $skip = [];
 
-        if (in_array($status, ['in_progress', 'delivered', 'confirmed', 'paid', 'dispute'], true)) {
+        if (in_array($status, ['in_progress', 'delivered', 'confirmed', 'paid'], true)) {
             $done = ['quote', 'quote_accept'];
             $skip = self::DEPOSIT_CODES;
         }

@@ -653,7 +653,6 @@ final class HourlyCron
             ReminderSend::record($kind, $userId, $subjectType, $subjectId);
             return true;
         } catch (Throwable $e) {
-            ReminderSend::record($kind, $userId, $subjectType, $subjectId);
             $errors[] = $kind . ' e-mail ' . $email . ' : ' . $e->getMessage();
             return false;
         }

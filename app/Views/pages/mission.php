@@ -65,6 +65,9 @@ $attachmentExt = strtoupper((string) pathinfo($attachmentName, PATHINFO_EXTENSIO
           <span class="file-chip-ext"><?= e($attachmentExt !== '' ? $attachmentExt : 'DOC') ?></span>
           <span class="file-chip-name"><?= e($attachmentName) ?></span>
         </a>
+      <?php elseif (!empty($live['attachment_locked'])): ?>
+        <h2>Pièce jointe</h2>
+        <p class="mission-row-sub">Un document est joint à cette recherche. Il est accessible au porteur de projet et aux prestataires qui ont candidaté.</p>
       <?php endif; ?>
 
       <div class="mission-share">

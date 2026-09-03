@@ -346,7 +346,7 @@ final class ForumController
             $category = null;
             $topic = null;
         }
-        if (!$category || !$topic) {
+        if (!$category || !$topic || ($topic['status'] ?? '') !== 'visible') {
             not_found('Cette discussion n\'existe pas.');
         }
 
@@ -441,7 +441,7 @@ final class ForumController
         } catch (\Throwable) {
             $topic = null;
         }
-        if (!$topic) {
+        if (!$topic || ($topic['status'] ?? '') !== 'visible') {
             not_found('Cette discussion n\'existe pas.');
         }
         return $topic;

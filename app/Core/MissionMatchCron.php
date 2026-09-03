@@ -103,7 +103,6 @@ final class MissionMatchCron
         $path = (string) ($mission['href'] ?? ('/missions/' . ($mission['slug'] ?? '')));
         $link = url($path);
 
-        $hadEmailFailure = false;
         foreach ($recipients as $user) {
             $userId = (int) ($user['id'] ?? 0);
             if ($userId < 1 || MissionMatch::alreadyNotified($missionId, $userId)) {
@@ -130,7 +129,6 @@ final class MissionMatchCron
             }
 
             $email = trim((string) ($user['email'] ?? ''));
-            $emailFailed = false;
             if ($email !== '' && User::wantsEmail($user, 'missions')) {
                 try {
                     Mailer::sendTemplate('nouvelle-mission-metier', $email, [
@@ -142,22 +140,14 @@ final class MissionMatchCron
                     ]);
                     $stats['emails']++;
                 } catch (Throwable $e) {
-                    $emailFailed = true;
                     $errors[] = 'e-mail ' . $email . ' : ' . $e->getMessage();
                 }
-            }
-
-            if ($emailFailed) {
-                $hadEmailFailure = true;
-                continue;
             }
 
             MissionMatch::record($missionId, $userId);
             $stats['recipients']++;
         }
 
-        if (!$hadEmailFailure) {
-            MissionMatch::markAlerted($missionId);
-        }
+        MissionMatch::markAlerted($missionId);
     }
 }

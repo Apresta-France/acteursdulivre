@@ -154,7 +154,7 @@ final class ForumPost
     public static function create(int $topicId, int $userId, array $data): array
     {
         $topic = ForumTopic::find($topicId);
-        if (!$topic) {
+        if (!$topic || ($topic['status'] ?? '') !== 'visible') {
             throw new RuntimeException('Discussion introuvable.');
         }
         if (!empty($topic['is_locked'])) {
@@ -174,7 +174,7 @@ final class ForumPost
         $parentId = (int) ($data['parent_id'] ?? 0);
         if ($parentId > 0) {
             $parent = self::find($parentId);
-            if (!$parent || (int) $parent['topic_id'] !== $topicId) {
+            if (!$parent || (int) $parent['topic_id'] !== $topicId || ($parent['status'] ?? '') !== 'visible') {
                 throw new RuntimeException('Citation invalide.');
             }
         } else {
@@ -297,7 +297,7 @@ final class ForumPost
     public static function toggleUseful(int $postId, int $userId, ?int $topicId = null): array
     {
         $post = self::find($postId);
-        if (!$post || !empty($post['is_op'])) {
+        if (!$post || !empty($post['is_op']) || ($post['status'] ?? '') !== 'visible') {
             throw new RuntimeException('Message invalide.');
         }
         if ($topicId !== null && (int) ($post['topic_id'] ?? 0) !== $topicId) {

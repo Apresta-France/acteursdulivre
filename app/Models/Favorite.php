@@ -23,7 +23,11 @@ final class Favorite
         $out = [];
         foreach ($rows as $row) {
             $service = Service::find((int) $row['id']);
-            if ($service) {
+            if (
+                $service
+                && ($service['status'] ?? '') === 'published'
+                && User::isPublicOfferer((int) ($service['user_id'] ?? 0))
+            ) {
                 $out[] = $service;
             }
         }
@@ -41,7 +45,8 @@ final class Favorite
 
     public static function toggle(int $userId, int $serviceId): bool
     {
-        if (!Service::find($serviceId)) {
+        $service = Service::find($serviceId);
+        if (!$service) {
             throw new \RuntimeException('Cette prestation est introuvable.');
         }
         if (self::has($userId, $serviceId)) {
@@ -50,6 +55,12 @@ final class Favorite
                 [$userId, $serviceId]
             );
             return false;
+        }
+        if (
+            ($service['status'] ?? '') !== 'published'
+            || !User::isPublicOfferer((int) ($service['user_id'] ?? 0))
+        ) {
+            throw new \RuntimeException('Cette prestation n\'est plus disponible.');
         }
         try {
             Database::query(

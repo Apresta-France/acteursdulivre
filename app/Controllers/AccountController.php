@@ -1943,6 +1943,10 @@ final class AccountController
         $user = Auth::requireOfferer();
         $first = $request->string('first_name', $user['first_name']);
         $last = $request->string('last_name', $user['last_name']);
+        if ($first === '' || $last === '') {
+            flash('error', 'Indiquez votre prénom et votre nom.');
+            redirect('/espace/vitrine');
+        }
 
         $trades = array_values(array_unique(array_filter($request->list('trades'), 'is_string')));
         if (count($trades) > 3) {
@@ -2009,14 +2013,22 @@ final class AccountController
             ]);
             User::storeAvatar((int) $user['id'], $request->file('avatar'));
 
+            $allowedPortfolioPaths = [];
+            foreach ($current['portfolio'] ?? [] as $existing) {
+                $kept = trim((string) ($existing['image_path'] ?? ''));
+                if ($kept !== '') {
+                    $allowedPortfolioPaths[] = $kept;
+                }
+            }
+
             $items = [];
             foreach ($request->list('portfolio') as $i => $row) {
                 if (!is_array($row)) {
                     continue;
                 }
                 $title = trim((string) ($row['title'] ?? ''));
-                $imagePath = trim((string) ($row['image_path'] ?? '')) ?: null;
-                $imageUrl = trim((string) ($row['image_url'] ?? ''));
+                $imagePath = self::safeKeptImagePath((string) ($row['image_path'] ?? ''), $allowedPortfolioPaths);
+                $imageUrl = AuthorPage::cleanUrl(trim((string) ($row['image_url'] ?? '')));
                 $file = self::nestedFile('portfolio_file', (int) $i);
                 if ($file) {
                     $stored = store_upload($file, 'portfolio', ['jpg', 'jpeg', 'png', 'webp', 'gif'], 5 * 1024 * 1024);
@@ -2429,9 +2441,16 @@ final class AccountController
             redirect('/espace/parametres');
         }
 
+        $first = $request->string('first_name', (string) $user['first_name']);
+        $last = $request->string('last_name', (string) $user['last_name']);
+        if ($first === '' || $last === '') {
+            flash('error', 'Indiquez votre prénom et votre nom.');
+            redirect('/espace/parametres');
+        }
+
         User::update((int) $user['id'], [
-            'first_name' => $request->string('first_name', $user['first_name']),
-            'last_name' => $request->string('last_name', $user['last_name']),
+            'first_name' => $first,
+            'last_name' => $last,
             'email' => $email,
             'seeks_services' => $seeks ? 1 : 0,
             'offers_services' => $offers ? 1 : 0,

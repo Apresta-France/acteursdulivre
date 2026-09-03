@@ -60,6 +60,7 @@ final class NewsletterCron
                 }
             }
 
+            NewsletterCampaign::releaseStaleSending();
             $stats['skipped'] = NewsletterCampaign::skipUnsubscribedPending();
             if (Newsletter::enabled()) {
                 $batch = NewsletterCampaign::pendingBatch(Newsletter::batchSize());

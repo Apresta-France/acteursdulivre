@@ -503,14 +503,28 @@ final class User
 
     private static function maybeGrantFounder(int $id): void
     {
+        if ($id < 1) {
+            return;
+        }
         try {
             $limit = Commission::founderLimit();
-            Database::query(
-                'UPDATE users SET founder = 1
-                 WHERE id = ?
-                   AND (SELECT n FROM (SELECT COUNT(*) AS n FROM users WHERE founder = 1) AS taken) < ?',
-                [$id, $limit]
-            );
+            if ($limit < 1) {
+                return;
+            }
+            $got = Database::fetch('SELECT GET_LOCK(?, 8) AS ok', ['adl-founder']);
+            if ((int) ($got['ok'] ?? 0) !== 1) {
+                return;
+            }
+            try {
+                Database::query(
+                    'UPDATE users SET founder = 1
+                     WHERE id = ?
+                       AND (SELECT n FROM (SELECT COUNT(*) AS n FROM users WHERE founder = 1) AS taken) < ?',
+                    [$id, $limit]
+                );
+            } finally {
+                Database::fetch('SELECT RELEASE_LOCK(?) AS ok', ['adl-founder']);
+            }
         } catch (\Throwable) {
         }
     }
