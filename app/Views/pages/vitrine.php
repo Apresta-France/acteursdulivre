@@ -453,7 +453,7 @@ if ($rateKind === \Adl\Models\Profile::RATE_PERCENT || str_contains($rateValue, 
     <div data-tab-panel="portfolio"<?= $tab === 'portfolio' ? '' : ' hidden' ?>>
       <div class="espace-panel">
         <h2 class="espace-group-title">Créations et exemples</h2>
-        <p class="espace-section-lead">Ajoutez des créations déjà réalisées et des exemples : un titre, une année, une courte description, et un visuel (fichier ou lien). Chaque pièce doit être une réalisation humaine dont vous détenez les droits.</p>
+        <p class="espace-section-lead">Ajoutez des créations déjà réalisées et des exemples : un titre, une année, une courte description, et un visuel (fichier ou lien). Le visuel s’affiche dès que vous le choisissez ; enregistrez ensuite la vitrine. Chaque pièce doit être une réalisation humaine dont vous détenez les droits.</p>
       <div class="repeat-list portfolio-list" data-repeat="portfolio">
         <?php foreach ($portfolio as $i => $item): ?>
           <div class="repeat-card" data-repeat-row>
@@ -472,18 +472,19 @@ if ($rateKind === \Adl\Models\Profile::RATE_PERCENT || str_contains($rateValue, 
               <input class="input" name="portfolio[<?= $i ?>][image_url]" value="<?= e((string) ($item['image_url'] ?? '')) ?>" placeholder="Lien vers un visuel (optionnel)">
             </div>
             <textarea class="textarea" name="portfolio[<?= $i ?>][description]" rows="3" placeholder="Ce que vous avez fait, pour qui, dans quelles contraintes."><?= e((string) ($item['description'] ?? '')) ?></textarea>
-            <span class="field">Visuel (JPG, PNG, WebP — 5 Mo max)</span>
+            <span class="field">Visuel (JPG, PNG, WebP ou GIF — 5 Mo max)</span>
             <?php
+              $hasRealImage = trim((string) ($item['image_path'] ?? '')) !== '' || trim((string) ($item['image_url'] ?? '')) !== '';
+              $previewSrc = $hasRealImage ? (string) ($item['image'] ?? '') : '';
               $filePickName = 'portfolio_file[' . $i . ']';
               $filePickAccept = 'image/jpeg,image/png,image/webp,image/gif';
               $filePickButton = 'Choisir un visuel';
-              $filePickEmpty = !empty($item['image']) ? 'Visuel actuel — choisir un autre fichier pour le remplacer' : null;
+              $filePickEmpty = $hasRealImage ? 'Visuel actuel — choisir un autre fichier pour le remplacer' : null;
               $filePickDrop = true;
               require ADL_ROOT . '/app/Views/partials/file-pick.php';
             ?>
-            <?php if (!empty($item['image'])): ?>
-              <div class="portfolio-preview" style="background-image:url('<?= e((string) $item['image']) ?>')"></div>
-            <?php endif; ?>
+            <p class="field-help" data-portfolio-file-error hidden>Ce format n’est pas accepté. Envoyez un JPG, PNG, WebP ou GIF.</p>
+            <div class="portfolio-preview" data-portfolio-preview<?= $previewSrc !== '' ? ' style="background-image:url(\'' . e($previewSrc) . '\')"' : ' hidden' ?>></div>
             <button type="button" class="text-btn" data-repeat-remove>Retirer cette pièce</button>
           </div>
         <?php endforeach; ?>
@@ -764,7 +765,7 @@ if ($rateKind === \Adl\Models\Profile::RATE_PERCENT || str_contains($rateValue, 
       <input class="input" name="portfolio[__i__][image_url]" placeholder="Lien vers un visuel (optionnel)">
     </div>
     <textarea class="textarea" name="portfolio[__i__][description]" rows="3" placeholder="Ce que vous avez fait, pour qui."></textarea>
-    <span class="field">Visuel (JPG, PNG, WebP — 5 Mo max)</span>
+    <span class="field">Visuel (JPG, PNG, WebP ou GIF — 5 Mo max)</span>
     <?php
       $filePickName = 'portfolio_file[__i__]';
       $filePickAccept = 'image/jpeg,image/png,image/webp,image/gif';
@@ -772,6 +773,8 @@ if ($rateKind === \Adl\Models\Profile::RATE_PERCENT || str_contains($rateValue, 
       $filePickDrop = true;
       require ADL_ROOT . '/app/Views/partials/file-pick.php';
     ?>
+    <p class="field-help" data-portfolio-file-error hidden>Ce format n’est pas accepté. Envoyez un JPG, PNG, WebP ou GIF.</p>
+    <div class="portfolio-preview" data-portfolio-preview hidden></div>
     <button type="button" class="text-btn" data-repeat-remove>Retirer cette pièce</button>
   </div>
 </template>

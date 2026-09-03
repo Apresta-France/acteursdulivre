@@ -2015,16 +2015,21 @@ final class AccountController
                     continue;
                 }
                 $title = trim((string) ($row['title'] ?? ''));
-                if ($title === '') {
-                    continue;
-                }
                 $imagePath = trim((string) ($row['image_path'] ?? '')) ?: null;
+                $imageUrl = trim((string) ($row['image_url'] ?? ''));
                 $file = self::nestedFile('portfolio_file', (int) $i);
                 if ($file) {
                     $stored = store_upload($file, 'portfolio', ['jpg', 'jpeg', 'png', 'webp', 'gif'], 5 * 1024 * 1024);
                     if ($stored) {
                         $imagePath = $stored;
                     }
+                }
+                if ($title === '' && $imagePath === null && $imageUrl === '') {
+                    continue;
+                }
+                if ($title === '') {
+                    $fromFile = $file ? pathinfo((string) ($file['name'] ?? ''), PATHINFO_FILENAME) : '';
+                    $title = $fromFile !== '' ? $fromFile : 'Sans titre';
                 }
                 $items[] = [
                     'id' => (int) ($row['id'] ?? 0),
@@ -2033,7 +2038,7 @@ final class AccountController
                     'year' => trim((string) ($row['year'] ?? '')),
                     'kind' => (string) ($row['kind'] ?? 'creation'),
                     'image_path' => $imagePath,
-                    'image_url' => trim((string) ($row['image_url'] ?? '')),
+                    'image_url' => $imageUrl,
                 ];
             }
             PortfolioItem::replace((int) $profile['id'], $items);

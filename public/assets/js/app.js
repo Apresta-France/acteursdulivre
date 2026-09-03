@@ -1511,6 +1511,7 @@
       list.insertAdjacentHTML('beforeend', html);
       bindFilePicks(list.lastElementChild);
       bindFieldSuggests(list.lastElementChild);
+      bindPortfolioPreviews(list.lastElementChild);
     });
   });
 
@@ -2224,6 +2225,77 @@
   }
 
   bindFilePicks(document);
+
+  function isUnsupportedPortfolioImage(file) {
+    var name = (file.name || '').toLowerCase();
+    var type = (file.type || '').toLowerCase();
+    return /\.(heic|heif|tif|tiff|bmp|avif)$/.test(name) || /image\/(heic|heif|tiff|bmp|avif)/.test(type);
+  }
+
+  function bindPortfolioPreview(row) {
+    if (!row || row.dataset.portfolioPreviewBound) return;
+    var fileInput = row.querySelector('input[type="file"]');
+    var urlInput = row.querySelector('input[name*="[image_url]"]');
+    var preview = row.querySelector('[data-portfolio-preview]');
+    var error = row.querySelector('[data-portfolio-file-error]');
+    if (!preview) return;
+    row.dataset.portfolioPreviewBound = '1';
+    var objectUrl = '';
+    function setPreview(url) {
+      if (objectUrl) {
+        URL.revokeObjectURL(objectUrl);
+        objectUrl = '';
+      }
+      if (!url) {
+        preview.hidden = true;
+        preview.style.backgroundImage = '';
+        return;
+      }
+      preview.hidden = false;
+      preview.style.backgroundImage = 'url("' + String(url).replace(/"/g, '\\"') + '")';
+    }
+    function setError(on) {
+      if (error) error.hidden = !on;
+    }
+    if (fileInput) {
+      fileInput.addEventListener('change', function () {
+        var file = fileInput.files && fileInput.files[0];
+        if (!file) {
+          setError(false);
+          return;
+        }
+        if (isUnsupportedPortfolioImage(file)) {
+          setError(true);
+          fileInput.value = '';
+          setPreview('');
+          return;
+        }
+        setError(false);
+        if (objectUrl) URL.revokeObjectURL(objectUrl);
+        objectUrl = URL.createObjectURL(file);
+        preview.hidden = false;
+        preview.style.backgroundImage = 'url("' + objectUrl + '")';
+      });
+    }
+    if (urlInput) {
+      urlInput.addEventListener('input', function () {
+        if (fileInput && fileInput.files && fileInput.files[0]) return;
+        var v = urlInput.value.trim();
+        setPreview(/^https?:\/\//i.test(v) ? v : '');
+      });
+    }
+  }
+
+  function bindPortfolioPreviews(root) {
+    var scope = root || document;
+    if (scope.matches && scope.matches('[data-repeat-row]')) {
+      bindPortfolioPreview(scope);
+      return;
+    }
+    scope.querySelectorAll('[data-repeat="portfolio"] [data-repeat-row]').forEach(bindPortfolioPreview);
+  }
+
+  bindPortfolioPreviews(document);
 
   (function bindAuthorWorkGallery() {
     var form = document.querySelector('[data-work-form]');

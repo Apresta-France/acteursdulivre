@@ -3156,6 +3156,7 @@ a.tab {
 .icon-btn, .text-btn { background: none; border: 0; color: #A8B6C4; cursor: pointer; }
 .text-btn { font-size: 13px; text-align: left; padding: 0; }
 .portfolio-preview { height: 120px; border-radius: 8px; background: #F4F6F9 center/cover no-repeat; }
+.field-help[data-portfolio-file-error]:not([hidden]) { color: #B42318; }
 
 .profile-hero {
   background: var(--navy);
