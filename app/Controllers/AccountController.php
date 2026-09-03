@@ -2027,10 +2027,6 @@ final class AccountController
                 if ($title === '' && $imagePath === null && $imageUrl === '') {
                     continue;
                 }
-                if ($title === '') {
-                    $fromFile = $file ? pathinfo((string) ($file['name'] ?? ''), PATHINFO_FILENAME) : '';
-                    $title = $fromFile !== '' ? $fromFile : 'Sans titre';
-                }
                 $items[] = [
                     'id' => (int) ($row['id'] ?? 0),
                     'title' => $title,
@@ -2040,6 +2036,26 @@ final class AccountController
                     'image_path' => $imagePath,
                     'image_url' => $imageUrl,
                 ];
+            }
+            $usedTitles = [];
+            foreach ($items as $item) {
+                $existing = mb_strtolower(trim((string) ($item['title'] ?? '')));
+                if ($existing !== '') {
+                    $usedTitles[$existing] = true;
+                }
+            }
+            $next = 1;
+            foreach ($items as $j => $item) {
+                if (trim((string) ($item['title'] ?? '')) !== '') {
+                    continue;
+                }
+                while (isset($usedTitles[mb_strtolower('Exemple ' . $next)])) {
+                    $next++;
+                }
+                $label = 'Exemple ' . $next;
+                $items[$j]['title'] = $label;
+                $usedTitles[mb_strtolower($label)] = true;
+                $next++;
             }
             PortfolioItem::replace((int) $profile['id'], $items);
         } catch (\Throwable $e) {

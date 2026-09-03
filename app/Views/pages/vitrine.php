@@ -453,40 +453,13 @@ if ($rateKind === \Adl\Models\Profile::RATE_PERCENT || str_contains($rateValue, 
     <div data-tab-panel="portfolio"<?= $tab === 'portfolio' ? '' : ' hidden' ?>>
       <div class="espace-panel">
         <h2 class="espace-group-title">Créations et exemples</h2>
-        <p class="espace-section-lead">Ajoutez des créations déjà réalisées et des exemples : un titre, une année, une courte description, et un visuel (fichier ou lien). Le visuel s’affiche dès que vous le choisissez ; enregistrez ensuite la vitrine. Chaque pièce doit être une réalisation humaine dont vous détenez les droits.</p>
+        <p class="espace-section-lead">Un titre, une année, une courte description et un visuel. Sans titre, la pièce s’appelle Exemple 1, Exemple 2… Le visuel s’affiche dès que vous le choisissez ; enregistrez ensuite la vitrine. Chaque pièce doit être une réalisation humaine dont vous détenez les droits.</p>
       <div class="repeat-list portfolio-list" data-repeat="portfolio">
         <?php foreach ($portfolio as $i => $item): ?>
-          <div class="repeat-card" data-repeat-row>
-            <input type="hidden" name="portfolio[<?= $i ?>][id]" value="<?= e((string) ($item['id'] ?? '')) ?>">
-            <input type="hidden" name="portfolio[<?= $i ?>][image_path]" value="<?= e((string) ($item['image_path'] ?? '')) ?>">
-            <div class="form-grid-2">
-              <input class="input" name="portfolio[<?= $i ?>][title]" value="<?= e((string) ($item['title'] ?? '')) ?>" placeholder="Titre de la création ou de l'exemple">
-              <input class="input" name="portfolio[<?= $i ?>][year]" value="<?= e((string) ($item['year'] ?? '')) ?>" placeholder="2026">
-            </div>
-            <div class="form-grid-2">
-              <select class="input" name="portfolio[<?= $i ?>][kind]">
-                <?php foreach ($portfolioKinds as $value => $label): ?>
-                  <option value="<?= e($value) ?>"<?= (($item['kind'] ?? 'creation') === $value) ? ' selected' : '' ?>><?= e($label) ?></option>
-                <?php endforeach; ?>
-              </select>
-              <input class="input" name="portfolio[<?= $i ?>][image_url]" value="<?= e((string) ($item['image_url'] ?? '')) ?>" placeholder="Lien vers un visuel (optionnel)">
-            </div>
-            <textarea class="textarea" name="portfolio[<?= $i ?>][description]" rows="3" placeholder="Ce que vous avez fait, pour qui, dans quelles contraintes."><?= e((string) ($item['description'] ?? '')) ?></textarea>
-            <span class="field">Visuel (JPG, PNG, WebP ou GIF — 5 Mo max)</span>
-            <?php
-              $hasRealImage = trim((string) ($item['image_path'] ?? '')) !== '' || trim((string) ($item['image_url'] ?? '')) !== '';
-              $previewSrc = $hasRealImage ? (string) ($item['image'] ?? '') : '';
-              $filePickName = 'portfolio_file[' . $i . ']';
-              $filePickAccept = 'image/jpeg,image/png,image/webp,image/gif';
-              $filePickButton = 'Choisir un visuel';
-              $filePickEmpty = $hasRealImage ? 'Visuel actuel — choisir un autre fichier pour le remplacer' : null;
-              $filePickDrop = true;
-              require ADL_ROOT . '/app/Views/partials/file-pick.php';
-            ?>
-            <p class="field-help" data-portfolio-file-error hidden>Ce format n’est pas accepté. Envoyez un JPG, PNG, WebP ou GIF.</p>
-            <div class="portfolio-preview" data-portfolio-preview<?= $previewSrc !== '' ? ' style="background-image:url(\'' . e($previewSrc) . '\')"' : ' hidden' ?>></div>
-            <button type="button" class="text-btn" data-repeat-remove>Retirer cette pièce</button>
-          </div>
+          <?php
+            $portfolioIndex = $i;
+            require ADL_ROOT . '/app/Views/partials/portfolio-card.php';
+          ?>
         <?php endforeach; ?>
       </div>
       <button type="button" class="btn-ghost" data-repeat-add="portfolio">Ajouter une création ou un exemple</button>
@@ -751,31 +724,10 @@ if ($rateKind === \Adl\Models\Profile::RATE_PERCENT || str_contains($rateValue, 
   </div>
 </template>
 <template id="tpl-portfolio">
-  <div class="repeat-card" data-repeat-row>
-    <input type="hidden" name="portfolio[__i__][id]" value="">
-    <input type="hidden" name="portfolio[__i__][image_path]" value="">
-    <div class="form-grid-2">
-      <input class="input" name="portfolio[__i__][title]" placeholder="Titre de la création ou de l'exemple">
-      <input class="input" name="portfolio[__i__][year]" placeholder="2026">
-    </div>
-    <div class="form-grid-2">
-      <select class="input" name="portfolio[__i__][kind]">
-        <?php foreach ($portfolioKinds as $value => $label): ?><option value="<?= e($value) ?>"><?= e($label) ?></option><?php endforeach; ?>
-      </select>
-      <input class="input" name="portfolio[__i__][image_url]" placeholder="Lien vers un visuel (optionnel)">
-    </div>
-    <textarea class="textarea" name="portfolio[__i__][description]" rows="3" placeholder="Ce que vous avez fait, pour qui."></textarea>
-    <span class="field">Visuel (JPG, PNG, WebP ou GIF — 5 Mo max)</span>
-    <?php
-      $filePickName = 'portfolio_file[__i__]';
-      $filePickAccept = 'image/jpeg,image/png,image/webp,image/gif';
-      $filePickButton = 'Choisir un visuel';
-      $filePickDrop = true;
-      require ADL_ROOT . '/app/Views/partials/file-pick.php';
-    ?>
-    <p class="field-help" data-portfolio-file-error hidden>Ce format n’est pas accepté. Envoyez un JPG, PNG, WebP ou GIF.</p>
-    <div class="portfolio-preview" data-portfolio-preview hidden></div>
-    <button type="button" class="text-btn" data-repeat-remove>Retirer cette pièce</button>
-  </div>
+  <?php
+    $portfolioIndex = '__i__';
+    $item = ['id' => '', 'title' => '', 'description' => '', 'year' => '', 'kind' => 'creation', 'image_path' => '', 'image_url' => ''];
+    require ADL_ROOT . '/app/Views/partials/portfolio-card.php';
+  ?>
 </template>
 <script type="application/json" id="vitrine-suggests"><?= json_encode($profileSuggests ?? \Adl\Data\Catalog::profileSuggests(), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS) ?></script>
