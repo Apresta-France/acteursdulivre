@@ -364,11 +364,30 @@ final class ForumTopic
             'SELECT COUNT(*) AS n FROM forum_topics
              WHERE status = "visible" AND created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)'
         );
+        $solved = Database::fetch(
+            'SELECT COUNT(*) AS n FROM forum_topics WHERE status = "visible" AND is_solved = 1'
+        );
+        $contributors = Database::fetch(
+            'SELECT COUNT(DISTINCT user_id) AS n FROM forum_posts WHERE status = "visible"'
+        );
+        $follows = Database::fetch('SELECT COUNT(*) AS n FROM forum_topic_follows');
+        $postsWeek = Database::fetch(
+            'SELECT COUNT(*) AS n FROM forum_posts
+             WHERE status = "visible" AND created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)'
+        );
+        $hidden = Database::fetch(
+            'SELECT COUNT(*) AS n FROM forum_topics WHERE status IN ("hidden", "moderated")'
+        );
         return [
             'topics' => (int) ($topics['n'] ?? 0),
             'posts' => (int) ($posts['n'] ?? 0),
             'unanswered' => (int) ($unanswered['n'] ?? 0),
             'week' => (int) ($week['n'] ?? 0),
+            'solved' => (int) ($solved['n'] ?? 0),
+            'contributors' => (int) ($contributors['n'] ?? 0),
+            'follows' => (int) ($follows['n'] ?? 0),
+            'posts_week' => (int) ($postsWeek['n'] ?? 0),
+            'hidden' => (int) ($hidden['n'] ?? 0),
         ];
     }
 

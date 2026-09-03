@@ -8,6 +8,7 @@ $periods = $periods ?? [];
 $kpis = $kpis ?? [];
 $series = $series ?? [];
 $live = $live ?? [];
+$community = $community ?? [];
 $keep = [
     'periode' => $period['id'] ?? '7j',
     'compare' => $compare ? '1' : '0',
@@ -60,9 +61,59 @@ $rankTable = static function (array $rows, string $empty): void {
   <div class="admin-page-head">
     <div>
       <h1>Statistiques</h1>
-      <p class="admin-lead">Audience anonymisée, sans cookie dédié. Les visiteurs ne sont pas suivis d’un jour à l’autre.</p>
+      <p class="admin-lead">Audience anonymisée, sans cookie dédié, et état actuel de la communauté (auteurs, forum, avis).</p>
     </div>
   </div>
+
+  <section class="stats-community">
+    <h2 class="admin-h2">Communauté et contenus</h2>
+    <p class="admin-muted">Totaux à l’instant T — indépendants de la période d’audience ci-dessous.</p>
+    <div class="admin-kpi-row">
+      <?php foreach ($community['kpis'] ?? [] as $k): ?>
+        <?php $kpiTag = !empty($k['href']) ? 'a' : 'div'; ?>
+        <<?= $kpiTag ?> class="admin-kpi"<?php if ($kpiTag === 'a'): ?> href="<?= e(url((string) $k['href'])) ?>"<?php endif; ?>>
+          <div class="admin-kpi-k"><?= e((string) $k['k']) ?></div>
+          <div class="admin-kpi-v"><?= e((string) $k['v']) ?></div>
+          <?php if (!empty($k['note'])): ?>
+            <div class="admin-muted"><?= e((string) $k['note']) ?></div>
+          <?php endif; ?>
+        </<?= $kpiTag ?>>
+      <?php endforeach; ?>
+    </div>
+    <div class="stats-grid">
+      <div class="admin-card">
+        <h2>Auteurs et œuvres</h2>
+        <?php $rankTable($community['authors'] ?? [], 'Aucune fiche auteur pour le moment.'); ?>
+      </div>
+      <div class="admin-card">
+        <h2>Types d’œuvres</h2>
+        <?php $rankTable($community['author_kinds'] ?? [], 'Aucune œuvre cataloguée.'); ?>
+      </div>
+      <div class="admin-card">
+        <h2>Forum</h2>
+        <?php $rankTable($community['forum'] ?? [], 'Le forum n’a pas encore de discussions.'); ?>
+      </div>
+      <div class="admin-card">
+        <h2>Discussions par rubrique</h2>
+        <?php $rankTable($community['forum_categories'] ?? [], 'Aucune rubrique forum.'); ?>
+      </div>
+      <div class="admin-card">
+        <h2>Contributeurs du forum</h2>
+        <?php $rankTable($community['forum_contributors'] ?? [], 'Aucun message pour le moment.'); ?>
+      </div>
+      <div class="admin-card">
+        <h2>Avis et recommandations</h2>
+        <?php $rankTable($community['reviews'] ?? [], 'Aucun avis ni recommandation.'); ?>
+      </div>
+      <div class="admin-card">
+        <h2>Newsletter</h2>
+        <?php $rankTable($community['newsletter'] ?? [], 'Aucun abonné pour le moment.'); ?>
+      </div>
+    </div>
+  </section>
+
+  <h2 class="admin-h2">Audience</h2>
+  <p class="admin-muted">Pages vues, recherches et actions — les visiteurs ne sont pas suivis d’un jour à l’autre.</p>
 
   <form class="stats-toolbar" method="get" action="<?= e(url('/admin/statistiques')) ?>">
     <div class="stats-periods">

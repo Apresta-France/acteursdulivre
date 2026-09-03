@@ -32,7 +32,7 @@ $bioLen = mb_strlen((string) ($p['bio'] ?? ''));
         <div>
           <label class="field" for="pen_name">Nom de plume (optionnel)</label>
           <input class="input" id="pen_name" name="pen_name" value="<?= e((string) ($p['pen_name'] ?? '')) ?>" placeholder="<?= e(trim((string) ($p['first_name'] ?? '') . ' ' . (string) ($p['last_name'] ?? ''))) ?>" maxlength="190">
-          <p class="field-help">Laissez vide pour afficher <?= e(trim((string) ($p['first_name'] ?? '') . ' ' . (string) ($p['last_name'] ?? ''))) ?>. L'adresse publique suit ce nom jusqu'à la première publication de la fiche.</p>
+          <p class="field-help">Laissez vide pour afficher <?= e(trim((string) ($p['first_name'] ?? '') . ' ' . (string) ($p['last_name'] ?? ''))) ?>. L'adresse publique suit ce nom jusqu'à la première activation de la fiche.</p>
         </div>
         <div>
           <label class="field" for="tagline">En une ligne</label>

@@ -124,7 +124,7 @@ $renderWork = static function (array $w, bool $big): void {
 
   <?php if ($isDraft): ?>
     <div class="flash flash-warn" style="margin: 16px 44px 0;">
-      Cette fiche est en brouillon : seuls vous<?= $isOwner ? '' : ' (et l\'administration)' ?> pouvez la voir. Publiez-la depuis votre espace pour la rendre accessible.
+      Cette fiche est désactivée : seuls vous<?= $isOwner ? '' : ' (et l\'administration)' ?> pouvez la voir. Activez-la depuis votre espace pour la rendre accessible.
     </div>
   <?php endif; ?>
 
@@ -176,8 +176,13 @@ $renderWork = static function (array $w, bool $big): void {
     </div>
     <div class="profile-hero-actions">
       <?php if ($isOwner): ?>
-        <p class="profile-avail-note">C'est votre fiche auteur publique.</p>
-        <a class="btn-orange" href="<?= e(url('/espace/auteur')) ?>">Modifier ma fiche</a>
+        <p class="profile-avail-note"><?= $isDraft ? 'Cette fiche n\'est pas encore visible dans l\'annuaire des auteurs.' : 'C\'est votre fiche auteur publique.' ?></p>
+        <form method="post" action="<?= e(url('/espace/auteur/publication')) ?>">
+          <?= csrf_field() ?>
+          <input type="hidden" name="enabled" value="<?= $isDraft ? '1' : '0' ?>">
+          <button class="<?= $isDraft ? 'btn-orange' : 'btn-ghost-light' ?>" type="submit"><?= $isDraft ? 'Activer ma fiche' : 'Désactiver la fiche' ?></button>
+        </form>
+        <a class="<?= $isDraft ? 'btn-ghost-light' : 'btn-orange' ?>" href="<?= e(url('/espace/auteur')) ?>">Modifier ma fiche</a>
         <a class="btn-ghost-light" href="<?= e(url('/espace/auteur/oeuvres')) ?>">Gérer mes œuvres</a>
       <?php else: ?>
         <form method="post" action="<?= e(url('/espace/messages')) ?>">

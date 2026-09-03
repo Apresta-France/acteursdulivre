@@ -67,6 +67,52 @@ final class ReviewRequest
         return $row ? self::present($row) : null;
     }
 
+    /**
+     * @return array{pending: int, completed: int, cancelled: int, platform_pending: int, external_pending: int}
+     */
+    public static function stats(): array
+    {
+        $empty = [
+            'pending' => 0,
+            'completed' => 0,
+            'cancelled' => 0,
+            'platform_pending' => 0,
+            'external_pending' => 0,
+        ];
+        try {
+            $pending = Database::fetch(
+                'SELECT COUNT(*) AS n FROM review_requests WHERE status = ?',
+                [self::STATUS_PENDING]
+            );
+            $completed = Database::fetch(
+                'SELECT COUNT(*) AS n FROM review_requests WHERE status = ?',
+                [self::STATUS_COMPLETED]
+            );
+            $cancelled = Database::fetch(
+                'SELECT COUNT(*) AS n FROM review_requests WHERE status = ?',
+                [self::STATUS_CANCELLED]
+            );
+            $platform = Database::fetch(
+                'SELECT COUNT(*) AS n FROM review_requests WHERE kind = ? AND status = ?',
+                [self::KIND_PLATFORM, self::STATUS_PENDING]
+            );
+            $external = Database::fetch(
+                'SELECT COUNT(*) AS n FROM review_requests WHERE kind = ? AND status = ?',
+                [self::KIND_EXTERNAL, self::STATUS_PENDING]
+            );
+        } catch (\Throwable) {
+            return $empty;
+        }
+
+        return [
+            'pending' => (int) ($pending['n'] ?? 0),
+            'completed' => (int) ($completed['n'] ?? 0),
+            'cancelled' => (int) ($cancelled['n'] ?? 0),
+            'platform_pending' => (int) ($platform['n'] ?? 0),
+            'external_pending' => (int) ($external['n'] ?? 0),
+        ];
+    }
+
     public static function findOwned(int $id, int $sellerId): ?array
     {
         $row = Database::fetch(

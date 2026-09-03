@@ -222,6 +222,74 @@ final class AuthorPage
     }
 
     /**
+     * @return array{
+     *   accounts_with_works: int,
+     *   works: int,
+     *   pages: int,
+     *   pages_published: int,
+     *   pages_draft: int,
+     *   pages_empty: int,
+     *   featured: int,
+     *   kinds: list<array{label: string, n: int}>
+     * }
+     */
+    public static function stats(): array
+    {
+        $withWorks = Database::fetch(
+            'SELECT COUNT(DISTINCT ap.user_id) AS n
+             FROM author_pages ap
+             INNER JOIN author_works aw ON aw.author_page_id = ap.id
+             INNER JOIN users u ON u.id = ap.user_id
+             WHERE u.deleted_at IS NULL'
+        );
+        $works = Database::fetch('SELECT COUNT(*) AS n FROM author_works');
+        $pages = Database::fetch(
+            'SELECT COUNT(*) AS n FROM author_pages a
+             JOIN users u ON u.id = a.user_id
+             WHERE u.deleted_at IS NULL'
+        );
+        $published = Database::fetch(
+            'SELECT COUNT(*) AS n FROM author_pages a
+             JOIN users u ON u.id = a.user_id
+             WHERE a.enabled = 1 AND u.status = "active" AND u.deleted_at IS NULL'
+        );
+        $drafts = Database::fetch(
+            'SELECT COUNT(*) AS n FROM author_pages a
+             JOIN users u ON u.id = a.user_id
+             WHERE a.enabled = 0 AND u.deleted_at IS NULL'
+        );
+        $empty = Database::fetch(
+            'SELECT COUNT(*) AS n FROM author_pages ap
+             JOIN users u ON u.id = ap.user_id
+             WHERE u.deleted_at IS NULL
+               AND NOT EXISTS (SELECT 1 FROM author_works aw WHERE aw.author_page_id = ap.id)'
+        );
+        $featured = Database::fetch('SELECT COUNT(*) AS n FROM author_works WHERE featured = 1');
+        $kindRows = Database::fetchAll(
+            'SELECT kind, COUNT(*) AS n FROM author_works GROUP BY kind ORDER BY n DESC'
+        );
+        $kinds = [];
+        foreach ($kindRows as $row) {
+            $kind = (string) ($row['kind'] ?? '');
+            $kinds[] = [
+                'label' => AuthorWork::KINDS[$kind] ?? ($kind !== '' ? $kind : 'Autre'),
+                'n' => (int) ($row['n'] ?? 0),
+            ];
+        }
+
+        return [
+            'accounts_with_works' => (int) ($withWorks['n'] ?? 0),
+            'works' => (int) ($works['n'] ?? 0),
+            'pages' => (int) ($pages['n'] ?? 0),
+            'pages_published' => (int) ($published['n'] ?? 0),
+            'pages_draft' => (int) ($drafts['n'] ?? 0),
+            'pages_empty' => (int) ($empty['n'] ?? 0),
+            'featured' => (int) ($featured['n'] ?? 0),
+            'kinds' => $kinds,
+        ];
+    }
+
+    /**
      * @return array{items: list<array<string, mixed>>, total: int}
      */
     public static function listPublic(int $limit = 24, int $page = 1): array

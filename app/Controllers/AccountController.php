@@ -2121,7 +2121,7 @@ final class AccountController
         try {
             $page = AuthorPage::ensure((int) $user['id']);
             if ($enable && trim((string) ($page['bio'] ?? '')) === '' && AuthorWork::countForPage((int) $page['id']) === 0) {
-                throw new \RuntimeException('Ajoutez au moins une biographie ou une œuvre avant de publier votre fiche auteur.');
+                throw new \RuntimeException('Ajoutez au moins une biographie ou une œuvre avant d\'activer votre fiche auteur.');
             }
             AuthorPage::setEnabled((int) $user['id'], $enable);
         } catch (\Throwable $e) {
@@ -2129,8 +2129,8 @@ final class AccountController
             redirect('/espace/auteur');
         }
         flash('saved', $enable
-            ? 'Votre fiche auteur est en ligne. Elle apparaît dans l\'annuaire des auteurs.'
-            : 'Votre fiche auteur est repassée en brouillon : elle n\'est plus visible publiquement.');
+            ? 'Votre fiche auteur est activée. Elle apparaît dans l\'annuaire des auteurs.'
+            : 'Votre fiche auteur est désactivée : elle n\'est plus visible publiquement.');
         redirect('/espace/auteur');
     }
 

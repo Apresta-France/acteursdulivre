@@ -20,9 +20,9 @@ if ($seeks && $offers) {
     $subtitle = 'Activez un usage dans vos paramètres pour afficher vos actions.';
 }
 
-$todos = [];
+$currentTodos = [];
 foreach ($jalonTodos ?? [] as $jalon) {
-    $todos[] = [
+    $currentTodos[] = [
         'icon' => (string) ($jalon['icon'] ?? 'clipboard'),
         'title' => (string) ($jalon['title'] ?? 'Jalon en cours'),
         'body' => (string) ($jalon['body'] ?? ''),
@@ -30,8 +30,9 @@ foreach ($jalonTodos ?? [] as $jalon) {
         'cta' => (string) ($jalon['cta'] ?? 'Ouvrir'),
     ];
 }
+$upcomingTodos = [];
 if ($seeks && $missionCount === 0) {
-    $todos[] = [
+    $upcomingTodos[] = [
         'icon' => 'file-plus',
         'title' => 'Publier votre première recherche',
         'body' => 'Décrivez le besoin et le budget : les prestataires du métier choisi pourront y répondre.',
@@ -40,7 +41,7 @@ if ($seeks && $missionCount === 0) {
     ];
 }
 if ($offers && $profileCompletion < 80) {
-    $todos[] = [
+    $upcomingTodos[] = [
         'icon' => 'id',
         'title' => 'Compléter votre vitrine',
         'body' => 'Profil complété à ' . $profileCompletion . ' %. Les vitrines précises reçoivent nettement plus de demandes.',
@@ -48,6 +49,14 @@ if ($offers && $profileCompletion < 80) {
         'cta' => 'Continuer',
     ];
 }
+$todoGroups = [];
+if ($currentTodos !== []) {
+    $todoGroups[] = ['label' => 'En cours', 'items' => $currentTodos];
+}
+if ($upcomingTodos !== []) {
+    $todoGroups[] = ['label' => 'À venir', 'items' => $upcomingTodos];
+}
+$platformNews = $platformNews ?? [];
 ?>
 <div class="espace-page dash-page">
   <div class="espace-page-head">
@@ -172,54 +181,66 @@ if ($offers && $profileCompletion < 80) {
     <?php endif; ?>
   </div>
 
-  <?php
-    $platformNews = $platformNews ?? [];
-    if ($platformNews !== []):
-  ?>
-    <section class="dash-section dash-news" id="actualite">
+  <div class="dash-top<?= $platformNews === [] ? ' is-single' : '' ?>">
+    <section class="dash-section dash-affairs">
       <div class="dash-section-head">
-        <h2>Actualité de la plateforme</h2>
-        <a href="<?= e(url('/journal')) ?>">Le journal →</a>
+        <h2>Vos affaires</h2>
       </div>
-      <div class="dash-news-list">
-        <?php foreach ($platformNews as $news): ?>
-          <?php
-            $publishedTs = strtotime((string) ($news['published_at'] ?? ''));
-            $isNew = $publishedTs !== false && $publishedTs >= strtotime('-3 days');
-          ?>
-          <a class="dash-news-item" href="<?= e(url((string) ($news['href'] ?? '/journal'))) ?>">
-            <?php if (!empty($news['when'])): ?>
-              <span class="dash-news-meta"><?= e((string) $news['when']) ?></span>
-            <?php endif; ?>
-            <span class="dash-news-title">
-              <?php if ($isNew): ?><span class="dash-news-new">Nouveau</span> <?php endif; ?><strong><?= e((string) ($news['title'] ?? '')) ?></strong>
-            </span>
-            <?php if (!empty($news['chapo'])): ?>
-              <em><?= e((string) $news['chapo']) ?></em>
-            <?php endif; ?>
-          </a>
+      <?php if ($todoGroups === []): ?>
+        <div class="dash-ok">
+          <span class="dash-ico"><?= icon('check', 18) ?></span>
+          <span>
+            <strong>Tout va bien pour le moment</strong>
+            <em>Rien n’attend votre action.</em>
+          </span>
+        </div>
+      <?php else: ?>
+        <?php foreach ($todoGroups as $group): ?>
+          <h3 class="dash-affairs-label"><?= e($group['label']) ?></h3>
+          <div class="dash-todos">
+            <?php foreach ($group['items'] as $todo): ?>
+              <a class="dash-todo" href="<?= e(url($todo['href'])) ?>">
+                <span class="dash-ico dash-ico-accent"><?= icon($todo['icon'], 18) ?></span>
+                <span>
+                  <strong><?= e($todo['title']) ?></strong>
+                  <em><?= e($todo['body']) ?></em>
+                </span>
+                <span class="dash-card-cta"><?= e($todo['cta']) ?> <?= icon('arrow', 14) ?></span>
+              </a>
+            <?php endforeach; ?>
+          </div>
         <?php endforeach; ?>
-      </div>
+      <?php endif; ?>
     </section>
-  <?php endif; ?>
 
-  <?php if ($todos !== []): ?>
-    <section class="dash-section">
-      <h2>À faire en priorité</h2>
-      <div class="dash-todos">
-        <?php foreach ($todos as $todo): ?>
-          <a class="dash-todo" href="<?= e(url($todo['href'])) ?>">
-            <span class="dash-ico dash-ico-accent"><?= icon($todo['icon'], 18) ?></span>
-            <span>
-              <strong><?= e($todo['title']) ?></strong>
-              <em><?= e($todo['body']) ?></em>
-            </span>
-            <span class="dash-card-cta"><?= e($todo['cta']) ?> <?= icon('arrow', 14) ?></span>
-          </a>
-        <?php endforeach; ?>
-      </div>
-    </section>
-  <?php endif; ?>
+    <?php if ($platformNews !== []): ?>
+      <section class="dash-section dash-news" id="actualite">
+        <div class="dash-section-head">
+          <h2>Actualité de la plateforme</h2>
+          <a href="<?= e(url('/journal')) ?>">Le journal →</a>
+        </div>
+        <div class="dash-news-list">
+          <?php foreach ($platformNews as $news): ?>
+            <?php
+              $publishedTs = strtotime((string) ($news['published_at'] ?? ''));
+              $isNew = $publishedTs !== false && $publishedTs >= strtotime('-3 days');
+            ?>
+            <a class="dash-news-item" href="<?= e(url((string) ($news['href'] ?? '/journal'))) ?>">
+              <?php if (!empty($news['when'])): ?>
+                <span class="dash-news-meta"><?= e((string) $news['when']) ?></span>
+              <?php endif; ?>
+              <span class="dash-news-title">
+                <?php if ($isNew): ?><span class="dash-news-new">Nouveau</span> <?php endif; ?><strong><?= e((string) ($news['title'] ?? '')) ?></strong>
+              </span>
+              <?php if (!empty($news['chapo'])): ?>
+                <em><?= e((string) $news['chapo']) ?></em>
+              <?php endif; ?>
+            </a>
+          <?php endforeach; ?>
+        </div>
+      </section>
+    <?php endif; ?>
+  </div>
 
   <?php if ($seeks): ?>
     <section class="dash-section">

@@ -19,10 +19,13 @@ use Adl\Data\AdminCatalog;
 use Adl\Data\Catalog;
 use Adl\Models\Analytics;
 use Adl\Models\Article;
+use Adl\Models\AuthorPage;
 use Adl\Models\Commission;
 use Adl\Models\Conversation;
 use Adl\Models\EmailLog;
 use Adl\Models\EmailTemplate;
+use Adl\Models\ForumCategory;
+use Adl\Models\ForumTopic;
 use Adl\Models\Invoice;
 use Adl\Models\Mission;
 use Adl\Models\Newsletter;
@@ -34,6 +37,7 @@ use Adl\Models\Profile;
 use Adl\Models\Report;
 use Adl\Models\Recommendation;
 use Adl\Models\Review;
+use Adl\Models\ReviewRequest;
 use Adl\Models\Service;
 use Adl\Models\Setting;
 use Adl\Models\Taxonomy;
@@ -161,6 +165,7 @@ final class AdminController
                 ],
             ];
         }
+        $report['community'] = self::communitySnapshot();
         $this->page('stats', 'admin/statistiques', $report);
     }
 
@@ -1349,6 +1354,199 @@ final class AdminController
         } catch (Throwable) {
             return 0;
         }
+    }
+
+    /**
+     * Totaux métier (auteurs, forum, avis, newsletter), indépendants de la période d’audience.
+     *
+     * @return array<string, mixed>
+     */
+    private static function communitySnapshot(): array
+    {
+        $authors = [
+            'accounts_with_works' => 0,
+            'works' => 0,
+            'pages' => 0,
+            'pages_published' => 0,
+            'pages_draft' => 0,
+            'pages_empty' => 0,
+            'featured' => 0,
+            'kinds' => [],
+        ];
+        try {
+            $authors = array_merge($authors, AuthorPage::stats());
+        } catch (Throwable) {
+        }
+
+        $forum = [
+            'topics' => 0,
+            'posts' => 0,
+            'unanswered' => 0,
+            'week' => 0,
+            'solved' => 0,
+            'contributors' => 0,
+            'follows' => 0,
+            'posts_week' => 0,
+            'hidden' => 0,
+        ];
+        try {
+            $forum = array_merge($forum, ForumTopic::stats());
+        } catch (Throwable) {
+        }
+
+        $forumCategories = [];
+        try {
+            foreach (ForumCategory::all() as $cat) {
+                $forumCategories[] = [
+                    'label' => (string) ($cat['name'] ?? ''),
+                    'n' => (int) ($cat['topic_count'] ?? 0),
+                    'href' => (string) ($cat['href'] ?? ''),
+                ];
+            }
+        } catch (Throwable) {
+        }
+
+        $forumContributors = [];
+        try {
+            foreach (ForumTopic::topContributors(8) as $row) {
+                $forumContributors[] = [
+                    'label' => (string) ($row['name'] ?? 'Membre'),
+                    'n' => (int) ($row['post_count'] ?? 0),
+                    'href' => $row['profile_href'] ?? null,
+                ];
+            }
+        } catch (Throwable) {
+        }
+
+        $requests = ['pending' => 0, 'completed' => 0, 'cancelled' => 0, 'platform_pending' => 0, 'external_pending' => 0];
+        try {
+            $requests = array_merge($requests, ReviewRequest::stats());
+        } catch (Throwable) {
+        }
+
+        $recos = ['visible' => 0, 'hidden' => 0];
+        try {
+            $recos = array_merge($recos, Recommendation::stats());
+        } catch (Throwable) {
+        }
+
+        $reviews = 0;
+        try {
+            $reviews = Review::countPublic();
+        } catch (Throwable) {
+        }
+
+        $newsletter = ['confirmed' => 0, 'pending' => 0, 'unsubscribed' => 0, 'letters' => 0];
+        try {
+            $newsletter['confirmed'] = Newsletter::countByStatus(Newsletter::STATUS_CONFIRMED);
+            $newsletter['pending'] = Newsletter::countByStatus(Newsletter::STATUS_PENDING);
+            $newsletter['unsubscribed'] = Newsletter::countByStatus(Newsletter::STATUS_UNSUBSCRIBED);
+            $newsletter['letters'] = NewsletterLetter::count();
+        } catch (Throwable) {
+        }
+
+        return [
+            'kpis' => [
+                [
+                    'k' => 'Comptes avec œuvres',
+                    'v' => format_int((int) $authors['accounts_with_works']),
+                    'href' => '/auteurs',
+                    'note' => 'au moins une œuvre',
+                ],
+                [
+                    'k' => 'Œuvres',
+                    'v' => format_int((int) $authors['works']),
+                    'href' => '/auteurs',
+                    'note' => 'fiches ouvrage',
+                ],
+                [
+                    'k' => 'Fiches auteur',
+                    'v' => format_int((int) $authors['pages_published']),
+                    'href' => '/auteurs',
+                    'note' => 'publiées',
+                ],
+                [
+                    'k' => 'Discussions',
+                    'v' => format_int((int) $forum['topics']),
+                    'href' => '/forum',
+                    'note' => 'forum visibles',
+                ],
+                [
+                    'k' => 'Messages',
+                    'v' => format_int((int) $forum['posts']),
+                    'href' => '/forum',
+                    'note' => 'forum',
+                ],
+                [
+                    'k' => 'Recommandations',
+                    'v' => format_int((int) $recos['visible']),
+                    'href' => '/admin/avis',
+                    'note' => 'visibles',
+                ],
+            ],
+            'authors' => self::rankRows([
+                ['label' => 'Comptes avec au moins une œuvre', 'n' => (int) $authors['accounts_with_works'], 'href' => '/auteurs'],
+                ['label' => 'Œuvres au catalogue', 'n' => (int) $authors['works']],
+                ['label' => 'Fiches auteur publiées', 'n' => (int) $authors['pages_published'], 'href' => '/auteurs'],
+                ['label' => 'Fiches encore en brouillon', 'n' => (int) $authors['pages_draft']],
+                ['label' => 'Fiches sans œuvre', 'n' => (int) $authors['pages_empty']],
+                ['label' => 'Œuvres mises en avant', 'n' => (int) $authors['featured']],
+            ]),
+            'author_kinds' => self::rankRows($authors['kinds'] ?? []),
+            'forum' => self::rankRows([
+                ['label' => 'Discussions visibles', 'n' => (int) $forum['topics'], 'href' => '/forum'],
+                ['label' => 'Messages', 'n' => (int) $forum['posts']],
+                ['label' => 'Sans réponse', 'n' => (int) $forum['unanswered'], 'href' => '/forum?filtre=sans-reponse'],
+                ['label' => 'Résolues', 'n' => (int) $forum['solved']],
+                ['label' => 'Discussions cette semaine', 'n' => (int) $forum['week']],
+                ['label' => 'Messages cette semaine', 'n' => (int) $forum['posts_week']],
+                ['label' => 'Contributeurs', 'n' => (int) $forum['contributors']],
+                ['label' => 'Abonnements aux discussions', 'n' => (int) $forum['follows']],
+                ['label' => 'Masquées ou à modérer', 'n' => (int) $forum['hidden']],
+            ]),
+            'forum_categories' => self::rankRows($forumCategories),
+            'forum_contributors' => self::rankRows($forumContributors),
+            'reviews' => self::rankRows([
+                ['label' => 'Avis publics', 'n' => $reviews, 'href' => '/admin/avis'],
+                ['label' => 'Recommandations visibles', 'n' => (int) $recos['visible'], 'href' => '/admin/avis'],
+                ['label' => 'Recommandations masquées', 'n' => (int) $recos['hidden'], 'href' => '/admin/avis'],
+                ['label' => 'Demandes d’avis en attente', 'n' => (int) $requests['pending']],
+                ['label' => 'Demandes d’avis honorées', 'n' => (int) $requests['completed']],
+                ['label' => 'Invitations hors plateforme en cours', 'n' => (int) $requests['external_pending']],
+                ['label' => 'Demandes mission en cours', 'n' => (int) $requests['platform_pending']],
+            ]),
+            'newsletter' => self::rankRows([
+                ['label' => 'Abonnés confirmés', 'n' => (int) $newsletter['confirmed'], 'href' => '/admin/newsletter'],
+                ['label' => 'En attente de confirmation', 'n' => (int) $newsletter['pending'], 'href' => '/admin/newsletter'],
+                ['label' => 'Désinscrits', 'n' => (int) $newsletter['unsubscribed']],
+                ['label' => 'Lettres conçues', 'n' => (int) $newsletter['letters'], 'href' => '/admin/newsletter'],
+            ]),
+        ];
+    }
+
+    /**
+     * @param list<array{label: string, n: int, href?: ?string}> $items
+     * @return list<array{label: string, n: int, v: string, pct: int, href: ?string}>
+     */
+    private static function rankRows(array $items): array
+    {
+        $max = 1;
+        foreach ($items as $item) {
+            $max = max($max, (int) ($item['n'] ?? 0));
+        }
+        $out = [];
+        foreach ($items as $item) {
+            $n = (int) ($item['n'] ?? 0);
+            $href = $item['href'] ?? null;
+            $out[] = [
+                'label' => (string) ($item['label'] ?? ''),
+                'n' => $n,
+                'v' => format_int($n),
+                'pct' => (int) round(100 * $n / $max),
+                'href' => is_string($href) && $href !== '' ? $href : null,
+            ];
+        }
+        return $out;
     }
 
     private function page(string $screen, string $view, array $extra = []): void

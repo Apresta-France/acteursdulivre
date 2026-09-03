@@ -143,6 +143,21 @@ final class Review
         return Database::fetch('SELECT * FROM reviews WHERE id = ?', [(int) Database::lastId()]) ?? [];
     }
 
+    public static function countPublic(): int
+    {
+        try {
+            $row = Database::fetch('SELECT COUNT(*) AS n FROM reviews WHERE hidden_at IS NULL');
+        } catch (\Throwable) {
+            try {
+                $row = Database::fetch('SELECT COUNT(*) AS n FROM reviews');
+            } catch (\Throwable) {
+                return 0;
+            }
+        }
+
+        return (int) ($row['n'] ?? 0);
+    }
+
     /** @return list<array<string, mixed>> */
     public static function all(): array
     {

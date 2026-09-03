@@ -26,6 +26,28 @@ final class Recommendation
         return array_map([self::class, 'present'], $rows);
     }
 
+    /**
+     * @return array{visible: int, hidden: int}
+     */
+    public static function stats(): array
+    {
+        try {
+            $visible = Database::fetch(
+                'SELECT COUNT(*) AS n FROM recommendations WHERE hidden_at IS NULL'
+            );
+            $hidden = Database::fetch(
+                'SELECT COUNT(*) AS n FROM recommendations WHERE hidden_at IS NOT NULL'
+            );
+        } catch (\Throwable) {
+            return ['visible' => 0, 'hidden' => 0];
+        }
+
+        return [
+            'visible' => (int) ($visible['n'] ?? 0),
+            'hidden' => (int) ($hidden['n'] ?? 0),
+        ];
+    }
+
     public static function countForTarget(int $userId): int
     {
         try {
