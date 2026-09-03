@@ -81,7 +81,7 @@ final class Article
     }
 
     /** @var list<string> */
-    private const CATEGORY_ORDER = ['Tarifs', 'Contrats', 'Métier', 'Fabrication', 'Diffusion'];
+    private const CATEGORY_ORDER = ['Tarifs', 'Contrats', 'Métier', 'Fabrication', 'Diffusion', 'Plateforme'];
 
     public const PER_PAGE = 9;
 
@@ -225,9 +225,14 @@ final class Article
     }
 
     /** @return list<array<string, mixed>> */
-    public static function preview(int $limit = 3): array
+    public static function preview(int $limit = 3, string $category = ''): array
     {
-        return array_slice(self::published(), 0, $limit);
+        $category = trim($category);
+        if ($category === '') {
+            return array_slice(self::published(), 0, $limit);
+        }
+        $found = self::searchPublished('', $category, 1, max(1, $limit));
+        return array_slice($found['items'], 0, $limit);
     }
 
     /** @return list<array<string, mixed>> */

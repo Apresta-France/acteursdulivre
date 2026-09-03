@@ -183,9 +183,15 @@ if ($offers && $profileCompletion < 80) {
       </div>
       <div class="dash-news-list">
         <?php foreach ($platformNews as $news): ?>
+          <?php
+            $publishedTs = strtotime((string) ($news['published_at'] ?? ''));
+            $isNew = $publishedTs !== false && $publishedTs >= strtotime('-3 days');
+          ?>
           <a class="dash-news-item" href="<?= e(url((string) ($news['href'] ?? '/journal'))) ?>">
-            <span class="dash-news-meta"><?= e((string) ($news['cat'] ?? 'Journal')) ?><?php if (!empty($news['when'])): ?> · <?= e((string) $news['when']) ?><?php endif; ?></span>
-            <strong><?= e((string) ($news['title'] ?? '')) ?></strong>
+            <?php if (!empty($news['when'])): ?>
+              <span class="dash-news-meta"><?= e((string) $news['when']) ?></span>
+            <?php endif; ?>
+            <strong><?= e((string) ($news['title'] ?? '')) ?><?php if ($isNew): ?> <span class="dash-news-new">Nouveau</span><?php endif; ?></strong>
             <?php if (!empty($news['chapo'])): ?>
               <em><?= e((string) $news['chapo']) ?></em>
             <?php endif; ?>

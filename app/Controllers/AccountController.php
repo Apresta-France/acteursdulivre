@@ -108,7 +108,7 @@ final class AccountController
 
         $platformNews = [];
         try {
-            $platformNews = Article::preview(3);
+            $platformNews = Article::preview(3, 'Plateforme');
         } catch (\Throwable) {
         }
 
