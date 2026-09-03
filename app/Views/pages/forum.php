@@ -30,7 +30,7 @@ $sortLabels = [
     'mine' => 'Vos discussions',
 ];
 
-$forumListUrl = static function (string $filtre = 'recent', int $p = 1, string $query = '') use ($q): string {
+$forumListUrl = static function (string $filtre = 'recent', int $p = 1, string $query = '', bool $anchor = false) use ($q): string {
     $params = [];
     if ($filtre !== 'recent') {
         $params['filtre'] = match ($filtre) {
@@ -48,7 +48,7 @@ $forumListUrl = static function (string $filtre = 'recent', int $p = 1, string $
         $params['page'] = $p;
     }
     $qs = http_build_query($params);
-    return '/forum' . ($qs !== '' ? '?' . $qs : '');
+    return '/forum' . ($qs !== '' ? '?' . $qs : '') . ($anchor ? '#discussions' : '');
 };
 ?>
 <div class="forum-page">
@@ -101,7 +101,7 @@ $forumListUrl = static function (string $filtre = 'recent', int $p = 1, string $
         <h2>Dernières discussions</h2>
         <span class="forum-muted">mises à jour récemment</span>
         <div class="forum-section-spacer"></div>
-        <a href="<?= e(url($forumListUrl('recent'))) ?>">Voir les <?= e(format_int((int) $stats['topics'])) ?> discussions →</a>
+        <a href="<?= e(url($forumListUrl('recent', 1, '', true))) ?>">Voir les <?= e(format_int((int) $stats['topics'])) ?> discussions →</a>
       </div>
       <div class="forum-list forum-list-compact">
         <?php foreach ($recent as $s): ?>
@@ -142,7 +142,7 @@ $forumListUrl = static function (string $filtre = 'recent', int $p = 1, string $
       </div>
     <?php endif; ?>
 
-    <div class="forum-split">
+    <div class="forum-split" id="discussions">
       <div>
         <form class="forum-search" method="get" action="<?= e(url('/forum')) ?>" role="search" data-live-search data-api="<?= e(url('/api/forum/recherche')) ?>" data-empty="Aucune discussion pour cette recherche." autocomplete="off">
           <input type="search" name="q" value="<?= e($q) ?>" placeholder="Chercher dans le forum : tarifs, cession de droits, imprimeur…" aria-label="Rechercher dans le forum" data-live-input autocomplete="off">
@@ -220,7 +220,7 @@ $forumListUrl = static function (string $filtre = 'recent', int $p = 1, string $
               <?php endforeach; ?>
             </div>
             <?php if ((int) $stats['unanswered'] > 0): ?>
-              <a class="forum-aside-more" href="<?= e(url($forumListUrl('unanswered'))) ?>">Voir les <?= e(format_int((int) $stats['unanswered'])) ?> questions →</a>
+              <a class="forum-aside-more" href="<?= e(url($forumListUrl('unanswered', 1, '', true))) ?>">Voir les <?= e(format_int((int) $stats['unanswered'])) ?> questions →</a>
             <?php endif; ?>
           <?php endif; ?>
         </div>

@@ -7428,7 +7428,7 @@ a.admin-kpi:hover { border-color: #C5CDD6; }
 }
 .forum-cat-card-when { font-family: var(--display); color: var(--orange); }
 
-.forum-split { display: grid; grid-template-columns: 1fr 360px; gap: 34px; margin-top: 44px; align-items: start; }
+.forum-split { display: grid; grid-template-columns: 1fr 360px; gap: 34px; margin-top: 44px; align-items: start; scroll-margin-top: 24px; }
 .forum-split-narrow { grid-template-columns: 1fr 320px; gap: 30px; margin-top: 0; }
 .forum-search {
   position: relative; z-index: 4;

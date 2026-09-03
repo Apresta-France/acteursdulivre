@@ -152,9 +152,6 @@ $query = (string) ($query ?? '');
               : service_cover_html((string) ($s['cat'] ?? ''), 'mk-card-cover') ?>
             <div class="mk-card-body">
               <div class="mk-card-by"><?= avatar_html($s, 26) ?><span><?= e((string) ($s['by'] ?? '')) ?></span></div>
-              <?php if (!empty($s['kind_label'] ?? $s['cat'])): ?>
-                <span class="mk-tag"><?= e((string) ($s['kind_label'] ?? $s['cat'])) ?></span>
-              <?php endif; ?>
               <p><?= e((string) $s['title']) ?></p>
               <div class="mk-card-meta"><?= e(trim((string) ($s['delay'] ?? '') . (!empty($s['specialty']) ? ' · ' . $s['specialty'] : ''))) ?></div>
               <div class="mk-card-foot">

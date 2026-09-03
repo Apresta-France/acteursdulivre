@@ -54,7 +54,7 @@ if ($currentTodos !== []) {
     $todoGroups[] = ['label' => 'En cours', 'items' => $currentTodos];
 }
 if ($upcomingTodos !== []) {
-    $todoGroups[] = ['label' => 'À venir', 'items' => $upcomingTodos];
+    $todoGroups[] = ['label' => '', 'items' => $upcomingTodos];
 }
 $platformNews = $platformNews ?? [];
 ?>
@@ -184,7 +184,7 @@ $platformNews = $platformNews ?? [];
   <div class="dash-top<?= $platformNews === [] ? ' is-single' : '' ?>">
     <section class="dash-section dash-affairs">
       <div class="dash-section-head">
-        <h2>Vos affaires</h2>
+        <h2>À faire</h2>
       </div>
       <?php if ($todoGroups === []): ?>
         <div class="dash-ok">
@@ -196,7 +196,9 @@ $platformNews = $platformNews ?? [];
         </div>
       <?php else: ?>
         <?php foreach ($todoGroups as $group): ?>
-          <h3 class="dash-affairs-label"><?= e($group['label']) ?></h3>
+          <?php if ($group['label'] !== ''): ?>
+            <h3 class="dash-affairs-label"><?= e($group['label']) ?></h3>
+          <?php endif; ?>
           <div class="dash-todos">
             <?php foreach ($group['items'] as $todo): ?>
               <a class="dash-todo" href="<?= e(url($todo['href'])) ?>">
