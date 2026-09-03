@@ -191,7 +191,9 @@ if ($offers && $profileCompletion < 80) {
             <?php if (!empty($news['when'])): ?>
               <span class="dash-news-meta"><?= e((string) $news['when']) ?></span>
             <?php endif; ?>
-            <strong><?= e((string) ($news['title'] ?? '')) ?></strong><?php if ($isNew): ?> <span class="dash-news-new">Nouveau</span><?php endif; ?>
+            <span class="dash-news-title">
+              <strong><?= e((string) ($news['title'] ?? '')) ?></strong><?php if ($isNew): ?> <span class="dash-news-new">Nouveau</span><?php endif; ?>
+            </span>
             <?php if (!empty($news['chapo'])): ?>
               <em><?= e((string) $news['chapo']) ?></em>
             <?php endif; ?>
