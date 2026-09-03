@@ -3464,6 +3464,7 @@ a.tab {
 
 .missions-list { border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
 .missions-list .mission-row:last-child { border-bottom: 0; }
+.missions-list .mission-row:nth-child(even) { background: var(--fog); }
 .mission-row .chip-row { margin-top: 10px; }
 .mission-row {
   display: grid;
@@ -3473,7 +3474,7 @@ a.tab {
   border-bottom: 1px solid #F2F5F8;
   color: inherit;
 }
-.mission-row:hover { background: #FBFCFE; color: inherit; }
+.mission-row:hover { background: var(--wash-cool); color: inherit; }
 .mission-row-title { font-size: 16px; color: #14202C; }
 .mission-row strong { font-family: var(--display); color: var(--navy); }
 .mission-row > div:last-child { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: #8496A8; }
