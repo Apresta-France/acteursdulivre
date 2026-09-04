@@ -80,15 +80,28 @@ $coverAlt = (string) ($article['image_alt'] ?? $article['title']);
         <?= (string) ($article['body_html'] ?? $article['body'] ?? '') ?: '<p>Le texte de cet article n\'est pas encore renseigné.</p>' ?>
       </div>
 
+      <?php
+      $relatedLinks = [
+        ['href' => '/metiers/correction', 'icon' => 'trade-correction', 'label' => 'Trouver un correcteur'],
+        ['href' => '/metiers/maquette', 'icon' => 'trade-maquette', 'label' => 'Trouver un maquettiste'],
+        ['href' => '/metiers/illustration', 'icon' => 'trade-illustration', 'label' => 'Trouver un illustrateur'],
+        ['href' => '/metiers/impression', 'icon' => 'trade-impression', 'label' => 'Trouver un imprimeur'],
+        ['href' => '/prestations', 'icon' => 'bag', 'label' => 'Voir les prestations à prix affiché'],
+        ['href' => '/comment-ca-marche', 'icon' => 'book', 'label' => 'Comment ça marche'],
+      ];
+      ?>
       <aside class="article-related" aria-label="Pour aller plus loin">
         <h2>Continuer sur Acteurs du Livre</h2>
         <ul>
-          <li><a href="<?= e(url('/metiers/correction')) ?>">Trouver un correcteur</a></li>
-          <li><a href="<?= e(url('/metiers/maquette')) ?>">Trouver un maquettiste</a></li>
-          <li><a href="<?= e(url('/metiers/illustration')) ?>">Trouver un illustrateur</a></li>
-          <li><a href="<?= e(url('/metiers/impression')) ?>">Trouver un imprimeur</a></li>
-          <li><a href="<?= e(url('/prestations')) ?>">Voir les prestations à prix affiché</a></li>
-          <li><a href="<?= e(url('/comment-ca-marche')) ?>">Comment ça marche</a></li>
+          <?php foreach ($relatedLinks as $link): ?>
+            <li>
+              <a href="<?= e(url((string) $link['href'])) ?>">
+                <span class="article-related-ico" aria-hidden="true"><?= icon((string) $link['icon'], 16) ?></span>
+                <span class="article-related-label"><?= e((string) $link['label']) ?></span>
+                <span class="article-related-arrow" aria-hidden="true"><?= icon('arrow', 16) ?></span>
+              </a>
+            </li>
+          <?php endforeach; ?>
         </ul>
       </aside>
 
