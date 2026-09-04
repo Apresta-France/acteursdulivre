@@ -27,13 +27,6 @@ $articleUser = auth_user();
       <a class="btn-navy" href="<?= e(url('/espace/tribune/' . (int) $article['id'])) ?>">Revenir à l’éditeur</a>
     </div>
   <?php endif; ?>
-  <nav class="search-crumb" aria-label="Fil d'Ariane">
-    <a href="<?= e(url('/')) ?>">Accueil</a>
-    <span aria-hidden="true"> · </span>
-    <a href="<?= e(url('/journal')) ?>">Le journal</a>
-    <span aria-hidden="true"> · </span>
-    <span><?= e((string) $article['cat']) ?></span>
-  </nav>
 
   <div class="article-layout">
     <?php if ($toc !== []): ?>

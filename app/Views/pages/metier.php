@@ -133,23 +133,24 @@ if ($cityPage) {
         </div>
         <p class="mk-lead"><?= e((string) ($geo['lead'] ?? ('Prestataires, prestations à prix affiché et missions ouvertes pour le métier « ' . $trade . ' ».'))) ?></p>
         <div class="metier-hero-stats" role="group" aria-label="Chiffres de ce métier">
-          <div>
+          <a href="<?= e(url('/prestataires?cat=' . $catQ . $villeQ)) ?>">
             <strong><?= (int) $providerCount ?></strong>
             <span><?= $providerCount > 1 ? 'prestataires' : 'prestataire' ?></span>
-          </div>
-          <div>
+          </a>
+          <a href="<?= e(url('/prestations?cat=' . $catQ . $villeQ)) ?>">
             <strong><?= (int) $serviceCount ?></strong>
             <span><?= $serviceCount > 1 ? 'prestations' : 'prestation' ?></span>
-          </div>
+          </a>
           <?php if (!$cityPage): ?>
-          <div>
+          <a href="<?= e(url('/missions?metier=' . $catQ)) ?>">
             <strong><?= (int) $missionCount ?></strong>
             <span><?= $missionCount > 1 ? 'recherches ouvertes' : 'recherche ouverte' ?></span>
-          </div>
+          </a>
           <?php endif; ?>
         </div>
         <div class="metier-hero-actions">
           <a class="btn-navy" href="<?= e(url('/prestataires?cat=' . $catQ . $villeQ)) ?>">Voir les profils</a>
+          <a class="btn-ghost" href="<?= e(url('/prestations?cat=' . $catQ . $villeQ)) ?>">Voir les offres</a>
           <?php if ($cityPage && !empty($cityPage['national_href'])): ?>
             <a class="btn-ghost" href="<?= e(url((string) $cityPage['national_href'])) ?>">Toute la France</a>
           <?php endif; ?>
