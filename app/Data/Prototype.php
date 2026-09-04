@@ -1516,7 +1516,7 @@ final class Prototype
             'dashboard', 'publier', 'commande', 'suivi', 'suivi-detail', 'suivi-depot', 'suivi-depot-list', 'commandes', 'mesmissions',
             'candidatures', 'mesprestations', 'creer', 'messagerie', 'notifications',
             'favoris', 'avis', 'vitrine', 'parametres', 'facturation', 'statistiques', 'espace-forum',
-            'auteur', 'auteur-oeuvres', 'auteur-oeuvre',
+            'auteur', 'auteur-oeuvres', 'auteur-oeuvre', 'tribune', 'tribune-edit',
         ], true);
     }
 
@@ -1577,6 +1577,7 @@ final class Prototype
             $aliases = [
                 'suivi' => ['suivi', 'suivi-detail', 'suivi-depot', 'suivi-depot-list'],
                 'auteur' => ['auteur', 'auteur-oeuvres', 'auteur-oeuvre'],
+                'tribune' => ['tribune', 'tribune-edit'],
             ];
             $active = $screen === $key || in_array($screen, $aliases[$key] ?? [], true);
             $badge = $badges[$key] ?? '';
@@ -1635,6 +1636,7 @@ final class Prototype
             'title' => 'Compte',
             'items' => [
                 $item('Fiche auteur', '/espace/auteur', 'auteur', 'book'),
+                $item('Tribune', '/espace/tribune', 'tribune', 'file-plus'),
                 $item('Messages', '/espace/messages', 'messagerie', 'mail'),
                 $item('Alertes', '/espace/notifications', 'notifications', 'bell'),
                 $item('Forum', '/espace/forum', 'espace-forum', 'chat'),

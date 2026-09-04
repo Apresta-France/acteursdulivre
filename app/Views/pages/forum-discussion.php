@@ -71,6 +71,12 @@ $forumFlashError = trim((string) ($forumFlashError ?? ''));
       <?php if ($forumFlashError !== ''): ?>
         <div class="flash flash-error forum-flash-inline"><?= e($forumFlashError) ?></div>
       <?php endif; ?>
+      <?php if (!empty($topic['article_href'])): ?>
+        <div class="forum-notice">
+          Cette discussion a été ouverte depuis un article du journal.
+          <a href="<?= e(url((string) $topic['article_href'])) ?>">Lire l’article d’origine</a>
+        </div>
+      <?php endif; ?>
       <?php if ($op): ?>
         <article class="forum-post" id="post-<?= (int) $op['id'] ?>">
           <aside class="forum-post-side">

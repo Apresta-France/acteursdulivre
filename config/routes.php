@@ -57,6 +57,7 @@ return static function (Router $router): void {
     $router->get('/confiance', [PageController::class, 'confiance']);
     $router->get('/a-propos', [PageController::class, 'apropos']);
     $router->get('/journal', [PageController::class, 'journal']);
+    $router->post('/journal/{slug}/commenter', [ForumController::class, 'articleComment']);
     $router->get('/journal/{slug}', [PageController::class, 'article']);
     $router->get('/aide', [PageController::class, 'aide']);
     $router->get('/questions', [PageController::class, 'questions']);
@@ -94,6 +95,13 @@ return static function (Router $router): void {
     $router->get('/espace', [AccountController::class, 'dashboard']);
     $router->get('/espace/bienvenue', [AccountController::class, 'onboarding']);
     $router->post('/espace/bienvenue', [AccountController::class, 'onboardingSave']);
+    $router->get('/espace/tribune', [AccountController::class, 'tribune']);
+    $router->get('/espace/tribune/nouvelle', [AccountController::class, 'tribuneEdit']);
+    $router->post('/espace/tribune/nouvelle', [AccountController::class, 'tribuneSave']);
+    $router->get('/espace/tribune/{id}', [AccountController::class, 'tribuneEdit']);
+    $router->post('/espace/tribune/{id}', [AccountController::class, 'tribuneSave']);
+    $router->post('/espace/tribune/{id}/soumettre', [AccountController::class, 'tribuneSubmit']);
+    $router->post('/espace/tribune/{id}/supprimer', [AccountController::class, 'tribuneDelete']);
     $router->get('/espace/publier', [AccountController::class, 'publier']);
     $router->post('/espace/publier', [AccountController::class, 'publierSave']);
     $router->get('/espace/publier/{id}', [AccountController::class, 'publierEdit']);

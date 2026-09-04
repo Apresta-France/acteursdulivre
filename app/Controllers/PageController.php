@@ -20,6 +20,7 @@ use Adl\Models\Article;
 use Adl\Models\AuthorPage;
 use Adl\Models\AuthorWork;
 use Adl\Models\Favorite;
+use Adl\Models\ForumTopic;
 use Adl\Models\Invoice;
 use Adl\Models\Mission;
 use Adl\Models\Newsletter;
@@ -727,6 +728,12 @@ final class PageController
             not_found('Cet article n\'est plus en ligne.');
         }
 
+        try {
+            $articleForumTopic = ForumTopic::findByArticle((int) $article['id']);
+        } catch (\Throwable) {
+            $articleForumTopic = null;
+        }
+
         $published = (string) ($article['published_at'] ?? '');
         $publishedTs = $published !== '' ? strtotime($published) : false;
         $iso = $publishedTs !== false ? date('c', $publishedTs) : null;
@@ -748,6 +755,9 @@ final class PageController
             'title' => $article['title'],
             'slug' => $slug,
             'article' => $article,
+            'articleForumTopic' => $articleForumTopic,
+            'articleCommentError' => flash('article_comment_error'),
+            'articleCommentOld' => flash('article_comment_old') ?: [],
             'meta' => Seo::build(
                 (string) $article['title'],
                 (string) ($article['excerpt'] ?: $article['chapo'] ?: $article['title']),

@@ -2383,7 +2383,8 @@
 
   var EDITOR_TAGS = {
     p: true, br: true, strong: true, b: true, em: true, i: true, u: true,
-    ul: true, ol: true, li: true, blockquote: true, a: true
+    ul: true, ol: true, li: true, blockquote: true, a: true,
+    h2: true, h3: true, h4: true
   };
   var EDITOR_DROP = {
     script: true, style: true, iframe: true, object: true, embed: true, svg: true, math: true,
@@ -2558,6 +2559,53 @@
   }
 
   document.querySelectorAll('[data-wysiwyg]').forEach(initWysiwyg);
+
+  (function initTribunePreview() {
+    var form = document.querySelector('[data-tribune-form]');
+    if (!form) return;
+    var preview = form.querySelector('[data-tribune-preview]');
+    if (!preview) return;
+    var title = form.querySelector('[data-tribune-title]');
+    var excerpt = form.querySelector('[data-tribune-excerpt]');
+    var editor = form.querySelector('[data-tribune-body]');
+    var source = form.querySelector('.wysiwyg-source');
+    var image = form.querySelector('[data-tribune-image]');
+    var removeImage = form.querySelector('[name="remove_image"]');
+    var previewTitle = preview.querySelector('[data-tribune-preview-title]');
+    var previewExcerpt = preview.querySelector('[data-tribune-preview-excerpt]');
+    var previewBody = preview.querySelector('[data-tribune-preview-body]');
+    var previewImage = preview.querySelector('[data-tribune-preview-image]');
+    var initialImage = previewImage ? previewImage.style.backgroundImage : '';
+    var imageUrl = '';
+
+    function updateText() {
+      if (previewTitle) previewTitle.textContent = (title && title.value.trim()) || 'Titre de votre article';
+      if (previewExcerpt) previewExcerpt.textContent = (excerpt && excerpt.value.trim()) || 'Le chapô apparaîtra ici.';
+      if (previewBody) {
+        var html = editor && !editor.hidden ? editor.innerHTML : (source ? source.value : '');
+        html = sanitizeEditorHtml(html);
+        previewBody.innerHTML = html || '<p>Le contenu de votre tribune apparaîtra ici.</p>';
+      }
+    }
+
+    function updateImage() {
+      if (!previewImage) return;
+      if (imageUrl) {
+        URL.revokeObjectURL(imageUrl);
+        imageUrl = '';
+      }
+      var file = image && image.files && image.files[0];
+      if (file) imageUrl = URL.createObjectURL(file);
+      var bg = file ? 'url("' + imageUrl.replace(/"/g, '%22') + '")' : ((removeImage && removeImage.checked) ? '' : initialImage);
+      previewImage.style.backgroundImage = bg;
+      previewImage.classList.toggle('is-empty', !bg);
+    }
+
+    form.addEventListener('input', updateText);
+    if (image) image.addEventListener('change', updateImage);
+    if (removeImage) removeImage.addEventListener('change', updateImage);
+    updateText();
+  })();
 
   (function initNewsletterBuilder() {
     var form = document.querySelector('[data-nl-builder]');

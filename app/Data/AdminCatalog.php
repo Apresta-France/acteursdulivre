@@ -94,7 +94,9 @@ final class AdminCatalog
     {
         return [
             'verif' => self::badgeCount(static fn (): int => Profile::countPendingVerification()),
-            'moderation' => self::badgeCount(static fn (): int => Report::countOpen()),
+            'moderation' => self::badgeCount(
+                static fn (): int => Report::countOpen() + Article::countPendingSubmissions()
+            ),
             'litiges' => self::badgeCount(static fn (): int => Order::countByStatus('dispute')),
             'avis' => self::badgeCount(static fn (): int => Report::countOpenForType('review')),
             'finances' => self::badgeCount(static fn (): int => Invoice::countOverdue()),

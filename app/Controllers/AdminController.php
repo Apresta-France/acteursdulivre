@@ -245,6 +245,7 @@ final class AdminController
             'services' => Service::all(),
             'missions' => Mission::all(),
             'reports' => $reports,
+            'tribunes' => Article::submitted(),
         ]);
     }
 
@@ -296,6 +297,11 @@ final class AdminController
             } elseif ($type === 'mission') {
                 Mission::setStatus((int) $id, $request->string('status'));
                 flash('saved', 'Mission mise à jour.');
+            } elseif ($type === 'tribune') {
+                Article::moderate((int) $id, $request->string('status'), $request->string('note'));
+                flash('saved', $request->string('status') === Article::STATUS_APPROVED
+                    ? 'Tribune validée et publiée. L’auteur a été prévenu.'
+                    : 'Tribune refusée. Le motif a été transmis à l’auteur.');
             } else {
                 flash('error', 'Type inconnu.');
             }

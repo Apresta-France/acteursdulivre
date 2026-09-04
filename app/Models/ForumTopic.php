@@ -25,6 +25,133 @@ final class ForumTopic
         return $row ? self::present($row) : null;
     }
 
+    public static function findByArticle(int $articleId): ?array
+    {
+        $row = self::baseFetch('t.article_id = ? AND t.status = "visible"', [$articleId]);
+        return $row ? self::present($row) : null;
+    }
+
+    /**
+     * @param array<string, mixed> $article
+     * @param array<string, mixed> $data
+     * @return array{topic: array<string, mixed>, post: array<string, mixed>, created: bool}
+     */
+    public static function commentOnArticle(array $article, int $userId, array $data): array
+    {
+        $articleId = (int) ($article['id'] ?? 0);
+        if ($articleId <= 0 || empty($article['published'])) {
+            throw new RuntimeException('Cet article n’est plus disponible.');
+        }
+
+        $existing = self::findByArticle($articleId);
+        if ($existing) {
+            return [
+                'topic' => $existing,
+                'post' => ForumPost::create((int) $existing['id'], $userId, $data),
+                'created' => false,
+            ];
+        }
+
+        $body = trim((string) ($data['body'] ?? ''));
+        if (mb_strlen(plain_text($body) ?: $body) < ForumPost::MIN_BODY) {
+            throw new RuntimeException('Le commentaire doit faire au moins ' . ForumPost::MIN_BODY . ' caractères.');
+        }
+        if (empty($data['no_ai'])) {
+            throw new RuntimeException('Confirmez que votre commentaire n’a pas été généré par IA.');
+        }
+        ProfanityFilter::assertClean($body);
+
+        $category = self::categoryForArticle((string) ($article['cat'] ?? $article['category'] ?? ''));
+        $categoryId = (int) ($category['id'] ?? 0);
+        if ($categoryId <= 0) {
+            throw new RuntimeException('La rubrique du forum est introuvable.');
+        }
+
+        $title = trim((string) ($article['title'] ?? 'Discussion autour d’un article'));
+        $title = mb_substr($title, 0, 180);
+        $safeBody = sanitize_user_html($body);
+        $tags = self::normalizeTags(['journal', (string) ($article['cat'] ?? '')]);
+        $slug = unique_slug(
+            'journal-' . (string) ($article['slug'] ?? $title),
+            static fn (string $candidate): bool => Database::fetch(
+                'SELECT id FROM forum_topics WHERE category_id = ? AND slug = ?',
+                [$categoryId, $candidate]
+            ) !== null
+        );
+
+        try {
+            return Database::transaction(static function () use (
+                $articleId,
+                $userId,
+                $categoryId,
+                $title,
+                $slug,
+                $tags,
+                $safeBody
+            ): array {
+                Database::query(
+                    'INSERT INTO forum_topics
+                        (category_id, article_id, user_id, title, slug, tags_json, reply_count, view_count,
+                         follow_count, last_post_at, last_post_user_id, status, created_at, updated_at)
+                     VALUES (?, ?, ?, ?, ?, ?, 0, 0, 0, NOW(), ?, "visible", NOW(), NOW())',
+                    [$categoryId, $articleId, $userId, $title, $slug, self::encodeTags($tags), $userId]
+                );
+                $topicId = (int) Database::lastId();
+                Database::query(
+                    'INSERT INTO forum_posts
+                        (topic_id, user_id, body, position, is_op, status, created_at, updated_at)
+                     VALUES (?, ?, ?, 1, 1, "visible", NOW(), NOW())',
+                    [$topicId, $userId, $safeBody]
+                );
+                $postId = (int) Database::lastId();
+                Database::query(
+                    'INSERT INTO forum_topic_follows (topic_id, user_id, created_at, last_read_at, last_read_post_id)
+                     VALUES (?, ?, NOW(), NOW(), ?)
+                     ON DUPLICATE KEY UPDATE last_read_at = NOW(), last_read_post_id = VALUES(last_read_post_id)',
+                    [$topicId, $userId, $postId]
+                );
+                Database::query('UPDATE forum_topics SET follow_count = 1 WHERE id = ?', [$topicId]);
+
+                $topic = self::find($topicId);
+                $post = ForumPost::find($postId);
+                if (!$topic || !$post) {
+                    throw new RuntimeException('Discussion introuvable après création.');
+                }
+                return ['topic' => $topic, 'post' => $post, 'created' => true];
+            });
+        } catch (\Throwable $e) {
+            // La contrainte UNIQUE(article_id) arbitre deux premiers commentaires simultanés.
+            $existing = self::findByArticle($articleId);
+            if (!$existing) {
+                throw $e;
+            }
+            return [
+                'topic' => $existing,
+                'post' => ForumPost::create((int) $existing['id'], $userId, $data),
+                'created' => false,
+            ];
+        }
+    }
+
+    /** @return array<string, mixed> */
+    private static function categoryForArticle(string $label): array
+    {
+        $slug = match (slugify($label)) {
+            'tarifs' => 'tarifs-et-devis',
+            'contrats' => 'contrats-et-droits',
+            'fabrication' => 'fabrication',
+            'diffusion' => 'diffusion-et-librairies',
+            'plateforme' => 'la-plateforme',
+            'metier' => 'vie-de-prestataire',
+            'ecriture', 'relecture' => 'ecriture-et-relecture',
+            'edition' => 'edition',
+            default => 'divers',
+        };
+        return ForumCategory::findBySlug($slug)
+            ?? ForumCategory::findBySlug('divers')
+            ?? [];
+    }
+
     /**
      * @return array{items: list<array<string, mixed>>, total: int, page: int, pages: int, per_page: int}
      */
@@ -780,6 +907,8 @@ final class ForumTopic
         $topic = [
             'id' => (int) ($row['id'] ?? 0),
             'category_id' => (int) ($row['category_id'] ?? 0),
+            'article_id' => $row['article_id'] !== null ? (int) $row['article_id'] : null,
+            'article_href' => !empty($row['article_slug']) ? '/journal/' . $row['article_slug'] : null,
             'user_id' => (int) ($row['user_id'] ?? 0),
             'title' => (string) ($row['title'] ?? ''),
             'slug' => $slug,
@@ -836,12 +965,14 @@ final class ForumTopic
         return Database::fetch(
             "SELECT t.*,
                     c.name AS category_name, c.slug AS category_slug,
+                    a.slug AS article_slug,
                     u.first_name, u.last_name, u.avatar_url, u.platform_cofounder, u.created_at AS user_created_at,
                     p.title AS profile_title, p.city AS profile_city, p.verification_status,
                     p.trades_json, p.slug AS profile_slug,
                     lu.first_name AS last_first_name, lu.last_name AS last_last_name
              FROM forum_topics t
              INNER JOIN forum_categories c ON c.id = t.category_id
+             LEFT JOIN articles a ON a.id = t.article_id
              INNER JOIN users u ON u.id = t.user_id
              LEFT JOIN profiles p ON p.user_id = u.id
              LEFT JOIN users lu ON lu.id = t.last_post_user_id

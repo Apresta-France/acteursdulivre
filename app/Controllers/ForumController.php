@@ -9,6 +9,7 @@ use Adl\Core\Request;
 use Adl\Core\View;
 use Adl\Data\Seo;
 use Adl\Data\Share;
+use Adl\Models\Article;
 use Adl\Models\ForumCategory;
 use Adl\Models\ForumPost;
 use Adl\Models\ForumTopic;
@@ -364,6 +365,36 @@ final class ForumController
 
         flash('saved', 'Réponse publiée.');
         redirect((string) $topic['href'] . '#reponses');
+    }
+
+    public function articleComment(Request $request, string $slug): void
+    {
+        Auth::requireUser();
+        $user = Auth::user();
+        $userId = (int) ($user['id'] ?? 0);
+
+        try {
+            $article = Article::findBySlug($slug);
+        } catch (\Throwable) {
+            $article = null;
+        }
+        if (!$article || empty($article['published'])) {
+            not_found('Cet article n’est plus en ligne.');
+        }
+
+        try {
+            $result = ForumTopic::commentOnArticle($article, $userId, [
+                'body' => $request->string('body'),
+                'no_ai' => $request->bool('no_ai'),
+            ]);
+        } catch (\Throwable $e) {
+            flash('article_comment_error', user_error_message($e, 'Impossible de publier ce commentaire.'));
+            flash('article_comment_old', ['body' => $request->string('body')]);
+            redirect((string) $article['href'] . '#commentaires');
+        }
+
+        flash('saved', !empty($result['created']) ? 'Discussion ouverte sur le forum.' : 'Commentaire publié.');
+        redirect((string) $result['topic']['href'] . '#post-' . (int) $result['post']['id']);
     }
 
     public function follow(Request $request, string $categorySlug, string $topicSlug): void

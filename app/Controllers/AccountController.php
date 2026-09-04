@@ -142,6 +142,104 @@ final class AccountController
         ]);
     }
 
+    public function tribune(Request $request): void
+    {
+        $user = Auth::requireUser();
+        View::page('tribune', [
+            'title' => 'Ma tribune',
+            'articles' => Article::forUser((int) $user['id']),
+            'error' => flash('error'),
+            'saved' => flash('saved'),
+        ]);
+    }
+
+    public function tribuneEdit(Request $request, string $id = 'nouvelle'): void
+    {
+        $user = Auth::requireUser();
+        $article = $id === 'nouvelle'
+            ? [
+                'id' => 0,
+                'title' => '',
+                'excerpt' => '',
+                'body' => '',
+                'image_alt' => '',
+                'img' => '',
+                'submission_status' => Article::STATUS_DRAFT,
+                'status_label' => Article::statusLabel(Article::STATUS_DRAFT),
+                'can_edit' => true,
+            ]
+            : Article::findForUser((int) $id, (int) $user['id']);
+        if (!$article) {
+            not_found('Cette tribune est introuvable.');
+        }
+        View::page('tribune-edit', [
+            'title' => !empty($article['id']) ? (string) $article['title'] : 'Nouvelle tribune',
+            'article' => $article,
+            'error' => flash('error'),
+            'saved' => flash('saved'),
+        ]);
+    }
+
+    public function tribuneSave(Request $request, string $id = 'nouvelle'): void
+    {
+        $user = Auth::requireUser();
+        try {
+            $payload = [
+                'title' => $request->string('title'),
+                'excerpt' => $request->string('excerpt'),
+                'image_alt' => $request->string('image_alt'),
+                'body' => $request->input('body', ''),
+            ];
+            if ($request->bool('remove_image')) {
+                $payload['image_path'] = null;
+            }
+            $file = $request->file('image');
+            if (($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE) {
+                $payload['image_path'] = store_upload($file, 'journal', ['jpg', 'jpeg', 'png', 'webp'], 5 * 1024 * 1024);
+            }
+            $savedId = Article::saveForUser(
+                $id === 'nouvelle' ? null : (int) $id,
+                (int) $user['id'],
+                $payload
+            );
+            if ($request->string('action') === 'submit') {
+                Article::submit($savedId, (int) $user['id']);
+                flash('saved', 'Votre tribune a été envoyée à la modération.');
+            } else {
+                flash('saved', 'Brouillon enregistré.');
+            }
+            redirect('/espace/tribune/' . $savedId);
+        } catch (\Throwable $e) {
+            flash('error', user_error_message($e));
+            redirect($id === 'nouvelle' ? '/espace/tribune/nouvelle' : '/espace/tribune/' . (int) $id);
+        }
+    }
+
+    public function tribuneSubmit(Request $request, string $id): void
+    {
+        $user = Auth::requireUser();
+        try {
+            Article::submit((int) $id, (int) $user['id']);
+            flash('saved', 'Votre tribune a été envoyée à la modération.');
+        } catch (\Throwable $e) {
+            flash('error', user_error_message($e));
+        }
+        redirect('/espace/tribune/' . (int) $id);
+    }
+
+    public function tribuneDelete(Request $request, string $id): void
+    {
+        $user = Auth::requireUser();
+        try {
+            Article::deleteForUser((int) $id, (int) $user['id']);
+            flash('saved', 'Tribune supprimée.');
+            redirect('/espace/tribune');
+        } catch (\Throwable $e) {
+            flash('error', user_error_message($e));
+            redirect('/espace/tribune/' . (int) $id);
+        }
+    }
+
     public function forumEspace(Request $request): void
     {
         $user = Auth::requireUser();

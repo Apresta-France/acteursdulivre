@@ -1837,8 +1837,9 @@ final class Catalog
             $services = Service::countPublished();
             $missions = Mission::countOpen();
             $topics = ForumTopic::countVisible();
+            $tribunes = Article::countPublishedTribunes();
         } catch (\Throwable) {
-            $pros = $services = $missions = $topics = 0;
+            $pros = $services = $missions = $topics = $tribunes = 0;
         }
 
         return [
@@ -1846,6 +1847,7 @@ final class Catalog
             ['v' => format_int($services), 'k' => $services > 1 ? 'prestations à prix affiché' : 'prestation à prix affiché', 'href' => '/prestations'],
             ['v' => format_int($missions), 'k' => $missions > 1 ? 'missions ouvertes' : 'mission ouverte', 'href' => '/missions'],
             ['v' => format_int($topics), 'k' => $topics > 1 ? 'sujets du forum' : 'sujet du forum', 'href' => '/forum'],
+            ['v' => format_int($tribunes), 'k' => $tribunes > 1 ? 'tribunes publiées' : 'tribune publiée', 'href' => '/journal?cat=Tribune'],
         ];
     }
 

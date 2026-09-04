@@ -1,6 +1,7 @@
 <?php
 $services = $services ?? [];
 $missions = $missions ?? [];
+$tribunes = $tribunes ?? [];
 ?>
 <?php $reports = $reports ?? []; ?>
 <div class="admin-page">
@@ -8,6 +9,49 @@ $missions = $missions ?? [];
   <p class="admin-lead">Retirez une prestation ou clôturez un appel d’offres s’il enfreint la charte (IA générative, hors plateforme, droits). Traitez aussi les signalements utilisateurs.</p>
   <?php if (!empty($saved)): ?><div class="flash flash-ok"><?= e(is_string($saved) ? $saved : 'Enregistré.') ?></div><?php endif; ?>
   <?php if (!empty($error)): ?><div class="flash flash-error"><?= e((string) $error) ?></div><?php endif; ?>
+
+  <h2 class="admin-h2">Tribunes proposées au journal</h2>
+  <?php if ($tribunes === []): ?><p class="admin-muted">Aucune tribune soumise.</p><?php endif; ?>
+  <div class="admin-stack" style="margin-bottom: 28px;">
+    <?php foreach ($tribunes as $article): ?>
+      <?php $tribuneStatus = (string) ($article['submission_status'] ?? 'pending'); ?>
+      <article class="admin-card">
+        <div class="admin-dossier-who">
+          <div>
+            <strong><?= e((string) $article['title']) ?></strong>
+            <span>
+              <?= e((string) ($article['author_name'] ?: 'Membre')) ?>
+              <?php if (!empty($article['submitted_at'])): ?> · soumise le <?= e(date('d/m/Y à H:i', strtotime((string) $article['submitted_at']))) ?><?php endif; ?>
+            </span>
+            <?php if (!empty($article['excerpt'])): ?><em><?= e((string) $article['excerpt']) ?></em><?php endif; ?>
+            <?php if ($tribuneStatus === 'rejected' && !empty($article['moderation_note'])): ?><em>Motif précédent : <?= e((string) $article['moderation_note']) ?></em><?php endif; ?>
+          </div>
+          <span class="admin-pill tone-<?= $tribuneStatus === 'approved' ? 'green' : ($tribuneStatus === 'rejected' ? 'grey' : 'orange') ?>"><?= e((string) $article['status_label']) ?></span>
+        </div>
+        <div class="admin-actions">
+          <a class="admin-ghost" href="<?= e(url('/admin/journal/' . (int) $article['id'])) ?>">Lire et modifier</a>
+          <?php if ($tribuneStatus === 'pending'): ?>
+            <form method="post" action="<?= e(url('/admin/moderation/tribune/' . (int) $article['id'])) ?>">
+              <?= csrf_field() ?>
+              <input type="hidden" name="back" value="/admin/moderation">
+              <input type="hidden" name="status" value="approved">
+              <button class="btn-navy" type="submit">Valider et publier</button>
+            </form>
+          <?php endif; ?>
+        </div>
+        <?php if ($tribuneStatus === 'pending'): ?>
+          <form class="admin-form" method="post" action="<?= e(url('/admin/moderation/tribune/' . (int) $article['id'])) ?>" style="margin-top: 14px;">
+            <?= csrf_field() ?>
+            <input type="hidden" name="back" value="/admin/moderation">
+            <input type="hidden" name="status" value="rejected">
+            <label class="field" for="tribune-note-<?= (int) $article['id'] ?>">Motif à communiquer à l’auteur</label>
+            <textarea class="textarea" id="tribune-note-<?= (int) $article['id'] ?>" name="note" rows="2" required placeholder="Expliquez précisément ce qui doit être corrigé."></textarea>
+            <button class="admin-ghost" type="submit">Refuser et envoyer le motif</button>
+          </form>
+        <?php endif; ?>
+      </article>
+    <?php endforeach; ?>
+  </div>
 
   <h2 class="admin-h2">Signalements</h2>
   <?php if ($reports === []): ?><p class="admin-muted">Aucun signalement.</p><?php endif; ?>

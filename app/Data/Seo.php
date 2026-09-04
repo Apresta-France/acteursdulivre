@@ -19,7 +19,7 @@ final class Seo
         'dashboard', 'publier', 'commande', 'suivi', 'commandes', 'mesmissions',
         'candidatures', 'mesprestations', 'creer', 'messagerie', 'notifications',
         'favoris', 'avis', 'vitrine', 'parametres', 'facturation', 'statistiques', 'bienvenue',
-        'recommandation', 'auteur', 'auteur-oeuvres', 'auteur-oeuvre',
+        'recommandation', 'auteur', 'auteur-oeuvres', 'auteur-oeuvre', 'tribune', 'tribune-edit',
         'connexion', 'inscription-sso',
     ];
 
@@ -712,11 +712,16 @@ final class Seo
             'articleSection' => (string) ($article['cat'] ?? $article['category'] ?? 'Journal'),
             'wordCount' => max(1, $words),
             'keywords' => (string) ($article['keywords'] ?? 'autoédition, fabrication livre, coût impression, correction, maquette, couverture'),
-            'author' => [
-                '@type' => 'Organization',
-                'name' => self::BRAND,
-                'url' => Share::absolute('/'),
-            ],
+            'author' => !empty($article['author_name'])
+                ? [
+                    '@type' => 'Person',
+                    'name' => (string) $article['author_name'],
+                ]
+                : [
+                    '@type' => 'Organization',
+                    'name' => self::BRAND,
+                    'url' => Share::absolute('/'),
+                ],
             'publisher' => ['@id' => Share::absolute('/') . '#organization'],
             'mainEntityOfPage' => [
                 '@type' => 'WebPage',

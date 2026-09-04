@@ -8,6 +8,12 @@ $action = $id ? '/admin/journal/' . $id : '/admin/journal/nouveau';
   <h1><?= e($id ? (string) $article['title'] : 'Nouvel article') ?></h1>
   <?php if (!empty($saved)): ?><div class="flash flash-ok"><?= e(is_string($saved) ? $saved : 'Enregistré.') ?></div><?php endif; ?>
   <?php if (!empty($error)): ?><div class="flash flash-error"><?= e((string) $error) ?></div><?php endif; ?>
+  <?php if (!empty($article['author_id'])): ?>
+    <div class="form-notice">
+      <strong>Tribune proposée par <?= e((string) ($article['author_name'] ?: 'un membre')) ?></strong>
+      <p>Statut : <?= e((string) $article['status_label']) ?>. La décision et son motif se gèrent depuis <a href="<?= e(url('/admin/moderation')) ?>">la modération</a>.</p>
+    </div>
+  <?php endif; ?>
 
   <form class="admin-form" method="post" action="<?= e(url($action)) ?>" enctype="multipart/form-data">
     <?= csrf_field() ?>
@@ -21,7 +27,7 @@ $action = $id ? '/admin/journal/' . $id : '/admin/journal/nouveau';
     </div>
     <div>
       <label class="field" for="category">Rubrique</label>
-      <input class="input" id="category" name="category" value="<?= e((string) ($article['category'] ?? 'Journal')) ?>">
+      <input class="input" id="category" name="category" value="<?= e((string) ($article['category'] ?? 'Journal')) ?>"<?= !empty($article['author_id']) ? ' readonly' : '' ?>>
     </div>
     <div>
       <label class="field" for="excerpt">Chapô</label>
@@ -42,14 +48,18 @@ $action = $id ? '/admin/journal/' . $id : '/admin/journal/nouveau';
       <label class="field" for="body">Corps (HTML : h2, tableaux, listes, liens internes)</label>
       <textarea class="textarea" id="body" name="body" rows="16"><?= e((string) ($article['body'] ?? '')) ?></textarea>
     </div>
-    <label class="admin-tax-check">
-      <input type="checkbox" name="published" value="1"<?= !empty($article['published']) ? ' checked' : '' ?>>
-      Publier sur le journal
-    </label>
+    <?php if (empty($article['author_id'])): ?>
+      <label class="admin-tax-check">
+        <input type="checkbox" name="published" value="1"<?= !empty($article['published']) ? ' checked' : '' ?>>
+        Publier sur le journal
+      </label>
+    <?php elseif (!empty($article['published'])): ?>
+      <input type="hidden" name="published" value="1">
+    <?php endif; ?>
     <div class="admin-actions">
       <button class="btn-orange" type="submit">Enregistrer</button>
       <?php if ($id): ?>
-        <a class="admin-ghost" href="<?= e(url('/journal/' . ($article['slug'] ?? ''))) ?>">Aperçu public</a>
+        <?php if (!empty($article['published'])): ?><a class="admin-ghost" href="<?= e(url('/journal/' . ($article['slug'] ?? ''))) ?>">Aperçu public</a><?php endif; ?>
       <?php endif; ?>
     </div>
   </form>
