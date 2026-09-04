@@ -52,6 +52,43 @@ final class ReviewRequest
         return array_map([self::class, 'present'], $rows);
     }
 
+    /**
+     * @return array{
+     *   daily_used: int,
+     *   daily_limit: int,
+     *   daily_remaining: int,
+     *   pending_used: int,
+     *   pending_limit: int,
+     *   pending_remaining: int,
+     *   can_invite: bool
+     * }
+     */
+    public static function externalQuotaForSeller(int $sellerId): array
+    {
+        $usage = Database::fetch(
+            'SELECT
+                SUM(CASE WHEN created_at >= DATE_SUB(NOW(), INTERVAL 1 DAY) THEN 1 ELSE 0 END) AS daily_used,
+                SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) AS pending_used
+             FROM review_requests
+             WHERE seller_id = ? AND kind = ?',
+            [self::STATUS_PENDING, $sellerId, self::KIND_EXTERNAL]
+        );
+        $dailyUsed = (int) ($usage['daily_used'] ?? 0);
+        $pendingUsed = (int) ($usage['pending_used'] ?? 0);
+        $dailyRemaining = max(0, self::MAX_EXTERNAL_PER_DAY - $dailyUsed);
+        $pendingRemaining = max(0, self::MAX_PENDING_EXTERNAL - $pendingUsed);
+
+        return [
+            'daily_used' => $dailyUsed,
+            'daily_limit' => self::MAX_EXTERNAL_PER_DAY,
+            'daily_remaining' => $dailyRemaining,
+            'pending_used' => $pendingUsed,
+            'pending_limit' => self::MAX_PENDING_EXTERNAL,
+            'pending_remaining' => $pendingRemaining,
+            'can_invite' => $dailyRemaining > 0 && $pendingRemaining > 0,
+        ];
+    }
+
     public static function findByToken(string $token): ?array
     {
         $token = trim($token);
@@ -208,18 +245,13 @@ final class ReviewRequest
             throw new RuntimeException('Vous ne pouvez pas vous inviter vous-même.');
         }
 
-        $pending = self::pendingExternalForSeller($sellerId);
-        if (count($pending) >= self::MAX_PENDING_EXTERNAL) {
+        $quota = self::externalQuotaForSeller($sellerId);
+        if ($quota['pending_remaining'] < 1) {
             throw new RuntimeException('Trop d’invitations en attente. Annulez-en une ou attendez une réponse.');
         }
 
-        $today = Database::fetch(
-            'SELECT COUNT(*) AS n FROM review_requests
-             WHERE seller_id = ? AND kind = ? AND created_at >= DATE_SUB(NOW(), INTERVAL 1 DAY)',
-            [$sellerId, self::KIND_EXTERNAL]
-        );
-        if ((int) ($today['n'] ?? 0) >= self::MAX_EXTERNAL_PER_DAY) {
-            throw new RuntimeException('Vous avez déjà envoyé plusieurs invitations aujourd’hui. Réessayez demain.');
+        if ($quota['daily_remaining'] < 1) {
+            throw new RuntimeException('Vous avez atteint la limite de 8 invitations sur 24 h. Réessayez plus tard.');
         }
 
         $open = Database::fetch(

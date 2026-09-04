@@ -31,6 +31,23 @@ $pendingReviews = $pendingReviews ?? [];
 $receivedReviews = $receivedReviews ?? [];
 $reviewStats = $reviewStats ?? ['avg' => '', 'count' => 0];
 $pendingInvites = $pendingInvites ?? [];
+$externalReviewQuota = $externalReviewQuota ?? [
+    'daily_used' => 0,
+    'daily_limit' => \Adl\Models\ReviewRequest::MAX_EXTERNAL_PER_DAY,
+    'daily_remaining' => \Adl\Models\ReviewRequest::MAX_EXTERNAL_PER_DAY,
+    'pending_used' => count($pendingInvites),
+    'pending_limit' => \Adl\Models\ReviewRequest::MAX_PENDING_EXTERNAL,
+    'pending_remaining' => max(0, \Adl\Models\ReviewRequest::MAX_PENDING_EXTERNAL - count($pendingInvites)),
+    'can_invite' => count($pendingInvites) < \Adl\Models\ReviewRequest::MAX_PENDING_EXTERNAL,
+];
+$dailyQuotaUsed = (int) ($externalReviewQuota['daily_used'] ?? 0);
+$dailyQuotaLimit = (int) ($externalReviewQuota['daily_limit'] ?? \Adl\Models\ReviewRequest::MAX_EXTERNAL_PER_DAY);
+$dailyQuotaRemaining = (int) ($externalReviewQuota['daily_remaining'] ?? 0);
+$pendingQuotaUsed = (int) ($externalReviewQuota['pending_used'] ?? count($pendingInvites));
+$pendingQuotaLimit = (int) ($externalReviewQuota['pending_limit'] ?? \Adl\Models\ReviewRequest::MAX_PENDING_EXTERNAL);
+$pendingQuotaRemaining = (int) ($externalReviewQuota['pending_remaining'] ?? 0);
+$canInviteExternal = !empty($externalReviewQuota['can_invite']);
+$inviteSlotsRemaining = min($dailyQuotaRemaining, $pendingQuotaRemaining);
 $recommendations = $recommendations ?? [];
 $avisBadge = count($pendingReviews) + count($pendingInvites);
 $rateKind = \Adl\Models\Profile::rateKind($p);
@@ -551,26 +568,74 @@ if ($rateKind === \Adl\Models\Profile::RATE_PERCENT || str_contains($rateValue, 
     <section class="espace-panel">
       <h2 class="espace-group-title">Clients hors plateforme</h2>
       <p class="field-help">Invitez un client avec qui vous avez travaillé ailleurs. Son texte sera publié comme recommandation, clairement distincte des avis de mission, et n’entrera pas dans votre note.</p>
+
+      <div class="vitrine-quota" aria-label="Quotas des invitations">
+        <div class="vitrine-quota-head">
+          <div>
+            <strong>Vos quotas d’invitation</strong>
+            <span>Les limites protègent vos clients contre les envois trop fréquents.</span>
+          </div>
+          <span class="vitrine-quota-status<?= $canInviteExternal ? '' : ' is-full' ?>">
+            <?= $canInviteExternal ? $inviteSlotsRemaining . ' disponible' . ($inviteSlotsRemaining > 1 ? 's' : '') : 'Quota atteint' ?>
+          </span>
+        </div>
+        <div class="vitrine-quota-grid">
+          <div class="vitrine-quota-item<?= $dailyQuotaRemaining < 1 ? ' is-full' : '' ?>">
+            <div class="vitrine-quota-label">
+              <span>Envois sur 24 heures</span>
+              <strong><?= $dailyQuotaUsed ?> / <?= $dailyQuotaLimit ?></strong>
+            </div>
+            <div class="vitrine-quota-bar" role="progressbar" aria-label="Invitations envoyées sur 24 heures" aria-valuemin="0" aria-valuemax="<?= $dailyQuotaLimit ?>" aria-valuenow="<?= min($dailyQuotaUsed, $dailyQuotaLimit) ?>">
+              <span style="width: <?= min(100, $dailyQuotaLimit > 0 ? (int) round($dailyQuotaUsed * 100 / $dailyQuotaLimit) : 100) ?>%"></span>
+            </div>
+            <small><?= $dailyQuotaRemaining ?> invitation<?= $dailyQuotaRemaining > 1 ? 's' : '' ?> encore possible<?= $dailyQuotaRemaining > 1 ? 's' : '' ?> sur cette période</small>
+          </div>
+          <div class="vitrine-quota-item<?= $pendingQuotaRemaining < 1 ? ' is-full' : '' ?>">
+            <div class="vitrine-quota-label">
+              <span>Invitations en attente</span>
+              <strong><?= $pendingQuotaUsed ?> / <?= $pendingQuotaLimit ?></strong>
+            </div>
+            <div class="vitrine-quota-bar" role="progressbar" aria-label="Invitations en attente" aria-valuemin="0" aria-valuemax="<?= $pendingQuotaLimit ?>" aria-valuenow="<?= min($pendingQuotaUsed, $pendingQuotaLimit) ?>">
+              <span style="width: <?= min(100, $pendingQuotaLimit > 0 ? (int) round($pendingQuotaUsed * 100 / $pendingQuotaLimit) : 100) ?>%"></span>
+            </div>
+            <small>Une réponse ou une annulation libère une place</small>
+          </div>
+        </div>
+        <p class="vitrine-quota-note">Une invitation reste valable 30 jours. Une relance est possible toutes les 48 heures et ne consomme pas de nouvelle place.</p>
+      </div>
+
+      <?php if (!$canInviteExternal): ?>
+        <p class="vitrine-quota-alert" role="status">
+          <?php if ($dailyQuotaRemaining < 1): ?>
+            Vous avez envoyé <?= $dailyQuotaLimit ?> invitations sur les dernières 24 heures. Vous pourrez en envoyer une nouvelle dès qu’un envoi sortira de cette période.
+          <?php else: ?>
+            Vous avez <?= $pendingQuotaLimit ?> invitations en attente. Annulez-en une ou attendez une réponse pour libérer une place.
+          <?php endif; ?>
+        </p>
+      <?php endif; ?>
+
       <form method="post" action="<?= e(url('/espace/vitrine/avis')) ?>" class="vitrine-invite-form">
         <?= csrf_field() ?>
         <input type="hidden" name="action" value="external">
-        <div class="form-grid-2">
-          <div>
-            <label class="field" for="invite-name">Nom</label>
-            <input class="input" id="invite-name" name="name" required placeholder="Camille Dupont" value="<?= e((string) old('name')) ?>">
+        <fieldset<?= $canInviteExternal ? '' : ' disabled' ?>>
+          <div class="form-grid-2">
+            <div>
+              <label class="field" for="invite-name">Nom</label>
+              <input class="input" id="invite-name" name="name" required placeholder="Camille Dupont" value="<?= e((string) old('name')) ?>">
+            </div>
+            <div>
+              <label class="field" for="invite-email">E-mail</label>
+              <input class="input" id="invite-email" type="email" name="email" required placeholder="camille@exemple.fr" value="<?= e((string) old('email')) ?>">
+            </div>
           </div>
           <div>
-            <label class="field" for="invite-email">E-mail</label>
-            <input class="input" id="invite-email" type="email" name="email" required placeholder="camille@exemple.fr" value="<?= e((string) old('email')) ?>">
+            <label class="field" for="invite-context">Contexte (optionnel)</label>
+            <input class="input" id="invite-context" name="context" maxlength="160" placeholder="Correction d’un roman, 90 000 signes" value="<?= e((string) old('context')) ?>">
           </div>
-        </div>
-        <div>
-          <label class="field" for="invite-context">Contexte (optionnel)</label>
-          <input class="input" id="invite-context" name="context" maxlength="160" placeholder="Correction d’un roman, 90 000 signes" value="<?= e((string) old('context')) ?>">
-        </div>
-        <div class="auth-actions">
-          <button class="btn-orange" type="submit">Envoyer une invitation</button>
-        </div>
+          <div class="auth-actions">
+            <button class="btn-orange" type="submit"><?= $canInviteExternal ? 'Envoyer une invitation' : 'Quota atteint' ?></button>
+          </div>
+        </fieldset>
       </form>
 
       <?php if ($pendingInvites !== []): ?>

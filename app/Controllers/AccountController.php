@@ -1893,6 +1893,15 @@ final class AccountController
         $receivedReviews = [];
         $reviewStats = ['avg' => '', 'count' => 0];
         $pendingInvites = [];
+        $externalReviewQuota = [
+            'daily_used' => 0,
+            'daily_limit' => ReviewRequest::MAX_EXTERNAL_PER_DAY,
+            'daily_remaining' => ReviewRequest::MAX_EXTERNAL_PER_DAY,
+            'pending_used' => 0,
+            'pending_limit' => ReviewRequest::MAX_PENDING_EXTERNAL,
+            'pending_remaining' => ReviewRequest::MAX_PENDING_EXTERNAL,
+            'can_invite' => true,
+        ];
         $recommendations = [];
         $requestByOrder = [];
         try {
@@ -1900,6 +1909,7 @@ final class AccountController
             $receivedReviews = Review::forTarget($userId, 40);
             $reviewStats = Review::statsForUser($userId);
             $pendingInvites = ReviewRequest::pendingExternalForSeller($userId);
+            $externalReviewQuota = ReviewRequest::externalQuotaForSeller($userId);
             $recommendations = Recommendation::forTarget($userId, 40, true);
             foreach (ReviewRequest::forSeller($userId) as $req) {
                 $oid = (int) ($req['order_id'] ?? 0);
@@ -1931,6 +1941,7 @@ final class AccountController
             'receivedReviews' => $receivedReviews,
             'reviewStats' => $reviewStats,
             'pendingInvites' => $pendingInvites,
+            'externalReviewQuota' => $externalReviewQuota,
             'recommendations' => $recommendations,
             'saved' => $saved,
             'error' => flash('error'),
