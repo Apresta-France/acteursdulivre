@@ -184,24 +184,7 @@ final class AccountController
     {
         $user = Auth::requireUser();
         try {
-            $payload = [
-                'title' => $request->string('title'),
-                'excerpt' => $request->string('excerpt'),
-                'image_alt' => $request->string('image_alt'),
-                'body' => $request->input('body', ''),
-            ];
-            if ($request->bool('remove_image')) {
-                $payload['image_path'] = null;
-            }
-            $file = $request->file('image');
-            if (($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE) {
-                $payload['image_path'] = store_upload($file, 'journal', ['jpg', 'jpeg', 'png', 'webp'], 5 * 1024 * 1024);
-            }
-            $savedId = Article::saveForUser(
-                $id === 'nouvelle' ? null : (int) $id,
-                (int) $user['id'],
-                $payload
-            );
+            $savedId = $this->saveTribuneDraft($request, $user, $id);
             if ($request->string('action') === 'submit') {
                 Article::submit($savedId, (int) $user['id']);
                 flash('saved', 'Votre tribune a été envoyée à la modération.');
@@ -213,6 +196,71 @@ final class AccountController
             flash('error', user_error_message($e));
             redirect($id === 'nouvelle' ? '/espace/tribune/nouvelle' : '/espace/tribune/' . (int) $id);
         }
+    }
+
+    public function tribuneAutosave(Request $request, string $id = 'nouvelle'): void
+    {
+        $user = Auth::requireUser();
+        try {
+            $savedId = $this->saveTribuneDraft($request, $user, $id);
+            $savedArticle = Article::findForUser($savedId, (int) $user['id']);
+            json_response([
+                'ok' => true,
+                'id' => $savedId,
+                'edit_url' => url('/espace/tribune/' . $savedId),
+                'autosave_url' => url('/espace/tribune/' . $savedId . '/autosauvegarde'),
+                'preview_url' => url('/espace/tribune/' . $savedId . '/apercu'),
+                'saved_at' => date('H:i'),
+                'cover_url' => !empty($savedArticle['has_cover']) ? (string) $savedArticle['img'] : '',
+            ]);
+        } catch (\Throwable $e) {
+            json_response([
+                'ok' => false,
+                'error' => user_error_message($e),
+            ], 422);
+        }
+    }
+
+    public function tribunePreview(Request $request, string $id): void
+    {
+        $user = Auth::requireUser();
+        $article = Article::findForUser((int) $id, (int) $user['id']);
+        if (!$article) {
+            not_found('Cette tribune est introuvable.');
+        }
+        View::page('article', [
+            'title' => 'Aperçu — ' . (string) $article['title'],
+            'article' => $article,
+            'privatePreview' => true,
+            'meta' => [
+                'title' => 'Aperçu privé — ' . (string) $article['title'],
+                'description' => (string) ($article['excerpt'] ?? ''),
+                'robots' => 'noindex, nofollow, noarchive',
+            ],
+        ]);
+    }
+
+    /** @param array<string, mixed> $user */
+    private function saveTribuneDraft(Request $request, array $user, string $id): int
+    {
+        $payload = [
+            'title' => $request->string('title'),
+            'excerpt' => $request->string('excerpt'),
+            'image_alt' => $request->string('image_alt'),
+            'body' => $request->input('body', ''),
+        ];
+        if ($request->bool('remove_image')) {
+            $payload['image_path'] = null;
+        }
+        $file = $request->file('image');
+        if (($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE) {
+            $payload['image_path'] = store_upload($file, 'journal', ['jpg', 'jpeg', 'png', 'webp'], 5 * 1024 * 1024);
+        }
+        return Article::saveForUser(
+            $id === 'nouvelle' ? null : (int) $id,
+            (int) $user['id'],
+            $payload
+        );
     }
 
     public function tribuneSubmit(Request $request, string $id): void

@@ -178,6 +178,44 @@ final class Article
             [$id, $userId]
         );
         Notification::markSubjectRead($userId, 'tribune_rejected', 'article', $id);
+        self::notifyAdminsOfSubmission($article);
+    }
+
+    /** @param array<string, mixed> $article */
+    private static function notifyAdminsOfSubmission(array $article): void
+    {
+        $title = (string) ($article['title'] ?? 'Tribune sans titre');
+        $author = trim((string) ($article['author_name'] ?? '')) ?: 'Un membre';
+        $link = '/admin/moderation';
+        try {
+            $admins = User::activeAdmins();
+        } catch (\Throwable) {
+            return;
+        }
+
+        foreach ($admins as $admin) {
+            $adminId = (int) ($admin['id'] ?? 0);
+            if ($adminId < 1) {
+                continue;
+            }
+            try {
+                Notification::upsertUnread(
+                    $adminId,
+                    'Une tribune attend votre validation',
+                    $author . ' a soumis « ' . $title . ' » au journal.',
+                    $link,
+                    'tribune_pending',
+                    'article',
+                    (int) ($article['id'] ?? 0)
+                );
+            } catch (\Throwable) {
+            }
+            Mailer::notify($admin, 'transactional', 'tribune-a-moderer', [
+                'auteur' => $author,
+                'titre' => $title,
+                'lien_moderation' => \Adl\Data\Share::absolute($link),
+            ]);
+        }
     }
 
     public static function moderate(int $id, string $status, string $note = ''): void
@@ -205,6 +243,12 @@ final class Article
                 $id,
             ]
         );
+        try {
+            foreach (User::activeAdmins() as $admin) {
+                Notification::markSubjectRead((int) $admin['id'], 'tribune_pending', 'article', $id);
+            }
+        } catch (\Throwable) {
+        }
 
         $userId = (int) $article['author_id'];
         $approved = $status === self::STATUS_APPROVED;

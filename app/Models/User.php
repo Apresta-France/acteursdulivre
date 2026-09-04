@@ -240,6 +240,16 @@ final class User
         return (int) ($row['n'] ?? 0);
     }
 
+    /** @return list<array<string, mixed>> */
+    public static function activeAdmins(): array
+    {
+        return Database::fetchAll(
+            'SELECT * FROM users
+             WHERE role = "admin" AND status = "active" AND deleted_at IS NULL
+             ORDER BY id ASC'
+        );
+    }
+
     public static function isClosed(array $user): bool
     {
         return !empty($user['deleted_at']);

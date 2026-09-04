@@ -2481,6 +2481,7 @@
     var source = wrap.querySelector('.wysiwyg-source');
     var editor = wrap.querySelector('.wysiwyg-editor');
     var toolbar = wrap.querySelector('.wysiwyg-toolbar');
+    var bubble = wrap.querySelector('[data-wysiwyg-bubble]');
     if (!source || !editor || !toolbar) return;
 
     editor.innerHTML = toEditorHtml(source.value);
@@ -2527,13 +2528,7 @@
     var form = wrap.closest('form');
     if (form) form.addEventListener('submit', sync);
 
-    toolbar.addEventListener('mousedown', function (event) {
-      event.preventDefault();
-    });
-
-    toolbar.addEventListener('click', function (event) {
-      var btn = event.target.closest('[data-wysiwyg-cmd]');
-      if (!btn) return;
+    function runEditorCommand(btn) {
       var cmd = btn.getAttribute('data-wysiwyg-cmd');
       var arg = btn.getAttribute('data-wysiwyg-value');
       editor.focus();
@@ -2555,41 +2550,93 @@
         document.execCommand(cmd, false, null);
       }
       sync();
+      editor.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+
+    [toolbar, bubble].forEach(function (controls) {
+      if (!controls) return;
+      controls.addEventListener('mousedown', function (event) {
+        event.preventDefault();
+      });
+      controls.addEventListener('click', function (event) {
+        var btn = event.target.closest('[data-wysiwyg-cmd]');
+        if (!btn) return;
+        runEditorCommand(btn);
+      });
     });
+
+    if (bubble && wrap.hasAttribute('data-floating-toolbar')) {
+      function updateBubble() {
+        var selection = window.getSelection && window.getSelection();
+        if (!selection || selection.rangeCount === 0 || selection.isCollapsed) {
+          bubble.hidden = true;
+          return;
+        }
+        var range = selection.getRangeAt(0);
+        var node = range.commonAncestorContainer;
+        var element = node.nodeType === 1 ? node : node.parentElement;
+        if (!element || !editor.contains(element)) {
+          bubble.hidden = true;
+          return;
+        }
+        var rect = range.getBoundingClientRect();
+        var wrapRect = wrap.getBoundingClientRect();
+        if (!rect.width && !rect.height) {
+          bubble.hidden = true;
+          return;
+        }
+        bubble.hidden = false;
+        var left = rect.left - wrapRect.left + (rect.width / 2);
+        var top = rect.top - wrapRect.top - bubble.offsetHeight - 10;
+        bubble.style.left = Math.max(92, Math.min(wrapRect.width - 92, left)) + 'px';
+        bubble.style.top = Math.max(4, top) + 'px';
+      }
+      editor.addEventListener('mouseup', updateBubble);
+      editor.addEventListener('keyup', updateBubble);
+      document.addEventListener('selectionchange', function () {
+        window.requestAnimationFrame(updateBubble);
+      });
+      editor.addEventListener('blur', function () {
+        window.setTimeout(function () {
+          if (!wrap.contains(document.activeElement)) bubble.hidden = true;
+        }, 0);
+      });
+    }
   }
 
   document.querySelectorAll('[data-wysiwyg]').forEach(initWysiwyg);
 
-  (function initTribunePreview() {
+  (function initTribuneStudio() {
     var form = document.querySelector('[data-tribune-form]');
     if (!form) return;
-    var preview = form.querySelector('[data-tribune-preview]');
-    if (!preview) return;
-    var title = form.querySelector('[data-tribune-title]');
-    var excerpt = form.querySelector('[data-tribune-excerpt]');
-    var editor = form.querySelector('[data-tribune-body]');
-    var source = form.querySelector('.wysiwyg-source');
+    var title = form.querySelector('[name="title"]');
     var image = form.querySelector('[data-tribune-image]');
-    var removeImage = form.querySelector('[name="remove_image"]');
-    var previewTitle = preview.querySelector('[data-tribune-preview-title]');
-    var previewExcerpt = preview.querySelector('[data-tribune-preview-excerpt]');
-    var previewBody = preview.querySelector('[data-tribune-preview-body]');
-    var previewImage = preview.querySelector('[data-tribune-preview-image]');
-    var initialImage = previewImage ? previewImage.style.backgroundImage : '';
+    var removeImage = form.querySelector('[data-tribune-remove-image]');
+    var coverPreview = form.querySelector('[data-tribune-cover-preview]');
+    var state = form.querySelector('[data-save-state]');
+    var stateLabel = state && state.querySelector('[data-save-label]');
+    var saveTimer = 0;
+    var saving = null;
+    var revision = 0;
     var imageUrl = '';
+    var initialImage = coverPreview ? coverPreview.style.backgroundImage : '';
 
-    function updateText() {
-      if (previewTitle) previewTitle.textContent = (title && title.value.trim()) || 'Titre de votre article';
-      if (previewExcerpt) previewExcerpt.textContent = (excerpt && excerpt.value.trim()) || 'Le chapô apparaîtra ici.';
-      if (previewBody) {
-        var html = editor && !editor.hidden ? editor.innerHTML : (source ? source.value : '');
-        html = sanitizeEditorHtml(html);
-        previewBody.innerHTML = html || '<p>Le contenu de votre tribune apparaîtra ici.</p>';
+    function setState(name, label) {
+      if (state) state.setAttribute('data-state', name);
+      if (stateLabel) stateLabel.textContent = label;
+    }
+
+    function markDirty() {
+      revision += 1;
+      window.clearTimeout(saveTimer);
+      setState('dirty', 'Modifications non enregistrées');
+      if (title && title.value.trim()) {
+        saveTimer = window.setTimeout(function () { saveDraft(); }, 6000);
       }
     }
 
-    function updateImage() {
-      if (!previewImage) return;
+    function updateCoverPreview() {
+      if (!coverPreview) return;
       if (imageUrl) {
         URL.revokeObjectURL(imageUrl);
         imageUrl = '';
@@ -2597,14 +2644,110 @@
       var file = image && image.files && image.files[0];
       if (file) imageUrl = URL.createObjectURL(file);
       var bg = file ? 'url("' + imageUrl.replace(/"/g, '%22') + '")' : ((removeImage && removeImage.checked) ? '' : initialImage);
-      previewImage.style.backgroundImage = bg;
-      previewImage.classList.toggle('is-empty', !bg);
+      coverPreview.style.backgroundImage = bg;
+      coverPreview.classList.toggle('is-empty', !bg);
     }
 
-    form.addEventListener('input', updateText);
-    if (image) image.addEventListener('change', updateImage);
-    if (removeImage) removeImage.addEventListener('change', updateImage);
-    updateText();
+    function saveDraft() {
+      if (saving) return saving;
+      if (!title || !title.value.trim()) {
+        setState('dirty', 'Ajoutez un titre pour activer la sauvegarde');
+        return Promise.reject(new Error('Le titre est obligatoire.'));
+      }
+      window.clearTimeout(saveTimer);
+      setState('saving', 'Enregistrement…');
+      var savingRevision = revision;
+      var data = new FormData(form);
+      data.delete('action');
+      saving = fetch(form.getAttribute('data-autosave-url'), {
+        method: 'POST',
+        body: data,
+        headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+        credentials: 'same-origin'
+      }).then(function (response) {
+        return response.json().catch(function () { return {}; }).then(function (payload) {
+          if (!response.ok || !payload.ok) throw new Error(payload.error || 'La sauvegarde a échoué.');
+          return payload;
+        });
+      }).then(function (payload) {
+        form.setAttribute('data-autosave-url', payload.autosave_url);
+        form.setAttribute('data-preview-url', payload.preview_url);
+        form.action = payload.edit_url;
+        if (window.history && window.history.replaceState) {
+          window.history.replaceState({}, '', payload.edit_url);
+        }
+        if (coverPreview) {
+          if (imageUrl) {
+            URL.revokeObjectURL(imageUrl);
+            imageUrl = '';
+          }
+          initialImage = payload.cover_url ? 'url("' + String(payload.cover_url).replace(/"/g, '%22') + '")' : '';
+          coverPreview.style.backgroundImage = initialImage;
+          coverPreview.classList.toggle('is-empty', !initialImage);
+        }
+        if (image && image.files && image.files.length) {
+          image.value = '';
+          var pick = image.closest('[data-file-pick]');
+          var name = pick && pick.querySelector('[data-file-name]');
+          if (pick) pick.classList.remove('has-file');
+          if (name) name.textContent = 'Image enregistrée';
+        }
+        if (removeImage && removeImage.checked) {
+          removeImage.checked = false;
+          initialImage = '';
+        }
+        if (revision === savingRevision) {
+          setState('saved', 'Enregistré à ' + payload.saved_at);
+        } else {
+          setState('dirty', 'Nouvelles modifications à enregistrer');
+          saveTimer = window.setTimeout(function () { saveDraft(); }, 1500);
+        }
+        return payload;
+      }).catch(function (error) {
+        setState('error', error.message || 'La sauvegarde a échoué.');
+        throw error;
+      }).finally(function () {
+        saving = null;
+      });
+      return saving;
+    }
+
+    form.addEventListener('input', markDirty);
+    form.addEventListener('change', markDirty);
+    form.addEventListener('submit', function () {
+      window.clearTimeout(saveTimer);
+    });
+    if (image) image.addEventListener('change', updateCoverPreview);
+    if (removeImage) removeImage.addEventListener('change', updateCoverPreview);
+
+    document.addEventListener('keydown', function (event) {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 's') {
+        event.preventDefault();
+        saveDraft().catch(function () {});
+      }
+    });
+
+    document.querySelectorAll('[data-tribune-preview-open]').forEach(function (button) {
+      button.addEventListener('click', function () {
+        var tab = window.open('about:blank', '_blank');
+        if (tab) tab.document.write('<title>Préparation de l’aperçu…</title><p style="font:16px sans-serif;padding:30px">Enregistrement et préparation de l’aperçu…</p>');
+        saveDraft().then(function (payload) {
+          if (tab) {
+            tab.location.href = payload.preview_url;
+          } else {
+            window.location.href = payload.preview_url;
+          }
+        }).catch(function () {
+          if (tab) tab.close();
+        });
+      });
+    });
+
+    window.addEventListener('beforeunload', function (event) {
+      if (!state || ['dirty', 'saving'].indexOf(state.getAttribute('data-state')) === -1) return;
+      event.preventDefault();
+      event.returnValue = '';
+    });
   })();
 
   (function initNewsletterBuilder() {

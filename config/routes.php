@@ -98,6 +98,9 @@ return static function (Router $router): void {
     $router->get('/espace/tribune', [AccountController::class, 'tribune']);
     $router->get('/espace/tribune/nouvelle', [AccountController::class, 'tribuneEdit']);
     $router->post('/espace/tribune/nouvelle', [AccountController::class, 'tribuneSave']);
+    $router->post('/espace/tribune/autosauvegarde', [AccountController::class, 'tribuneAutosave']);
+    $router->get('/espace/tribune/{id}/apercu', [AccountController::class, 'tribunePreview']);
+    $router->post('/espace/tribune/{id}/autosauvegarde', [AccountController::class, 'tribuneAutosave']);
     $router->get('/espace/tribune/{id}', [AccountController::class, 'tribuneEdit']);
     $router->post('/espace/tribune/{id}', [AccountController::class, 'tribuneSave']);
     $router->post('/espace/tribune/{id}/soumettre', [AccountController::class, 'tribuneSubmit']);

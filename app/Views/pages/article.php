@@ -18,6 +18,15 @@ $authNext = rawurlencode($articleHref . '#commentaires');
 $articleUser = auth_user();
 ?>
 <article class="article-page" itemscope itemtype="https://schema.org/Article">
+  <?php if (!empty($privatePreview)): ?>
+    <div class="article-preview-banner">
+      <div>
+        <strong>Aperçu privé</strong>
+        <span>Vous seul pouvez voir cette version. Elle n’est pas encore publiée dans le journal.</span>
+      </div>
+      <a class="btn-navy" href="<?= e(url('/espace/tribune/' . (int) $article['id'])) ?>">Revenir à l’éditeur</a>
+    </div>
+  <?php endif; ?>
   <nav class="search-crumb" aria-label="Fil d'Ariane">
     <a href="<?= e(url('/')) ?>">Accueil</a>
     <span aria-hidden="true"> · </span>
@@ -67,9 +76,11 @@ $articleUser = auth_user();
             <?php endif; ?>
           </div>
         </div>
-        <div class="article-share-wrap">
-          <?php require ADL_ROOT . '/app/Views/partials/share.php'; ?>
-        </div>
+        <?php if (empty($privatePreview)): ?>
+          <div class="article-share-wrap">
+            <?php require ADL_ROOT . '/app/Views/partials/share.php'; ?>
+          </div>
+        <?php endif; ?>
       </header>
 
       <?php if ($cover !== ''): ?>
