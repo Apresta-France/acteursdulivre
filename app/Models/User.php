@@ -394,7 +394,9 @@ final class User
 
     public static function countFounders(): int
     {
-        $row = Database::fetch('SELECT COUNT(*) AS n FROM users WHERE founder = 1');
+        $row = Database::fetch(
+            'SELECT COUNT(*) AS n FROM users WHERE founder = 1 AND deleted_at IS NULL'
+        );
         return (int) ($row['n'] ?? 0);
     }
 
@@ -519,7 +521,7 @@ final class User
                 Database::query(
                     'UPDATE users SET founder = 1
                      WHERE id = ?
-                       AND (SELECT n FROM (SELECT COUNT(*) AS n FROM users WHERE founder = 1) AS taken) < ?',
+                       AND (SELECT n FROM (SELECT COUNT(*) AS n FROM users WHERE founder = 1 AND deleted_at IS NULL) AS taken) < ?',
                     [$id, $limit]
                 );
             } finally {
@@ -644,6 +646,7 @@ final class User
             'role' => 'client',
             'seeks_services' => 0,
             'offers_services' => 0,
+            'founder' => 0,
             'status' => 'suspended',
             'deleted_at' => date('Y-m-d H:i:s'),
         ]);
