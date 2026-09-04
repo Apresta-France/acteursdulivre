@@ -3965,9 +3965,6 @@ img.journal-card-media { width: 100%; object-fit: cover; display: block; }
   gap: 48px;
   align-items: start;
 }
-.article-layout--no-toc {
-  grid-template-columns: minmax(0, 1fr);
-}
 .article-toc {
   position: sticky;
   top: 20px;
@@ -3986,6 +3983,13 @@ img.journal-card-media { width: 100%; object-fit: cover; display: block; }
   text-transform: uppercase;
   color: #8496A8;
   margin: 0 0 10px;
+}
+.article-toc-empty {
+  margin: 0;
+  padding: 7px 8px;
+  color: #8496A8;
+  font-size: 13px;
+  font-style: italic;
 }
 .article-toc-toggle {
   display: none;

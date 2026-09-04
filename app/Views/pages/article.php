@@ -28,13 +28,13 @@ $articleUser = auth_user();
     </div>
   <?php endif; ?>
 
-  <div class="article-layout<?= $toc === [] ? ' article-layout--no-toc' : '' ?>">
-    <?php if ($toc !== []): ?>
-      <nav class="article-toc" data-article-toc aria-label="Sommaire de l'article">
-        <button class="article-toc-toggle" type="button" data-toc-toggle aria-expanded="false">
-          Sommaire
-        </button>
-        <p class="article-toc-title">Sommaire</p>
+  <div class="article-layout">
+    <nav class="article-toc" data-article-toc aria-label="Sommaire de l'article">
+      <button class="article-toc-toggle" type="button" data-toc-toggle aria-expanded="false">
+        Sommaire
+      </button>
+      <p class="article-toc-title">Sommaire</p>
+      <?php if ($toc !== []): ?>
         <ol>
           <?php foreach ($toc as $item): ?>
             <li>
@@ -42,8 +42,10 @@ $articleUser = auth_user();
             </li>
           <?php endforeach; ?>
         </ol>
-      </nav>
-    <?php endif; ?>
+      <?php else: ?>
+        <p class="article-toc-empty">À venir</p>
+      <?php endif; ?>
+    </nav>
 
     <div class="article-main">
       <header class="article-head">
