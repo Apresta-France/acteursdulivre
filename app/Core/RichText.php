@@ -13,6 +13,7 @@ final class RichText
 {
     public const PROFILE_FULL = 'full';
     public const PROFILE_BASIC = 'basic';
+    public const PROFILE_RECOMMENDATION = 'recommendation';
 
     /** @var array<string, array<string, list<string>>> */
     private const PROFILES = [
@@ -55,6 +56,15 @@ final class RichText
             'li' => [],
             'blockquote' => [],
             'a' => ['href', 'title', 'rel', 'target'],
+        ],
+        self::PROFILE_RECOMMENDATION => [
+            'p' => [],
+            'br' => [],
+            'strong' => [],
+            'b' => [],
+            'em' => [],
+            'i' => [],
+            'u' => [],
         ],
     ];
 

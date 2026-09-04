@@ -32,8 +32,18 @@ $invalid = !empty($invalid);
         <input class="input" id="reco-role" name="role" value="<?= e((string) old('role')) ?>" placeholder="Autrice, Éditions La Ligne…">
       </div>
       <div>
-        <label class="field" for="reco-body">Votre recommandation</label>
-        <textarea class="textarea" id="reco-body" name="body" rows="7" required minlength="40" maxlength="2000" placeholder="Ce que vous avez confié, ce qui s’est bien passé."><?= e((string) old('body')) ?></textarea>
+        <label class="field" id="reco-body-label" for="reco-body">Votre recommandation</label>
+        <div class="wysiwyg recommandation-wysiwyg" data-wysiwyg>
+          <div class="wysiwyg-toolbar" hidden aria-label="Mise en forme">
+            <button type="button" data-wysiwyg-cmd="bold" aria-label="Gras" title="Gras"><strong>G</strong></button>
+            <button type="button" data-wysiwyg-cmd="italic" aria-label="Italique" title="Italique"><em>I</em></button>
+            <button type="button" data-wysiwyg-cmd="underline" aria-label="Souligné" title="Souligné"><span class="recommandation-wysiwyg-u">S</span></button>
+            <button type="button" data-wysiwyg-cmd="insertLineBreak" aria-label="Retour à la ligne" title="Retour à la ligne">↵</button>
+          </div>
+          <textarea class="textarea wysiwyg-source" id="reco-body" name="body" rows="7" required minlength="40" maxlength="2400" placeholder="Ce que vous avez confié, ce qui s’est bien passé."><?= e((string) old('body')) ?></textarea>
+          <div class="wysiwyg-editor" contenteditable="true" role="textbox" aria-multiline="true" aria-labelledby="reco-body-label" hidden></div>
+        </div>
+        <p class="field-help">40 à 2 000 caractères. Utilisez Entrée pour créer un paragraphe ou ↵ pour un simple retour à la ligne.</p>
       </div>
       <div class="auth-legal">
         <input id="reco-sincere" type="checkbox" name="sincere" value="1" required>

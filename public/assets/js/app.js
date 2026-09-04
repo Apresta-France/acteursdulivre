@@ -2502,6 +2502,9 @@
     }
 
     editor.addEventListener('input', sync);
+    editor.addEventListener('focus', function () {
+      try { document.execCommand('defaultParagraphSeparator', false, 'p'); } catch (err) {}
+    });
     editor.addEventListener('blur', function () {
       if (!editorIsEmpty(editor)) {
         var clean = sanitizeEditorHtml(editor.innerHTML);
@@ -2545,6 +2548,8 @@
       } else if (cmd === 'formatBlock') {
         var tag = (arg || 'p').replace(/[^a-z0-9]/gi, '') || 'p';
         document.execCommand('formatBlock', false, tag);
+      } else if (cmd === 'insertLineBreak') {
+        document.execCommand('insertHTML', false, '<br>');
       } else {
         document.execCommand(cmd, false, null);
       }

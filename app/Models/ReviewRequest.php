@@ -375,14 +375,15 @@ final class ReviewRequest
 
         $name = trim($name);
         $role = trim($role);
-        $body = trim($body);
+        $body = sanitize_recommendation_html($body);
+        $plainBody = plain_text($body);
         if ($name === '') {
             throw new RuntimeException('Indiquez votre nom.');
         }
-        if (mb_strlen($body) < 40) {
+        if (mb_strlen($plainBody) < 40) {
             throw new RuntimeException('Écrivez au moins quelques phrases : 40 caractères minimum.');
         }
-        if (mb_strlen($body) > 2000) {
+        if (mb_strlen($plainBody) > 2000) {
             throw new RuntimeException('La recommandation est trop longue (2 000 caractères maximum).');
         }
         if (mb_strlen($name) > 120 || mb_strlen($role) > 120) {

@@ -50,7 +50,7 @@ $recommendations = $recommendations ?? [];
           <div>
             <strong><?= e((string) $r['who']) ?><?= $r['role'] !== '' ? ' · ' . e((string) $r['role']) : '' ?> — <?= e((string) $r['cible']) ?></strong>
             <span><?= e((string) $r['author_email']) ?><?= $r['context'] !== '' ? ' · ' . e((string) $r['context']) : '' ?></span>
-            <?php if ($r['txt'] !== ''): ?><p class="admin-quote"><?= e($r['txt']) ?></p><?php endif; ?>
+            <?php if ($r['txt'] !== ''): ?><div class="admin-quote recommendation-text"><?= recommendation_html((string) $r['txt']) ?></div><?php endif; ?>
             <em><?= e((string) $r['when']) ?><?= !empty($r['hidden']) ? ' · masquée' : '' ?></em>
           </div>
         </div>

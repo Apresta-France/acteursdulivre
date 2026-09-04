@@ -953,10 +953,17 @@ final class PageController
                     'robots' => Seo::ROBOTS_NONE,
                 ],
             ]);
+            unset($_SESSION['_old']);
             return;
         } catch (\Throwable $e) {
+            $_SESSION['_old'] = [
+                'name' => $request->string('name'),
+                'role' => $request->string('role'),
+                'body' => $request->string('body'),
+            ];
             flash('error', user_error_message($e));
             $this->renderRecommandation($token, false);
+            unset($_SESSION['_old']);
         }
     }
 

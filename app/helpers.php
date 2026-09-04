@@ -21,6 +21,11 @@ function sanitize_user_html(?string $html): string
     return \Adl\Core\RichText::sanitize((string) $html, \Adl\Core\RichText::PROFILE_BASIC);
 }
 
+function sanitize_recommendation_html(?string $html): string
+{
+    return \Adl\Core\RichText::sanitize((string) $html, \Adl\Core\RichText::PROFILE_RECOMMENDATION);
+}
+
 function rich_html(?string $html, string $fallback = ''): string
 {
     $clean = sanitize_rich_html($html);
@@ -31,6 +36,13 @@ function rich_html(?string $html, string $fallback = ''): string
 function user_html(?string $html, string $fallback = ''): string
 {
     $clean = sanitize_user_html($html);
+
+    return $clean !== '' ? $clean : $fallback;
+}
+
+function recommendation_html(?string $html, string $fallback = ''): string
+{
+    $clean = sanitize_recommendation_html($html);
 
     return $clean !== '' ? $clean : $fallback;
 }

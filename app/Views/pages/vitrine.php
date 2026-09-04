@@ -686,7 +686,7 @@ if ($rateKind === \Adl\Models\Profile::RATE_PERCENT || str_contains($rateValue, 
                   <div class="mission-row-sub"><?= e((string) $reco['context']) ?></div>
                 <?php endif; ?>
                 <?php if ($reco['txt'] !== ''): ?>
-                  <p class="profile-text"><?= e((string) $reco['txt']) ?></p>
+                  <div class="profile-text recommendation-text"><?= recommendation_html((string) $reco['txt']) ?></div>
                 <?php endif; ?>
                 <div class="mission-row-sub"><?= e((string) $reco['when']) ?> · hors plateforme</div>
               </div>

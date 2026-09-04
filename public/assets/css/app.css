@@ -3222,6 +3222,15 @@ a.tab {
   gap: 16px;
   margin-top: 8px;
 }
+.recommandation-wysiwyg { margin-top: 6px; }
+.recommandation-wysiwyg .wysiwyg-editor { min-height: 170px; }
+.recommandation-wysiwyg-u,
+.recommendation-text u {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.recommendation-text p { margin: 0 0 .7em; }
+.recommendation-text p:last-child { margin-bottom: 0; }
 @media (max-width: 720px) {
   .vitrine-avis-item {
     flex-direction: column;
