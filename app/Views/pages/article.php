@@ -28,7 +28,7 @@ $articleUser = auth_user();
     </div>
   <?php endif; ?>
 
-  <div class="article-layout">
+  <div class="article-layout<?= $toc === [] ? ' article-layout--no-toc' : '' ?>">
     <?php if ($toc !== []): ?>
       <nav class="article-toc" data-article-toc aria-label="Sommaire de l'article">
         <button class="article-toc-toggle" type="button" data-toc-toggle aria-expanded="false">

@@ -342,6 +342,94 @@ final class Article
     }
 
     /**
+     * Indicateurs métier des tribunes pour l’administration.
+     *
+     * @return array{
+     *     totals: array<string, int>,
+     *     current: array<string, int>,
+     *     previous: array<string, int>,
+     *     authors: list<array{label: string, n: int}>
+     * }
+     */
+    public static function tribuneStats(
+        string $from,
+        string $to,
+        string $previousFrom,
+        string $previousTo
+    ): array {
+        $totals = [
+            'published' => 0,
+            'pending' => 0,
+            'draft' => 0,
+            'rejected' => 0,
+            'contributors' => 0,
+        ];
+        $row = Database::fetch(
+            'SELECT
+                SUM(CASE WHEN submission_status = "approved" AND published_at IS NOT NULL AND published_at <= NOW() THEN 1 ELSE 0 END) AS published,
+                SUM(CASE WHEN submission_status = "pending" THEN 1 ELSE 0 END) AS pending,
+                SUM(CASE WHEN submission_status = "draft" THEN 1 ELSE 0 END) AS draft,
+                SUM(CASE WHEN submission_status = "rejected" THEN 1 ELSE 0 END) AS rejected,
+                COUNT(DISTINCT author_id) AS contributors
+             FROM articles
+             WHERE author_id IS NOT NULL'
+        );
+        foreach ($totals as $key => $value) {
+            $totals[$key] = (int) ($row[$key] ?? $value);
+        }
+
+        $periodStats = static function (string $periodFrom, string $periodTo): array {
+            $period = Database::fetch(
+                'SELECT
+                    SUM(CASE WHEN submitted_at BETWEEN ? AND ? THEN 1 ELSE 0 END) AS submitted,
+                    SUM(CASE WHEN submission_status = "approved" AND published_at BETWEEN ? AND ? THEN 1 ELSE 0 END) AS published,
+                    SUM(CASE WHEN submission_status = "rejected" AND moderated_at BETWEEN ? AND ? THEN 1 ELSE 0 END) AS rejected
+                 FROM articles
+                 WHERE author_id IS NOT NULL',
+                [
+                    $periodFrom . ' 00:00:00',
+                    $periodTo . ' 23:59:59',
+                    $periodFrom . ' 00:00:00',
+                    $periodTo . ' 23:59:59',
+                    $periodFrom . ' 00:00:00',
+                    $periodTo . ' 23:59:59',
+                ]
+            );
+            return [
+                'submitted' => (int) ($period['submitted'] ?? 0),
+                'published' => (int) ($period['published'] ?? 0),
+                'rejected' => (int) ($period['rejected'] ?? 0),
+            ];
+        };
+
+        $authors = [];
+        foreach (Database::fetchAll(
+            'SELECT author_id, COUNT(*) AS n
+             FROM articles
+             WHERE author_id IS NOT NULL
+               AND submission_status = "approved"
+               AND published_at IS NOT NULL
+               AND published_at <= NOW()
+             GROUP BY author_id
+             ORDER BY n DESC
+             LIMIT 10'
+        ) as $authorRow) {
+            $author = User::find((int) ($authorRow['author_id'] ?? 0));
+            $authors[] = [
+                'label' => $author ? User::displayName($author) : 'Membre',
+                'n' => (int) ($authorRow['n'] ?? 0),
+            ];
+        }
+
+        return [
+            'totals' => $totals,
+            'current' => $periodStats($from, $to),
+            'previous' => $periodStats($previousFrom, $previousTo),
+            'authors' => $authors,
+        ];
+    }
+
+    /**
      * @return list<array{label: string, n: int}>
      */
     public static function publishedCategories(): array

@@ -3965,6 +3965,9 @@ img.journal-card-media { width: 100%; object-fit: cover; display: block; }
   gap: 48px;
   align-items: start;
 }
+.article-layout--no-toc {
+  grid-template-columns: minmax(0, 1fr);
+}
 .article-toc {
   position: sticky;
   top: 20px;
@@ -7283,6 +7286,24 @@ a.admin-kpi:hover { border-color: #C5CDD6; }
   flex-direction: column;
   gap: 12px;
   margin: 0 0 22px;
+}
+.stats-toolbar.admin-card { padding: 20px 22px; }
+.stats-toolbar h2 { margin: 0 0 4px; }
+.stats-toolbar p { margin: 0; }
+.stats-tabs {
+  margin: 0 0 24px;
+  padding-bottom: 2px;
+  overflow-x: auto;
+  flex-wrap: nowrap;
+}
+.stats-tabs .chip { white-space: nowrap; }
+.stats-panel > .admin-h2 { margin: 0; }
+.stats-panel > .admin-muted { margin: 6px 0 16px; }
+.stats-section-title {
+  margin: 22px 0 10px;
+  color: var(--navy);
+  font-family: var(--display);
+  font-size: 15px;
 }
 .stats-periods { display: flex; flex-wrap: wrap; gap: 8px; }
 .stats-toolbar-row {

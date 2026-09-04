@@ -118,6 +118,11 @@ final class AdminController
 
     public function statistiques(Request $request): void
     {
+        $vue = $request->string('vue', 'audience');
+        $allowedViews = ['audience', 'recherche', 'catalogue', 'journal', 'tribunes', 'communaute'];
+        if (!in_array($vue, $allowedViews, true)) {
+            $vue = 'audience';
+        }
         try {
             $report = Analytics::dashboard($request);
         } catch (Throwable) {
@@ -142,6 +147,8 @@ final class AdminController
                 'services' => [],
                 'missions' => [],
                 'articles' => [],
+                'tribune_articles' => [],
+                'tribune_views' => ['n' => 0, 'v' => '0', 'delta' => null],
                 'metiers' => [],
                 'searches' => [],
                 'search_empty' => [],
@@ -166,6 +173,36 @@ final class AdminController
             ];
         }
         $report['community'] = self::communitySnapshot();
+        $report['vue'] = $vue;
+        $keep = [
+            'periode' => (string) ($report['period']['id'] ?? '7j'),
+            'compare' => !empty($report['compare']) ? '1' : '0',
+            'jours' => (int) ($report['period']['jours'] ?? 21),
+            'du' => (string) ($report['period']['du'] ?? ''),
+            'au' => (string) ($report['period']['au'] ?? ''),
+        ];
+        $report['statsTabs'] = [];
+        foreach ([
+            'audience' => 'Audience',
+            'recherche' => 'Recherches',
+            'catalogue' => 'Catalogue',
+            'journal' => 'Journal',
+            'tribunes' => 'Tribunes',
+            'communaute' => 'Communauté',
+        ] as $id => $label) {
+            $report['statsTabs'][] = [
+                'id' => $id,
+                'label' => $label,
+                'href' => Analytics::periodQuery($keep, ['vue' => $id === 'audience' ? null : $id]),
+                'on' => $vue === $id,
+            ];
+        }
+        $report['tribunes'] = self::tribuneSnapshot(
+            $report['period'],
+            !empty($report['compare']),
+            $report['tribune_views'] ?? [],
+            $report['tribune_articles'] ?? []
+        );
         $this->page('stats', 'admin/statistiques', $report);
     }
 
@@ -1360,6 +1397,99 @@ final class AdminController
         } catch (Throwable) {
             return 0;
         }
+    }
+
+    /**
+     * @param array<string, mixed> $period
+     * @param array<string, mixed> $views
+     * @param list<array<string, mixed>> $popular
+     * @return array<string, mixed>
+     */
+    private static function tribuneSnapshot(array $period, bool $compare, array $views, array $popular): array
+    {
+        $raw = [
+            'totals' => ['published' => 0, 'pending' => 0, 'draft' => 0, 'rejected' => 0, 'contributors' => 0],
+            'current' => ['submitted' => 0, 'published' => 0, 'rejected' => 0],
+            'previous' => ['submitted' => 0, 'published' => 0, 'rejected' => 0],
+            'authors' => [],
+        ];
+        try {
+            $raw = Article::tribuneStats(
+                (string) ($period['from'] ?? ''),
+                (string) ($period['to'] ?? ''),
+                (string) ($period['prev_from'] ?? ''),
+                (string) ($period['prev_to'] ?? '')
+            );
+        } catch (Throwable) {
+        }
+
+        $totals = $raw['totals'];
+        $current = $raw['current'];
+        $previous = $raw['previous'];
+        $totalKpis = [];
+        foreach ([
+            ['k' => 'Publiées', 'key' => 'published', 'note' => 'en ligne', 'href' => '/journal?cat=Tribune'],
+            ['k' => 'En modération', 'key' => 'pending', 'note' => 'à traiter', 'href' => '/admin/moderation'],
+            ['k' => 'Brouillons', 'key' => 'draft', 'note' => 'chez les membres'],
+            ['k' => 'À reprendre', 'key' => 'rejected', 'note' => 'après modération'],
+            ['k' => 'Contributeurs', 'key' => 'contributors', 'note' => 'auteurs de tribunes'],
+        ] as $item) {
+            $totalKpis[] = [
+                'k' => $item['k'],
+                'v' => format_int((int) ($totals[$item['key']] ?? 0)),
+                'note' => $item['note'],
+                'href' => $item['href'] ?? null,
+            ];
+        }
+
+        $periodKpis = [];
+        foreach ([
+            ['k' => 'Soumises', 'key' => 'submitted'],
+            ['k' => 'Publiées', 'key' => 'published'],
+            ['k' => 'Refusées', 'key' => 'rejected'],
+        ] as $item) {
+            $n = (int) ($current[$item['key']] ?? 0);
+            $periodKpis[] = [
+                'k' => $item['k'],
+                'v' => format_int($n),
+                'delta' => $compare ? self::statsDelta($n, (int) ($previous[$item['key']] ?? 0)) : null,
+            ];
+        }
+        $periodKpis[] = [
+            'k' => 'Vues des tribunes',
+            'v' => (string) ($views['v'] ?? '0'),
+            'delta' => $views['delta'] ?? null,
+        ];
+
+        return [
+            'totals' => $totalKpis,
+            'period' => $periodKpis,
+            'status' => self::rankRows([
+                ['label' => 'Publiées', 'n' => (int) ($totals['published'] ?? 0), 'href' => '/journal?cat=Tribune'],
+                ['label' => 'En modération', 'n' => (int) ($totals['pending'] ?? 0), 'href' => '/admin/moderation'],
+                ['label' => 'Brouillons', 'n' => (int) ($totals['draft'] ?? 0)],
+                ['label' => 'À reprendre', 'n' => (int) ($totals['rejected'] ?? 0)],
+            ]),
+            'authors' => self::rankRows($raw['authors'] ?? []),
+            'popular' => $popular,
+        ];
+    }
+
+    /** @return array{text: string, tone: string, pct: ?int} */
+    private static function statsDelta(int $current, int $previous): array
+    {
+        if ($previous === 0 && $current === 0) {
+            return ['text' => 'identique', 'tone' => 'flat', 'pct' => 0];
+        }
+        if ($previous === 0) {
+            return ['text' => 'nouveau', 'tone' => 'up', 'pct' => null];
+        }
+        $pct = (int) round(100 * ($current - $previous) / $previous);
+        return [
+            'text' => ($pct > 0 ? '+' : '') . $pct . ' %',
+            'tone' => $pct > 0 ? 'up' : ($pct < 0 ? 'down' : 'flat'),
+            'pct' => $pct,
+        ];
     }
 
     /**

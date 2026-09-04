@@ -238,6 +238,12 @@ final class Analytics
             ? self::aggregateRange($period['prev_from'], $period['prev_to'])
             : self::emptyAggregate();
         $series = self::series($period, $compare);
+        $editorialCurrent = self::articleHitsByOrigin($current['article'], false);
+        $editorialPrevious = self::articleHitsByOrigin($previous['article'], false);
+        $tribuneCurrent = self::articleHitsByOrigin($current['article'], true);
+        $tribunePrevious = self::articleHitsByOrigin($previous['article'], true);
+        $tribuneViews = (int) array_sum($tribuneCurrent);
+        $previousTribuneViews = (int) array_sum($tribunePrevious);
 
         return [
             'period' => $period,
@@ -250,7 +256,13 @@ final class Analytics
             'profiles' => self::rankedEntities('profile', $current['profile'], $previous['profile'], $compare),
             'services' => self::rankedEntities('service', $current['service'], $previous['service'], $compare),
             'missions' => self::rankedEntities('mission', $current['mission'], $previous['mission'], $compare),
-            'articles' => self::rankedEntities('article', $current['article'], $previous['article'], $compare),
+            'articles' => self::rankedEntities('article', $editorialCurrent, $editorialPrevious, $compare),
+            'tribune_articles' => self::rankedEntities('article', $tribuneCurrent, $tribunePrevious, $compare),
+            'tribune_views' => [
+                'n' => $tribuneViews,
+                'v' => format_int($tribuneViews),
+                'delta' => $compare ? self::delta($tribuneViews, $previousTribuneViews) : null,
+            ],
             'metiers' => self::rankedEntities('metier', $current['metier'] ?? [], $previous['metier'] ?? [], $compare),
             'searches' => self::rankedSearches($current['search'], $previous['search'], $compare),
             'search_empty' => self::ranked($current['search_empty'], $previous['search_empty'], $compare),
@@ -1575,6 +1587,33 @@ final class Analytics
             $rows[$i]['href'] = $prefix . $slug;
         }
         return $rows;
+    }
+
+    /**
+     * Sépare les articles éditoriaux des tribunes membres.
+     *
+     * @param array<string, int> $hits
+     * @return array<string, int>
+     */
+    private static function articleHitsByOrigin(array $hits, bool $tribunes): array
+    {
+        $slugs = array_keys($hits);
+        if ($slugs === []) {
+            return [];
+        }
+        $placeholders = implode(',', array_fill(0, count($slugs), '?'));
+        try {
+            $rows = Database::fetchAll(
+                "SELECT slug FROM articles
+                 WHERE slug IN ({$placeholders})
+                   AND author_id IS " . ($tribunes ? 'NOT NULL' : 'NULL'),
+                $slugs
+            );
+        } catch (Throwable) {
+            return $tribunes ? [] : $hits;
+        }
+        $allowed = array_fill_keys(array_column($rows, 'slug'), true);
+        return array_intersect_key($hits, $allowed);
     }
 
     /**
