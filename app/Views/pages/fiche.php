@@ -4,6 +4,11 @@ if (!$service) {
     not_found('Cette prestation n\'est plus disponible.');
 }
 $packages = $service['packages'] ?? [];
+if (count($packages) > 1) {
+    usort($packages, static function (array $left, array $right): int {
+        return ((int) ($left['price'] ?? 0)) <=> ((int) ($right['price'] ?? 0));
+    });
+}
 $options = $service['options'] ?? [];
 $viewer = \Adl\Core\Auth::user();
 $isOwner = $viewer && (int) ($viewer['id'] ?? 0) === (int) ($service['user_id'] ?? 0);
@@ -17,11 +22,27 @@ $orderHref = '/espace/commande?prestation=' . rawurlencode((string) $service['sl
 if ($selectedPackage) {
     $orderHref .= '&formule=' . (int) ($selectedPackage['id'] ?? 0);
 }
-$ctaLabel = $onQuote ? 'Demander un devis' : ('Commander — ' . format_euros_ttc($baseAmount));
+$hasSeveralPackages = count($packages) > 1;
+$hasOptions = $options !== [];
+$ctaLabel = $onQuote ? 'Demander un devis' : 'Commander';
 $formulePriceLabel = is_array($selectedPackage)
     ? (string) ($selectedPackage['price_label'] ?? $service['price'])
     : (string) $service['price'];
 $totalLabel = $onQuote ? 'sur devis' : format_euros_ttc($baseAmount);
+$priceFactLabel = $hasSeveralPackages ? 'À partir de' : 'Prix TTC';
+$packageDelays = [];
+foreach ($packages as $package) {
+    $delay = trim((string) ($package['delay'] ?? ''));
+    if ($delay !== '') {
+        $packageDelays[$delay] = true;
+    }
+}
+$delayFact = (string) ($service['delay'] ?: 'à convenir');
+if ($hasSeveralPackages && count($packageDelays) > 1) {
+    $delayFact = 'selon la formule';
+} elseif ($hasSeveralPackages && count($packageDelays) === 1) {
+    $delayFact = (string) array_key_first($packageDelays);
+}
 ?>
 <div class="fiche-page">
   <nav class="search-crumb" aria-label="Fil d'Ariane">
@@ -93,8 +114,8 @@ $totalLabel = $onQuote ? 'sur devis' : format_euros_ttc($baseAmount);
           '<p>Prestation proposée par ' . e((string) $service['by']) . '.</p>'
       ) ?></div>
       <div class="facts">
-        <div><span>Prix TTC</span><strong><?= e((string) $service['price']) ?></strong></div>
-        <div><span>Délai</span><strong><?= e((string) ($service['delay'] ?: 'à convenir')) ?></strong></div>
+        <div><span><?= e($priceFactLabel) ?></span><strong><?= e((string) $service['price']) ?></strong></div>
+        <div><span>Délai</span><strong><?= e($delayFact) ?></strong></div>
         <div><span>Métier</span><strong><?= e((string) ($service['cat'] ? \Adl\Data\Catalog::tradeTitle((string) $service['cat']) : '—')) ?></strong></div>
         <?php if (!empty($service['specialty'])): ?>
           <div><span>Spécialité</span><strong><?= e((string) $service['specialty']) ?></strong></div>
@@ -105,71 +126,61 @@ $totalLabel = $onQuote ? 'sur devis' : format_euros_ttc($baseAmount);
         <?php endif; ?>
       </div>
 
-      <?php if ($packages !== []): ?>
-        <h2>Formules</h2>
-        <div class="my-missions">
-          <?php foreach ($packages as $package): ?>
-            <article class="side-card">
-              <div class="mission-row-title"><?= e((string) $package['name']) ?></div>
-              <?php if (!empty($package['description'])): ?>
-                <p class="mission-row-sub"><?= e((string) $package['description']) ?></p>
-              <?php endif; ?>
-              <div class="side-foot">
-                <span><?= e((string) ($package['delay'] ?: 'Délai à convenir')) ?></span>
-                <strong><?= e((string) $package['price_label']) ?></strong>
-              </div>
-            </article>
-          <?php endforeach; ?>
-        </div>
-      <?php endif; ?>
-
-      <?php if ($options !== []): ?>
-        <h2>Options</h2>
-        <p class="field-help" style="margin-top: 0;">Leur prix s'ajoute à la formule choisie, ou au prix de base s'il n'y a pas de formule. Vous les cochez dans le panneau Commander.</p>
-        <div class="my-missions">
-          <?php foreach ($options as $option): ?>
-            <article class="side-card">
-              <div class="side-foot" style="margin-top: 0; border-top: 0; padding-top: 0;">
-                <span><?= e((string) ($option['name'] ?? '')) ?></span>
-                <strong>+<?= e((string) ($option['price_label'] ?? format_euros_ttc((int) ($option['price'] ?? 0)))) ?></strong>
-              </div>
-            </article>
-          <?php endforeach; ?>
-        </div>
-      <?php endif; ?>
     </div>
     <aside class="publish-side fiche-side" data-order-total data-base="<?= (int) $baseAmount ?>"<?= $onQuote ? ' data-on-quote' : '' ?> data-order-href="<?= e(url($orderHref)) ?>">
       <div class="side-card fiche-order">
-        <?php if (count($packages) > 1): ?>
-          <div class="fiche-formule-tabs" role="tablist" aria-label="Formules">
-            <?php foreach ($packages as $index => $package): ?>
-              <button type="button" class="fiche-formule-tab<?= $index === 0 ? ' is-on' : '' ?>"
-                      role="tab" aria-selected="<?= $index === 0 ? 'true' : 'false' ?>"
-                      data-order-formule
-                      data-id="<?= (int) ($package['id'] ?? 0) ?>"
-                      data-price="<?= (int) ($package['price'] ?? 0) ?>"
-                      data-name="<?= e((string) ($package['name'] ?? '')) ?>"
-                      data-delay="<?= e((string) ($package['delay'] ?? '')) ?>"
-                      data-desc="<?= e((string) ($package['description'] ?? '')) ?>"><?= e((string) ($package['name'] ?? 'Formule')) ?></button>
-            <?php endforeach; ?>
-          </div>
-        <?php endif; ?>
         <div class="fiche-order-body">
-          <div class="fiche-order-price-row">
-            <span data-order-formule-name><?= e((string) ($selectedPackage['name'] ?? 'Prestation')) ?></span>
-            <strong class="fiche-order-price" data-order-formule-price><?= e($formulePriceLabel) ?></strong>
-          </div>
           <?php
-            $formuleDesc = (string) ($selectedPackage['description'] ?? '');
-            $formuleDelay = (string) ($selectedPackage['delay'] ?? $service['delay'] ?? '');
+            $formuleDesc = is_array($selectedPackage) ? (string) ($selectedPackage['description'] ?? '') : '';
+            $formuleDelay = is_array($selectedPackage)
+                ? (string) ($selectedPackage['delay'] ?? $service['delay'] ?? '')
+                : (string) ($service['delay'] ?? '');
           ?>
-          <p class="mission-row-sub" data-order-formule-desc<?= $formuleDesc === '' ? ' hidden' : '' ?>><?= e($formuleDesc) ?></p>
-          <div class="fiche-order-meta">
-            <span data-order-formule-delay><?= e($formuleDelay !== '' ? $formuleDelay : 'Délai à convenir') ?></span>
-          </div>
-          <?php if ($options !== []): ?>
+          <?php if ($hasSeveralPackages): ?>
+            <div class="side-title-sm">Choisir une formule</div>
+            <div class="fiche-formule-list" role="radiogroup" aria-label="Formules">
+              <?php foreach ($packages as $index => $package): ?>
+                <?php
+                  $isOn = $index === 0;
+                  $pkgDesc = trim((string) ($package['description'] ?? ''));
+                  $pkgDelay = trim((string) ($package['delay'] ?? ''));
+                ?>
+                <button type="button"
+                        class="fiche-formule-choice<?= $isOn ? ' is-on' : '' ?>"
+                        role="radio"
+                        aria-checked="<?= $isOn ? 'true' : 'false' ?>"
+                        tabindex="<?= $isOn ? '0' : '-1' ?>"
+                        data-order-formule
+                        data-id="<?= (int) ($package['id'] ?? 0) ?>"
+                        data-price="<?= (int) ($package['price'] ?? 0) ?>"
+                        data-name="<?= e((string) ($package['name'] ?? '')) ?>"
+                        data-delay="<?= e($pkgDelay) ?>"
+                        data-desc="<?= e($pkgDesc) ?>">
+                  <span class="fiche-formule-choice-top">
+                    <span class="fiche-formule-choice-name"><?= e((string) ($package['name'] ?? 'Formule')) ?></span>
+                    <strong class="fiche-formule-choice-price"><?= e((string) ($package['price_label'] ?? format_euros_ttc((int) ($package['price'] ?? 0)))) ?></strong>
+                  </span>
+                  <span class="fiche-formule-choice-delay"><?= e($pkgDelay !== '' ? $pkgDelay : 'Délai à convenir') ?></span>
+                  <?php if ($pkgDesc !== ''): ?>
+                    <span class="fiche-formule-choice-desc"><?= e($pkgDesc) ?></span>
+                  <?php endif; ?>
+                </button>
+              <?php endforeach; ?>
+            </div>
+          <?php else: ?>
+            <div class="fiche-order-price-row">
+              <span data-order-formule-name><?= e((string) ($selectedPackage['name'] ?? 'Prestation')) ?></span>
+              <strong class="fiche-order-price" data-order-formule-price><?= e($formulePriceLabel) ?></strong>
+            </div>
+            <p class="mission-row-sub" data-order-formule-desc<?= $formuleDesc === '' ? ' hidden' : '' ?>><?= e($formuleDesc) ?></p>
+            <div class="fiche-order-meta">
+              <span data-order-formule-delay><?= e($formuleDelay !== '' ? $formuleDelay : 'Délai à convenir') ?></span>
+            </div>
+          <?php endif; ?>
+          <?php if ($hasOptions): ?>
             <div class="fiche-order-options">
               <div class="side-title-sm">Options</div>
+              <p class="field-help fiche-order-options-help">Elles s’ajoutent à la formule choisie.</p>
               <div class="option-list">
                 <?php foreach ($options as $option): ?>
                   <?php $optionId = (int) ($option['id'] ?? 0); ?>
@@ -185,10 +196,12 @@ $totalLabel = $onQuote ? 'sur devis' : format_euros_ttc($baseAmount);
               </div>
             </div>
           <?php endif; ?>
-          <div class="fiche-order-total">
-            <span>Total TTC</span>
-            <strong data-order-total-value><?= e($totalLabel) ?></strong>
-          </div>
+          <?php if ($hasOptions || $onQuote): ?>
+            <div class="fiche-order-total">
+              <span>Total TTC</span>
+              <strong data-order-total-value><?= e($totalLabel) ?></strong>
+            </div>
+          <?php endif; ?>
           <?php if (!empty($service['startup_enabled'])): ?>
             <p class="field-help" style="margin: 8px 0 0;">Accompagnement de démarrage : <?= e((string) $service['startup_label']) ?></p>
           <?php endif; ?>

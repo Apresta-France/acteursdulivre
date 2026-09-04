@@ -3683,25 +3683,83 @@ a.tab {
 .status-dispute, .status-overdue, .status-orange { background: #FDF3F0; color: var(--orange); }
 .fiche-page .publish-side { position: sticky; top: 20px; }
 .fiche-order { padding: 0; overflow: hidden; }
-.fiche-formule-tabs {
+.fiche-formule-list {
   display: flex;
-  border-bottom: 1px solid var(--line);
+  flex-direction: column;
+  gap: 8px;
 }
-.fiche-formule-tab {
-  flex: 1;
-  border: 0;
-  background: #FBFCFE;
-  color: #8496A8;
-  padding: 14px 8px;
-  font-size: 14px;
-  cursor: pointer;
-}
-.fiche-formule-tab.is-on {
+.fiche-formule-choice {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 4px;
+  width: 100%;
+  margin: 0;
+  padding: 12px 14px 12px 38px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
   background: #FFF;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  position: relative;
+}
+.fiche-formule-choice::before {
+  content: "";
+  position: absolute;
+  left: 14px;
+  top: 15px;
+  width: 14px;
+  height: 14px;
+  border: 1.5px solid #C5D0DB;
+  border-radius: 50%;
+  background: #fff;
+}
+.fiche-formule-choice.is-on::before {
+  border-color: var(--orange);
+  box-shadow: inset 0 0 0 4px var(--orange);
+}
+.fiche-formule-choice:hover {
+  border-color: color-mix(in srgb, var(--navy) 28%, var(--line));
+}
+.fiche-formule-choice.is-on {
+  border-color: var(--orange);
+  background: #FFF8F2;
+  box-shadow: inset 3px 0 0 var(--orange);
+}
+.fiche-formule-choice-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+.fiche-formule-choice-name {
+  font-size: 14px;
+  font-weight: 500;
   color: var(--navy);
-  box-shadow: inset 0 -3px 0 var(--orange);
+  line-height: 1.35;
+}
+.fiche-formule-choice-price {
+  font-family: var(--display);
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--navy);
+  white-space: nowrap;
+}
+.fiche-formule-choice-delay {
+  font-size: 13px;
+  color: #66768A;
+}
+.fiche-formule-choice-desc {
+  display: block;
+  margin-top: 4px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #4A5A6B;
 }
 .fiche-order-body { padding: 22px; }
+.fiche-order-body > .side-title-sm { margin-bottom: 12px; }
+.fiche-order-options-help { margin: 0 0 10px; }
 .fiche-order-price-row {
   display: flex;
   justify-content: space-between;

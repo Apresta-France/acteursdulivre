@@ -3225,7 +3225,7 @@
     function syncTotal() {
       var total = currentTotal();
       var totalLabel = onQuote ? 'sur devis' : formatEuros(total);
-      var label = onQuote ? 'Demander un devis' : ('Commander — ' + formatEuros(total));
+      var label = onQuote ? 'Demander un devis' : 'Commander';
       root.querySelectorAll('[data-order-total-value]').forEach(function (el) {
         el.textContent = totalLabel;
       });
@@ -3239,41 +3239,65 @@
         });
       }
     }
-    root.querySelectorAll('[data-order-formule]').forEach(function (tab) {
+    function selectFormule(tab) {
+      root.querySelectorAll('[data-order-formule]').forEach(function (other) {
+        var on = other === tab;
+        other.classList.toggle('is-on', on);
+        other.setAttribute('aria-checked', on ? 'true' : 'false');
+        other.setAttribute('aria-selected', on ? 'true' : 'false');
+        other.tabIndex = on ? 0 : -1;
+      });
+      base = parseInt(tab.getAttribute('data-price') || '0', 10) || 0;
+      root.setAttribute('data-base', String(base));
+      var nameEl = root.querySelector('[data-order-formule-name]');
+      var delayEl = root.querySelector('[data-order-formule-delay]');
+      var descEl = root.querySelector('[data-order-formule-desc]');
+      var priceEl = root.querySelector('[data-order-formule-price]');
+      var desc = tab.getAttribute('data-desc') || '';
+      if (nameEl) nameEl.textContent = tab.getAttribute('data-name') || '';
+      if (delayEl) delayEl.textContent = tab.getAttribute('data-delay') || 'Délai à convenir';
+      if (descEl) {
+        descEl.textContent = desc;
+        descEl.hidden = desc === '';
+      }
+      if (priceEl) priceEl.textContent = formatEuros(base);
+      var packageId = tab.getAttribute('data-id') || '';
+      root.querySelectorAll('[data-order-formule-input]').forEach(function (el) {
+        el.value = packageId;
+      });
+      if (orderHref) {
+        try {
+          var next = new URL(orderHref, window.location.origin);
+          if (packageId && packageId !== '0') next.searchParams.set('formule', packageId);
+          else next.searchParams.delete('formule');
+          orderHref = next.pathname + next.search;
+          root.setAttribute('data-order-href', orderHref);
+        } catch (err) {}
+      }
+      syncTotal();
+    }
+    var formuleChoices = root.querySelectorAll('[data-order-formule]');
+    formuleChoices.forEach(function (tab, index) {
       tab.addEventListener('click', function () {
-        root.querySelectorAll('[data-order-formule]').forEach(function (other) {
-          var on = other === tab;
-          other.classList.toggle('is-on', on);
-          other.setAttribute('aria-selected', on ? 'true' : 'false');
-        });
-        base = parseInt(tab.getAttribute('data-price') || '0', 10) || 0;
-        root.setAttribute('data-base', String(base));
-        var nameEl = root.querySelector('[data-order-formule-name]');
-        var delayEl = root.querySelector('[data-order-formule-delay]');
-        var descEl = root.querySelector('[data-order-formule-desc]');
-        var priceEl = root.querySelector('[data-order-formule-price]');
-        var desc = tab.getAttribute('data-desc') || '';
-        if (nameEl) nameEl.textContent = tab.getAttribute('data-name') || '';
-        if (delayEl) delayEl.textContent = tab.getAttribute('data-delay') || 'Délai à convenir';
-        if (descEl) {
-          descEl.textContent = desc;
-          descEl.hidden = desc === '';
+        selectFormule(tab);
+      });
+      tab.addEventListener('keydown', function (event) {
+        var key = event.key;
+        var nextIndex = -1;
+        if (key === 'ArrowDown' || key === 'ArrowRight') {
+          nextIndex = index + 1 < formuleChoices.length ? index + 1 : 0;
+        } else if (key === 'ArrowUp' || key === 'ArrowLeft') {
+          nextIndex = index - 1 >= 0 ? index - 1 : formuleChoices.length - 1;
+        } else if (key === 'Home') {
+          nextIndex = 0;
+        } else if (key === 'End') {
+          nextIndex = formuleChoices.length - 1;
         }
-        if (priceEl) priceEl.textContent = formatEuros(base);
-        var packageId = tab.getAttribute('data-id') || '';
-        root.querySelectorAll('[data-order-formule-input]').forEach(function (el) {
-          el.value = packageId;
-        });
-        if (orderHref) {
-          try {
-            var next = new URL(orderHref, window.location.origin);
-            if (packageId && packageId !== '0') next.searchParams.set('formule', packageId);
-            else next.searchParams.delete('formule');
-            orderHref = next.pathname + next.search;
-            root.setAttribute('data-order-href', orderHref);
-          } catch (err) {}
-        }
-        syncTotal();
+        if (nextIndex < 0) return;
+        event.preventDefault();
+        var next = formuleChoices[nextIndex];
+        next.focus();
+        selectFormule(next);
       });
     });
     root.addEventListener('change', syncTotal);

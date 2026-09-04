@@ -116,7 +116,7 @@ $specialtyHelps[''] = \Adl\Data\Catalog::specialtyHelp('');
         <div>
           <label class="field" for="service-price">Prix à partir de (€ TTC)</label>
           <input class="input" id="service-price" name="price_from" inputmode="numeric" value="<?= e((string) ($old['price_from'] ?? '')) ?>" placeholder="420">
-          <p class="field-help">Montant affiché au client, toutes taxes comprises.</p>
+          <p class="field-help">Montant affiché au client, toutes taxes comprises. Avec des formules, ce champ est recalculé sur la formule la moins chère.</p>
         </div>
         <div>
           <label class="field" for="service-delay">Délai annoncé</label>
@@ -126,7 +126,7 @@ $specialtyHelps[''] = \Adl\Data\Catalog::specialtyHelp('');
 
       <div>
         <h3 class="espace-group-title">Formules (optionnel)</h3>
-        <p class="field-help" style="margin-top: 0; margin-bottom: 12px;">Ajoutez autant de formules que nécessaire. Chaque formule enregistrée doit avoir un nom et un prix TTC. Le prix « à partir de » reprend la moins chère si vous le laissez vide.</p>
+        <p class="field-help" style="margin-top: 0; margin-bottom: 12px;">Ajoutez autant de formules que nécessaire. Chaque formule enregistrée doit avoir un nom et un prix TTC. Dès qu’il y a des formules, le prix « à partir de » affiché aux clients est toujours celui de la moins chère (pas un tarif au signe ou à l’heure).</p>
         <div class="repeat-list" data-repeat="packages">
           <?php foreach ($packages as $i => $package): ?>
             <div class="repeat-package" data-repeat-row>

@@ -231,16 +231,10 @@ final class Service
             static fn (string $candidate): bool => Database::fetch('SELECT id FROM services WHERE slug = ?', [$candidate]) !== null
         );
 
-        $priceFrom = isset($data['price_from']) ? (int) $data['price_from'] : null;
-        if ($priceFrom === null) {
-            $prices = [];
-            foreach ($packages as $package) {
-                if (isset($package['price']) && (int) $package['price'] > 0) {
-                    $prices[] = (int) $package['price'];
-                }
-            }
-            $priceFrom = $prices !== [] ? min($prices) : null;
-        }
+        $priceFrom = self::resolvePriceFrom(
+            isset($data['price_from']) ? (int) $data['price_from'] : null,
+            $packages
+        );
 
         $imagePaths = self::normalizeImagePaths($data);
         $portfolioUrl = self::normalizePortfolioUrl($data['portfolio_url'] ?? null);
@@ -300,16 +294,10 @@ final class Service
         }
 
         $title = trim((string) ($data['title'] ?? $service['title'] ?? ''));
-        $priceFrom = isset($data['price_from']) ? (int) $data['price_from'] : null;
-        if ($priceFrom === null) {
-            $prices = [];
-            foreach ($packages as $package) {
-                if (isset($package['price']) && (int) $package['price'] > 0) {
-                    $prices[] = (int) $package['price'];
-                }
-            }
-            $priceFrom = $prices !== [] ? min($prices) : null;
-        }
+        $priceFrom = self::resolvePriceFrom(
+            isset($data['price_from']) ? (int) $data['price_from'] : null,
+            $packages
+        );
 
         $previousPaths = self::imagePaths($service);
         $imagePaths = array_key_exists('images', $data) || array_key_exists('image_path', $data)
@@ -506,6 +494,40 @@ final class Service
         @unlink($real);
     }
 
+    /**
+     * Prix affiché / commandable de départ : la formule la moins chère l’emporte.
+     *
+     * @param list<array<string, mixed>> $packages
+     */
+    public static function resolvePriceFrom(?int $priceFrom, array $packages): ?int
+    {
+        $fromPackages = self::lowestPackagePrice($packages);
+        if ($fromPackages !== null) {
+            return $fromPackages;
+        }
+
+        return ($priceFrom !== null && $priceFrom > 0) ? $priceFrom : null;
+    }
+
+    /**
+     * @param list<array<string, mixed>> $packages
+     */
+    public static function lowestPackagePrice(array $packages): ?int
+    {
+        $prices = [];
+        foreach ($packages as $package) {
+            if (!is_array($package)) {
+                continue;
+            }
+            $price = (int) ($package['price'] ?? 0);
+            if ($price > 0) {
+                $prices[] = $price;
+            }
+        }
+
+        return $prices !== [] ? min($prices) : null;
+    }
+
     /** @param list<array<string, mixed>> $packages */
     public static function replacePackages(int $serviceId, array $packages): void
     {
@@ -637,6 +659,12 @@ final class Service
             $package['price_label'] = format_euros_ttc((int) ($package['price'] ?? 0));
         }
         unset($package);
+
+        // Affichage « à partir de » = formule la moins chère (pas un tarif unitaire saisi à part).
+        $listedFromPackages = self::lowestPackagePrice($packages);
+        if ($listedFromPackages !== null) {
+            $row['price_from'] = $listedFromPackages;
+        }
 
         $options = [];
         try {
