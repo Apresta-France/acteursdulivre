@@ -7,7 +7,7 @@ return [
     'slug' => 'partager-fiche-kit-vitrine',
     'category' => 'Plateforme',
     'excerpt' => 'Lien, visuels Instagram, story, LinkedIn, QR code, signature e-mail et badge : tout est prêt dans la vitrine, et les vues se lisent dans l’espace.',
-    'image_path' => null,
+    'image_path' => 'img/journal/partager-fiche-kit-vitrine.jpg',
     'image_alt' => 'Fiche prestataire ouverte à côté d’un téléphone et d’une carte portant un QR code.',
     'published' => true,
     'published_at' => '2026-09-07 10:00:00',
