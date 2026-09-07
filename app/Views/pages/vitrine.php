@@ -5,8 +5,13 @@ $experiences = !empty($p['experiences']) ? $p['experiences'] : [['periode' => ''
 $education = !empty($p['education']) ? $p['education'] : [['annee' => '', 'intitule' => '', 'ecole' => '']];
 $languagesList = !empty($p['languages_list']) ? $p['languages_list'] : [['langue' => '', 'niveau' => 'Langue de travail']];
 $portfolio = $p['portfolio'] ?? [];
+$defaultPortfolioMedia = $defaultPortfolioMedia ?? \Adl\Data\Catalog::defaultPortfolioMedia($p['trades'] ?? []);
+$suggestedPortfolioMedia = $suggestedPortfolioMedia ?? \Adl\Data\Catalog::suggestedPortfolioMedia($p['trades'] ?? []);
+$portfolioMediaTypes = $portfolioMediaTypes ?? \Adl\Models\Profile::PORTFOLIO_MEDIA_TYPES;
+$portfolioFormLead = $portfolioFormLead ?? \Adl\Data\Catalog::portfolioFormLead($p['trades'] ?? []);
+$suggestedMedia = $suggestedPortfolioMedia;
 if ($portfolio === []) {
-    $portfolio = [['id' => '', 'title' => '', 'description' => '', 'year' => '', 'kind' => 'creation', 'image_path' => '', 'image_url' => '']];
+    $portfolio = [['id' => '', 'title' => '', 'description' => '', 'text_excerpt' => '', 'year' => '', 'kind' => 'creation', 'media_type' => $defaultPortfolioMedia, 'image_path' => '', 'image_url' => '']];
 }
 $selectedTrades = $p['trades'] ?? [];
 $selectedGenres = $p['genres'] ?? [];
@@ -24,9 +29,12 @@ $socials = !empty($p['socials']) ? $p['socials'] : [['network' => '', 'url' => '
 $socialNetworks = $socialNetworks ?? \Adl\Models\Profile::SOCIAL_NETWORKS;
 $completion = (int) ($completion ?? ($p['completion'] ?? 0));
 $publicHref = !empty($p['slug']) ? url('/prestataires/' . $p['slug']) : '';
-$tab = in_array(($tab ?? ''), ['identite', 'competences', 'parcours', 'portfolio', 'avis'], true)
+$tab = in_array(($tab ?? ''), ['identite', 'competences', 'parcours', 'portfolio', 'avis', 'partage'], true)
     ? (string) $tab
     : 'identite';
+$shareKit = $shareKit ?? [];
+$hideFormTabs = 'avis partage';
+$formHidden = in_array($tab, ['avis', 'partage'], true);
 $pendingReviews = $pendingReviews ?? [];
 $receivedReviews = $receivedReviews ?? [];
 $reviewStats = $reviewStats ?? ['avg' => '', 'count' => 0];
@@ -78,7 +86,7 @@ if ($rateKind === \Adl\Models\Profile::RATE_PERCENT || str_contains($rateValue, 
       <?php if ($publicHref): ?>
         <a class="btn-ghost" href="<?= e($publicHref) ?>">Voir en public</a>
       <?php endif; ?>
-      <button class="btn-orange" type="submit" form="vitrine-form" data-hide-on-tab="avis"<?= $tab === 'avis' ? ' hidden' : '' ?>>Enregistrer</button>
+      <button class="btn-orange" type="submit" form="vitrine-form" data-hide-on-tab="<?= e($hideFormTabs) ?>"<?= $formHidden ? ' hidden' : '' ?>>Enregistrer</button>
     </div>
   </div>
 
@@ -97,9 +105,10 @@ if ($rateKind === \Adl\Models\Profile::RATE_PERCENT || str_contains($rateValue, 
     <a class="tab<?= $tab === 'parcours' ? ' is-on' : '' ?>" href="<?= e(url('/espace/vitrine?onglet=parcours')) ?>" data-tab="parcours">Parcours</a>
     <a class="tab<?= $tab === 'portfolio' ? ' is-on' : '' ?>" href="<?= e(url('/espace/vitrine?onglet=portfolio')) ?>" data-tab="portfolio">Créations &amp; exemples</a>
     <a class="tab<?= $tab === 'avis' ? ' is-on' : '' ?>" href="<?= e(url('/espace/vitrine?onglet=avis')) ?>" data-tab="avis">Avis<?php if ($avisBadge > 0): ?> <span class="tab-count"><?= (int) $avisBadge ?></span><?php endif; ?></a>
+    <a class="tab<?= $tab === 'partage' ? ' is-on' : '' ?>" href="<?= e(url('/espace/vitrine?onglet=partage')) ?>" data-tab="partage">Partage</a>
   </div>
 
-  <form id="vitrine-form" class="vitrine-form" method="post" action="<?= e(url('/espace/vitrine')) ?>" enctype="multipart/form-data" data-hide-on-tab="avis"<?= $tab === 'avis' ? ' hidden' : '' ?>>
+  <form id="vitrine-form" class="vitrine-form" method="post" action="<?= e(url('/espace/vitrine')) ?>" enctype="multipart/form-data" data-hide-on-tab="<?= e($hideFormTabs) ?>"<?= $formHidden ? ' hidden' : '' ?>>
     <?= csrf_field() ?>
     <input type="hidden" name="onglet" value="<?= e($tab) ?>" data-vitrine-tab>
 
@@ -470,8 +479,8 @@ if ($rateKind === \Adl\Models\Profile::RATE_PERCENT || str_contains($rateValue, 
     <div data-tab-panel="portfolio"<?= $tab === 'portfolio' ? '' : ' hidden' ?>>
       <div class="espace-panel">
         <h2 class="espace-group-title">Créations et exemples</h2>
-        <p class="espace-section-lead">Un titre, une année, une courte description et un visuel. Sans titre, la pièce s’appelle Exemple 1, Exemple 2… Le visuel s’affiche dès que vous le choisissez ; enregistrez ensuite la vitrine. Chaque pièce doit être une réalisation humaine dont vous détenez les droits.</p>
-      <div class="repeat-list portfolio-list" data-repeat="portfolio">
+        <p class="espace-section-lead"><?= e($portfolioFormLead) ?> Sans titre, la pièce s’appelle Exemple, Extrait ou Échantillon selon le type. Le fichier s’affiche dès que vous le choisissez ; enregistrez ensuite la vitrine.</p>
+      <div class="repeat-list portfolio-list" data-repeat="portfolio" data-default-media="<?= e($defaultPortfolioMedia) ?>" data-max-bytes="<?= (int) ($portfolioMaxBytes ?? \Adl\Models\PortfolioItem::MAX_BYTES) ?>">
         <?php foreach ($portfolio as $i => $item): ?>
           <?php
             $portfolioIndex = $i;
@@ -483,7 +492,7 @@ if ($rateKind === \Adl\Models\Profile::RATE_PERCENT || str_contains($rateValue, 
       </div>
     </div>
 
-    <div class="auth-actions" style="margin-top: 28px;" data-hide-on-tab="avis"<?= $tab === 'avis' ? ' hidden' : '' ?>>
+    <div class="auth-actions" style="margin-top: 28px;" data-hide-on-tab="<?= e($hideFormTabs) ?>"<?= $formHidden ? ' hidden' : '' ?>>
       <button class="btn-orange" type="submit">Enregistrer la vitrine</button>
     </div>
   </form>
@@ -697,7 +706,9 @@ if ($rateKind === \Adl\Models\Profile::RATE_PERCENT || str_contains($rateValue, 
     </section>
   </div>
 
-  <section class="espace-panel" style="margin-top: 8px; max-width: 860px;" data-hide-on-tab="avis"<?= $tab === 'avis' ? ' hidden' : '' ?>>
+  <?php require ADL_ROOT . '/app/Views/partials/vitrine-partage.php'; ?>
+
+  <section class="espace-panel" style="margin-top: 8px; max-width: 860px;" data-hide-on-tab="<?= e($hideFormTabs) ?>"<?= $formHidden ? ' hidden' : '' ?>>
     <div class="espace-panel-head">
       <h2 class="espace-section-title">Justificatif d'activité</h2>
     </div>
@@ -791,7 +802,7 @@ if ($rateKind === \Adl\Models\Profile::RATE_PERCENT || str_contains($rateValue, 
 <template id="tpl-portfolio">
   <?php
     $portfolioIndex = '__i__';
-    $item = ['id' => '', 'title' => '', 'description' => '', 'year' => '', 'kind' => 'creation', 'image_path' => '', 'image_url' => ''];
+    $item = ['id' => '', 'title' => '', 'description' => '', 'text_excerpt' => '', 'year' => '', 'kind' => 'creation', 'media_type' => $defaultPortfolioMedia, 'image_path' => '', 'image_url' => ''];
     require ADL_ROOT . '/app/Views/partials/portfolio-card.php';
   ?>
 </template>

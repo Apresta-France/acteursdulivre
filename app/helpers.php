@@ -632,6 +632,11 @@ function upload_mime_map(): array
         'doc' => ['application/msword'],
         'docx' => ['application/vnd.openxmlformats-officedocument.wordprocessingml.document'],
         'odt' => ['application/vnd.oasis.opendocument.text'],
+        'mp3' => ['audio/mpeg', 'audio/mp3'],
+        'wav' => ['audio/wav', 'audio/x-wav', 'audio/wave'],
+        'm4a' => ['audio/mp4', 'audio/x-m4a', 'audio/m4a', 'audio/aac'],
+        'ogg' => ['audio/ogg', 'application/ogg', 'audio/x-ogg'],
+        'aac' => ['audio/aac', 'audio/x-aac', 'audio/mp4'],
     ];
 }
 
@@ -641,7 +646,7 @@ function assert_upload(array $file, array $allowedExt, int $maxBytes): string
         throw new RuntimeException('Le fichier n\'a pas pu être transmis.');
     }
     if ((int) ($file['size'] ?? 0) > $maxBytes) {
-        throw new RuntimeException('Le fichier dépasse la taille maximale autorisée.');
+        throw new RuntimeException('Le fichier dépasse ' . format_bytes($maxBytes) . '.');
     }
 
     $name = (string) ($file['name'] ?? '');

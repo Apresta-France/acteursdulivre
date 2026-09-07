@@ -136,6 +136,7 @@ $profileDelta = $profile['delta'] ?? null;
         <div class="auth-actions" style="margin-top: 14px;">
           <a class="btn-ghost" href="<?= e(url($profileHref)) ?>">Voir la fiche</a>
           <a class="btn-navy" href="<?= e(url('/espace/vitrine')) ?>">Modifier</a>
+          <a class="btn-ghost" href="<?= e(url('/espace/vitrine?onglet=partage')) ?>">Partager</a>
         </div>
       <?php endif; ?>
     </section>

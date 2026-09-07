@@ -107,6 +107,11 @@ final class Seo
                 'description' => 'Inscrivez-vous sur acteursdulivre.fr : auteurs et professionnels du livre. Ouverture aux clients en octobre 2026. Sans IA générative.',
                 'path' => '/inscription',
             ],
+            'besoin' => [
+                'title' => 'Par besoin — campagnes des métiers du livre',
+                'description' => 'Pages par besoin : corriger un manuscrit, couverture, impression, traduction, livre audio. Une entrée claire pour trouver le bon prestataire.',
+                'path' => '/besoin',
+            ],
             'connexion' => [
                 'title' => 'Connexion',
                 'description' => 'Accédez à votre espace acteursdulivre.fr.',
@@ -711,7 +716,7 @@ final class Seo
             'isAccessibleForFree' => true,
             'articleSection' => (string) ($article['cat'] ?? $article['category'] ?? 'Journal'),
             'wordCount' => max(1, $words),
-            'keywords' => (string) ($article['keywords'] ?? 'autoédition, fabrication livre, coût impression, correction, maquette, couverture'),
+            'keywords' => self::articleKeywords($article),
             'author' => !empty($article['author_name'])
                 ? [
                     '@type' => 'Person',
@@ -747,7 +752,96 @@ final class Seo
                 $body['dateModified'] = $modifiedTs !== false ? date('c', $modifiedTs) : $iso;
             }
         }
+        if ((string) ($article['slug'] ?? '') === 'autoedition-guide-complet') {
+            $body['about'] = [
+                '@type' => 'Thing',
+                'name' => 'Autoédition',
+                'sameAs' => 'https://fr.wikipedia.org/wiki/Auto-%C3%A9dition',
+            ];
+            $body['citation'] = [
+                Share::absolute('/journal/cout-fabrication-roman-autoedition'),
+                Share::absolute('/journal/isbn-depot-legal-afnil-france'),
+                Share::absolute('/journal/autoedition-droits-auteur'),
+            ];
+        }
         return $body;
+    }
+
+    /**
+     * @param array<string, mixed> $article
+     */
+    private static function articleKeywords(array $article): string
+    {
+        $slug = (string) ($article['slug'] ?? '');
+        if ($slug === 'autoedition-guide-complet') {
+            return 'autoédition, auto-édition, publier son livre, s\'autoéditer, ISBN, dépôt légal, AFNIL, impression à la demande, compte d\'auteur, diffusion librairie';
+        }
+        return (string) ($article['keywords'] ?? 'autoédition, fabrication livre, coût impression, correction, maquette, couverture');
+    }
+
+    /**
+     * @param list<array{name: string, text: string}> $steps
+     * @return array<string, mixed>
+     */
+    public static function howTo(string $name, string $description, array $steps, string $url): array
+    {
+        $elements = [];
+        foreach (array_values($steps) as $step) {
+            $label = trim((string) ($step['name'] ?? ''));
+            $text = trim((string) ($step['text'] ?? $label));
+            if ($text === '') {
+                continue;
+            }
+            $elements[] = [
+                '@type' => 'HowToStep',
+                'position' => count($elements) + 1,
+                'name' => $label !== '' ? $label : self::clip($text, 80),
+                'text' => $text,
+                'url' => $url,
+            ];
+        }
+        return [
+            '@type' => 'HowTo',
+            'name' => $name,
+            'description' => self::clip($description, 200),
+            'inLanguage' => 'fr-FR',
+            'url' => $url,
+            'step' => $elements,
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    public static function articleCluster(string $slug): ?array
+    {
+        if ($slug !== 'autoedition-guide-complet') {
+            return null;
+        }
+        $items = [
+            ['name' => 'Combien coûte la fabrication d’un roman en autoédition ?', 'path' => '/journal/cout-fabrication-roman-autoedition'],
+            ['name' => 'ISBN, dépôt légal, AFNIL', 'path' => '/journal/isbn-depot-legal-afnil-france'],
+            ['name' => 'Autoédition et droits d’auteur', 'path' => '/journal/autoedition-droits-auteur'],
+            ['name' => 'Impression à la demande, numérique ou offset', 'path' => '/journal/impression-pod-numerique-offset'],
+            ['name' => 'Faire entrer son livre en librairie', 'path' => '/journal/livre-autoedite-en-librairie'],
+            ['name' => 'Le coût réel d’un e-book', 'path' => '/journal/cout-reel-ebook'],
+        ];
+        $elements = [];
+        foreach ($items as $i => $item) {
+            $elements[] = [
+                '@type' => 'ListItem',
+                'position' => $i + 1,
+                'name' => $item['name'],
+                'url' => Share::absolute($item['path']),
+            ];
+        }
+        return [
+            '@type' => 'ItemList',
+            'name' => 'Dossier autoédition',
+            'itemListOrder' => 'https://schema.org/ItemListOrderAscending',
+            'numberOfItems' => count($elements),
+            'itemListElement' => $elements,
+        ];
     }
 
     /**
@@ -986,6 +1080,7 @@ final class Seo
             'auteurs' => 'Auteurs',
             'resultats' => 'Annuaire',
             'inscription' => 'Inscription',
+            'besoin' => 'Par besoin',
             'legal' => $title,
             default => $title,
         };
@@ -1064,7 +1159,9 @@ acteursdulivre.fr met en relation des porteurs de projet (auteurs, éditeurs, co
 - [Prestations]({$home}prestations) : offres à prix affiché
 - [Appels d'offres]({$home}missions) : recherches publiées par les porteurs de projet
 - [Métiers]({$home}metiers/correction) : pages métiers, exemple correction
+- [Par besoin]({$home}besoin) : pages d'entrée par besoin (correction, couverture, impression…), utilisées aussi pour les campagnes
 - [Journal]({$home}journal) : articles sur les métiers, tarifs, contrats et diffusion
+- [Autoédition : le guide complet]({$home}journal/autoedition-guide-complet) : publier son livre en France (budget, ISBN, dépôt légal, fabrication, librairie)
 - [Contact]({$home}contact) : écrire à l'équipe
 - [Mentions légales]({$home}mentions-legales) : informations légales
 

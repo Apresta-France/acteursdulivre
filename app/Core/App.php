@@ -25,7 +25,7 @@ final class App
         if ($request->isPost() && !$csrfExempt) {
             $contentLength = (int) ($_SERVER['CONTENT_LENGTH'] ?? 0);
             if ($contentLength > 0 && $_POST === [] && $_FILES === []) {
-                flash('error', 'L\'envoi est trop lourd. Réduisez les fichiers (5 Mo max par visuel) et réessayez.');
+                flash('error', 'L\'envoi est trop lourd. Réduisez les fichiers et réessayez.');
                 $back = parse_url((string) ($_SERVER['HTTP_REFERER'] ?? ''), PHP_URL_PATH);
                 redirect(is_string($back) ? $back : '/');
             }

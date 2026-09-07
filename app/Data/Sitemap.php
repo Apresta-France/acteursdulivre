@@ -21,6 +21,10 @@ final class Sitemap
             self::push($urls, $seen, $page['path'], $page['lastmod'] ?? null, $page['priority'] ?? null);
         }
 
+        foreach (Landings::sitemapUrls() as $page) {
+            self::push($urls, $seen, $page['loc'], null, $page['priority'] ?? '0.7');
+        }
+
         foreach (self::tradePaths() as $path) {
             self::push($urls, $seen, $path, null, '0.8');
         }
@@ -97,7 +101,8 @@ final class Sitemap
              WHERE published_at IS NOT NULL AND published_at <= NOW()
                AND slug IS NOT NULL AND slug != ""'
         ) as $row) {
-            self::push($urls, $seen, '/journal/' . $row['slug'], $row['lastmod'] ?? null, '0.6');
+            $priority = (string) ($row['slug'] ?? '') === 'autoedition-guide-complet' ? '0.8' : '0.6';
+            self::push($urls, $seen, '/journal/' . $row['slug'], $row['lastmod'] ?? null, $priority);
         }
 
         foreach (self::rows(
@@ -164,6 +169,7 @@ final class Sitemap
             ['path' => '/missions', 'priority' => '0.8'],
             ['path' => '/journal', 'priority' => '0.8'],
             ['path' => '/forum', 'priority' => '0.8'],
+            ['path' => '/besoin', 'priority' => '0.7'],
             ['path' => '/comment-ca-marche', 'priority' => '0.7'],
             ['path' => '/tarifs', 'priority' => '0.7'],
             ['path' => '/confiance', 'priority' => '0.6'],

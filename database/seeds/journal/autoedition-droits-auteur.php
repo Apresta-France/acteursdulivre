@@ -104,6 +104,6 @@ return [
 <p>Non par magie. Une édition antérieure peut gêner une maison si les droits numériques sont encore licenciés en exclusivité. Avant de signer un contrat d’édition, dressez la liste des licences en cours et de leurs dates de fin.</p>
 
 <h2>Pour aller plus loin</h2>
-<p>Métiers <a href="/metiers/juridique">juridique</a>, <a href="/metiers/illustration">illustration</a>, <a href="/metiers/photographie">photographie</a>, <a href="/metiers/iconographie">iconographie</a>, <a href="/metiers/maquette">maquette</a>, <a href="/metiers/audio">audio</a>, <a href="/metiers/traduction">traduction</a> ; <a href="/prestations">prestations</a> et <a href="/journal">journal</a>.</p>
+<p>Guide : <a href="/journal/autoedition-guide-complet">autoédition en France</a>. Métiers <a href="/metiers/juridique">juridique</a>, <a href="/metiers/illustration">illustration</a>, <a href="/metiers/photographie">photographie</a>, <a href="/metiers/iconographie">iconographie</a>, <a href="/metiers/maquette">maquette</a>, <a href="/metiers/audio">audio</a>, <a href="/metiers/traduction">traduction</a> ; <a href="/prestations">prestations</a> et <a href="/journal">journal</a>.</p>
 HTML,
 ];

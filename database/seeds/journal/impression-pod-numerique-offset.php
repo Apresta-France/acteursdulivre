@@ -111,6 +111,6 @@ return [
 <p>L’imprimeur propose ce qu’il a en machine. Vous validez un nom et un grammage par écrit. Un maquettiste qui a déjà travaillé avec cet atelier évite les mauvaises surprises de dos et de marge.</p>
 
 <h2>Pour aller plus loin</h2>
-<p>Pour chiffrer un tirage, voyez les <a href="/prestations">prestations</a> et les fiches <a href="/metiers/impression">impression</a>, <a href="/metiers/maquette">maquette</a> et <a href="/metiers/reliure">reliure</a>. Le budget global d’un roman est détaillé dans l’article <a href="/journal/cout-fabrication-roman-autoedition">coût de fabrication</a>. Questions pratiques&nbsp;: le <a href="/aide">centre d’aide</a> et l’<a href="/inscription">inscription</a>.</p>
+<p>Guide : <a href="/journal/autoedition-guide-complet">autoédition en France</a>. Pour chiffrer un tirage, voyez les <a href="/prestations">prestations</a> et les fiches <a href="/metiers/impression">impression</a>, <a href="/metiers/maquette">maquette</a> et <a href="/metiers/reliure">reliure</a>. Le budget global d’un roman est détaillé dans l’article <a href="/journal/cout-fabrication-roman-autoedition">coût de fabrication</a>. Questions pratiques&nbsp;: le <a href="/aide">centre d’aide</a> et l’<a href="/inscription">inscription</a>.</p>
 HTML,
 ];

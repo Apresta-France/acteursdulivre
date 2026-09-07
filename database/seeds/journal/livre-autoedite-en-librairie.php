@@ -106,6 +106,6 @@ return [
 <p>Non. La BnF archive. Elle ne place pas le livre en rayon. Le démarchage, lui, est une conversation avec quelqu’un qui a une table et une caisse.</p>
 
 <h2>Pour aller plus loin</h2>
-<p>Pour fabriquer un ouvrage présentable, voyez les <a href="/prestations">prestations</a> et les fiches <a href="/metiers/impression">impression</a>, <a href="/metiers/librairie">librairie</a>, <a href="/metiers/presse-com">presse et com</a>. Le budget d’un roman 300 pages est dans <a href="/journal/cout-fabrication-roman-autoedition">fabrication en autoédition</a>. L’<a href="/inscription">inscription</a> est gratuite&nbsp;; l’<a href="/aide">aide</a> accompagne les missions.</p>
+<p>Guide : <a href="/journal/autoedition-guide-complet">autoédition en France</a>. Pour fabriquer un ouvrage présentable, voyez les <a href="/prestations">prestations</a> et les fiches <a href="/metiers/impression">impression</a>, <a href="/metiers/librairie">librairie</a>, <a href="/metiers/presse-com">presse et com</a>. Le budget d’un roman 300 pages est dans <a href="/journal/cout-fabrication-roman-autoedition">fabrication en autoédition</a>. L’<a href="/inscription">inscription</a> est gratuite&nbsp;; l’<a href="/aide">aide</a> accompagne les missions.</p>
 HTML,
 ];

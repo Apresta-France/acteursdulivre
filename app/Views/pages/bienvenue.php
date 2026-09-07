@@ -9,6 +9,10 @@ $selectedTrades = $old['trades'] ?? ($profile['trades'] ?? []);
 if (!is_array($selectedTrades)) {
     $selectedTrades = [];
 }
+$landingTrade = (string) ($landingTrade ?? '');
+if ($selectedTrades === [] && $landingTrade !== '') {
+    $selectedTrades = [$landingTrade];
+}
 $priorities = is_array($priorities ?? null) ? $priorities : [];
 $missions = is_array($missions ?? null) ? $missions : [];
 $seeks = !empty($seeksServices);
@@ -20,7 +24,7 @@ $cityValue = (string) ($old['city'] ?? $profile['city'] ?? '');
 $presentationValue = (string) ($old['presentation'] ?? $profile['presentation'] ?? '');
 $missionTitle = (string) ($old['title'] ?? '');
 $missionBrief = (string) ($old['brief'] ?? '');
-$missionCat = (string) ($old['category_name'] ?? ($selectedTrades[0] ?? 'Correction'));
+$missionCat = (string) ($old['category_name'] ?? ($selectedTrades[0] ?? ($landingTrade ?? 'Correction')));
 $stepIndex = 0;
 foreach ($plan as $i => $item) {
     if (($item['id'] ?? '') === $step) {

@@ -106,6 +106,16 @@ $articleUser = auth_user();
         ['href' => '/prestations', 'icon' => 'bag', 'label' => 'Voir les prestations à prix affiché'],
         ['href' => '/comment-ca-marche', 'icon' => 'book', 'label' => 'Comment ça marche'],
       ];
+      if ((string) ($article['slug'] ?? '') === 'autoedition-guide-complet') {
+          $relatedLinks = [
+              ['href' => '/metiers/edition', 'icon' => 'trade-edition', 'label' => 'Accompagnement éditorial'],
+              ['href' => '/metiers/correction', 'icon' => 'trade-correction', 'label' => 'Trouver un correcteur'],
+              ['href' => '/metiers/impression', 'icon' => 'trade-impression', 'label' => 'Trouver un imprimeur'],
+              ['href' => '/metiers/juridique', 'icon' => 'trade-juridique', 'label' => 'Relire un contrat'],
+              ['href' => '/prestations', 'icon' => 'bag', 'label' => 'Voir les prestations à prix affiché'],
+              ['href' => '/auteurs', 'icon' => 'book', 'label' => 'Les fiches auteurs'],
+          ];
+      }
       ?>
       <aside class="article-related" aria-label="Pour aller plus loin">
         <h2>Continuer sur Acteurs du Livre</h2>

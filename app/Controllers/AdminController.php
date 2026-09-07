@@ -17,6 +17,8 @@ use Adl\Core\Request;
 use Adl\Core\View;
 use Adl\Data\AdminCatalog;
 use Adl\Data\Catalog;
+use Adl\Data\Landings;
+use Adl\Data\Share;
 use Adl\Models\Analytics;
 use Adl\Models\Article;
 use Adl\Models\AuthorPage;
@@ -150,6 +152,7 @@ final class AdminController
                 'tribune_articles' => [],
                 'tribune_views' => ['n' => 0, 'v' => '0', 'delta' => null],
                 'metiers' => [],
+                'landings' => [],
                 'searches' => [],
                 'search_empty' => [],
                 'search_types' => [],
@@ -715,6 +718,49 @@ final class AdminController
     {
         $this->page('cms', 'admin/journal', [
             'articles' => Article::all(),
+        ]);
+    }
+
+    public function landings(Request $request): void
+    {
+        $to = date('Y-m-d');
+        $from = date('Y-m-d', strtotime('-6 days') ?: time());
+        $slugs = array_map(static fn (array $row): string => (string) $row['slug'], Landings::all());
+        $views = [];
+        $signups = [];
+        try {
+            $views = Analytics::hitsByKind('landing', $slugs, $from, $to);
+            $signups = Analytics::hitsByKind('landing_signup', $slugs, $from, $to);
+        } catch (Throwable) {
+        }
+
+        $rows = [];
+        foreach (Landings::all() as $landing) {
+            $slug = (string) $landing['slug'];
+            $path = Landings::path($slug);
+            $rows[] = [
+                'slug' => $slug,
+                'need' => (string) $landing['need'],
+                'kicker' => (string) $landing['kicker'],
+                'audience' => (string) $landing['audience'],
+                'audience_label' => (string) $landing['audience_label'],
+                'trade' => (string) ($landing['trade'] ?? ''),
+                'path' => $path,
+                'url' => Share::absolute($path),
+                'campaign' => (string) ($landing['campaign'] ?? $slug),
+                'views7' => (int) ($views[$slug] ?? 0),
+                'signups7' => (int) ($signups[$slug] ?? 0),
+                'ad_headlines' => $landing['ad_headlines'] ?? [],
+                'ad_descriptions' => $landing['ad_descriptions'] ?? [],
+                'ad_keywords' => $landing['ad_keywords'] ?? [],
+                'h1' => (string) $landing['h1'],
+                'lead' => (string) $landing['lead'],
+            ];
+        }
+
+        $this->page('landings', 'admin/landings', [
+            'landings' => $rows,
+            'hubUrl' => Share::absolute(Landings::hubPath()),
         ]);
     }
 

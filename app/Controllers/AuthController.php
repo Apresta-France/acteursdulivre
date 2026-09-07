@@ -10,6 +10,7 @@ use Adl\Core\OAuth;
 use Adl\Core\Request;
 use Adl\Core\View;
 use Adl\Data\Onboarding;
+use Adl\Data\Landings;
 use Adl\Models\Conversation;
 use Adl\Models\LegalAcceptance;
 use Adl\Models\User;
@@ -79,6 +80,7 @@ final class AuthController
         if ($next !== null) {
             $_SESSION['_intended'] = $next;
         }
+        Landings::applySignupDefaults($request);
         View::page('inscription', [
             'title' => 'Créer un compte professionnel',
             'error' => flash('error'),
@@ -149,6 +151,13 @@ final class AuthController
         $user = User::find($id) ?? ['id' => $id, 'onboarding_done_at' => null];
         Auth::login($user);
         self::persistSignupAcceptances($id, $offers);
+        try {
+            $landing = Landings::fromSession();
+            if ($landing) {
+                \Adl\Models\Analytics::landingConversion((string) $landing['slug']);
+            }
+        } catch (Throwable) {
+        }
 
         try {
             Mailer::sendTemplate('bienvenue', $email, [
@@ -348,6 +357,7 @@ final class AuthController
             flash('error', 'La connexion Google ou Facebook n\'est pas disponible pour le moment.');
             redirect('/inscription');
         }
+        Landings::applySignupDefaults($request);
         View::page('inscription-sso', [
             'title' => 'Finaliser l\'inscription',
             'error' => flash('error'),
@@ -408,6 +418,13 @@ final class AuthController
         $user = User::find($id) ?? ['id' => $id, 'onboarding_done_at' => null];
         Auth::login($user);
         self::persistSignupAcceptances($id, $offers);
+        try {
+            $landing = Landings::fromSession();
+            if ($landing) {
+                \Adl\Models\Analytics::landingConversion((string) $landing['slug']);
+            }
+        } catch (Throwable) {
+        }
 
         try {
             Mailer::sendTemplate('bienvenue', $pending['email'], [

@@ -31,6 +31,8 @@ return static function (Router $router): void {
     $router->get('/cron/{task}', [CronController::class, 'run']);
     $router->get('/metiers/{slug}/{city}', [PageController::class, 'metierVille']);
     $router->get('/metiers/{slug}', [PageController::class, 'metier']);
+    $router->get('/besoin', [PageController::class, 'besoins']);
+    $router->get('/besoin/{slug}', [PageController::class, 'landing']);
     $router->get('/prestations', [PageController::class, 'prestationsIndex']);
     $router->get('/prestations/{slug}', [PageController::class, 'fiche']);
     $router->get('/prestataires', [PageController::class, 'prestatairesIndex']);
@@ -213,6 +215,7 @@ return static function (Router $router): void {
     $router->post('/admin/finances/{id}/supprimer', [AdminController::class, 'commandeDelete']);
     $router->get('/admin/pre-ouverture', [AdminController::class, 'preOuverture']);
     $router->get('/admin/journal', [AdminController::class, 'journal']);
+    $router->get('/admin/landings', [AdminController::class, 'landings']);
     $router->get('/admin/journal/nouveau', [AdminController::class, 'articleEdit']);
     $router->post('/admin/journal/nouveau', [AdminController::class, 'articleSave']);
     $router->get('/admin/journal/{id}', [AdminController::class, 'articleEdit']);

@@ -162,6 +162,6 @@ return [
 <p>Pas sur Acteurs du Livre : aucun livrable texte, image ou voix ne peut être produit par une IA générative. Ailleurs, une passe automatique n’est pas une correction professionnelle, et une image générée pose des questions de droits et de ressemblance. Les métiers restent des métiers.</p>
 
 <h2>Pour aller plus loin</h2>
-<p>Pour chiffrer votre projet, parcourez les <a href="/prestations">prestations</a> ou les fiches métier : <a href="/metiers/correction">correction</a>, <a href="/metiers/maquette">maquette</a>, <a href="/metiers/illustration">illustration</a>, <a href="/metiers/impression">impression</a>. Le <a href="/journal">journal</a> publiera d’autres textes sur les contrats, le papier et la diffusion. Questions pratiques : le <a href="/aide">centre d’aide</a>.</p>
+<p>Guide : <a href="/journal/autoedition-guide-complet">autoédition en France</a>. Pour chiffrer votre projet, parcourez les <a href="/prestations">prestations</a> ou les fiches métier : <a href="/metiers/correction">correction</a>, <a href="/metiers/maquette">maquette</a>, <a href="/metiers/illustration">illustration</a>, <a href="/metiers/impression">impression</a>. Le <a href="/journal">journal</a> publiera d’autres textes sur les contrats, le papier et la diffusion. Questions pratiques : le <a href="/aide">centre d’aide</a>.</p>
 HTML,
 ];

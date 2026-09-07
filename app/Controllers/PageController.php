@@ -10,6 +10,7 @@ use Adl\Core\Request;
 use Adl\Core\View;
 use Adl\Data\Catalog;
 use Adl\Data\Cities;
+use Adl\Data\Landings;
 use Adl\Data\LegalPages;
 use Adl\Data\Seo;
 use Adl\Data\Share;
@@ -205,7 +206,7 @@ final class PageController
     public function metierVille(Request $request, string $slug, string $city): void
     {
         $reserved = [
-            'a-propos', 'admin', 'aide', 'api', 'assets', 'auth', 'cgu', 'cgv',
+            'a-propos', 'admin', 'aide', 'api', 'assets', 'auth', 'besoin', 'cgu', 'cgv',
             'comment-ca-marche', 'confidentialite', 'confiance', 'connexion',
             'contact', 'cookies', 'cron', 'deconnexion', 'espace', 'inscription',
             'install', 'journal', 'mentions-legales', 'metiers', 'missions',
@@ -227,6 +228,105 @@ final class PageController
         }
 
         redirect(Catalog::catalogPath('prestataires', $trade, $citySlug), 301);
+    }
+
+    public function besoins(Request $request): void
+    {
+        $clients = [];
+        foreach (Landings::forAudience('client') as $row) {
+            $clients[] = [
+                'need' => $row['need'],
+                'kicker' => $row['kicker'],
+                'lead' => $row['lead'],
+                'price' => $row['price'],
+                'href' => Landings::path((string) $row['slug']),
+            ];
+        }
+        $offerers = [];
+        foreach (Landings::forAudience('prestataire') as $row) {
+            $offerers[] = [
+                'h1' => $row['h1'],
+                'lead' => $row['lead'],
+                'cta_primary' => $row['cta_primary'],
+                'href' => Landings::path((string) $row['slug']),
+            ];
+        }
+        $page = Seo::catalog()['besoin'];
+        View::page('besoin', [
+            'title' => $page['title'],
+            'clientLandings' => $clients,
+            'offererLandings' => $offerers,
+            'meta' => Seo::forScreen('besoin'),
+        ]);
+    }
+
+    public function landing(Request $request, string $slug): void
+    {
+        $found = Landings::find($slug);
+        if ($found === null) {
+            not_found('Cette page n\'existe pas.');
+        }
+        if ($slug !== (string) $found['slug']) {
+            redirect(Landings::path((string) $found['slug']), 301);
+        }
+        Landings::rememberVisit($request, (string) $found['slug']);
+
+        $user = Auth::user();
+        $presented = Landings::present($found, $user);
+        $trade = (string) ($presented['trade'] ?? '');
+        $preview = 3;
+        $providers = ['results' => [], 'count' => 0];
+        $services = ['results' => [], 'count' => 0];
+        $missions = ['results' => [], 'count' => 0];
+        try {
+            $providers = Catalog::search('', 'prestataires', $trade, $preview);
+            $services = Catalog::search('', 'prestations', $trade, $preview);
+            if ($trade !== '') {
+                $missions = Catalog::search('', 'missions', $trade, $preview);
+            } else {
+                $missions = Catalog::search('', 'missions', '', $preview);
+            }
+        } catch (\Throwable) {
+        }
+
+        $path = Landings::path((string) $presented['slug']);
+        $faq = [];
+        foreach ($presented['faq'] ?? [] as $item) {
+            $faq[] = [
+                'q' => (string) ($item['q'] ?? ''),
+                'a' => (string) ($item['a'] ?? ''),
+            ];
+        }
+        $jsonLd = [
+            Seo::organization(),
+            Seo::website(),
+            Seo::breadcrumb([
+                ['name' => 'Acteurs du Livre', 'url' => '/'],
+                ['name' => 'Par besoin', 'url' => Landings::hubPath()],
+                ['name' => (string) $presented['need'], 'url' => $path],
+            ]),
+        ];
+        if ($faq !== []) {
+            $jsonLd[] = Seo::faqPage($faq);
+        }
+
+        View::page('landing', [
+            'title' => (string) $presented['h1'],
+            'landing' => $presented,
+            'providers' => $providers['results'] ?? [],
+            'services' => $services['results'] ?? [],
+            'providerCount' => (int) ($providers['count'] ?? 0),
+            'serviceCount' => (int) ($services['count'] ?? 0),
+            'missionCount' => (int) ($missions['count'] ?? 0),
+            'meta' => Seo::build(
+                (string) $presented['meta_title'],
+                (string) $presented['meta_description'],
+                Share::absolute($path),
+                'website',
+                null,
+                ['json_ld' => $jsonLd]
+            ),
+        ]);
     }
 
     public function fiche(Request $request, string $slug): void
@@ -750,6 +850,19 @@ final class PageController
         ];
         if (!empty($article['faqs']) && is_array($article['faqs'])) {
             $jsonLd[] = Seo::faqPage($article['faqs']);
+        }
+        $howto = $article['howto'] ?? null;
+        if (is_array($howto) && !empty($howto['steps']) && is_array($howto['steps'])) {
+            $jsonLd[] = Seo::howTo(
+                (string) ($howto['name'] ?? $article['title']),
+                (string) ($article['excerpt'] ?: $article['chapo'] ?: $article['title']),
+                $howto['steps'],
+                Share::absolute((string) $article['href'])
+            );
+        }
+        $cluster = Seo::articleCluster($slug);
+        if ($cluster !== null) {
+            $jsonLd[] = $cluster;
         }
         View::page('article', [
             'title' => $article['title'],

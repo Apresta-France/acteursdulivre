@@ -296,7 +296,7 @@ final class Article
     }
 
     /** @var list<string> */
-    private const CATEGORY_ORDER = ['Tarifs', 'Contrats', 'Métier', 'Fabrication', 'Diffusion', 'Plateforme'];
+    private const CATEGORY_ORDER = ['Tarifs', 'Contrats', 'Métier', 'Fabrication', 'Diffusion', 'Édition', 'Plateforme'];
 
     public const PER_PAGE = 9;
 
@@ -577,6 +577,7 @@ final class Article
         $row['body_html'] = $body;
         $row['toc'] = $prepared['toc'];
         $row['faqs'] = $prepared['faqs'];
+        $row['howto'] = $prepared['howto'] ?? null;
         $row['cat'] = (string) ($row['category'] ?? 'Journal');
         $row['chapo'] = (string) ($row['excerpt'] ?? '');
         $row['read'] = max(1, (int) ceil($words / 200)) . ' min';

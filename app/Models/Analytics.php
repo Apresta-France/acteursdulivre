@@ -47,6 +47,7 @@ final class Analytics
         'legal' => 'Page légale',
         'connexion' => 'Connexion',
         'inscription' => 'Inscription',
+        'landing' => 'Landing pub',
         'mdp' => 'Mot de passe',
         'espace' => 'Espace membre',
         'newsletter' => 'Newsletter',
@@ -118,6 +119,20 @@ final class Analytics
             if ($classified['entity'] !== null) {
                 self::bump($classified['entity'][0], $classified['entity'][1], '', true);
             }
+            if ($unique) {
+                $utm = [];
+                if (session_status() === PHP_SESSION_ACTIVE && is_array($_SESSION['_utm'] ?? null)) {
+                    $utm = $_SESSION['_utm'];
+                }
+                $utmSource = trim((string) ($utm['source'] ?? ''));
+                $utmCampaign = trim((string) ($utm['campaign'] ?? ''));
+                if ($utmSource !== '') {
+                    self::bump('utm_source', $utmSource);
+                }
+                if ($utmCampaign !== '') {
+                    self::bump('utm_campaign', $utmCampaign);
+                }
+            }
             self::bump('hour', self::now()->format('H'));
             self::bump('device', self::device());
             $ref = self::referrerHost();
@@ -171,6 +186,28 @@ final class Analytics
             self::flush();
         } catch (Throwable) {
         }
+    }
+
+    public static function landingConversion(string $slug): void
+    {
+        try {
+            $slug = trim(mb_substr($slug, 0, 160));
+            if ($slug === '' || !self::shouldCollect()) {
+                return;
+            }
+            self::bump('landing_signup', $slug, '', true);
+            self::flush();
+        } catch (Throwable) {
+        }
+    }
+
+    /**
+     * @param list<string> $dims
+     * @return array<string, int>
+     */
+    public static function hitsByKind(string $kind, array $dims, string $from, string $to): array
+    {
+        return self::dimHits($kind, $dims, $from, $to);
     }
 
     public static function collectBeacon(Request $request): void
@@ -264,6 +301,7 @@ final class Analytics
                 'delta' => $compare ? self::delta($tribuneViews, $previousTribuneViews) : null,
             ],
             'metiers' => self::rankedEntities('metier', $current['metier'] ?? [], $previous['metier'] ?? [], $compare),
+            'landings' => self::rankedEntities('landing', $current['landing'] ?? [], $previous['landing'] ?? [], $compare),
             'searches' => self::rankedSearches($current['search'], $previous['search'], $compare),
             'search_empty' => self::ranked($current['search_empty'], $previous['search_empty'], $compare),
             'search_types' => self::ranked($current['search_type'], $previous['search_type'], $compare, [self::class, 'searchTypeLabel']),
@@ -794,9 +832,9 @@ final class Analytics
         if ($slug !== '' && count($tips) < 3) {
             $tips[] = [
                 'title' => 'Partager le lien public',
-                'body' => 'Ajoutez le lien de votre vitrine à votre site, votre signature ou vos réseaux.',
-                'href' => '/prestataires/' . $slug,
-                'cta' => 'Voir en public',
+                'body' => 'Lien, visuels, QR code, signature et badge sont prêts dans votre vitrine. Les vues apparaissent ici.',
+                'href' => '/espace/vitrine?onglet=partage',
+                'cta' => 'Ouvrir le kit',
             ];
         }
 
@@ -1038,6 +1076,12 @@ final class Analytics
         }
         if ($head === 'metiers' && $slug !== '' && $tail !== '') {
             return ['page' => 'metier_ville', 'path' => '/metiers/' . $slug . '/' . $tail, 'entity' => ['metier', $slug]];
+        }
+        if ($head === 'besoin' && $slug === '') {
+            return ['page' => 'landing', 'path' => '/besoin', 'entity' => null];
+        }
+        if ($head === 'besoin' && $slug !== '' && $tail === '') {
+            return ['page' => 'landing', 'path' => '/besoin/' . $slug, 'entity' => ['landing', $slug]];
         }
 
         return ['page' => 'autre', 'path' => '/' . $head, 'entity' => null];
@@ -1314,6 +1358,10 @@ final class Analytics
             'mission' => [],
             'article' => [],
             'metier' => [],
+            'landing' => [],
+            'landing_signup' => [],
+            'utm_source' => [],
+            'utm_campaign' => [],
             'action' => [],
             'ref' => [],
             'device' => [],
@@ -1579,6 +1627,7 @@ final class Analytics
             'mission' => '/missions/',
             'article' => '/journal/',
             'metier' => '/metiers/',
+            'landing' => '/besoin/',
             default => '/',
         };
         foreach ($rows as $i => $row) {
@@ -1714,6 +1763,13 @@ final class Analytics
                 foreach ($slugs as $slug) {
                     $trade = \Adl\Data\Catalog::tradeFromSlug((string) $slug);
                     $out[(string) $slug] = $trade ?? (string) $slug;
+                }
+            } elseif ($kind === 'landing') {
+                foreach ($slugs as $slug) {
+                    $landing = \Adl\Data\Landings::find((string) $slug);
+                    $out[(string) $slug] = $landing
+                        ? (string) ($landing['need'] ?? $landing['h1'] ?? $slug)
+                        : (string) $slug;
                 }
             }
         } catch (Throwable) {

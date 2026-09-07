@@ -200,7 +200,7 @@ final class Onboarding
                 $items[] = [
                     'id' => 'portfolio',
                     'title' => 'Ajouter une création',
-                    'body' => 'Un extrait, une couverture ou un ouvrage publié rassure plus qu’une longue bio.',
+                    'body' => 'Un extrait (texte, PDF ou son) ou un visuel rassure plus qu’une longue bio.',
                     'href' => '/espace/vitrine',
                     'cta' => 'Ouvrir le portfolio',
                     'weight' => 30,

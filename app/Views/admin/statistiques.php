@@ -251,6 +251,7 @@ $rankTable = static function (array $rows, string $empty): void {
         <div class="admin-card"><h2>Prestations les plus vues</h2><?php $rankTable($services ?? [], 'Aucune fiche prestation vue.'); ?></div>
         <div class="admin-card"><h2>Missions les plus vues</h2><?php $rankTable($missions ?? [], 'Aucune fiche mission vue.'); ?></div>
         <div class="admin-card"><h2>Pages métiers</h2><?php $rankTable($metiers ?? [], 'Aucune page métier consultée.'); ?></div>
+        <div class="admin-card"><h2>Landings pub</h2><?php $rankTable($landings ?? [], 'Aucune landing consultée.'); ?></div>
       </div>
     </section>
   <?php endif; ?>

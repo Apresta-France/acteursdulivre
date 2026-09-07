@@ -106,6 +106,6 @@ return [
 <p>Certains ateliers accompagnent le dépôt imprimeur. Le dépôt éditeur reste souvent le vôtre. Faites écrire qui envoie quoi, et gardez une copie du bordereau.</p>
 
 <h2>Pour aller plus loin</h2>
-<p>Métiers <a href="/metiers/edition">édition</a>, <a href="/metiers/impression">impression</a>, <a href="/metiers/maquette">maquette</a>, <a href="/metiers/juridique">juridique</a>, <a href="/metiers/librairie">librairie</a> ; <a href="/prestations">prestations</a> et <a href="/journal">journal</a>.</p>
+<p>Guide : <a href="/journal/autoedition-guide-complet">autoédition en France</a>. Métiers <a href="/metiers/edition">édition</a>, <a href="/metiers/impression">impression</a>, <a href="/metiers/maquette">maquette</a>, <a href="/metiers/juridique">juridique</a>, <a href="/metiers/librairie">librairie</a> ; <a href="/prestations">prestations</a> et <a href="/journal">journal</a>.</p>
 HTML,
 ];

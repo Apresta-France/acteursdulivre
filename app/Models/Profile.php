@@ -56,6 +56,15 @@ final class Profile
         'book' => 'Ouvrage publié',
     ];
 
+    public const PORTFOLIO_MEDIA_TYPES = [
+        'image' => 'Photo / visuel',
+        'text' => 'Extrait de texte',
+        'pdf' => 'Extrait PDF',
+        'audio' => 'Extrait sonore',
+    ];
+
+    public const PORTFOLIO_MAX_BYTES = 10 * 1024 * 1024;
+
     public const SOCIAL_NETWORKS = [
         'linkedin' => 'LinkedIn',
         'instagram' => 'Instagram',

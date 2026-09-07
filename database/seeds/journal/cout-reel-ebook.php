@@ -109,6 +109,6 @@ return [
 <p>Pour certains lecteurs, oui. Pour les <a href="/metiers/librairie">librairies</a> physiques, les dédicaces et beaucoup de salons, non. Beaucoup d’auteurs font les deux : correction unique, déclinaisons de fabrication. Le budget papier s’ajoute alors — ce n’est plus le sujet de cet article.</p>
 
 <h2>Pour aller plus loin</h2>
-<p>Fiches <a href="/metiers/correction">correction</a>, <a href="/metiers/maquette">maquette</a>, <a href="/metiers/illustration">illustration</a>, <a href="/metiers/edition">édition</a>, <a href="/metiers/audio">audio</a>. Autres budgets dans le <a href="/journal">journal</a>. Questions : <a href="/aide">aide</a>.</p>
+<p>Guide : <a href="/journal/autoedition-guide-complet">autoédition en France</a>. Fiches <a href="/metiers/correction">correction</a>, <a href="/metiers/maquette">maquette</a>, <a href="/metiers/illustration">illustration</a>, <a href="/metiers/edition">édition</a>, <a href="/metiers/audio">audio</a>. Autres budgets dans le <a href="/journal">journal</a>. Questions : <a href="/aide">aide</a>.</p>
 HTML,
 ];

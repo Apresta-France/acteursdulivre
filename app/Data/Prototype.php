@@ -42,6 +42,7 @@ final class Prototype
             'Confiance', 'Aide', 'Questions', 'Metier', 'Apropos', 'Journal', 'Article', 'Contact', 'Legal',
             'Connexion', 'Notifications', 'MesPrestations', 'MesMissions', 'Candidatures', 'Favoris',
             'Avis', 'Vitrine', 'Parametres', 'Facturation', 'Bienvenue', 'Statistiques', 'Forum', 'EspaceForum',
+            'Landing', 'Besoin',
         ] as $name) {
             $key = 'is' . $name;
             if (!isset($data[$key])) {
@@ -61,6 +62,7 @@ final class Prototype
             'forum' => 'isForum', 'forum-categorie' => 'isForum', 'forum-discussion' => 'isForum', 'forum-nouveau' => 'isForum',
             'article' => 'isArticle', 'contact' => 'isContact', 'legal' => 'isLegal',
             'connexion' => 'isConnexion', 'notifications' => 'isNotifications',
+            'landing' => 'isLanding', 'besoin' => 'isBesoin',
             'mesprestations' => 'isMesPrestations', 'mesmissions' => 'isMesMissions',
             'candidatures' => 'isCandidatures', 'favoris' => 'isFavoris', 'avis' => 'isAvis',
             'vitrine' => 'isVitrine', 'parametres' => 'isParametres', 'facturation' => 'isFacturation',
@@ -114,6 +116,7 @@ final class Prototype
                 ['label' => 'Chercher un prestataire', 'href' => '/prestataires'],
                 ['label' => 'Parcourir les prestations', 'href' => '/prestations'],
                 ['label' => 'Publier une recherche', 'href' => '/espace/publier'],
+                ['label' => 'Par besoin', 'href' => '/besoin'],
                 ['label' => 'Mes commandes', 'href' => '/espace/commandes'],
                 ['label' => 'Devis & jalons', 'href' => '/comment-ca-marche'],
                 ['label' => 'Suivi de commande', 'href' => '/espace/suivi'],
@@ -209,7 +212,7 @@ final class Prototype
             'homeTemoins' => [],
             'homeForum' => [],
             'journal' => self::journalPreview(),
-            'journalCats' => self::chips(['Tout', 'Tarifs', 'Contrats', 'Métier', 'Fabrication', 'Diffusion', 'Plateforme'], 0),
+            'journalCats' => self::chips(['Tout', 'Tarifs', 'Contrats', 'Métier', 'Fabrication', 'Diffusion', 'Édition', 'Plateforme'], 0),
             'journalAll' => self::journalAll(),
             'services' => array_map(static function (array $x, int $i) use ($navy, $orange): array {
                 $x['img'] = photo($i);

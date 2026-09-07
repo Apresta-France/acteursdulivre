@@ -134,6 +134,118 @@ final class Catalog
     ];
 
     /**
+     * Types de démo pertinents selon le métier (le formulaire reste ouvert à tous).
+     *
+     * @var array<string, list<string>>
+     */
+    public const TRADE_PORTFOLIO_MEDIA = [
+        'Illustration' => ['image'],
+        'Photographie' => ['image'],
+        'Iconographie' => ['image'],
+        'Maquette' => ['image', 'pdf'],
+        'Reliure' => ['image'],
+        'Impression' => ['image', 'pdf'],
+        'Audio' => ['audio', 'text'],
+        'Écriture' => ['text'],
+        'Correction' => ['text'],
+        'Bêta-lecture' => ['text'],
+        'Traduction' => ['text'],
+        'Édition' => ['text', 'pdf'],
+        'Lecture éditoriale' => ['text'],
+        'Coach littéraire' => ['text'],
+        'Agent littéraire' => ['text'],
+        'Presse & com' => ['image', 'pdf', 'text'],
+        'Librairie' => ['image'],
+        'Juridique' => ['pdf', 'text'],
+    ];
+
+    /**
+     * @param list<string> $trades
+     * @return list<string>
+     */
+    public static function suggestedPortfolioMedia(array $trades): array
+    {
+        $out = [];
+        foreach ($trades as $trade) {
+            foreach (self::TRADE_PORTFOLIO_MEDIA[$trade] ?? [] as $media) {
+                if (!in_array($media, $out, true)) {
+                    $out[] = $media;
+                }
+            }
+        }
+        return $out !== [] ? $out : ['image', 'text'];
+    }
+
+    /** @param list<string> $trades */
+    public static function defaultPortfolioMedia(array $trades): string
+    {
+        $suggested = self::suggestedPortfolioMedia($trades);
+        return $suggested[0] ?? 'image';
+    }
+
+    /** @param list<string> $trades */
+    public static function portfolioFormLead(array $trades): string
+    {
+        $labels = [];
+        foreach (self::suggestedPortfolioMedia($trades) as $media) {
+            $labels[] = match ($media) {
+                'text' => 'un extrait de texte',
+                'pdf' => 'un extrait PDF',
+                'audio' => 'un échantillon sonore',
+                default => 'une photo',
+            };
+        }
+        return 'Selon vos métiers, proposez ' . self::frenchOrList($labels)
+            . '. 10 Mo max par fichier. Chaque pièce doit être une réalisation humaine dont vous détenez les droits.';
+    }
+
+    /**
+     * @param list<array<string, mixed>> $items
+     */
+    public static function portfolioHeading(array $items): string
+    {
+        $types = [];
+        foreach ($items as $item) {
+            $types[(string) ($item['media_type'] ?? 'image')] = true;
+        }
+        $keys = array_keys($types);
+        sort($keys);
+        if ($keys === ['text']) {
+            return 'Extraits';
+        }
+        if ($keys === ['audio']) {
+            return 'Échantillons sonores';
+        }
+        if ($keys === ['pdf']) {
+            return 'Extraits PDF';
+        }
+        if ($keys === ['image']) {
+            return 'Créations et exemples';
+        }
+        if (!isset($types['image'])) {
+            return 'Extraits';
+        }
+        return 'Créations et extraits';
+    }
+
+    /** @param list<string> $items */
+    private static function frenchOrList(array $items): string
+    {
+        $items = array_values($items);
+        $n = count($items);
+        if ($n === 0) {
+            return '';
+        }
+        if ($n === 1) {
+            return $items[0];
+        }
+        if ($n === 2) {
+            return $items[0] . ' ou ' . $items[1];
+        }
+        return implode(', ', array_slice($items, 0, -1)) . ' ou ' . $items[$n - 1];
+    }
+
+    /**
      * Types de prestation propres à un métier (hors genres littéraires).
      *
      * @var array<string, list<string>>
@@ -1933,11 +2045,21 @@ final class Catalog
 
         $portfolio = [];
         foreach ($profile['portfolio'] ?? [] as $item) {
+            $media = (string) ($item['media_type'] ?? 'image');
+            $hasImage = $media === 'image' && (
+                trim((string) ($item['image_path'] ?? '')) !== ''
+                || trim((string) ($item['image_url'] ?? '')) !== ''
+            );
             $portfolio[] = [
                 'title' => $item['title'],
                 'caption' => trim(($item['year'] ?? '') . ($item['year'] ? ' · ' : '') . ($item['kind_label'] ?? '')),
                 'description' => $item['description'] ?? '',
-                'img' => PortfolioItem::image($item),
+                'media_type' => $media,
+                'media_label' => $item['media_label'] ?? PortfolioItem::mediaLabel($media),
+                'excerpt' => (string) ($item['text_excerpt'] ?? ''),
+                'file' => (string) ($item['file'] ?? ''),
+                'file_name' => (string) ($item['file_name'] ?? ''),
+                'img' => $hasImage ? PortfolioItem::image($item) : '',
                 'kind' => $item['kind'] ?? 'creation',
                 'kind_label' => $item['kind_label'] ?? 'Création',
             ];
@@ -1982,6 +2104,7 @@ final class Catalog
             'experiences' => $profile['experiences'] ?? [],
             'education' => $profile['education'] ?? [],
             'portfolio' => $portfolio,
+            'portfolio_heading' => self::portfolioHeading($portfolio),
             'tags' => $tags,
             'website' => (string) ($profile['website'] ?? ''),
             'socials' => $profile['socials'] ?? [],

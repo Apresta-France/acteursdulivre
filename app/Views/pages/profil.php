@@ -77,8 +77,9 @@ $isOwnProfile = $viewer && (int) ($viewer['id'] ?? 0) === (int) ($p['user_id'] ?
     </div>
     <div class="profile-hero-actions">
       <?php if ($isOwnProfile): ?>
-        <p class="profile-avail-note">C’est votre vitrine publique. Les porteurs de projet vous écrivent depuis cette page.</p>
+        <p class="profile-avail-note">C’est votre vitrine publique. Les porteurs de projet vous écrivent depuis cette page. Partagez votre profil : vos statistiques de vues sont dans votre espace.</p>
         <a class="btn-orange" href="<?= e(url('/espace/vitrine')) ?>">Modifier la vitrine</a>
+        <a class="btn-ghost-light" href="<?= e(url('/espace/vitrine?onglet=partage')) ?>">Kit de partage</a>
       <?php elseif (!empty($p['is_busy'])): ?>
         <p class="profile-avail-note">Planning actuellement chargé. Vous pouvez laisser un message pour une date ultérieure.</p>
         <form method="post" action="<?= e(url('/espace/messages')) ?>">
@@ -161,16 +162,33 @@ $isOwnProfile = $viewer && (int) ($viewer['id'] ?? 0) === (int) ($p['user_id'] ?
       <?php endif; ?>
 
       <?php if (!empty($p['portfolio'])): ?>
-        <h2>Créations et exemples</h2>
-        <div class="portfolio-grid">
+        <?php
+          $portfolioTypes = array_values(array_unique(array_map(
+              static fn (array $it): string => (string) ($it['media_type'] ?? 'image'),
+              $p['portfolio']
+          )));
+          $hasPortfolioImages = in_array('image', $portfolioTypes, true);
+          $gridClass = 'portfolio-grid';
+          if ($portfolioTypes === ['text']) {
+              $gridClass .= ' is-text';
+          } elseif (!$hasPortfolioImages) {
+              $gridClass .= ' is-files';
+          }
+        ?>
+        <h2><?= e((string) ($p['portfolio_heading'] ?? 'Créations et exemples')) ?></h2>
+        <div class="<?= e($gridClass) ?>">
           <?php foreach ($p['portfolio'] as $item): ?>
             <?php
               $itemTitle = (string) ($item['title'] ?? '');
               $itemCaption = (string) ($item['caption'] ?? $item['kind_label'] ?? '');
               $itemDesc = (string) ($item['description'] ?? '');
+              $itemMedia = (string) ($item['media_type'] ?? 'image');
+              $itemExcerpt = trim((string) ($item['excerpt'] ?? ''));
+              $itemFile = (string) ($item['file'] ?? '');
+              $itemFileName = (string) ($item['file_name'] ?? '');
             ?>
-            <figure class="portfolio-item">
-              <?php if (!empty($item['img'])): ?>
+            <figure class="portfolio-item is-<?= e($itemMedia) ?>">
+              <?php if ($itemMedia === 'image' && !empty($item['img'])): ?>
                 <a
                   class="portfolio-item-media"
                   href="<?= e((string) $item['img']) ?>"
@@ -185,6 +203,18 @@ $isOwnProfile = $viewer && (int) ($viewer['id'] ?? 0) === (int) ($p['user_id'] ?
                 >
                   <span class="portfolio-item-zoom" aria-hidden="true"><?= icon('search', 16) ?></span>
                 </a>
+              <?php elseif ($itemMedia === 'text' && $itemExcerpt !== ''): ?>
+                <blockquote class="portfolio-item-excerpt"><?= nl2br(e($itemExcerpt)) ?></blockquote>
+              <?php elseif ($itemMedia === 'pdf' && $itemFile !== ''): ?>
+                <a class="portfolio-item-file" href="<?= e($itemFile) ?>" target="_blank" rel="noopener noreferrer">
+                  <?= icon('invoice', 28) ?>
+                  <span>Lire l'extrait PDF<?= $itemFileName !== '' ? ' · ' . $itemFileName : '' ?></span>
+                </a>
+              <?php elseif ($itemMedia === 'audio' && $itemFile !== ''): ?>
+                <div class="portfolio-item-audio">
+                  <?= icon('trade-audio', 22) ?>
+                  <audio class="demo-audio" controls preload="none" src="<?= e($itemFile) ?>"></audio>
+                </div>
               <?php endif; ?>
               <figcaption>
                 <strong><?= e($itemTitle) ?></strong>
@@ -196,23 +226,25 @@ $isOwnProfile = $viewer && (int) ($viewer['id'] ?? 0) === (int) ($p['user_id'] ?
             </figure>
           <?php endforeach; ?>
         </div>
-        <dialog class="zoom-modal" id="portfolio-zoom" data-zoom-dialog aria-labelledby="portfolio-zoom-title">
-          <div class="zoom-modal-inner">
-            <div class="zoom-modal-bar">
-              <h2 id="portfolio-zoom-title"></h2>
-              <button type="button" class="zoom-modal-close" data-zoom-close aria-label="Fermer">×</button>
+        <?php if ($hasPortfolioImages): ?>
+          <dialog class="zoom-modal" id="portfolio-zoom" data-zoom-dialog aria-labelledby="portfolio-zoom-title">
+            <div class="zoom-modal-inner">
+              <div class="zoom-modal-bar">
+                <h2 id="portfolio-zoom-title"></h2>
+                <button type="button" class="zoom-modal-close" data-zoom-close aria-label="Fermer">×</button>
+              </div>
+              <figure class="zoom-modal-figure">
+                <img data-zoom-img alt="">
+                <figcaption>
+                  <span data-zoom-caption hidden></span>
+                  <p data-zoom-desc hidden></p>
+                </figcaption>
+              </figure>
             </div>
-            <figure class="zoom-modal-figure">
-              <img data-zoom-img alt="">
-              <figcaption>
-                <span data-zoom-caption hidden></span>
-                <p data-zoom-desc hidden></p>
-              </figcaption>
-            </figure>
-          </div>
-          <button type="button" class="zoom-modal-nav is-prev" data-zoom-prev aria-label="Exemple précédent" hidden>‹</button>
-          <button type="button" class="zoom-modal-nav is-next" data-zoom-next aria-label="Exemple suivant" hidden>›</button>
-        </dialog>
+            <button type="button" class="zoom-modal-nav is-prev" data-zoom-prev aria-label="Exemple précédent" hidden>‹</button>
+            <button type="button" class="zoom-modal-nav is-next" data-zoom-next aria-label="Exemple suivant" hidden>›</button>
+          </dialog>
+        <?php endif; ?>
       <?php endif; ?>
 
       <?php if (!empty($p['experiences'])): ?>

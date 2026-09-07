@@ -136,9 +136,63 @@ $remaining = max(0, $maxImages - count($existing));
         <textarea class="textarea" id="work-summary" name="summary" rows="8" placeholder="Le texte de quatrième de couverture, ou votre propre résumé. Les sauts de ligne sont conservés."><?= e($v('summary')) ?></textarea>
       </div>
       <div>
-        <label class="field" for="work-excerpt">Extrait (optionnel)</label>
+        <label class="field" for="work-excerpt">Extrait de texte (optionnel)</label>
         <textarea class="textarea" id="work-excerpt" name="excerpt" rows="6" placeholder="Les premières lignes, un passage que vous aimez faire lire."><?= e($v('excerpt')) ?></textarea>
         <p class="field-help">Affiché en retrait sur la fiche, comme une citation.</p>
+      </div>
+      <?php
+        $excerptMax = format_bytes((int) ($excerptMaxBytes ?? \Adl\Models\AuthorWork::EXCERPT_MAX_BYTES));
+        $hasPdf = $v('excerpt_pdf_path') !== '';
+        $hasAudio = $v('excerpt_audio_path') !== '';
+      ?>
+      <div class="form-grid-2 work-excerpt-files">
+        <div>
+          <span class="field" id="work-excerpt-pdf-label">Extrait PDF (optionnel)</span>
+          <?php if ($hasPdf): ?>
+            <p class="portfolio-file-name">
+              <a href="<?= e((string) ($work['excerpt_pdf'] ?? uploaded($v('excerpt_pdf_path')))) ?>" target="_blank" rel="noopener noreferrer"><?= e((string) ($work['excerpt_pdf_name'] ?? 'Extrait PDF')) ?></a>
+            </p>
+            <label class="check-row">
+              <input type="checkbox" name="remove_excerpt_pdf" value="1">
+              Retirer ce PDF
+            </label>
+          <?php endif; ?>
+          <?php
+            $filePickId = 'work-excerpt-pdf';
+            $filePickName = 'excerpt_pdf';
+            $filePickAccept = 'application/pdf,.pdf';
+            $filePickButton = $hasPdf ? 'Remplacer le PDF' : 'Choisir un PDF';
+            $filePickEmpty = $hasPdf ? 'ou déposez un autre fichier' : 'ou déposez-le ici';
+            $filePickDrop = true;
+            $filePickAttrs = 'aria-labelledby="work-excerpt-pdf-label" data-max-bytes="' . (int) ($excerptMaxBytes ?? \Adl\Models\AuthorWork::EXCERPT_MAX_BYTES) . '"';
+            require ADL_ROOT . '/app/Views/partials/file-pick.php';
+          ?>
+          <p class="field-help" data-file-size-error hidden>Ce fichier dépasse 10 Mo.</p>
+          <p class="field-help">Quelques pages à lire. PDF — <?= e($excerptMax) ?> max.</p>
+        </div>
+        <div>
+          <span class="field" id="work-excerpt-audio-label">Extrait sonore (optionnel)</span>
+          <?php if ($hasAudio): ?>
+            <p class="portfolio-file-name"><?= e((string) ($work['excerpt_audio_name'] ?? 'Extrait audio')) ?></p>
+            <audio class="demo-audio" controls preload="none" src="<?= e((string) ($work['excerpt_audio'] ?? uploaded($v('excerpt_audio_path')))) ?>"></audio>
+            <label class="check-row">
+              <input type="checkbox" name="remove_excerpt_audio" value="1">
+              Retirer cet extrait sonore
+            </label>
+          <?php endif; ?>
+          <?php
+            $filePickId = 'work-excerpt-audio';
+            $filePickName = 'excerpt_audio';
+            $filePickAccept = 'audio/mpeg,audio/wav,audio/mp4,audio/ogg,audio/aac,.mp3,.wav,.m4a,.ogg,.aac';
+            $filePickButton = $hasAudio ? 'Remplacer le son' : 'Choisir un extrait sonore';
+            $filePickEmpty = $hasAudio ? 'ou déposez un autre fichier' : 'ou déposez-le ici';
+            $filePickDrop = true;
+            $filePickAttrs = 'aria-labelledby="work-excerpt-audio-label" data-max-bytes="' . (int) ($excerptMaxBytes ?? \Adl\Models\AuthorWork::EXCERPT_MAX_BYTES) . '"';
+            require ADL_ROOT . '/app/Views/partials/file-pick.php';
+          ?>
+          <p class="field-help" data-file-size-error hidden>Ce fichier dépasse 10 Mo.</p>
+          <p class="field-help">Utile pour un livre audio. MP3, WAV, M4A, OGG ou AAC — <?= e($excerptMax) ?> max.</p>
+        </div>
       </div>
     </div>
 

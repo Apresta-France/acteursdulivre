@@ -40,4 +40,6 @@ return [
     'a-t-on-besoin-agent-litteraire-2026' => '2026-08-31 09:00:00',
     'forum-metiers-du-livre' => '2026-09-02 09:30:00',
     'section-auteur-fiche-publique' => '2026-09-03 07:45:00',
+    'partager-fiche-kit-vitrine' => '2026-09-07 10:00:00',
+    'autoedition-guide-complet' => '2026-09-07 17:30:00',
 ];

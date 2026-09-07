@@ -11,6 +11,9 @@ final class AuthorWork
     public const MAX_IMAGES = 3;
     public const IMAGE_EXT = ['jpg', 'jpeg', 'png', 'webp'];
     public const IMAGE_MAX_BYTES = 5 * 1024 * 1024;
+    public const EXCERPT_MAX_BYTES = 10 * 1024 * 1024;
+    public const EXCERPT_PDF_EXT = ['pdf'];
+    public const EXCERPT_AUDIO_EXT = ['mp3', 'wav', 'm4a', 'ogg', 'aac'];
     public const UPLOAD_DIR = 'oeuvres';
 
     public const KINDS = [
@@ -122,9 +125,9 @@ final class AuthorWork
         )['n'] ?? 1);
         Database::query(
             'INSERT INTO author_works (author_page_id, title, subtitle, kind, role, status, publisher, collection,
-                year, isbn, pages, language, formats_json, price, summary, excerpt, buy_url, more_url, images_json,
-                featured, sort_order)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                year, isbn, pages, language, formats_json, price, summary, excerpt, excerpt_pdf_path, excerpt_audio_path,
+                buy_url, more_url, images_json, featured, sort_order)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
             [$pageId, ...array_values($payload), $order]
         );
         self::touchPage($pageId);
@@ -153,6 +156,12 @@ final class AuthorWork
         foreach ($work['image_paths'] as $path) {
             if (!preg_match('#^https?://#i', $path)) {
                 delete_upload($path);
+            }
+        }
+        foreach (['excerpt_pdf_path', 'excerpt_audio_path'] as $key) {
+            $file = trim((string) ($work[$key] ?? ''));
+            if ($file !== '') {
+                delete_upload($file);
             }
         }
         self::touchPage($pageId);
@@ -260,6 +269,8 @@ final class AuthorWork
             'price' => self::nullable((string) ($data['price'] ?? ''), 40),
             'summary' => $summary !== '' ? mb_substr($summary, 0, 8000) : null,
             'excerpt' => $excerpt !== '' ? mb_substr($excerpt, 0, 6000) : null,
+            'excerpt_pdf_path' => self::nullable((string) ($data['excerpt_pdf_path'] ?? ''), 255),
+            'excerpt_audio_path' => self::nullable((string) ($data['excerpt_audio_path'] ?? ''), 255),
             'buy_url' => self::nullable(AuthorPage::cleanUrl((string) ($data['buy_url'] ?? '')), 500),
             'more_url' => self::nullable(AuthorPage::cleanUrl((string) ($data['more_url'] ?? '')), 500),
             'images_json' => $images !== [] ? json_encode($images, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) : null,
@@ -303,6 +314,12 @@ final class AuthorWork
             $paths
         );
         $row['cover'] = $row['images'][0] ?? '';
+        $pdf = trim((string) ($row['excerpt_pdf_path'] ?? ''));
+        $audio = trim((string) ($row['excerpt_audio_path'] ?? ''));
+        $row['excerpt_pdf'] = $pdf !== '' ? uploaded($pdf) : '';
+        $row['excerpt_audio'] = $audio !== '' ? uploaded($audio) : '';
+        $row['excerpt_pdf_name'] = $pdf !== '' ? PortfolioItem::displayFileName($pdf) : '';
+        $row['excerpt_audio_name'] = $audio !== '' ? PortfolioItem::displayFileName($audio) : '';
         $formats = json_decode((string) ($row['formats_json'] ?? ''), true);
         $row['formats'] = is_array($formats) ? array_values(array_filter(array_map('strval', $formats), static fn (string $f): bool => isset(self::FORMATS[$f]))) : [];
         $row['formats_labels'] = array_map(static fn (string $f): string => self::FORMATS[$f], $row['formats']);

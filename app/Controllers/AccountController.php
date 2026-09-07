@@ -8,7 +8,9 @@ use Adl\Core\Auth;
 use Adl\Core\Request;
 use Adl\Core\View;
 use Adl\Data\Catalog;
+use Adl\Data\Landings;
 use Adl\Data\Onboarding;
+use Adl\Data\ProfileShare;
 use Adl\Models\Analytics;
 use Adl\Models\Application;
 use Adl\Models\Article;
@@ -389,6 +391,7 @@ final class AccountController
             'trades' => Catalog::trades(),
             'titleHints' => Onboarding::TITLE_HINTS,
             'presentationHints' => Onboarding::PRESENTATION_HINTS,
+            'landingTrade' => (string) ((Landings::fromSession() ?? [])['trade'] ?? ''),
             'suggestions' => array_values(array_filter(
                 Catalog::suggestionsForTrade(
                     (string) (($ctx['profile']['trades'][0] ?? null) ?: 'Correction')
@@ -2080,6 +2083,11 @@ final class AccountController
             'langLevels' => Profile::LANG_LEVELS,
             'profileSuggests' => Catalog::profileSuggests(),
             'portfolioKinds' => Profile::PORTFOLIO_KINDS,
+            'portfolioMediaTypes' => Profile::PORTFOLIO_MEDIA_TYPES,
+            'suggestedPortfolioMedia' => Catalog::suggestedPortfolioMedia($profile['trades'] ?? []),
+            'defaultPortfolioMedia' => Catalog::defaultPortfolioMedia($profile['trades'] ?? []),
+            'portfolioFormLead' => Catalog::portfolioFormLead($profile['trades'] ?? []),
+            'portfolioMaxBytes' => PortfolioItem::MAX_BYTES,
             'socialNetworks' => Profile::SOCIAL_NETWORKS,
             'completion' => $profile['completion'] ?? 0,
             'tab' => self::vitrineTab($request),
@@ -2089,6 +2097,7 @@ final class AccountController
             'pendingInvites' => $pendingInvites,
             'externalReviewQuota' => $externalReviewQuota,
             'recommendations' => $recommendations,
+            'shareKit' => ProfileShare::kit($profile, $user),
             'saved' => $saved,
             'error' => flash('error'),
         ]);
@@ -2183,25 +2192,54 @@ final class AccountController
                 if (!is_array($row)) {
                     continue;
                 }
+                $media = PortfolioItem::normalizeMedia((string) ($row['media_type'] ?? 'image'));
                 $title = trim((string) ($row['title'] ?? ''));
+                $excerpt = mb_substr(trim((string) ($row['text_excerpt'] ?? '')), 0, 6000);
                 $imagePath = self::safeKeptImagePath((string) ($row['image_path'] ?? ''), $allowedPortfolioPaths);
                 $imageUrl = AuthorPage::cleanUrl(trim((string) ($row['image_url'] ?? '')));
+                if ($imagePath !== null && !self::portfolioPathMatchesMedia($imagePath, $media)) {
+                    $imagePath = null;
+                }
                 $file = self::nestedFile('portfolio_file', (int) $i);
-                if ($file) {
-                    $stored = store_upload($file, 'portfolio', ['jpg', 'jpeg', 'png', 'webp', 'gif'], 5 * 1024 * 1024);
+                if ($file && $media !== PortfolioItem::MEDIA_TEXT) {
+                    $stored = store_upload(
+                        $file,
+                        'portfolio',
+                        PortfolioItem::extensionsFor($media),
+                        PortfolioItem::MAX_BYTES
+                    );
                     if ($stored) {
                         $imagePath = $stored;
                     }
                 }
-                if ($title === '' && $imagePath === null && $imageUrl === '') {
+                if ($media === PortfolioItem::MEDIA_TEXT) {
+                    $imagePath = null;
+                    $imageUrl = '';
+                } elseif ($media === PortfolioItem::MEDIA_PDF || $media === PortfolioItem::MEDIA_AUDIO) {
+                    $imageUrl = '';
+                    $excerpt = '';
+                } else {
+                    $excerpt = '';
+                }
+                if ($media === PortfolioItem::MEDIA_TEXT) {
+                    if ($excerpt === '' && $title === '') {
+                        continue;
+                    }
+                } elseif ($media !== PortfolioItem::MEDIA_IMAGE) {
+                    if ($imagePath === null && $title === '') {
+                        continue;
+                    }
+                } elseif ($title === '' && $imagePath === null && $imageUrl === '') {
                     continue;
                 }
                 $items[] = [
                     'id' => (int) ($row['id'] ?? 0),
                     'title' => $title,
                     'description' => trim((string) ($row['description'] ?? '')),
+                    'text_excerpt' => $excerpt,
                     'year' => trim((string) ($row['year'] ?? '')),
                     'kind' => (string) ($row['kind'] ?? 'creation'),
+                    'media_type' => $media,
                     'image_path' => $imagePath,
                     'image_url' => $imageUrl,
                 ];
@@ -2213,18 +2251,21 @@ final class AccountController
                     $usedTitles[$existing] = true;
                 }
             }
-            $next = 1;
+            $nextByMedia = [];
             foreach ($items as $j => $item) {
                 if (trim((string) ($item['title'] ?? '')) !== '') {
                     continue;
                 }
-                while (isset($usedTitles[mb_strtolower('Exemple ' . $next)])) {
+                $media = (string) ($item['media_type'] ?? 'image');
+                $next = $nextByMedia[$media] ?? 1;
+                $label = PortfolioItem::untitledLabel($media, $next);
+                while (isset($usedTitles[mb_strtolower($label)])) {
                     $next++;
+                    $label = PortfolioItem::untitledLabel($media, $next);
                 }
-                $label = 'Exemple ' . $next;
                 $items[$j]['title'] = $label;
                 $usedTitles[mb_strtolower($label)] = true;
-                $next++;
+                $nextByMedia[$media] = $next + 1;
             }
             PortfolioItem::replace((int) $profile['id'], $items);
         } catch (\Throwable $e) {
@@ -2365,7 +2406,7 @@ final class AccountController
         $user = Auth::requireUser();
         $page = self::authorPageOrRedirect((int) $user['id']);
         try {
-            $data = self::authorWorkFromRequest($request, []);
+            $data = self::authorWorkFromRequest($request, [], []);
             AuthorWork::create((int) $page['id'], $data);
         } catch (\Throwable $e) {
             flash('error', user_error_message($e));
@@ -2385,11 +2426,18 @@ final class AccountController
             not_found('Cette œuvre n\'existe pas ou ne vous appartient pas.');
         }
         try {
-            $data = self::authorWorkFromRequest($request, $work['image_paths']);
+            $data = self::authorWorkFromRequest($request, $work['image_paths'], $work);
             AuthorWork::update((int) $work['id'], (int) $page['id'], $data);
             foreach (array_diff($work['image_paths'], $data['images']) as $removed) {
                 if (!preg_match('#^https?://#i', $removed)) {
                     delete_upload($removed);
+                }
+            }
+            foreach (['excerpt_pdf_path', 'excerpt_audio_path'] as $key) {
+                $old = trim((string) ($work[$key] ?? ''));
+                $kept = trim((string) ($data[$key] ?? ''));
+                if ($old !== '' && $old !== $kept) {
+                    delete_upload($old);
                 }
             }
         } catch (\Throwable $e) {
@@ -2456,14 +2504,16 @@ final class AccountController
             'statuses' => AuthorWork::STATUSES,
             'formats' => AuthorWork::FORMATS,
             'maxImages' => AuthorWork::MAX_IMAGES,
+            'excerptMaxBytes' => AuthorWork::EXCERPT_MAX_BYTES,
         ]);
     }
 
     /**
      * @param list<string> $currentImages
+     * @param array<string, mixed> $currentWork
      * @return array<string, mixed>
      */
-    private static function authorWorkFromRequest(Request $request, array $currentImages): array
+    private static function authorWorkFromRequest(Request $request, array $currentImages, array $currentWork = []): array
     {
         $kept = [];
         foreach ($request->strings('keep_images') as $path) {
@@ -2486,6 +2536,30 @@ final class AccountController
             $images[] = $imageUrl;
         }
 
+        $pdfPath = trim((string) ($currentWork['excerpt_pdf_path'] ?? ''));
+        if ($request->bool('remove_excerpt_pdf')) {
+            $pdfPath = '';
+        }
+        $pdfFile = $request->file('excerpt_pdf');
+        if ($pdfFile) {
+            $stored = store_upload($pdfFile, AuthorWork::UPLOAD_DIR, AuthorWork::EXCERPT_PDF_EXT, AuthorWork::EXCERPT_MAX_BYTES);
+            if ($stored) {
+                $pdfPath = $stored;
+            }
+        }
+
+        $audioPath = trim((string) ($currentWork['excerpt_audio_path'] ?? ''));
+        if ($request->bool('remove_excerpt_audio')) {
+            $audioPath = '';
+        }
+        $audioFile = $request->file('excerpt_audio');
+        if ($audioFile) {
+            $stored = store_upload($audioFile, AuthorWork::UPLOAD_DIR, AuthorWork::EXCERPT_AUDIO_EXT, AuthorWork::EXCERPT_MAX_BYTES);
+            if ($stored) {
+                $audioPath = $stored;
+            }
+        }
+
         return [
             'title' => $request->string('title'),
             'subtitle' => $request->string('subtitle'),
@@ -2502,6 +2576,8 @@ final class AccountController
             'price' => $request->string('price'),
             'summary' => $request->string('summary'),
             'excerpt' => $request->string('excerpt'),
+            'excerpt_pdf_path' => $pdfPath,
+            'excerpt_audio_path' => $audioPath,
             'buy_url' => $request->string('buy_url'),
             'more_url' => $request->string('more_url'),
             'featured' => $request->bool('featured'),
@@ -2838,12 +2914,12 @@ final class AccountController
         redirect('/espace/vitrine?onglet=avis');
     }
 
-    /** @return 'identite'|'competences'|'parcours'|'portfolio'|'avis' */
+    /** @return 'identite'|'competences'|'parcours'|'portfolio'|'avis'|'partage' */
     private static function vitrineTab(Request $request): string
     {
         $tab = $request->string('onglet');
 
-        return in_array($tab, ['identite', 'competences', 'parcours', 'portfolio', 'avis'], true)
+        return in_array($tab, ['identite', 'competences', 'parcours', 'portfolio', 'avis', 'partage'], true)
             ? $tab
             : 'identite';
     }
@@ -3442,6 +3518,12 @@ final class AccountController
             return null;
         }
         return in_array($path, $allowedPaths, true) ? $path : null;
+    }
+
+    private static function portfolioPathMatchesMedia(string $path, string $media): bool
+    {
+        $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+        return $ext !== '' && in_array($ext, PortfolioItem::extensionsFor($media), true);
     }
 
     /** @return array<string, mixed>|null */

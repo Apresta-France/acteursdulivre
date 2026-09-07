@@ -310,6 +310,12 @@ $platformNews = $platformNews ?? [];
           <span>Combien de fois votre vitrine et chaque prestation ont été ouvertes, pour ajuster le contenu.</span>
           <span class="dash-card-cta">Voir les vues <?= icon('arrow', 14) ?></span>
         </a>
+        <a class="dash-card" href="<?= e(url('/espace/vitrine?onglet=partage')) ?>">
+          <span class="dash-ico"><?= icon('share', 20) ?></span>
+          <strong>Partager ma fiche</strong>
+          <span>Lien, visuels Instagram, story, LinkedIn, QR code, signature e-mail et badge pour votre site.</span>
+          <span class="dash-card-cta">Ouvrir le kit <?= icon('arrow', 14) ?></span>
+        </a>
       </div>
     </section>
   <?php endif; ?>
@@ -434,6 +440,7 @@ $platformNews = $platformNews ?? [];
       <?php if ($offers): ?>
         <a class="dash-chip" href="<?= e(url('/espace/prestations')) ?>"><?= icon('grid', 16) ?> Mes prestations</a>
         <a class="dash-chip" href="<?= e(url('/espace/statistiques')) ?>"><?= icon('chart', 16) ?> Statistiques</a>
+        <a class="dash-chip" href="<?= e(url('/espace/vitrine?onglet=partage')) ?>"><?= icon('share', 16) ?> Partage</a>
         <a class="dash-chip" href="<?= e(url('/espace/facturation')) ?>"><?= icon('invoice', 16) ?> Facturation</a>
         <?php if (($profileHref ?? '') !== '' && $profileHref !== '/recherche'): ?>
           <a class="dash-chip" href="<?= e(url($profileHref)) ?>"><?= icon('store', 16) ?> Voir en public</a>

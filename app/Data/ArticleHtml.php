@@ -10,13 +10,19 @@ use DOMElement;
 final class ArticleHtml
 {
     /**
-     * @return array{html: string, toc: list<array{id: string, label: string, level: int}>, faqs: list<array{q: string, a: string}>}
+     * @return array{
+     *     html: string,
+     *     toc: list<array{id: string, label: string, level: int}>,
+     *     faqs: list<array{q: string, a: string}>,
+     *     howto: array{name: string, steps: list<array{name: string, text: string}>}|null
+     * }
      */
     public static function enhance(string $html): array
     {
+        $empty = ['html' => $html, 'toc' => [], 'faqs' => [], 'howto' => null];
         $html = trim($html);
         if ($html === '') {
-            return ['html' => '', 'toc' => [], 'faqs' => []];
+            return ['html' => '', 'toc' => [], 'faqs' => [], 'howto' => null];
         }
 
         $dom = new DOMDocument();
@@ -28,17 +34,18 @@ final class ArticleHtml
         );
         libxml_clear_errors();
         if (!$loaded) {
-            return ['html' => $html, 'toc' => [], 'faqs' => []];
+            return $empty;
         }
 
         $root = $dom->getElementById('adl-art');
         if (!$root instanceof DOMElement) {
-            return ['html' => $html, 'toc' => [], 'faqs' => []];
+            return $empty;
         }
 
         $used = [];
         $toc = [];
         $faqStart = null;
+        $howtoStart = null;
 
         foreach (iterator_to_array($root->getElementsByTagName('*')) as $el) {
             if (!$el instanceof DOMElement) {
@@ -68,6 +75,9 @@ final class ArticleHtml
                 if ($faqStart === null && preg_match('/questions? fr[eé]quentes|\bfaq\b/iu', $label) === 1) {
                     $faqStart = $el;
                 }
+                if ($howtoStart === null && preg_match('/[eé]tapes pour s.?auto|[eé]tapes d.une auto/iu', $label) === 1) {
+                    $howtoStart = $el;
+                }
             }
         }
 
@@ -80,6 +90,7 @@ final class ArticleHtml
             'html' => trim($out),
             'toc' => $toc,
             'faqs' => $faqStart instanceof DOMElement ? self::faqsFrom($faqStart) : [],
+            'howto' => $howtoStart instanceof DOMElement ? self::howtoFrom($howtoStart) : null,
         ];
     }
 
@@ -113,5 +124,52 @@ final class ArticleHtml
         }
 
         return $faqs;
+    }
+
+    /**
+     * @return array{name: string, steps: list<array{name: string, text: string}>}|null
+     */
+    private static function howtoFrom(DOMElement $h2): ?array
+    {
+        $name = trim(preg_replace('/\s+/u', ' ', $h2->textContent) ?? '');
+        $node = $h2->nextSibling;
+        while ($node) {
+            if ($node instanceof DOMElement) {
+                $tag = strtolower($node->tagName);
+                if ($tag === 'h2') {
+                    break;
+                }
+                if ($tag === 'ol') {
+                    $steps = [];
+                    foreach ($node->getElementsByTagName('li') as $li) {
+                        if (!$li instanceof DOMElement || $li->parentNode !== $node) {
+                            continue;
+                        }
+                        $text = trim(preg_replace('/\s+/u', ' ', $li->textContent) ?? '');
+                        if ($text === '') {
+                            continue;
+                        }
+                        $label = '';
+                        foreach ($li->childNodes as $child) {
+                            if ($child instanceof DOMElement && strtolower($child->tagName) === 'strong') {
+                                $label = trim(preg_replace('/\s+/u', ' ', $child->textContent) ?? '');
+                                break;
+                            }
+                        }
+                        $steps[] = [
+                            'name' => $label !== '' ? $label : $text,
+                            'text' => $text,
+                        ];
+                    }
+                    if ($steps === []) {
+                        return null;
+                    }
+                    return ['name' => $name !== '' ? $name : 'Étapes', 'steps' => $steps];
+                }
+            }
+            $node = $node->nextSibling;
+        }
+
+        return null;
     }
 }

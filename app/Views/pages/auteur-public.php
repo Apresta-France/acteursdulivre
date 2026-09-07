@@ -24,6 +24,10 @@ $renderWork = static function (array $w, bool $big): void {
     $images = $w['images'] ?? [];
     $summary = trim((string) ($w['summary'] ?? ''));
     $excerpt = trim((string) ($w['excerpt'] ?? ''));
+    $excerptPdf = trim((string) ($w['excerpt_pdf'] ?? ''));
+    $excerptAudio = trim((string) ($w['excerpt_audio'] ?? ''));
+    $hasImages = $images !== [];
+    $galleryEmpty = !$hasImages && $excerptAudio === '' && $excerptPdf === '';
     $facts = [];
     if (($w['role'] ?? 'auteur') !== 'auteur') {
         $facts[] = ['Rôle', (string) $w['role_label']];
@@ -51,10 +55,8 @@ $renderWork = static function (array $w, bool $big): void {
     }
     ?>
     <article class="auteur-work<?= $big ? ' is-featured' : '' ?>" id="oeuvre-<?= (int) $w['id'] ?>">
-      <div class="auteur-work-gallery<?= $images === [] ? ' is-empty' : '' ?>">
-        <?php if ($images === []): ?>
-          <div class="auteur-work-placeholder" aria-hidden="true"><?= icon('book', 28) ?><span><?= e((string) $w['kind_label']) ?></span></div>
-        <?php else: ?>
+      <div class="auteur-work-gallery<?= $galleryEmpty ? ' is-empty' : ($hasImages ? '' : ' is-demo') ?>">
+        <?php if ($hasImages): ?>
           <?php foreach ($images as $k => $img): ?>
             <a class="auteur-work-img<?= $k === 0 ? ' is-main' : '' ?>"
                href="<?= e((string) $img) ?>"
@@ -69,6 +71,19 @@ $renderWork = static function (array $w, bool $big): void {
               <span class="portfolio-item-zoom" aria-hidden="true"><?= icon('search', 14) ?></span>
             </a>
           <?php endforeach; ?>
+        <?php elseif ($excerptAudio !== ''): ?>
+          <div class="auteur-work-demo-audio">
+            <?= icon('trade-audio', 28) ?>
+            <span>Écouter un extrait</span>
+            <audio class="demo-audio" controls preload="none" src="<?= e($excerptAudio) ?>"></audio>
+          </div>
+        <?php elseif ($excerptPdf !== ''): ?>
+          <a class="auteur-work-demo-pdf" href="<?= e($excerptPdf) ?>" target="_blank" rel="noopener noreferrer">
+            <?= icon('invoice', 28) ?>
+            <span>Lire un extrait PDF<?= !empty($w['excerpt_pdf_name']) ? ' · ' . e((string) $w['excerpt_pdf_name']) : '' ?></span>
+          </a>
+        <?php else: ?>
+          <div class="auteur-work-placeholder" aria-hidden="true"><?= icon('book', 28) ?><span><?= e((string) $w['kind_label']) ?></span></div>
         <?php endif; ?>
       </div>
       <div class="auteur-work-body">
@@ -90,6 +105,17 @@ $renderWork = static function (array $w, bool $big): void {
         <?php endif; ?>
         <?php if ($excerpt !== ''): ?>
           <blockquote class="auteur-work-excerpt"><?= nl2br(e($excerpt)) ?></blockquote>
+        <?php endif; ?>
+        <?php if ($excerptAudio !== '' && $hasImages): ?>
+          <div class="auteur-work-excerpt-audio">
+            <span><?= icon('trade-audio', 16) ?> Écouter un extrait</span>
+            <audio class="demo-audio" controls preload="none" src="<?= e($excerptAudio) ?>"></audio>
+          </div>
+        <?php endif; ?>
+        <?php if ($excerptPdf !== '' && ($hasImages || $excerptAudio !== '')): ?>
+          <p class="auteur-work-excerpt-pdf">
+            <a class="btn-ghost" href="<?= e($excerptPdf) ?>" target="_blank" rel="noopener noreferrer"><?= icon('invoice', 16) ?> Lire un extrait PDF</a>
+          </p>
         <?php endif; ?>
         <?php if ($facts !== []): ?>
           <dl class="auteur-work-facts">

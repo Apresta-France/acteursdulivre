@@ -41,6 +41,9 @@ final class RichText
             'tr' => [],
             'th' => ['scope'],
             'td' => [],
+            'dl' => [],
+            'dt' => [],
+            'dd' => [],
             'a' => ['href', 'title', 'rel', 'target'],
         ],
         self::PROFILE_BASIC => [
