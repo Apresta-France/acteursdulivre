@@ -36,7 +36,10 @@ final class PublisherController
             'title' => $seo['title'],
             'description' => $seo['description'],
             'path' => self::BASE,
-            'crumbs' => [['name' => 'Maisons d\'édition', 'url' => self::BASE]],
+            'crumbs' => [
+                ['name' => 'Communauté', 'url' => '/communaute'],
+                ['name' => 'Maisons d\'édition', 'url' => self::BASE],
+            ],
             'scope' => 'all',
         ]);
     }
@@ -61,6 +64,7 @@ final class PublisherController
                     Seo::webPage($title, $description, self::BASE . '/pays', 'CollectionPage'),
                     Seo::breadcrumb([
                         ['name' => Seo::BRAND, 'url' => '/'],
+                        ['name' => 'Communauté', 'url' => '/communaute'],
                         ['name' => 'Maisons d\'édition', 'url' => self::BASE],
                         ['name' => 'Par pays', 'url' => self::BASE . '/pays'],
                     ]),
@@ -86,6 +90,7 @@ final class PublisherController
             'description' => 'Annuaire des ' . format_int($country['n']) . ' maisons d\'édition ' . $label . ' recensées sur acteursdulivre.fr : ligne éditoriale, genres, taille, ville. Coordonnées réservées aux membres.',
             'path' => $country['href'],
             'crumbs' => [
+                ['name' => 'Communauté', 'url' => '/communaute'],
                 ['name' => 'Maisons d\'édition', 'url' => self::BASE],
                 ['name' => $country['name'], 'url' => $country['href']],
             ],
@@ -113,6 +118,7 @@ final class PublisherController
             'description' => 'Les ' . format_int($city['n']) . ' maisons d\'édition de ' . $city['name'] . ', ' . $country['name'] . ' : présentation, genres, taille et groupe. Prenez contact avec un compte acteursdulivre.fr.',
             'path' => $city['href'],
             'crumbs' => [
+                ['name' => 'Communauté', 'url' => '/communaute'],
                 ['name' => 'Maisons d\'édition', 'url' => self::BASE],
                 ['name' => $country['name'], 'url' => $country['href']],
                 ['name' => $city['name'], 'url' => $city['href']],
@@ -155,6 +161,7 @@ final class PublisherController
         $title = $publisher['name'] . ' — maison d\'édition' . ($publisher['location_label'] !== '' ? ' à ' . $publisher['location_label'] : '');
         $crumbs = [
             ['name' => Seo::BRAND, 'url' => '/'],
+            ['name' => 'Communauté', 'url' => '/communaute'],
             ['name' => 'Maisons d\'édition', 'url' => self::BASE],
         ];
         if ($publisher['country_slug'] !== '') {

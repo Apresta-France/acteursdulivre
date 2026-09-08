@@ -414,6 +414,38 @@ final class Profile
         return (int) ($row['n'] ?? 0);
     }
 
+    /**
+     * Tirage aléatoire de vitrines publiées, sans hydrater le portfolio.
+     *
+     * @return list<array<string, mixed>>
+     */
+    public static function samplePublished(int $limit = 18): array
+    {
+        $limit = max(0, min(48, $limit));
+        if ($limit < 1) {
+            return [];
+        }
+
+        $rows = Database::fetchAll(
+            'SELECT p.slug, p.title, p.trades_json, p.genres_json, p.work_mode,
+                    p.availability_status, p.public_name, p.name_mode, p.city,
+                    u.first_name, u.last_name, u.avatar_url
+             ' . self::publishedFromWhere() . '
+             ORDER BY RAND()
+             LIMIT ' . $limit
+        );
+
+        $out = [];
+        foreach ($rows as $row) {
+            $row['trades'] = self::decode($row['trades_json'] ?? null);
+            $row['genres'] = self::decode($row['genres_json'] ?? null);
+            unset($row['trades_json'], $row['genres_json']);
+            $out[] = $row;
+        }
+
+        return $out;
+    }
+
     /** @return list<array<string, mixed>> */
     public static function searchPublished(): array
     {

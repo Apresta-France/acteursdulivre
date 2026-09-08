@@ -16,6 +16,8 @@ if ($oldCat <= 0 && $preselect !== '') {
 <div class="forum-page">
   <section class="forum-hero forum-hero-compact">
     <div class="forum-crumb">
+      <a href="<?= e(url('/communaute')) ?>">Communauté</a>
+      <span>/</span>
       <a href="<?= e(url('/forum')) ?>">Forum</a>
       <span>/</span>
       <span>Nouvelle discussion</span>

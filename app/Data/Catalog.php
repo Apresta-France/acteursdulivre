@@ -1483,6 +1483,48 @@ final class Catalog
         return $out;
     }
 
+    /**
+     * Accueil — bandeau de prestataires, ordre aléatoire à chaque affichage.
+     *
+     * @return list<array<string, mixed>>
+     */
+    public static function homeProviders(int $limit = 18): array
+    {
+        $out = [];
+        try {
+            foreach (Profile::samplePublished($limit) as $profile) {
+                $name = Profile::displayName($profile);
+                if ($name === '') {
+                    continue;
+                }
+                $trades = $profile['trades'] ?: [];
+                $cat = (string) ($trades[0] ?? '');
+                $title = trim((string) ($profile['title'] ?? ''));
+                $mode = Profile::workModeLabel($profile);
+                $subtitle = $title !== '' ? $title : ($cat !== '' ? $cat : 'Prestataire');
+                if ($mode !== '' && !str_contains(mb_strtolower($subtitle), mb_strtolower($mode))) {
+                    $subtitle .= ' · ' . $mode;
+                }
+                $tags = $profile['genres'] ?: $trades;
+                $out[] = [
+                    'title' => $name,
+                    'subtitle' => $subtitle,
+                    'href' => Profile::publicHref($profile),
+                    'cat' => $cat !== '' ? $cat : 'Prestataire',
+                    'meta' => implode(' · ', array_slice($tags, 0, 4)),
+                    'initials' => Profile::initials($profile),
+                    'avatar_src' => user_avatar_src($profile),
+                    'availability_label' => Profile::statusLabel($profile),
+                    'is_busy' => ($profile['availability_status'] ?? '') === Profile::STATUS_BUSY,
+                ];
+            }
+        } catch (\Throwable) {
+            return [];
+        }
+
+        return $out;
+    }
+
     public static function provider(string $slug): ?array
     {
         try {
@@ -2031,6 +2073,71 @@ final class Catalog
         } catch (\Throwable) {
             return [];
         }
+    }
+
+    /**
+     * Agenda éditorial des salons — première liste tenue à la main.
+     *
+     * @return list<array{iso: string, day: string, month: string, when: string, kind: string, title: string, place: string}>
+     */
+    public static function communityAgenda(): array
+    {
+        return [
+            [
+                'iso' => '2026-09-18',
+                'day' => '18',
+                'month' => 'sept.',
+                'when' => '18 – 20 sept.',
+                'kind' => 'Général',
+                'title' => 'Festival du livre de Mouans-Sartoux',
+                'place' => 'Mouans-Sartoux · Alpes-Maritimes',
+            ],
+            [
+                'iso' => '2026-09-26',
+                'day' => '26',
+                'month' => 'sept.',
+                'when' => '26 – 27 sept.',
+                'kind' => 'Poche',
+                'title' => 'Lire en Poche',
+                'place' => 'Gradignan · Gironde',
+            ],
+            [
+                'iso' => '2026-11-20',
+                'day' => '20',
+                'month' => 'nov.',
+                'when' => '20 – 23 nov.',
+                'kind' => 'Jeunesse',
+                'title' => 'Salon du livre et de la presse jeunesse',
+                'place' => 'Montreuil · Seine-Saint-Denis',
+            ],
+            [
+                'iso' => '2026-12-04',
+                'day' => '4',
+                'month' => 'déc.',
+                'when' => '4 – 6 déc.',
+                'kind' => 'Régional',
+                'title' => 'Salon du livre de Colmar',
+                'place' => 'Colmar · Haut-Rhin',
+            ],
+            [
+                'iso' => '2027-03-19',
+                'day' => '19',
+                'month' => 'mars',
+                'when' => '19 – 22 mars',
+                'kind' => 'National',
+                'title' => 'Livre Paris',
+                'place' => 'Paris · Porte de Versailles',
+            ],
+            [
+                'iso' => '2027-05-22',
+                'day' => '22',
+                'month' => 'mai',
+                'when' => '22 – 24 mai',
+                'kind' => 'Polar',
+                'title' => 'Quai du polar',
+                'place' => 'Lyon · Rhône',
+            ],
+        ];
     }
 
     /** @param array<string, mixed> $profile */

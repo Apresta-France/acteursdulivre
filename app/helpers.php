@@ -1010,6 +1010,7 @@ function icon(string $name, int $size = 20): string
         'store' => '<path d="M4 3h16l1.4 6.2c.1.6-.3 1.2-1 1.3H19v9H5v-9H3.6c-.7-.1-1.1-.7-1-1.3L4 3zm3 8v7h4v-4h2v4h4v-7H7z"/>',
         'book' => '<path d="M5 3h9.2A3.8 3.8 0 0 1 18 6.8V21H7.2A2.2 2.2 0 0 0 5 18.8V3zm2 2v13.8c0 .1.1.2.2.2H16V6.8A1.8 1.8 0 0 0 14.2 5H7zm10 0h2v16h-2V5z"/>',
         'clock' => '<path fill-rule="evenodd" d="M12 2a10 10 0 1 1 0 20 10 10 0 0 1 0-20zm0 2a8 8 0 1 0 0 16 8 8 0 0 0 0-16zm.8 3.2V12l3.6 2.2-.8 1.3L11 12.5V7.2h1.8z"/>',
+        'calendar' => '<path fill-rule="evenodd" d="M8 2h2v2h4V2h2v2h4v18H4V4h4V2zm10 6H6v12h12V8zM8 11h3v3H8v-3zm5 0h3v3h-3v-3z"/>',
         'chart' => '<path d="M4 19h16v2H4v-2zM6 10h3v7H6v-7zm5-6h3v13h-3V4zm5 8h3v5h-3v-5z"/>',
         'share' => '<path d="M14.4 8.4 20 3.2v5.4h-1.6V6.2l-5.2 4.7-1.1-1.2 5.1-4.6h-2.2V3.4h5.6v5zM4 6h7.2v1.8H5.8v10.4h10.4V13H18v6.8H4V6z"/>',
         'share-facebook' => '<path d="M14.2 8.4h2.4V5.2h-2.4c-2.7 0-4.4 1.7-4.4 4.3v1.7H7.6v3.2h2.2V22h3.4v-7.6h2.6l.6-3.2h-3.2V9.8c0-.8.4-1.4 1-1.4z"/>',

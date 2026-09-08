@@ -207,6 +207,7 @@ final class ForumController
             Seo::website(),
             Seo::breadcrumb([
                 ['name' => 'Acteurs du Livre', 'url' => '/'],
+                ['name' => 'Communauté', 'url' => '/communaute'],
                 ['name' => 'Forum', 'url' => '/forum'],
                 ['name' => (string) $category['name'], 'url' => (string) $category['href']],
                 ['name' => (string) $topic['title'], 'url' => (string) $topic['href']],

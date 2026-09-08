@@ -54,7 +54,7 @@ $forumListUrl = static function (string $filtre = 'recent', int $p = 1, string $
 <div class="forum-page">
   <section class="forum-hero">
     <div class="forum-hero-copy">
-      <div class="forum-kicker">Communauté</div>
+      <a class="forum-kicker" href="<?= e(url('/communaute')) ?>">Communauté</a>
       <h1>Le forum des métiers du livre</h1>
       <p class="forum-lead">On y parle tarifs, contrats, papier, délais et cas concrets. Les réponses viennent de gens qui font le métier — pas d'une machine.</p>
     </div>

@@ -83,7 +83,7 @@
   <?php if (!empty($isArticle) && !empty($article['img'])): ?>
   <link rel="preload" as="image" href="<?= e((string) $article['img']) ?>">
   <?php endif; ?>
-  <link rel="stylesheet" href="<?= e(asset('css/app.css')) ?>?v=m201">
+  <link rel="stylesheet" href="<?= e(asset('css/app.css')) ?>?v=m209">
   <link rel="icon" href="<?= e(asset('img/favicon.ico')) ?>?v=3" sizes="any">
   <link rel="icon" type="image/png" href="<?= e(asset('img/favicon-32x32.png')) ?>?v=3" sizes="32x32">
   <link rel="apple-touch-icon" href="<?= e(asset('img/apple-touch-icon.png')) ?>?v=3">
@@ -212,18 +212,13 @@
         <div class="header-panel" id="header-panel">
           <?php if (!empty($logged)): ?>
             <nav class="header-nav">
-              <?php $headerUnreadForum = (int) ($unreadForum ?? 0); ?>
-              <a href="<?= e(url($headerUnreadForum > 0 ? '/espace/forum?onglet=suivis' : '/forum')) ?>"<?= !empty($isForum) || !empty($isEspaceForum) ? ' aria-current="page"' : '' ?> class="header-forum-link" aria-label="<?= $headerUnreadForum > 0 ? 'Forum (' . $headerUnreadForum . ' réponses non lues)' : 'Forum' ?>">
-                Forum<?php if ($headerUnreadForum > 0): ?><span class="badge-orange"><?= $headerUnreadForum > 99 ? '99+' : $headerUnreadForum ?></span><?php endif; ?>
-              </a>
-              <a href="<?= e(url('/maisons-edition')) ?>"<?= !empty($isMaisons) ? ' aria-current="page"' : '' ?>>Maisons d'édition</a>
+              <?php require ADL_ROOT . '/app/Views/partials/header-communaute.php'; ?>
             </nav>
           <?php else: ?>
             <nav class="header-nav">
-              <a href="<?= e(url('/forum')) ?>"<?= !empty($isForum) ? ' aria-current="page"' : '' ?>>Forum</a>
+              <?php require ADL_ROOT . '/app/Views/partials/header-communaute.php'; ?>
               <a href="<?= e(url('/comment-ca-marche')) ?>">Comment ça marche</a>
               <a href="<?= e(url('/missions')) ?>">Appels d'offres</a>
-              <a href="<?= e(url('/maisons-edition')) ?>"<?= !empty($isMaisons) ? ' aria-current="page"' : '' ?>>Maisons d'édition</a>
               <a class="header-login-menu" href="<?= e(url('/connexion')) ?>">Se connecter</a>
             </nav>
           <?php endif; ?>
@@ -386,6 +381,6 @@
       <?php endif; ?>
     </div>
   <?php endif; ?>
-  <script src="<?= e(asset('js/app.js')) ?>?v=m94"></script>
+  <script src="<?= e(asset('js/app.js')) ?>?v=m97"></script>
 </body>
 </html>

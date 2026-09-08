@@ -60,12 +60,21 @@
     });
   }
 
+  function setCommunauteOpen(open) {
+    document.querySelectorAll('[data-communaute-menu]').forEach(function (menu) {
+      var btn = menu.querySelector('[data-communaute-toggle]');
+      menu.classList.toggle('is-open', open);
+      if (btn) btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    });
+  }
+
   if (mega && toggle) {
     toggle.addEventListener('click', function () {
       var willOpen = mega.hidden;
       if (willOpen) {
         setNavOpen(false);
         setUserMenusOpen(false);
+        setCommunauteOpen(false);
       }
       setMegaOpen(willOpen);
     });
@@ -166,6 +175,31 @@
     });
   });
 
+  document.querySelectorAll('[data-communaute-menu]').forEach(function (menu) {
+    var btn = menu.querySelector('[data-communaute-toggle]');
+    if (!btn) return;
+    function setOpen(open) {
+      menu.classList.toggle('is-open', open);
+      btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    }
+    btn.addEventListener('click', function (event) {
+      event.stopPropagation();
+      var willOpen = !menu.classList.contains('is-open');
+      if (willOpen) {
+        setNavOpen(false);
+        setMegaOpen(false);
+        setUserMenusOpen(false);
+      }
+      setOpen(willOpen);
+    });
+    document.addEventListener('click', function (event) {
+      if (!menu.contains(event.target)) setOpen(false);
+    });
+    window.addEventListener('keydown', function (event) {
+      if (event.key === 'Escape') setOpen(false);
+    });
+  });
+
   document.querySelectorAll('[data-user-menu]').forEach(function (btn) {
     var menu = btn.closest('.user-menu');
     var panel = menu && menu.querySelector('.user-menu-panel');
@@ -181,6 +215,7 @@
       if (willOpen) {
         setNavOpen(false);
         setMegaOpen(false);
+        setCommunauteOpen(false);
       }
       setOpen(willOpen);
     });
@@ -212,6 +247,7 @@
         if (willOpen && className === 'is-nav-open') {
           setUserMenusOpen(false);
           setMegaOpen(false);
+          setCommunauteOpen(false);
         }
         set(willOpen);
       });
@@ -294,6 +330,73 @@
     dialog.addEventListener('close', clearFrame);
   }
   initHomeVideo();
+
+  function initPeopleMarquee() {
+    var root = document.querySelector('[data-people-marquee]');
+    var track = root && root.querySelector('[data-people-track]');
+    if (!root || !track) return;
+
+    var originals = Array.prototype.slice.call(track.children);
+    if (originals.length < 2) return;
+
+    function shuffle(list) {
+      var next = list.slice();
+      for (var i = next.length - 1; i > 0; i--) {
+        var j = Math.floor(Math.random() * (i + 1));
+        var tmp = next[i];
+        next[i] = next[j];
+        next[j] = tmp;
+      }
+      return next;
+    }
+
+    originals = shuffle(originals);
+    originals.forEach(function (node) { track.appendChild(node); });
+
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      root.classList.add('is-static');
+      return;
+    }
+
+    var timer = 0;
+    function fill() {
+      while (track.firstChild) track.removeChild(track.firstChild);
+      originals.forEach(function (node) { track.appendChild(node); });
+
+      var minWidth = root.clientWidth;
+      var guard = 0;
+      while (track.scrollWidth < minWidth && originals.length && guard < 8) {
+        originals.forEach(function (node) {
+          var extra = node.cloneNode(true);
+          extra.setAttribute('data-clone', 'pad');
+          extra.setAttribute('aria-hidden', 'true');
+          extra.setAttribute('tabindex', '-1');
+          track.appendChild(extra);
+        });
+        guard += 1;
+      }
+
+      var setNodes = Array.prototype.slice.call(track.children);
+      setNodes.forEach(function (node) {
+        var clone = node.cloneNode(true);
+        clone.setAttribute('data-clone', 'loop');
+        clone.setAttribute('aria-hidden', 'true');
+        clone.setAttribute('tabindex', '-1');
+        track.appendChild(clone);
+      });
+
+      var setWidth = track.scrollWidth / 2;
+      var duration = Math.max(22, Math.round(setWidth / 38));
+      track.style.setProperty('--mk-people-duration', duration + 's');
+    }
+
+    fill();
+    window.addEventListener('resize', function () {
+      window.clearTimeout(timer);
+      timer = window.setTimeout(fill, 160);
+    });
+  }
+  initPeopleMarquee();
 
   function initPortfolioZoom() {
     var triggers = Array.prototype.slice.call(document.querySelectorAll('[data-zoom]'));

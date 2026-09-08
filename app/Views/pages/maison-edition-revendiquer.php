@@ -13,6 +13,8 @@ $hostHint = $p['website_host'] !== '' ? $p['website_host'] : '';
   <nav class="search-crumb" aria-label="Fil d'Ariane">
     <a href="<?= e(url('/')) ?>">Accueil</a>
     <span aria-hidden="true"> · </span>
+    <a href="<?= e(url('/communaute')) ?>">Communauté</a>
+    <span aria-hidden="true"> · </span>
     <a href="<?= e(url('/maisons-edition')) ?>">Maisons d'édition</a>
     <span aria-hidden="true"> · </span>
     <a href="<?= e(url($p['href'])) ?>"><?= e($p['name']) ?></a>

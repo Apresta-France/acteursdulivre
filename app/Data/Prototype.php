@@ -42,7 +42,7 @@ final class Prototype
             'Confiance', 'Aide', 'Questions', 'Metier', 'Apropos', 'Journal', 'Article', 'Contact', 'Legal',
             'Connexion', 'Notifications', 'MesPrestations', 'MesMissions', 'Candidatures', 'Favoris',
             'Avis', 'Vitrine', 'Parametres', 'Facturation', 'Bienvenue', 'Statistiques', 'Forum', 'EspaceForum',
-            'Landing', 'Besoin',
+            'Landing', 'Besoin', 'Communaute', 'Salons', 'Salon',
         ] as $name) {
             $key = 'is' . $name;
             if (!isset($data[$key])) {
@@ -68,6 +68,8 @@ final class Prototype
             'vitrine' => 'isVitrine', 'parametres' => 'isParametres', 'facturation' => 'isFacturation',
             'bienvenue' => 'isBienvenue', 'statistiques' => 'isStatistiques',
             'espace-forum' => 'isEspaceForum',
+            'communaute' => 'isCommunaute',
+            'salons' => 'isSalons', 'salon' => 'isSalon',
             'maisons-edition' => 'isMaisons', 'maisons-edition-pays' => 'isMaisons', 'maison-edition' => 'isMaison',
             'maison-edition-revendiquer' => 'isMaison', 'maison-edition-ajouter' => 'isMaisons', 'espace-maison' => 'isEspaceMaison',
         ];
@@ -134,6 +136,8 @@ final class Prototype
             ['title' => 'La plateforme', 'links' => [
                 ['label' => 'Comment ça marche', 'href' => '/comment-ca-marche'],
                 ['label' => 'Les auteurs', 'href' => '/auteurs'],
+                ['label' => 'La communauté', 'href' => '/communaute'],
+                ['label' => 'Agenda des salons', 'href' => '/salons'],
                 ['label' => 'Maisons d\'édition', 'href' => '/maisons-edition'],
                 ['label' => 'À propos', 'href' => '/a-propos'],
                 ['label' => 'Le forum', 'href' => '/forum'],
@@ -214,6 +218,7 @@ final class Prototype
             'homeMissions' => self::homeMissions(),
             'homeTemoins' => [],
             'homeForum' => [],
+            'homeProviders' => self::homeProviders(),
             'journal' => self::journalPreview(),
             'journalCats' => self::chips(['Tout', 'Tarifs', 'Contrats', 'Métier', 'Fabrication', 'Diffusion', 'Édition', 'Plateforme'], 0),
             'journalAll' => self::journalAll(),
@@ -297,6 +302,7 @@ final class Prototype
                 'homeEntry' => $entry,
                 'homeMissions' => Catalog::homeMissions(5),
                 'homeTemoins' => Catalog::homeReviews(3),
+                'homeProviders' => Catalog::homeProviders(18),
                 'equipe' => Catalog::equipe(),
                 'missionsBandStats' => Catalog::missionsBandStats(),
                 'journal' => $journal,
@@ -335,6 +341,7 @@ final class Prototype
                 'homeFeatured' => [],
                 'homeEntry' => [],
                 'homeMissions' => [],
+                'homeProviders' => [],
                 'homeStats' => [],
                 'homeMetiers' => [],
                 'journal' => [],
@@ -796,6 +803,35 @@ final class Prototype
             $x['href'] = '/prestations/' . slugify($x['title']);
             return $x;
         }, $rows, array_keys($rows));
+    }
+
+    /** @return list<array<string, mixed>> */
+    private static function homeProviders(): array
+    {
+        $rows = [
+            ['Marion Vasseur', 'MV', 'Correction', 'Correctrice littéraire · Nantes', 'Roman · Essai · Sciences humaines'],
+            ['Abookandacup', 'AB', 'Bêta-lecture', 'Bêta-lecture, créatrice de contenu littéraire et cozy · À distance', 'Roman · Livre audio · Réseaux sociaux · Promotion'],
+            ['Paul Ferrand', 'PF', 'Correction', 'Correcteur d’essais · Lille', 'Essai · Histoire · Sciences humaines'],
+            ['Atelier Virgule', 'AV', 'Correction', 'Relecture d’épreuves · Paris', 'Roman · Polar · Théâtre'],
+            ['Claire Ozanne', 'CO', 'Illustration', 'Illustratrice jeunesse · Lyon', 'Jeunesse · BD & graphique'],
+            ['Nadia Chaumet', 'NC', 'Bêta-lecture', 'Bêta-lectrice romance et feel-good · À distance', 'Roman · Poésie'],
+            ['Studio Grain', 'SG', 'Maquette', 'Maquette et préparation de copie · Bordeaux', 'Roman · Essai · Pratique'],
+            ['Hélène Artaud', 'HA', 'Presse & com', 'Attachée de presse indépendante · Paris', 'Roman · Essai · Réseaux sociaux'],
+            ['Samira Rahal', 'SR', 'Traduction', 'Traductrice ES→FR · Marseille', 'Roman · Nouvelles · Essai'],
+            ['Imprimerie Brume', 'IB', 'Impression', 'Impression et façonnage · Tours', 'Broché · Recyclé · Court tirage'],
+        ];
+        shuffle($rows);
+
+        return array_map(static fn (array $r): array => [
+            'title' => $r[0],
+            'initials' => $r[1],
+            'cat' => $r[2],
+            'subtitle' => $r[3],
+            'meta' => $r[4],
+            'href' => '/prestataires',
+            'availability_label' => 'Disponible',
+            'is_busy' => false,
+        ], $rows);
     }
 
     private static function homeMetiers(): array

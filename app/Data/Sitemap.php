@@ -119,6 +119,12 @@ final class Sitemap
         }
 
         foreach (self::rows(
+            'SELECT slug, created_at AS lastmod FROM salons WHERE slug != ""'
+        ) as $row) {
+            self::push($urls, $seen, '/salons/' . $row['slug'], $row['lastmod'] ?? null, '0.4');
+        }
+
+        foreach (self::rows(
             'SELECT slug, published_at AS lastmod
              FROM articles
              WHERE published_at IS NOT NULL AND published_at <= NOW()
@@ -194,6 +200,8 @@ final class Sitemap
             ['path' => '/missions', 'priority' => '0.8'],
             ['path' => '/journal', 'priority' => '0.8'],
             ['path' => '/forum', 'priority' => '0.8'],
+            ['path' => '/communaute', 'priority' => '0.7'],
+            ['path' => '/salons', 'priority' => '0.7'],
             ['path' => '/besoin', 'priority' => '0.7'],
             ['path' => '/comment-ca-marche', 'priority' => '0.7'],
             ['path' => '/tarifs', 'priority' => '0.7'],

@@ -40,6 +40,8 @@ $catUrl = static function (string $filtre = 'recent', int $p = 1) use ($catHref)
 <div class="forum-page">
   <section class="forum-hero forum-hero-compact">
     <div class="forum-crumb">
+      <a href="<?= e(url('/communaute')) ?>">Communauté</a>
+      <span>/</span>
       <a href="<?= e(url('/forum')) ?>">Forum</a>
       <span>/</span>
       <span><?= e((string) ($category['name'] ?? '')) ?></span>

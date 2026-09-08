@@ -12,6 +12,7 @@ $mega = $mega ?? [];
 $homeTemoins = $homeTemoins ?? [];
 $journal = $journal ?? [];
 $homeForum = $homeForum ?? [];
+$homeProviders = $homeProviders ?? [];
 $homeFaq = $homeFaq ?? [];
 $homeQuick = $homeQuick ?? [];
 $query = (string) ($query ?? '');
@@ -83,6 +84,36 @@ $query = (string) ($query ?? '');
           <span><?= e((string) $s['k']) ?></span>
         </a>
       <?php endforeach; ?>
+    </section>
+  <?php endif; ?>
+
+  <?php if (count($homeProviders) >= 2): ?>
+    <section class="mk-people" aria-label="Prestataires actuellement en ligne" data-people-marquee>
+      <h2 class="sr-only">Quelques prestataires de l’annuaire</h2>
+      <div class="mk-people-viewport">
+        <div class="mk-people-track" data-people-track>
+          <?php foreach ($homeProviders as $p): ?>
+            <a class="mk-people-card<?= !empty($p['is_busy']) ? ' is-busy' : '' ?>" href="<?= e(url((string) ($p['href'] ?? '/prestataires'))) ?>">
+              <div class="mk-people-kicker">
+                <span><?= e((string) ($p['cat'] ?? 'Prestataire')) ?></span>
+                <?php if (!empty($p['availability_label'])): ?>
+                  <span class="status-pill<?= !empty($p['is_busy']) ? ' is-busy' : ' is-available' ?>"><?= e((string) $p['availability_label']) ?></span>
+                <?php endif; ?>
+              </div>
+              <div class="mk-people-who">
+                <?= avatar_html($p, 36, 'avatar mk-people-avatar') ?>
+                <div class="mk-people-id">
+                  <strong><?= e((string) ($p['title'] ?? '')) ?></strong>
+                  <?php if (!empty($p['subtitle'])): ?><em><?= e((string) $p['subtitle']) ?></em><?php endif; ?>
+                </div>
+              </div>
+              <?php if (!empty($p['meta'])): ?>
+                <div class="mk-people-tags"><?= e((string) $p['meta']) ?></div>
+              <?php endif; ?>
+            </a>
+          <?php endforeach; ?>
+        </div>
+      </div>
     </section>
   <?php endif; ?>
 

@@ -10,6 +10,8 @@ foreach ($countries as $c) {
   <nav class="search-crumb" aria-label="Fil d'Ariane">
     <a href="<?= e(url('/')) ?>">Accueil</a>
     <span aria-hidden="true"> · </span>
+    <a href="<?= e(url('/communaute')) ?>">Communauté</a>
+    <span aria-hidden="true"> · </span>
     <a href="<?= e(url('/maisons-edition')) ?>">Maisons d'édition</a>
     <span aria-hidden="true"> · </span>
     <span>Par pays</span>

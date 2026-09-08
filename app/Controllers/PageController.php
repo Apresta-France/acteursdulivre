@@ -26,6 +26,8 @@ use Adl\Models\Invoice;
 use Adl\Models\Mission;
 use Adl\Models\Newsletter;
 use Adl\Models\Profile;
+use Adl\Models\Publisher;
+use Adl\Models\Salon;
 use Adl\Models\ReviewRequest;
 use Adl\Models\Report;
 use Adl\Models\Service;
@@ -738,6 +740,123 @@ final class PageController
             'title' => 'À propos d\'Acteurs du Livre',
             'meta' => Seo::forScreen('apropos'),
         ]);
+    }
+
+    public function communaute(Request $request): void
+    {
+        $forumStats = ['topics' => 0, 'posts' => 0, 'week' => 0];
+        $homeForum = [];
+        $publishers = [];
+        $publisherCount = 0;
+        try {
+            $forumStats = ForumTopic::stats();
+            $homeForum = Catalog::homeForum(4);
+            $publisherCount = Publisher::countPublished();
+            $publishers = Publisher::search([], 1, 4)['items'];
+        } catch (\Throwable) {
+        }
+
+        View::page('communaute', [
+            'title' => 'La communauté des métiers du livre',
+            'meta' => Seo::forScreen('communaute'),
+            'forumStats' => $forumStats,
+            'homeForum' => $homeForum,
+            'publishers' => $publishers,
+            'publisherCount' => $publisherCount,
+            'agenda' => self::communityAgendaPreview(),
+            'salonCount' => self::salonCount(),
+        ]);
+    }
+
+    public function salons(Request $request): void
+    {
+        $filters = [
+            'q' => $request->string('q'),
+            'category' => $request->string('cat'),
+            'region' => $request->string('region'),
+            'country' => $request->string('pays'),
+        ];
+        $page = max(1, $request->int('page', 1) ?? 1);
+        $found = ['items' => [], 'total' => 0, 'page' => 1, 'pages' => 1];
+        $facets = ['categories' => [], 'regions' => [], 'countries' => []];
+        try {
+            $found = Salon::search($filters, $page);
+            $facets = Salon::facets();
+        } catch (\Throwable) {
+        }
+
+        $meta = Seo::forScreen('salons');
+        if ($filters['q'] !== '' || $found['page'] > 1) {
+            $meta['robots'] = 'noindex, follow';
+        }
+
+        View::page('salons', [
+            'title' => 'Agenda des salons du livre',
+            'meta' => $meta,
+            'salons' => $found['items'],
+            'pager' => $found,
+            'filters' => $filters,
+            'facets' => $facets,
+        ]);
+    }
+
+    public function salon(Request $request, string $slug): void
+    {
+        $salon = null;
+        try {
+            $salon = Salon::find($slug);
+        } catch (\Throwable) {
+        }
+        if (!$salon) {
+            not_found('Ce salon n\'est pas dans l\'agenda.');
+        }
+
+        $desc = trim((string) ($salon['description'] ?? ''));
+        $meta = Seo::build(
+            (string) $salon['name'],
+            $desc !== '' ? Seo::clip($desc, 160) : ((string) ($salon['when'] ?? '') . ' · ' . (string) ($salon['place'] ?? '')),
+            (string) $salon['href']
+        );
+        $meta['json_ld'] = [
+            Seo::organization(),
+            Seo::website(),
+            Seo::breadcrumb([
+                ['name' => Seo::BRAND, 'url' => '/'],
+                ['name' => 'Communauté', 'url' => '/communaute'],
+                ['name' => 'Agenda des salons', 'url' => '/salons'],
+                ['name' => (string) $salon['name'], 'url' => (string) $salon['href']],
+            ]),
+        ];
+
+        View::page('salon', [
+            'title' => (string) $salon['name'],
+            'meta' => $meta,
+            'salon' => $salon,
+        ]);
+    }
+
+    /** @return list<array<string, mixed>> */
+    private static function communityAgendaPreview(): array
+    {
+        try {
+            if (Salon::tableExists()) {
+                $items = Salon::upcoming(8);
+                if ($items !== []) {
+                    return $items;
+                }
+            }
+        } catch (\Throwable) {
+        }
+        return Catalog::communityAgenda();
+    }
+
+    private static function salonCount(): int
+    {
+        try {
+            return Salon::tableExists() ? Salon::countAll() : count(Catalog::communityAgenda());
+        } catch (\Throwable) {
+            return count(Catalog::communityAgenda());
+        }
     }
 
     public function journal(Request $request): void

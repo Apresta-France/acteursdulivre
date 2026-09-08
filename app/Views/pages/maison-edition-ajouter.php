@@ -17,6 +17,8 @@ $typoOld = (string) old('typology_key', 'specialise');
   <nav class="search-crumb" aria-label="Fil d'Ariane">
     <a href="<?= e(url('/')) ?>">Accueil</a>
     <span aria-hidden="true"> · </span>
+    <a href="<?= e(url('/communaute')) ?>">Communauté</a>
+    <span aria-hidden="true"> · </span>
     <a href="<?= e(url('/maisons-edition')) ?>">Maisons d'édition</a>
     <span aria-hidden="true"> · </span>
     <span>Ajouter ma maison</span>

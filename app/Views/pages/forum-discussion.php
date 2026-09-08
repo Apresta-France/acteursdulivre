@@ -27,6 +27,8 @@ $forumFlashError = trim((string) ($forumFlashError ?? ''));
     <div class="forum-hero-grid">
       <div>
         <div class="forum-crumb">
+          <a href="<?= e(url('/communaute')) ?>">Communauté</a>
+          <span>/</span>
           <a href="<?= e(url('/forum')) ?>">Forum</a>
           <span>/</span>
           <a href="<?= e(url((string) ($category['href'] ?? '/forum'))) ?>"><?= e((string) ($category['name'] ?? '')) ?></a>

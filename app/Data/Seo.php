@@ -62,6 +62,16 @@ final class Seo
                 'description' => 'Tarifs, contrats, papier, délais et cas concrets : les réponses viennent de gens qui font le métier — pas d\'une machine.',
                 'path' => '/forum',
             ],
+            'communaute' => [
+                'title' => 'La communauté des métiers du livre',
+                'description' => 'Forum, annuaire des maisons d\'édition et agenda des salons : se retrouver hors des missions.',
+                'path' => '/communaute',
+            ],
+            'salons' => [
+                'title' => 'Agenda des salons du livre — France et Europe',
+                'description' => 'Salons du livre, festivals et foires en France et en Europe, de septembre 2026 à septembre 2027. Dates, villes et catégories.',
+                'path' => '/salons',
+            ],
             'aide' => [
                 'title' => 'Centre d\'aide',
                 'description' => 'Jalons, règlement hors plateforme, commission, annulation, facturation, avis, litiges : les réponses utiles pour utiliser acteursdulivre.fr.',
@@ -1076,6 +1086,8 @@ final class Seo
             'apropos' => 'À propos',
             'journal' => 'Le journal',
             'forum' => 'Forum',
+            'communaute' => 'Communauté',
+            'salons' => 'Agenda des salons',
             'aide' => 'Centre d\'aide',
             'questions' => 'Questions fréquentes',
             'contact' => 'Contact',
@@ -1166,6 +1178,9 @@ acteursdulivre.fr met en relation des porteurs de projet (auteurs, éditeurs, co
 - [Appels d'offres]({$home}missions) : recherches publiées par les porteurs de projet
 - [Métiers]({$home}metiers/correction) : pages métiers, exemple correction
 - [Maisons d'édition]({$home}maisons-edition) : annuaire de plus de 600 éditeurs en France et en Europe, par pays ([exemple : France]({$home}maisons-edition/pays/france)), ville et genre ; les coordonnées sont réservées aux membres connectés et les maisons peuvent revendiquer leur fiche
+- [Communauté]({$home}communaute) : forum, annuaire des maisons d'édition et agenda des salons
+- [Agenda des salons]({$home}salons) : salons du livre et festivals en France et en Europe (2026-2027)
+- [Forum]({$home}forum) : discussions métier (tarifs, contrats, fabrication)
 - [Par besoin]({$home}besoin) : pages d'entrée par besoin (correction, couverture, impression…), utilisées aussi pour les campagnes
 - [Journal]({$home}journal) : articles sur les métiers, tarifs, contrats et diffusion
 - [Autoédition : le guide complet]({$home}journal/autoedition-guide-complet) : publier son livre en France (budget, ISBN, dépôt légal, fabrication, librairie)

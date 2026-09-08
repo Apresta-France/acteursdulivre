@@ -54,6 +54,9 @@ return static function (Router $router): void {
     $router->get('/missions/{slug}', [PageController::class, 'mission']);
     $router->get('/missions/{slug}/fichier', [PageController::class, 'missionFile']);
     $router->post('/missions/{slug}/candidater', [AccountController::class, 'applicationCreate']);
+    $router->get('/communaute', [PageController::class, 'communaute']);
+    $router->get('/salons', [PageController::class, 'salons']);
+    $router->get('/salons/{slug}', [PageController::class, 'salon']);
     $router->get('/forum', [ForumController::class, 'index']);
     $router->get('/forum/nouveau', [ForumController::class, 'createForm']);
     $router->post('/forum/nouveau', [ForumController::class, 'create']);

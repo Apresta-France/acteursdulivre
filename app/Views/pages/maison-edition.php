@@ -35,6 +35,8 @@ $facts[] = ['Ligne éditoriale', $p['typology_label'], '/maisons-edition?typolog
   <nav class="search-crumb" aria-label="Fil d'Ariane">
     <a href="<?= e(url('/')) ?>">Accueil</a>
     <span aria-hidden="true"> · </span>
+    <a href="<?= e(url('/communaute')) ?>">Communauté</a>
+    <span aria-hidden="true"> · </span>
     <a href="<?= e(url('/maisons-edition')) ?>">Maisons d'édition</a>
     <?php if ($p['country_slug'] !== ''): ?>
       <span aria-hidden="true"> · </span>

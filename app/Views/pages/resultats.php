@@ -56,7 +56,7 @@ if ($searchCity !== '') {
     $active[] = ['name' => 'ville', 'value' => $searchCity, 'label' => $searchCityLabel !== '' ? $searchCityLabel : $searchCity];
 }
 ?>
-<div class="search-page" data-search-page
+<div class="search-page<?= $type === 'prestataires' ? ' is-prestataires' : '' ?>" data-search-page
      data-api="<?= e(url('/api/recherche')) ?>"
      data-type="<?= e($type) ?>"
      data-search-limit="<?= (int) \Adl\Data\Catalog::PER_PAGE ?>"
