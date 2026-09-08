@@ -69,7 +69,7 @@ final class Prototype
             'bienvenue' => 'isBienvenue', 'statistiques' => 'isStatistiques',
             'espace-forum' => 'isEspaceForum',
             'communaute' => 'isCommunaute',
-            'salons' => 'isSalons', 'salon' => 'isSalon',
+            'salons' => 'isSalons', 'salon' => 'isSalon', 'salon-ajouter' => 'isSalons',
             'maisons-edition' => 'isMaisons', 'maisons-edition-pays' => 'isMaisons', 'maison-edition' => 'isMaison',
             'maison-edition-revendiquer' => 'isMaison', 'maison-edition-ajouter' => 'isMaisons', 'espace-maison' => 'isEspaceMaison',
         ];

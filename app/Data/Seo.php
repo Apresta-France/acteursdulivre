@@ -21,6 +21,7 @@ final class Seo
         'favoris', 'avis', 'vitrine', 'parametres', 'facturation', 'statistiques', 'bienvenue',
         'recommandation', 'auteur', 'auteur-oeuvres', 'auteur-oeuvre', 'tribune', 'tribune-edit',
         'connexion', 'inscription-sso', 'espace-maison', 'maison-edition-revendiquer', 'maison-edition-ajouter',
+        'salon-ajouter',
     ];
 
     /** @return array<string, array{title: string, description: string, path: string}> */
@@ -71,6 +72,11 @@ final class Seo
                 'title' => 'Agenda des salons du livre — France et Europe',
                 'description' => 'Salons du livre, festivals et foires en France et en Europe, de septembre 2026 à septembre 2027. Dates, villes et catégories.',
                 'path' => '/salons',
+            ],
+            'salon-ajouter' => [
+                'title' => 'Proposer un salon du livre',
+                'description' => 'Ajoutez un salon, un festival ou une foire du livre à l\'agenda d\'acteursdulivre.fr. L\'équipe vérifie chaque proposition avant publication.',
+                'path' => '/salons/ajouter',
             ],
             'aide' => [
                 'title' => 'Centre d\'aide',

@@ -14,6 +14,7 @@ use Adl\Models\Order;
 use Adl\Models\Profile;
 use Adl\Models\PublisherClaim;
 use Adl\Models\Report;
+use Adl\Models\SalonProposal;
 use Adl\Models\Service;
 use Adl\Models\Setting;
 use Adl\Models\User;
@@ -52,6 +53,7 @@ final class AdminCatalog
             ['litiges', 'Litiges', $badges['litiges'], '', '/admin/litiges'],
             ['avis', 'Avis', $badges['avis'], '', '/admin/avis'],
             ['maisons', 'Maisons d\'édition', $badges['maisons'], '', '/admin/maisons-edition'],
+            ['salons', 'Agenda des salons', $badges['salons'], '', '/admin/salons'],
             ['users', 'Utilisateurs', '', 'Données', '/admin/utilisateurs'],
             ['stats', 'Statistiques', '', '', '/admin/statistiques'],
             ['catalogue', 'Prestations', '', '', '/admin/prestations'],
@@ -103,6 +105,7 @@ final class AdminCatalog
             'litiges' => self::badgeCount(static fn (): int => Order::countByStatus('dispute')),
             'avis' => self::badgeCount(static fn (): int => Report::countOpenForType('review')),
             'maisons' => self::badgeCount(static fn (): int => PublisherClaim::countPending()),
+            'salons' => self::badgeCount(static fn (): int => SalonProposal::countPending()),
             'finances' => self::badgeCount(static fn (): int => Invoice::countOverdue()),
             'migrations' => self::badgeCount(static fn (): int => Migrator::pendingCount()),
         ];
@@ -128,6 +131,7 @@ final class AdminCatalog
             'litiges' => 'Litiges',
             'avis' => 'Avis',
             'maisons' => 'Maisons d\'édition',
+            'salons' => 'Agenda des salons',
             'users' => 'Utilisateurs',
             'stats' => 'Statistiques',
             'catalogue' => 'Prestations',

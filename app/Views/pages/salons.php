@@ -118,8 +118,8 @@ if ((int) $pager['pages'] > 1) {
 
       <div class="search-aside-card">
         <div class="search-aside-title">Un salon manque ?</div>
-        <p>Cette liste est une sélection France + Europe, sept. 2026 – sept. 2027. Écrivez-nous pour en ajouter un.</p>
-        <a class="btn-ghost" href="<?= e(url('/contact')) ?>">Signaler un salon</a>
+        <p>Cette liste est une sélection France + Europe, sept. 2026 – sept. 2027. Proposez le vôtre : l’équipe le publie après vérification.</p>
+        <a class="btn-ghost" href="<?= e(url('/salons/ajouter')) ?>">Ajouter un salon</a>
       </div>
     </aside>
 
@@ -139,19 +139,10 @@ if ((int) $pager['pages'] > 1) {
         </div>
       </div>
 
-      <form class="search" method="get" action="<?= e(url($pagerPath)) ?>" role="search" style="max-width: 520px; margin-bottom: 22px;">
-        <?= $hidden('cat', $category) ?>
-        <?= $hidden('region', $region) ?>
-        <?= $hidden('pays', $country) ?>
-        <label class="sr-only" for="salon-q">Rechercher un salon</label>
-        <input id="salon-q" type="search" name="q" value="<?= e($q) ?>" placeholder="Nom, ville, région…">
-        <button type="submit">Chercher</button>
-      </form>
-
       <?php if ($salons === []): ?>
         <div class="search-empty" style="padding: 26px;">
           <strong>Aucun salon ne correspond à ces critères.</strong>
-          <span>Essayez un autre mot-clé, retirez un filtre, ou <a href="<?= e(url('/contact')) ?>">signalez un salon</a>.</span>
+          <span>Essayez un autre mot-clé, retirez un filtre, ou <a href="<?= e(url('/salons/ajouter')) ?>">proposez un salon</a>.</span>
         </div>
       <?php else: ?>
         <div class="co-agenda">
@@ -178,6 +169,14 @@ if ((int) $pager['pages'] > 1) {
         $pagerLabel = 'Pagination des salons';
         require ADL_ROOT . '/app/Views/partials/search-pager.php';
       ?>
+
+      <aside class="me-add-cta">
+        <div>
+          <strong>Votre salon n’est pas dans l’agenda ?</strong>
+          <span>Proposez-le : l’équipe le publie après vérification.</span>
+        </div>
+        <a class="btn-navy" href="<?= e(url('/salons/ajouter')) ?>">Ajouter un salon</a>
+      </aside>
     </div>
   </div>
 </div>

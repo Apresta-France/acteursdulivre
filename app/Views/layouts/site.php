@@ -83,7 +83,7 @@
   <?php if (!empty($isArticle) && !empty($article['img'])): ?>
   <link rel="preload" as="image" href="<?= e((string) $article['img']) ?>">
   <?php endif; ?>
-  <link rel="stylesheet" href="<?= e(asset('css/app.css')) ?>?v=m211">
+  <link rel="stylesheet" href="<?= e(asset('css/app.css')) ?>?v=m212">
   <link rel="icon" href="<?= e(asset('img/favicon.ico')) ?>?v=3" sizes="any">
   <link rel="icon" type="image/png" href="<?= e(asset('img/favicon-32x32.png')) ?>?v=3" sizes="32x32">
   <link rel="apple-touch-icon" href="<?= e(asset('img/apple-touch-icon.png')) ?>?v=3">
@@ -129,13 +129,16 @@
         $headerPath = $headerPath !== '/' ? rtrim($headerPath, '/') : '/';
         $headerSearchPublishers = $headerPath === '/maisons-edition'
             || str_starts_with($headerPath, '/maisons-edition/');
-        $headerSearchAction = $headerSearchPublishers ? '/maisons-edition' : '/recherche';
+        $headerSearchSalons = $headerPath === '/salons'
+            || str_starts_with($headerPath, '/salons/');
+        $headerSearchLocal = $headerSearchPublishers || $headerSearchSalons;
+        $headerSearchAction = $headerSearchPublishers ? '/maisons-edition' : ($headerSearchSalons ? '/salons' : '/recherche');
         $headerSearchPlaceholder = $headerSearchPublishers
             ? 'Nom, ville, genre éditorial…'
-            : 'correcteur roman, illustration jeunesse…';
+            : ($headerSearchSalons ? 'Nom, ville, région…' : 'correcteur roman, illustration jeunesse…');
         $headerSearchLabel = $headerSearchPublishers
             ? 'Rechercher une maison d’édition'
-            : 'Rechercher un prestataire, une prestation ou un appel d’offres';
+            : ($headerSearchSalons ? 'Rechercher un salon' : 'Rechercher un prestataire, une prestation ou un appel d’offres');
       ?>
       <header class="site-header">
         <a href="<?= e(url('/')) ?>" class="brand" aria-label="acteursdulivre.fr — accueil">
@@ -144,7 +147,7 @@
             <img src="<?= e(asset('img/logo.png')) ?>?v=4" alt="acteursdulivre.fr — place de marché des métiers du livre" width="212" height="58" decoding="async">
           </picture>
         </a>
-        <form class="search" role="search" action="<?= e(url($headerSearchAction)) ?>" method="get"<?= $headerSearchPublishers ? '' : ' data-live-search data-api="' . e(url('/api/recherche')) . '"' ?> autocomplete="off" toolname="search_directory" tooldescription="<?= e($headerSearchLabel) ?>.">
+        <form class="search" role="search" action="<?= e(url($headerSearchAction)) ?>" method="get"<?= $headerSearchLocal ? '' : ' data-live-search data-api="' . e(url('/api/recherche')) . '"' ?> autocomplete="off" toolname="search_directory" tooldescription="<?= e($headerSearchLabel) ?>.">
           <?php
             $headerSearchType = (string) ($searchType ?? '');
             if ($headerSearchType === '' || $headerSearchType === 'all') {
@@ -160,10 +163,10 @@
             <input type="hidden" name="type" value="<?= e($headerSearchType) ?>">
           <?php endif; ?>
           <label class="sr-only" for="header-search-q"><?= e($headerSearchLabel) ?></label>
-          <input id="header-search-q" type="search" name="q" value="<?= e($query ?? '') ?>" placeholder="<?= e($headerSearchPlaceholder) ?>" autocomplete="off"<?= $headerSearchPublishers ? '' : ' data-live-input' ?> aria-label="<?= e($headerSearchLabel) ?>" toolparamdescription="Mots-clés : métier, genre littéraire ou besoin.">
-          <?php if (!$headerSearchPublishers): ?><input type="hidden" name="ville" value="<?= e($searchCity ?? '') ?>" data-header-ville><?php endif; ?>
+          <input id="header-search-q" type="search" name="q" value="<?= e($query ?? '') ?>" placeholder="<?= e($headerSearchPlaceholder) ?>" autocomplete="off"<?= $headerSearchLocal ? '' : ' data-live-input' ?> aria-label="<?= e($headerSearchLabel) ?>" toolparamdescription="Mots-clés : métier, genre littéraire ou besoin.">
+          <?php if (!$headerSearchLocal): ?><input type="hidden" name="ville" value="<?= e($searchCity ?? '') ?>" data-header-ville><?php endif; ?>
           <button type="submit">Chercher</button>
-          <?php if (!$headerSearchPublishers): ?><div class="search-suggest" data-live-panel hidden></div><?php endif; ?>
+          <?php if (!$headerSearchLocal): ?><div class="search-suggest" data-live-panel hidden></div><?php endif; ?>
         </form>
         <?php if (!empty($logged)): ?>
           <?php

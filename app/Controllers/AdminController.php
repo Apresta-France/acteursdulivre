@@ -38,6 +38,8 @@ use Adl\Models\OrderFile;
 use Adl\Models\Profile;
 use Adl\Models\Publisher;
 use Adl\Models\PublisherClaim;
+use Adl\Models\Salon;
+use Adl\Models\SalonProposal;
 use Adl\Models\Report;
 use Adl\Models\Recommendation;
 use Adl\Models\Review;
@@ -556,6 +558,76 @@ final class AdminController
             flash('saved', 'Fiche supprimée.');
         }
         redirect('/admin/maisons-edition?onglet=fiches');
+    }
+
+    public function salonsAdmin(Request $request): void
+    {
+        $filtre = $this->filtre($request, ['pending', 'approved', 'refused', 'tous'], 'pending');
+        try {
+            $proposals = SalonProposal::forAdmin($filtre);
+            foreach ($proposals as &$proposal) {
+                $proposal['similar'] = [];
+                if ($proposal['status'] === SalonProposal::STATUS_PENDING) {
+                    $proposal['similar'] = Salon::similar((string) $proposal['name'], (string) ($proposal['city'] ?? ''), 4);
+                }
+                if (!empty($proposal['salon_id'])) {
+                    $proposal['salon'] = Salon::findById((int) $proposal['salon_id']);
+                }
+            }
+            unset($proposal);
+            $pendingCount = SalonProposal::countPending();
+        } catch (Throwable) {
+            $proposals = [];
+            $pendingCount = 0;
+        }
+        $this->page('salons', 'admin/salons', [
+            'proposals' => $proposals,
+            'pendingCount' => $pendingCount,
+            'categories' => Salon::categoryLabels(),
+            'filters' => $this->filterLinks('/admin/salons', [
+                'pending' => 'En attente',
+                'approved' => 'Publiées',
+                'refused' => 'Refusées',
+                'tous' => 'Toutes',
+            ], $filtre),
+        ]);
+    }
+
+    public function salonDecide(Request $request, string $id): void
+    {
+        $admin = Auth::requireAdmin();
+        try {
+            $overrides = [
+                'name' => $request->string('name'),
+                'category' => $request->string('category'),
+                'starts_on' => $request->string('starts_on'),
+                'ends_on' => $request->string('ends_on'),
+                'city' => $request->string('city'),
+                'region' => $request->string('region'),
+                'country' => $request->string('country'),
+                'venue' => $request->string('venue'),
+                'website' => $request->string('website'),
+                'organizer' => $request->string('organizer'),
+                'ticket' => $request->string('ticket'),
+                'audience' => $request->string('audience'),
+                'description' => $request->string('description'),
+                'dates_confirmed' => $request->bool('dates_confirmed'),
+            ];
+            $proposal = SalonProposal::decide(
+                (int) $id,
+                $request->string('status'),
+                $request->string('note'),
+                (int) $admin['id'],
+                $request->string('status') === SalonProposal::STATUS_APPROVED ? $overrides : []
+            );
+            $approved = $request->string('status') === SalonProposal::STATUS_APPROVED;
+            flash('saved', $approved
+                ? 'Salon « ' . ($proposal['salon']['name'] ?? $proposal['name']) . ' » publié dans l\'agenda. Le demandeur a été prévenu.'
+                : 'Proposition refusée. Le motif a été transmis au demandeur.');
+        } catch (Throwable $e) {
+            flash('error', $e->getMessage());
+        }
+        redirect($request->string('back') !== '' ? $request->string('back') : '/admin/salons');
     }
 
     public function litiges(Request $request): void

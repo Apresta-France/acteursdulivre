@@ -67,6 +67,7 @@ final class Analytics
         'filtre' => 'Filtre de recherche',
         'partage' => 'Partage',
         'signalement' => 'Signalement',
+        'salon_proposal' => 'Proposition de salon',
     ];
 
     private const PERIODS = [

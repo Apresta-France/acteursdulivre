@@ -28,6 +28,7 @@ use Adl\Models\Newsletter;
 use Adl\Models\Profile;
 use Adl\Models\Publisher;
 use Adl\Models\Salon;
+use Adl\Models\SalonProposal;
 use Adl\Models\ReviewRequest;
 use Adl\Models\Report;
 use Adl\Models\Service;
@@ -797,6 +798,7 @@ final class PageController
             'pager' => $found,
             'filters' => $filters,
             'facets' => $facets,
+            'query' => $filters['q'],
         ]);
     }
 
@@ -828,11 +830,96 @@ final class PageController
             ]),
         ];
 
+        $upcoming = [];
+        try {
+            $upcoming = Salon::upcoming(5, (string) ($salon['slug'] ?? ''));
+        } catch (\Throwable) {
+        }
+
         View::page('salon', [
             'title' => (string) $salon['name'],
             'meta' => $meta,
             'salon' => $salon,
+            'upcoming' => $upcoming,
         ]);
+    }
+
+    public function salonAddForm(Request $request): void
+    {
+        $user = Auth::user();
+        $similar = [];
+        $oldName = trim((string) old('name'));
+        $oldCity = trim((string) old('city'));
+        if ($oldName !== '') {
+            try {
+                $similar = Salon::similar($oldName, $oldCity, 4);
+            } catch (\Throwable) {
+            }
+        }
+        $categories = [];
+        $countries = ['France'];
+        try {
+            $categories = Salon::categoryLabels();
+            $countries = Salon::countryLabels();
+        } catch (\Throwable) {
+        }
+
+        View::page('salon-ajouter', [
+            'title' => 'Proposer un salon',
+            'meta' => Seo::forScreen('salon-ajouter'),
+            'sent' => flash('salon_proposed') ? true : false,
+            'error' => flash('error'),
+            'user' => $user,
+            'similar' => $similar,
+            'categories' => $categories,
+            'countries' => $countries,
+            'suggestedEmail' => $user['email'] ?? '',
+            'suggestedName' => $user ? trim((string) (($user['first_name'] ?? '') . ' ' . ($user['last_name'] ?? ''))) : '',
+        ]);
+        unset($_SESSION['_old']);
+    }
+
+    public function salonAdd(Request $request): void
+    {
+        $old = [
+            'name' => $request->string('name'),
+            'category' => $request->string('category'),
+            'starts_on' => $request->string('starts_on'),
+            'ends_on' => $request->string('ends_on'),
+            'city' => $request->string('city'),
+            'region' => $request->string('region'),
+            'country' => $request->string('country'),
+            'venue' => $request->string('venue'),
+            'website' => $request->string('website'),
+            'organizer' => $request->string('organizer'),
+            'ticket' => $request->string('ticket'),
+            'audience' => $request->string('audience'),
+            'description' => $request->string('description'),
+            'notes' => $request->string('notes'),
+            'contact_name' => $request->string('contact_name'),
+            'contact_email' => $request->string('contact_email'),
+        ];
+        $similar = [];
+        try {
+            $similar = Salon::similar($old['name'], $old['city'], 4);
+        } catch (\Throwable) {
+        }
+        if ($similar !== [] && !$request->bool('not_duplicate')) {
+            flash('error', 'Si aucun des salons listés n\'est le vôtre, cochez la case pour envoyer une nouvelle fiche.');
+            $_SESSION['_old'] = $old;
+            redirect('/salons/ajouter#doublons');
+        }
+        try {
+            SalonProposal::create($old, Auth::user());
+            unset($_SESSION['_old']);
+            Analytics::action('salon_proposal');
+            flash('salon_proposed', true);
+            redirect('/salons/ajouter');
+        } catch (\Throwable $e) {
+            $_SESSION['_old'] = $old;
+            flash('error', user_error_message($e));
+            redirect('/salons/ajouter');
+        }
     }
 
     /** @return list<array<string, mixed>> */

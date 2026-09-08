@@ -1,5 +1,6 @@
 <?php
 $s = $salon ?? [];
+$upcoming = $upcoming ?? [];
 $website = trim((string) ($s['website'] ?? ''));
 $fields = [
     'Lieu' => trim((string) ($s['venue'] ?? '')),
@@ -29,24 +30,54 @@ $fields = [
     <?php endif; ?>
   </section>
 
-  <section class="mk-block co-salon-body">
-    <?php if (trim((string) ($s['description'] ?? '')) !== ''): ?>
-      <p><?= e((string) $s['description']) ?></p>
-    <?php endif; ?>
-    <dl class="co-salon-meta">
-      <?php foreach ($fields as $label => $value): ?>
-        <?php if ($value === '') {
-            continue;
-        } ?>
-        <div>
-          <dt><?= e($label) ?></dt>
-          <dd><?= e($value) ?></dd>
+  <section class="mk-block co-salon-layout">
+    <div class="co-salon-body">
+      <?php if (trim((string) ($s['description'] ?? '')) !== ''): ?>
+        <p><?= e((string) $s['description']) ?></p>
+      <?php endif; ?>
+      <dl class="co-salon-meta">
+        <?php foreach ($fields as $label => $value): ?>
+          <?php if ($value === '') {
+              continue;
+          } ?>
+          <div>
+            <dt><?= e($label) ?></dt>
+            <dd><?= e($value) ?></dd>
+          </div>
+        <?php endforeach; ?>
+      </dl>
+      <?php if (trim((string) ($s['notes'] ?? '')) !== '' && (string) $s['notes'] !== '-'): ?>
+        <p class="co-salon-notes"><?= e((string) $s['notes']) ?></p>
+      <?php endif; ?>
+      <p><a href="<?= e(url('/salons')) ?>">← Tous les salons</a></p>
+    </div>
+
+    <aside class="me-side co-salon-side">
+      <?php if ($upcoming !== []): ?>
+        <div class="side-card">
+          <div class="side-kicker">À venir</div>
+          <div class="co-salon-side-list">
+            <?php foreach ($upcoming as $event): ?>
+              <a class="co-event co-event-compact" href="<?= e(url((string) ($event['href'] ?? '/salons'))) ?>">
+                <time class="co-event-date" datetime="<?= e((string) ($event['iso'] ?? '')) ?>">
+                  <strong><?= e((string) ($event['day'] ?? '')) ?></strong>
+                  <span><?= e((string) ($event['month'] ?? '')) ?></span>
+                </time>
+                <div class="co-event-main">
+                  <h3><?= e((string) ($event['name'] ?? '')) ?></h3>
+                  <p><?= e((string) ($event['place'] ?? '')) ?></p>
+                </div>
+              </a>
+            <?php endforeach; ?>
+          </div>
+          <a class="co-salon-side-more" href="<?= e(url('/salons')) ?>">Tout l’agenda →</a>
         </div>
-      <?php endforeach; ?>
-    </dl>
-    <?php if (trim((string) ($s['notes'] ?? '')) !== '' && (string) $s['notes'] !== '-'): ?>
-      <p class="co-salon-notes"><?= e((string) $s['notes']) ?></p>
-    <?php endif; ?>
-    <p><a href="<?= e(url('/salons')) ?>">← Tous les salons</a></p>
+      <?php endif; ?>
+      <div class="side-card side-card-warm">
+        <div class="side-kicker">Votre salon</div>
+        <p class="me-side-text">Vous organisez un salon, un festival ou une foire du livre ? Proposez-le : l’équipe le publie après vérification.</p>
+        <a class="btn-navy" href="<?= e(url('/salons/ajouter')) ?>">Ajouter un salon</a>
+      </div>
+    </aside>
   </section>
 </div>

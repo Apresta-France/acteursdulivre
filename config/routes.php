@@ -56,6 +56,8 @@ return static function (Router $router): void {
     $router->post('/missions/{slug}/candidater', [AccountController::class, 'applicationCreate']);
     $router->get('/communaute', [PageController::class, 'communaute']);
     $router->get('/salons', [PageController::class, 'salons']);
+    $router->get('/salons/ajouter', [PageController::class, 'salonAddForm']);
+    $router->post('/salons/ajouter', [PageController::class, 'salonAdd']);
     $router->get('/salons/{slug}', [PageController::class, 'salon']);
     $router->get('/forum', [ForumController::class, 'index']);
     $router->get('/forum/nouveau', [ForumController::class, 'createForm']);
@@ -232,6 +234,8 @@ return static function (Router $router): void {
     $router->post('/admin/maisons-edition/{id}', [AdminController::class, 'maisonSave']);
     $router->post('/admin/maisons-edition/{id}/proprietaire', [AdminController::class, 'maisonOwner']);
     $router->post('/admin/maisons-edition/{id}/supprimer', [AdminController::class, 'maisonDelete']);
+    $router->get('/admin/salons', [AdminController::class, 'salonsAdmin']);
+    $router->post('/admin/salons/{id}', [AdminController::class, 'salonDecide']);
     $router->get('/admin/finances', [AdminController::class, 'finances']);
     $router->post('/admin/finances/factures/{id}', [AdminController::class, 'invoiceSave']);
     $router->get('/admin/finances/{id}', [AdminController::class, 'commande']);
