@@ -85,6 +85,29 @@ final class Sitemap
         }
 
         foreach (self::rows(
+            'SELECT country_slug AS slug, MAX(COALESCE(updated_at, created_at)) AS lastmod
+             FROM publishers WHERE status = "published" AND country_slug != ""
+             GROUP BY country_slug'
+        ) as $row) {
+            self::push($urls, $seen, '/maisons-edition/pays/' . $row['slug'], $row['lastmod'] ?? null, '0.7');
+        }
+
+        foreach (self::rows(
+            'SELECT country_slug, city_slug, MAX(COALESCE(updated_at, created_at)) AS lastmod
+             FROM publishers WHERE status = "published" AND country_slug != "" AND city_slug != ""
+             GROUP BY country_slug, city_slug'
+        ) as $row) {
+            self::push($urls, $seen, '/maisons-edition/pays/' . $row['country_slug'] . '/' . $row['city_slug'], $row['lastmod'] ?? null, '0.5');
+        }
+
+        foreach (self::rows(
+            'SELECT slug, COALESCE(updated_at, created_at) AS lastmod
+             FROM publishers WHERE status = "published" AND slug != ""'
+        ) as $row) {
+            self::push($urls, $seen, '/maisons-edition/' . $row['slug'], $row['lastmod'] ?? null, '0.6');
+        }
+
+        foreach (self::rows(
             'SELECT m.slug, m.created_at AS lastmod
              FROM missions m
              JOIN users u ON u.id = m.user_id
@@ -166,6 +189,8 @@ final class Sitemap
             ['path' => '/prestations', 'priority' => '0.8'],
             ['path' => '/prestataires', 'priority' => '0.8'],
             ['path' => '/auteurs', 'priority' => '0.7'],
+            ['path' => '/maisons-edition', 'priority' => '0.8'],
+            ['path' => '/maisons-edition/pays', 'priority' => '0.6'],
             ['path' => '/missions', 'priority' => '0.8'],
             ['path' => '/journal', 'priority' => '0.8'],
             ['path' => '/forum', 'priority' => '0.8'],

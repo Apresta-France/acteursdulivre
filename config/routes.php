@@ -9,6 +9,7 @@ use Adl\Controllers\CronController;
 use Adl\Controllers\ForumController;
 use Adl\Controllers\InstallController;
 use Adl\Controllers\PageController;
+use Adl\Controllers\PublisherController;
 use Adl\Core\Router;
 
 return static function (Router $router): void {
@@ -39,6 +40,14 @@ return static function (Router $router): void {
     $router->get('/prestataires/{slug}', [PageController::class, 'profil']);
     $router->get('/auteurs', [PageController::class, 'auteursIndex']);
     $router->get('/auteurs/{slug}', [PageController::class, 'auteur']);
+    $router->get('/maisons-edition', [PublisherController::class, 'index']);
+    $router->get('/maisons-edition/pays', [PublisherController::class, 'countries']);
+    $router->get('/maisons-edition/pays/{country}', [PublisherController::class, 'country']);
+    $router->get('/maisons-edition/pays/{country}/{city}', [PublisherController::class, 'city']);
+    $router->get('/maisons-edition/{slug}', [PublisherController::class, 'show']);
+    $router->post('/maisons-edition/{slug}/contact', [PublisherController::class, 'contact']);
+    $router->get('/maisons-edition/{slug}/revendiquer', [PublisherController::class, 'claimForm']);
+    $router->post('/maisons-edition/{slug}/revendiquer', [PublisherController::class, 'claim']);
     $router->get('/missions', [PageController::class, 'missions']);
     $router->get('/missions/{slug}', [PageController::class, 'mission']);
     $router->get('/missions/{slug}/fichier', [PageController::class, 'missionFile']);
@@ -174,6 +183,8 @@ return static function (Router $router): void {
     $router->post('/espace/auteur/oeuvres/{id}', [AccountController::class, 'auteurOeuvreEditSave']);
     $router->post('/espace/auteur/oeuvres/{id}/supprimer', [AccountController::class, 'auteurOeuvreDelete']);
     $router->post('/espace/auteur/oeuvres/{id}/deplacer', [AccountController::class, 'auteurOeuvreMove']);
+    $router->get('/espace/maison-edition', [PublisherController::class, 'espace']);
+    $router->post('/espace/maison-edition', [PublisherController::class, 'espaceSave']);
     $router->get('/espace/parametres', [AccountController::class, 'parametres']);
     $router->post('/espace/parametres', [AccountController::class, 'parametresSave']);
     $router->post('/espace/parametres/mot-de-passe', [AccountController::class, 'parametresPassword']);
@@ -208,6 +219,14 @@ return static function (Router $router): void {
     $router->post('/admin/utilisateurs/{id}/impersonner', [AdminController::class, 'utilisateurImpersonate']);
     $router->get('/admin/prestations', [AdminController::class, 'prestations']);
     $router->get('/admin/missions', [AdminController::class, 'missions']);
+    $router->get('/admin/maisons-edition', [AdminController::class, 'maisons']);
+    $router->get('/admin/maisons-edition/nouvelle', [AdminController::class, 'maisonEdit']);
+    $router->post('/admin/maisons-edition/nouvelle', [AdminController::class, 'maisonSave']);
+    $router->post('/admin/maisons-edition/revendications/{id}', [AdminController::class, 'maisonClaimDecide']);
+    $router->get('/admin/maisons-edition/{id}', [AdminController::class, 'maisonEdit']);
+    $router->post('/admin/maisons-edition/{id}', [AdminController::class, 'maisonSave']);
+    $router->post('/admin/maisons-edition/{id}/proprietaire', [AdminController::class, 'maisonOwner']);
+    $router->post('/admin/maisons-edition/{id}/supprimer', [AdminController::class, 'maisonDelete']);
     $router->get('/admin/finances', [AdminController::class, 'finances']);
     $router->post('/admin/finances/factures/{id}', [AdminController::class, 'invoiceSave']);
     $router->get('/admin/finances/{id}', [AdminController::class, 'commande']);

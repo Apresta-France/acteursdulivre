@@ -36,6 +36,8 @@ use Adl\Models\NewsletterLetter;
 use Adl\Models\Order;
 use Adl\Models\OrderFile;
 use Adl\Models\Profile;
+use Adl\Models\Publisher;
+use Adl\Models\PublisherClaim;
 use Adl\Models\Report;
 use Adl\Models\Recommendation;
 use Adl\Models\Review;
@@ -349,6 +351,195 @@ final class AdminController
             flash('error', $e->getMessage());
         }
         redirect($request->string('back') !== '' ? $request->string('back') : '/admin/moderation');
+    }
+
+    // ------------------------------------------------------------------
+    // Maisons d'édition : revendications + annuaire
+    // ------------------------------------------------------------------
+
+    public function maisons(Request $request): void
+    {
+        $filtre = $this->filtre($request, ['pending', 'approved', 'refused', 'tous'], 'pending');
+        $q = $request->string('q');
+        $onglet = $request->string('onglet') === 'fiches' ? 'fiches' : 'revendications';
+        if ($q !== '' || $request->string('liste') !== '') {
+            $onglet = 'fiches';
+        }
+        $listeFiltre = $request->string('liste');
+        $liste = in_array($listeFiltre, ['claimed', 'hidden', 'nocontact'], true) ? $listeFiltre : 'toutes';
+        try {
+            $claims = PublisherClaim::forAdmin($filtre);
+            $pendingCount = PublisherClaim::countPending();
+            $fiches = Publisher::adminList($q, $liste, max(1, $request->int('page', 1) ?? 1));
+            $stats = [
+                'total' => Publisher::countAll(),
+                'published' => Publisher::countPublished(),
+                'claimed' => Publisher::countClaimed(),
+                'contacts' => Publisher::contactStats(),
+            ];
+        } catch (Throwable) {
+            $claims = [];
+            $pendingCount = 0;
+            $fiches = ['items' => [], 'total' => 0, 'pages' => 1, 'page' => 1];
+            $stats = ['total' => 0, 'published' => 0, 'claimed' => 0, 'contacts' => ['total' => 0, 'users' => 0, 'week' => 0]];
+        }
+        $listLinks = [];
+        foreach (['toutes' => 'Toutes', 'claimed' => 'Revendiquées', 'hidden' => 'Masquées', 'nocontact' => 'Sans coordonnées'] as $id => $label) {
+            $params = ['onglet' => 'fiches'];
+            if ($q !== '') {
+                $params['q'] = $q;
+            }
+            if ($id !== 'toutes') {
+                $params['liste'] = $id;
+            }
+            $listLinks[] = ['id' => $id, 'label' => $label, 'href' => '/admin/maisons-edition?' . http_build_query($params), 'on' => $id === $liste];
+        }
+        $this->page('maisons', 'admin/maisons', [
+            'onglet' => $onglet,
+            'claims' => $claims,
+            'pendingCount' => $pendingCount,
+            'claimFilters' => $this->filterLinks('/admin/maisons-edition', [
+                'pending' => 'En attente',
+                'approved' => 'Validées',
+                'refused' => 'Refusées',
+                'tous' => 'Toutes',
+            ], $filtre),
+            'fiches' => $fiches,
+            'listFilters' => $listLinks,
+            'liste' => $liste,
+            'q' => $q,
+            'stats' => $stats,
+        ]);
+    }
+
+    public function maisonClaimDecide(Request $request, string $id): void
+    {
+        $admin = Auth::requireAdmin();
+        try {
+            $claim = PublisherClaim::decide((int) $id, $request->string('status'), $request->string('note'), (int) $admin['id']);
+            flash('saved', $request->string('status') === PublisherClaim::STATUS_APPROVED
+                ? 'Fiche « ' . $claim['publisher_name'] . ' » attribuée à ' . $claim['who'] . '. Le demandeur a été prévenu.'
+                : 'Demande refusée. Le motif a été transmis au demandeur.');
+        } catch (Throwable $e) {
+            flash('error', $e->getMessage());
+        }
+        redirect($request->string('back') !== '' ? $request->string('back') : '/admin/maisons-edition');
+    }
+
+    public function maisonEdit(Request $request, string $id = 'nouvelle'): void
+    {
+        $publisher = null;
+        $claims = [];
+        if ($id !== 'nouvelle') {
+            $publisher = Publisher::find((int) $id);
+            if (!$publisher) {
+                not_found('Maison introuvable.');
+            }
+            try {
+                $claims = array_values(array_filter(
+                    PublisherClaim::forAdmin('tous'),
+                    static fn (array $c): bool => (int) $c['publisher_id'] === (int) $publisher['id']
+                ));
+            } catch (Throwable) {
+                $claims = [];
+            }
+        }
+        $owner = $publisher && !empty($publisher['owner_user_id']) ? User::find((int) $publisher['owner_user_id']) : null;
+        $this->page('maisons', 'admin/maison', [
+            'publisher' => $publisher,
+            'owner' => $owner,
+            'claims' => $claims,
+            'sizes' => Publisher::SIZES,
+            'typologies' => Publisher::TYPOLOGIES,
+            'countries' => Publisher::countries(),
+            'isNew' => $publisher === null,
+        ]);
+    }
+
+    public function maisonSave(Request $request, string $id = 'nouvelle'): void
+    {
+        Auth::requireAdmin();
+        $publisher = $id !== 'nouvelle' ? Publisher::find((int) $id) : null;
+        if ($id !== 'nouvelle' && !$publisher) {
+            not_found('Maison introuvable.');
+        }
+        try {
+            $data = [
+                'name' => $request->string('name'),
+                'country' => $request->string('country'),
+                'region' => $request->string('region'),
+                'city' => $request->string('city'),
+                'founded' => $request->string('founded'),
+                'parent_group' => $request->string('parent_group'),
+                'size_key' => $request->string('size_key'),
+                'typology_key' => $request->string('typology_key'),
+                'genres' => $request->string('genres'),
+                'description' => $request->string('description'),
+                'website' => $request->string('website'),
+                'contact_email' => $request->string('contact_email'),
+                'contact_address' => $request->string('contact_address'),
+                'contact_phone' => $request->string('contact_phone'),
+                'submissions_note' => $request->string('submissions_note'),
+                'segments' => $request->string('segments'),
+                'status' => $request->bool('published') ? 'published' : 'hidden',
+            ];
+            $logo = store_upload($request->file('logo'), 'publishers', ['jpg', 'jpeg', 'png', 'webp'], 2 * 1024 * 1024);
+            if ($logo !== null) {
+                if (!empty($publisher['logo_path'])) {
+                    delete_upload((string) $publisher['logo_path']);
+                }
+                $data['logo_path'] = $logo;
+            } elseif ($request->bool('remove_logo') && !empty($publisher['logo_path'])) {
+                delete_upload((string) $publisher['logo_path']);
+                $data['logo_path'] = null;
+            }
+            $savedId = Publisher::save($publisher ? (int) $publisher['id'] : 0, $data, true);
+            flash('saved', $publisher ? 'Fiche enregistrée.' : 'Maison créée.');
+            redirect('/admin/maisons-edition/' . $savedId);
+        } catch (Throwable $e) {
+            flash('error', $e->getMessage());
+            redirect($publisher ? '/admin/maisons-edition/' . (int) $publisher['id'] : '/admin/maisons-edition/nouvelle');
+        }
+    }
+
+    public function maisonOwner(Request $request, string $id): void
+    {
+        Auth::requireAdmin();
+        $publisher = Publisher::find((int) $id);
+        if (!$publisher) {
+            not_found('Maison introuvable.');
+        }
+        try {
+            if ($request->string('action') === 'detach') {
+                Publisher::assignOwner((int) $publisher['id'], null);
+                flash('saved', 'La fiche n\'est plus attribuée : elle redevient revendicable.');
+            } else {
+                $email = strtolower(trim($request->string('owner_email')));
+                $user = $email !== '' ? User::findByEmail($email) : null;
+                if (!$user) {
+                    throw new \RuntimeException('Aucun compte ne correspond à cette adresse e-mail.');
+                }
+                Publisher::assignOwner((int) $publisher['id'], (int) $user['id']);
+                flash('saved', 'Fiche attribuée à ' . User::displayName($user) . '.');
+            }
+        } catch (Throwable $e) {
+            flash('error', $e->getMessage());
+        }
+        redirect('/admin/maisons-edition/' . (int) $publisher['id']);
+    }
+
+    public function maisonDelete(Request $request, string $id): void
+    {
+        Auth::requireAdmin();
+        $publisher = Publisher::find((int) $id);
+        if ($publisher) {
+            if (!empty($publisher['logo_path'])) {
+                delete_upload((string) $publisher['logo_path']);
+            }
+            Publisher::delete((int) $publisher['id']);
+            flash('saved', 'Fiche supprimée.');
+        }
+        redirect('/admin/maisons-edition?onglet=fiches');
     }
 
     public function litiges(Request $request): void

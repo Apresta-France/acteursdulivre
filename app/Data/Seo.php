@@ -20,7 +20,7 @@ final class Seo
         'candidatures', 'mesprestations', 'creer', 'messagerie', 'notifications',
         'favoris', 'avis', 'vitrine', 'parametres', 'facturation', 'statistiques', 'bienvenue',
         'recommandation', 'auteur', 'auteur-oeuvres', 'auteur-oeuvre', 'tribune', 'tribune-edit',
-        'connexion', 'inscription-sso',
+        'connexion', 'inscription-sso', 'espace-maison', 'maison-edition-revendiquer',
     ];
 
     /** @return array<string, array{title: string, description: string, path: string}> */
@@ -101,6 +101,11 @@ final class Seo
                 'title' => 'Les auteurs et autrices',
                 'description' => 'Fiches auteurs des membres d\'acteursdulivre.fr : bibliographie, biographie, presse, dédicaces et liens d\'achat.',
                 'path' => '/auteurs',
+            ],
+            'maisons-edition' => [
+                'title' => 'Annuaire des maisons d\'édition en France et en Europe',
+                'description' => 'Plus de 600 maisons d\'édition en activité : grands groupes, indépendants, micro-structures, par pays, ville et genre éditorial. Coordonnées et contact réservés aux membres.',
+                'path' => '/maisons-edition',
             ],
             'inscription' => [
                 'title' => 'Créer un compte professionnel',
@@ -1078,6 +1083,7 @@ final class Seo
             'prestations' => 'Prestations',
             'prestataires' => 'Prestataires',
             'auteurs' => 'Auteurs',
+            'maisons-edition' => 'Maisons d\'édition',
             'resultats' => 'Annuaire',
             'inscription' => 'Inscription',
             'besoin' => 'Par besoin',
@@ -1159,6 +1165,7 @@ acteursdulivre.fr met en relation des porteurs de projet (auteurs, éditeurs, co
 - [Prestations]({$home}prestations) : offres à prix affiché
 - [Appels d'offres]({$home}missions) : recherches publiées par les porteurs de projet
 - [Métiers]({$home}metiers/correction) : pages métiers, exemple correction
+- [Maisons d'édition]({$home}maisons-edition) : annuaire de plus de 600 éditeurs en France et en Europe, par pays ([exemple : France]({$home}maisons-edition/pays/france)), ville et genre ; les coordonnées sont réservées aux membres connectés et les maisons peuvent revendiquer leur fiche
 - [Par besoin]({$home}besoin) : pages d'entrée par besoin (correction, couverture, impression…), utilisées aussi pour les campagnes
 - [Journal]({$home}journal) : articles sur les métiers, tarifs, contrats et diffusion
 - [Autoédition : le guide complet]({$home}journal/autoedition-guide-complet) : publier son livre en France (budget, ISBN, dépôt légal, fabrication, librairie)

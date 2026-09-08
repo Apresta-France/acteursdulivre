@@ -68,6 +68,8 @@ final class Prototype
             'vitrine' => 'isVitrine', 'parametres' => 'isParametres', 'facturation' => 'isFacturation',
             'bienvenue' => 'isBienvenue', 'statistiques' => 'isStatistiques',
             'espace-forum' => 'isEspaceForum',
+            'maisons-edition' => 'isMaisons', 'maisons-edition-pays' => 'isMaisons', 'maison-edition' => 'isMaison',
+            'maison-edition-revendiquer' => 'isMaison', 'espace-maison' => 'isEspaceMaison',
         ];
         if (isset($map[$screen])) {
             $data[$map[$screen]] = true;
@@ -132,6 +134,7 @@ final class Prototype
             ['title' => 'La plateforme', 'links' => [
                 ['label' => 'Comment ça marche', 'href' => '/comment-ca-marche'],
                 ['label' => 'Les auteurs', 'href' => '/auteurs'],
+                ['label' => 'Maisons d\'édition', 'href' => '/maisons-edition'],
                 ['label' => 'À propos', 'href' => '/a-propos'],
                 ['label' => 'Le forum', 'href' => '/forum'],
                 ['label' => 'Le journal', 'href' => '/journal'],
@@ -1519,7 +1522,7 @@ final class Prototype
             'dashboard', 'publier', 'commande', 'suivi', 'suivi-detail', 'suivi-depot', 'suivi-depot-list', 'commandes', 'mesmissions',
             'candidatures', 'mesprestations', 'creer', 'messagerie', 'notifications',
             'favoris', 'avis', 'vitrine', 'parametres', 'facturation', 'statistiques', 'espace-forum',
-            'auteur', 'auteur-oeuvres', 'auteur-oeuvre', 'tribune', 'tribune-edit',
+            'auteur', 'auteur-oeuvres', 'auteur-oeuvre', 'tribune', 'tribune-edit', 'espace-maison',
         ], true);
     }
 
@@ -1639,6 +1642,7 @@ final class Prototype
             'title' => 'Compte',
             'items' => [
                 $item('Fiche auteur', '/espace/auteur', 'auteur', 'book'),
+                $item('Maison d\'édition', '/espace/maison-edition', 'espace-maison', 'store'),
                 $item('Tribune', '/espace/tribune', 'tribune', 'file-plus'),
                 $item('Messages', '/espace/messages', 'messagerie', 'mail'),
                 $item('Alertes', '/espace/notifications', 'notifications', 'bell'),
