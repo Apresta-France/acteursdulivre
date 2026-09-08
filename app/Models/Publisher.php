@@ -35,7 +35,12 @@ final class Publisher
     ];
 
     /** Slugs réservés sous /maisons-edition/ qui ne peuvent pas désigner une maison. */
-    private const RESERVED_SLUGS = ['pays', 'genre', 'taille', 'recherche', 'nouvelle', 'contact', 'revendiquer'];
+    private const RESERVED_SLUGS = ['pays', 'genre', 'taille', 'recherche', 'nouvelle', 'contact', 'revendiquer', 'ajouter'];
+
+    public const STATUS_PUBLISHED = 'published';
+    public const STATUS_HIDDEN = 'hidden';
+    /** Fiche proposée par un membre, en attente de validation par l'équipe. */
+    public const STATUS_PENDING = 'pending';
 
     // ------------------------------------------------------------------
     // Normalisation
@@ -385,7 +390,7 @@ final class Publisher
 
     public static function countClaimed(): int
     {
-        return (int) (Database::fetch('SELECT COUNT(*) AS n FROM publishers WHERE owner_user_id IS NOT NULL')['n'] ?? 0);
+        return (int) (Database::fetch('SELECT COUNT(*) AS n FROM publishers WHERE owner_user_id IS NOT NULL AND claimed_at IS NOT NULL')['n'] ?? 0);
     }
 
     public static function countAll(): int
@@ -798,7 +803,7 @@ final class Publisher
         }
         if ($admin) {
             $status = (string) ($data['status'] ?? 'published');
-            $fields['status'] = in_array($status, ['published', 'hidden'], true) ? $status : 'published';
+            $fields['status'] = in_array($status, [self::STATUS_PUBLISHED, self::STATUS_HIDDEN, self::STATUS_PENDING], true) ? $status : 'published';
             if (array_key_exists('segments', $data)) {
                 $fields['segments'] = mb_substr(trim((string) $data['segments']), 0, 255);
             }
@@ -828,10 +833,84 @@ final class Publisher
 
     public static function setStatus(int $id, string $status): void
     {
-        if (!in_array($status, ['published', 'hidden'], true)) {
+        if (!in_array($status, [self::STATUS_PUBLISHED, self::STATUS_HIDDEN, self::STATUS_PENDING], true)) {
             throw new RuntimeException('Statut inconnu.');
         }
         Database::query('UPDATE publishers SET status = ?, updated_at = NOW() WHERE id = ?', [$status, $id]);
+    }
+
+    /**
+     * Fiche proposée par un membre : créée masquée (« pending »), rattachée au compte pour qu'il
+     * puisse la compléter, publiée seulement après validation par l'équipe.
+     *
+     * @param array<string, mixed> $data
+     */
+    public static function createPending(array $data, int $userId): int
+    {
+        if (trim((string) ($data['country'] ?? '')) === '') {
+            throw new RuntimeException('Indiquez le pays du siège de la maison.');
+        }
+        unset($data['segments']);
+        $id = self::save(0, array_merge($data, ['status' => self::STATUS_PENDING]), true);
+        Database::query(
+            'UPDATE publishers SET source = "member", owner_user_id = ?, claimed_at = NULL WHERE id = ?',
+            [$userId, $id]
+        );
+        return $id;
+    }
+
+    /**
+     * Maisons déjà recensées dont le nom ressemble à celui proposé (détection de doublons).
+     *
+     * @return list<array<string, mixed>>
+     */
+    public static function similar(string $name, string $country = '', int $excludeId = 0, int $limit = 5): array
+    {
+        $key = self::nameKey($name);
+        if ($key === '') {
+            return [];
+        }
+        $words = array_values(array_filter(explode(' ', $key), static fn (string $w): bool => mb_strlen($w) >= 3));
+        $needle = $words[0] ?? $key;
+        $rows = Database::fetchAll(
+            'SELECT * FROM publishers WHERE status != "hidden" AND id != ? AND name_search LIKE ? ORDER BY (status = "published") DESC, name ASC LIMIT 60',
+            [$excludeId, '%' . $needle . '%']
+        );
+        $countrySlug = $country !== '' ? slugify(self::normalizeCountry($country)['country']) : '';
+        $scored = [];
+        foreach ($rows as $row) {
+            $otherKey = self::nameKey((string) $row['name']);
+            if ($otherKey === '') {
+                continue;
+            }
+            $score = 0;
+            if ($otherKey === $key) {
+                $score = 100;
+            } elseif (str_contains($otherKey, $key) || str_contains($key, $otherKey)) {
+                $score = 80;
+            } elseif (levenshtein(substr($key, 0, 60), substr($otherKey, 0, 60)) <= 2) {
+                $score = 70;
+            } elseif ($words !== [] && count(array_intersect($words, explode(' ', $otherKey))) >= max(1, (int) ceil(count($words) * 0.6))) {
+                $score = 50;
+            }
+            if ($score === 0) {
+                continue;
+            }
+            if ($countrySlug !== '' && (string) $row['country_slug'] === $countrySlug) {
+                $score += 10;
+            }
+            $scored[] = [$score, self::hydrate($row)];
+        }
+        usort($scored, static fn (array $a, array $b): int => $b[0] <=> $a[0]);
+        return array_map(static fn (array $s): array => $s[1], array_slice($scored, 0, $limit));
+    }
+
+    /** Nom normalisé sans les mots génériques (« éditions », « les », « publishing »…). */
+    private static function nameKey(string $name): string
+    {
+        $key = (string) preg_replace('/[^a-z0-9]+/', ' ', search_norm($name));
+        $key = (string) preg_replace('/\b(les|le|la|l|editions?|edition|ed|editeurs?|editeur|publishing|publishers?|verlag|editorial|editora|editore|edizioni|ediciones|uitgeverij|press|presses|books|maison|d|de|du|des|et|and|the|of)\b/u', ' ', $key);
+        return trim((string) preg_replace('/\s+/', ' ', $key));
     }
 
     public static function assignOwner(int $id, ?int $userId): void

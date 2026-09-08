@@ -193,7 +193,7 @@ if ((int) $pager['pages'] > 1) {
       <?php if ($publishers === []): ?>
         <div class="search-empty" style="padding: 26px;">
           <strong>Aucune maison ne correspond à ces critères.</strong>
-          <span>Essayez un autre mot-clé, retirez un filtre, ou <a href="<?= e(url('/contact')) ?>">suggérez-nous une maison manquante</a>.</span>
+          <span>Essayez un autre mot-clé, retirez un filtre, ou <a href="<?= e(url('/maisons-edition/ajouter')) ?>">ajoutez votre maison à l'annuaire</a>.</span>
         </div>
       <?php else: ?>
         <div class="me-grid">
@@ -237,6 +237,17 @@ if ((int) $pager['pages'] > 1) {
         require ADL_ROOT . '/app/Views/partials/search-pager.php';
       ?>
 
+      <?php if ($publishers !== [] || $scope !== 'all'): ?>
+        <aside class="me-add-cta">
+          <span class="dash-ico"><?= icon('store', 18) ?></span>
+          <div>
+            <strong>Vous représentez une maison d'édition absente de l'annuaire ?</strong>
+            <span>Ajoutez-la en quelques minutes : la fiche est rattachée à votre compte et publiée après vérification par l'équipe.</span>
+          </div>
+          <a class="btn-navy" href="<?= e(url('/maisons-edition/ajouter')) ?>">Ajouter ma maison</a>
+        </aside>
+      <?php endif; ?>
+
       <?php if ($scope === 'country' && $cities !== [] && (int) $pager['page'] === 1): ?>
         <section class="me-geo">
           <h2>Villes <?= e(\Adl\Controllers\PublisherController::countryPhrase((string) ($country['name'] ?? ''))) ?></h2>
@@ -252,7 +263,7 @@ if ((int) $pager['pages'] > 1) {
         <section class="me-about">
           <h2>Un annuaire vivant des éditeurs européens</h2>
           <p>Cet annuaire recense les maisons d'édition en activité en France et dans les principaux pays d'Europe : grands groupes et leurs marques, éditeurs indépendants, micro-structures, presses universitaires, maisons régionales. Chaque fiche présente la ligne éditoriale, les genres publiés, la taille de la structure, la ville du siège et l'année de fondation quand elle est connue.</p>
-          <p>Les coordonnées (site, e-mail, adresse) sont réservées aux membres connectés, pour protéger les maisons des sollicitations automatisées. Les éditeurs peuvent revendiquer leur fiche pour la tenir à jour et échanger avec les auteurs, correcteurs, illustrateurs et traducteurs de la plateforme.</p>
+          <p>Les coordonnées (site, e-mail, adresse) sont réservées aux membres connectés, pour protéger les maisons des sollicitations automatisées. Les éditeurs peuvent revendiquer leur fiche, ou <a href="<?= e(url('/maisons-edition/ajouter')) ?>">ajouter leur maison</a> si elle manque, pour la tenir à jour et échanger avec les auteurs, correcteurs, illustrateurs et traducteurs de la plateforme.</p>
         </section>
       <?php endif; ?>
     </div>

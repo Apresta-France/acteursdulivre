@@ -44,6 +44,8 @@ return static function (Router $router): void {
     $router->get('/maisons-edition/pays', [PublisherController::class, 'countries']);
     $router->get('/maisons-edition/pays/{country}', [PublisherController::class, 'country']);
     $router->get('/maisons-edition/pays/{country}/{city}', [PublisherController::class, 'city']);
+    $router->get('/maisons-edition/ajouter', [PublisherController::class, 'addForm']);
+    $router->post('/maisons-edition/ajouter', [PublisherController::class, 'add']);
     $router->get('/maisons-edition/{slug}', [PublisherController::class, 'show']);
     $router->post('/maisons-edition/{slug}/contact', [PublisherController::class, 'contact']);
     $router->get('/maisons-edition/{slug}/revendiquer', [PublisherController::class, 'claimForm']);

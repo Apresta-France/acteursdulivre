@@ -245,6 +245,7 @@ final class PublisherController
                 ['robots' => Seo::ROBOTS_NONE]
             ),
         ]);
+        unset($_SESSION['_old']);
     }
 
     public function claim(Request $request, string $slug): void
@@ -274,6 +275,128 @@ final class PublisherController
             flash('error', user_error_message($e));
             $_SESSION['_old'] = $request->all();
             redirect($publisher['href'] . '/revendiquer');
+        }
+    }
+
+    // ------------------------------------------------------------------
+    // Proposer une maison absente de l'annuaire
+    // ------------------------------------------------------------------
+
+    public function addForm(Request $request): void
+    {
+        if (!Auth::user()) {
+            $_SESSION['_intended'] = self::BASE . '/ajouter';
+            flash('error', 'Créez un compte ou connectez-vous pour ajouter votre maison d\'édition à l\'annuaire.');
+            redirect('/connexion');
+        }
+        $user = Auth::requireUser();
+        $owned = null;
+        $pendingCreation = null;
+        try {
+            $owned = Publisher::findForOwner((int) $user['id']);
+            foreach (PublisherClaim::forUser((int) $user['id']) as $c) {
+                if ($c['is_creation'] && $c['status'] === PublisherClaim::STATUS_PENDING) {
+                    $pendingCreation = $c;
+                    break;
+                }
+            }
+        } catch (\Throwable) {
+        }
+
+        // Après un premier envoi, on remontre les homonymes pour éviter un doublon.
+        $similar = [];
+        $oldName = (string) old('name');
+        if ($oldName !== '' && !empty($_SESSION['_old'])) {
+            $similar = $this->safe(static fn (): array => Publisher::similar($oldName, (string) old('country'), 0, 5));
+        }
+
+        View::page('maison-edition-ajouter', [
+            'title' => 'Ajouter ma maison d\'édition',
+            'owned' => $owned,
+            'pendingCreation' => $pendingCreation,
+            'similar' => $similar,
+            'sizes' => Publisher::SIZES,
+            'typologies' => Publisher::TYPOLOGIES,
+            'countries' => $this->safe(static fn (): array => Publisher::countries()),
+            'suggestedEmail' => str_contains((string) $user['email'], '@') ? (string) $user['email'] : '',
+            'error' => flash('error'),
+            'meta' => Seo::build(
+                'Ajouter ma maison d\'édition',
+                'Proposez votre maison d\'édition dans l\'annuaire et gérez sa fiche.',
+                Share::absolute(self::BASE . '/ajouter'),
+                'website',
+                null,
+                ['robots' => Seo::ROBOTS_NONE]
+            ),
+        ]);
+        unset($_SESSION['_old']);
+    }
+
+    public function add(Request $request): void
+    {
+        $user = Auth::requireUser();
+        $back = self::BASE . '/ajouter';
+        $keep = static function () use ($request): void {
+            $all = $request->all();
+            unset($all['_token'], $all['logo']);
+            $_SESSION['_old'] = $all;
+        };
+
+        if (!$request->bool('attest')) {
+            flash('error', 'Merci de confirmer que vous êtes habilité à représenter cette maison.');
+            $keep();
+            redirect($back);
+        }
+
+        $name = $request->string('name');
+        $country = $request->string('country');
+        if (!$request->bool('not_duplicate')) {
+            $similar = $this->safe(static fn (): array => Publisher::similar($name, $country, 0, 5));
+            if ($similar !== []) {
+                flash('error', 'Des maisons au nom proche existent déjà dans l\'annuaire. Vérifiez qu\'il ne s\'agit pas de la vôtre : dans ce cas, revendiquez sa fiche plutôt que d\'en créer une nouvelle.');
+                $keep();
+                redirect($back . '#doublons');
+            }
+        }
+
+        try {
+            $data = [
+                'name' => $name,
+                'country' => $country,
+                'city' => $request->string('city'),
+                'founded' => $request->string('founded'),
+                'parent_group' => $request->string('parent_group'),
+                'size_key' => $request->string('size_key'),
+                'typology_key' => $request->string('typology_key'),
+                'genres' => $request->string('genres'),
+                'description' => $request->string('description'),
+                'website' => $request->string('website'),
+                'contact_email' => $request->string('contact_email'),
+                'contact_address' => $request->string('contact_address'),
+                'contact_phone' => $request->string('contact_phone'),
+                'submissions_note' => $request->string('submissions_note'),
+            ];
+            if (mb_strlen(trim((string) $data['description'])) < 40) {
+                throw new \RuntimeException('Présentez la maison en quelques phrases (40 caractères minimum) : c\'est ce que verront les visiteurs.');
+            }
+            $logo = store_upload($request->file('logo'), 'publishers', ['jpg', 'jpeg', 'png', 'webp'], 2 * 1024 * 1024);
+            if ($logo !== null) {
+                $data['logo_path'] = $logo;
+            }
+            PublisherClaim::createForNew($user, $data, [
+                'role_title' => $request->string('role_title'),
+                'company_email' => $request->string('company_email'),
+                'phone' => $request->string('phone'),
+                'message' => $request->string('message'),
+            ]);
+            Analytics::action('maison_creation');
+            unset($_SESSION['_old']);
+            flash('saved', 'Merci ! Votre maison est enregistrée et sera publiée dès validation par l\'équipe, en général sous deux jours ouvrés. Vous pouvez déjà compléter sa fiche.');
+            redirect('/espace/maison-edition');
+        } catch (\Throwable $e) {
+            flash('error', user_error_message($e));
+            $keep();
+            redirect($back);
         }
     }
 

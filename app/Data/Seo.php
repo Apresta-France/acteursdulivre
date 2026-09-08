@@ -20,7 +20,7 @@ final class Seo
         'candidatures', 'mesprestations', 'creer', 'messagerie', 'notifications',
         'favoris', 'avis', 'vitrine', 'parametres', 'facturation', 'statistiques', 'bienvenue',
         'recommandation', 'auteur', 'auteur-oeuvres', 'auteur-oeuvre', 'tribune', 'tribune-edit',
-        'connexion', 'inscription-sso', 'espace-maison', 'maison-edition-revendiquer',
+        'connexion', 'inscription-sso', 'espace-maison', 'maison-edition-revendiquer', 'maison-edition-ajouter',
     ];
 
     /** @return array<string, array{title: string, description: string, path: string}> */

@@ -69,7 +69,7 @@ final class Prototype
             'bienvenue' => 'isBienvenue', 'statistiques' => 'isStatistiques',
             'espace-forum' => 'isEspaceForum',
             'maisons-edition' => 'isMaisons', 'maisons-edition-pays' => 'isMaisons', 'maison-edition' => 'isMaison',
-            'maison-edition-revendiquer' => 'isMaison', 'espace-maison' => 'isEspaceMaison',
+            'maison-edition-revendiquer' => 'isMaison', 'maison-edition-ajouter' => 'isMaisons', 'espace-maison' => 'isEspaceMaison',
         ];
         if (isset($map[$screen])) {
             $data[$map[$screen]] = true;

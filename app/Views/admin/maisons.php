@@ -59,29 +59,57 @@ $pageUrl = static function (int $p) use ($q, $liste): string {
     <div class="admin-stack">
       <?php foreach ($claims as $c):
           $pending = ($c['status'] ?? '') === 'pending';
+          $creation = !empty($c['is_creation']);
           $tone = $c['status'] === 'approved' ? 'green' : ($c['status'] === 'refused' ? 'orange' : 'navy');
+          $similar = $c['similar'] ?? [];
+          $genres = json_decode((string) ($c['publisher_genres'] ?? '[]'), true);
+          $genres = is_array($genres) ? $genres : [];
           ?>
-        <article class="admin-card admin-dossier me-claim-card">
+        <article class="admin-card admin-dossier me-claim-card<?= $creation ? ' is-creation' : '' ?>">
           <div class="admin-dossier-who">
             <?= avatar_html(['avatar_url' => $c['avatar_url'] ?? '', 'first_name' => $c['first_name'] ?? '', 'last_name' => $c['last_name'] ?? ''], 40) ?>
             <div>
-              <strong><?= e((string) $c['who']) ?> <span class="me-claim-arrow">→</span> <a href="<?= e(url('/admin/maisons-edition/' . (int) $c['publisher_id'])) ?>"><?= e((string) $c['publisher_name']) ?></a></strong>
+              <strong><?= e((string) $c['who']) ?> <span class="me-claim-arrow"><?= $creation ? 'propose' : '→' ?></span> <a href="<?= e(url('/admin/maisons-edition/' . (int) $c['publisher_id'])) ?>"><?= e((string) $c['publisher_name']) ?></a><?php if ($creation): ?> <span class="admin-pill tone-orange">Nouvelle maison</span><?php endif; ?></strong>
               <span><?= e((string) $c['role_title']) ?> · <?= e((string) $c['company_email']) ?><?= !empty($c['phone']) ? ' · ' . e((string) $c['phone']) : '' ?></span>
               <em>Compte <?= e((string) $c['user_email']) ?> (membre depuis le <?= e(admin_date((string) ($c['user_since'] ?? ''))) ?>) · demande du <?= e((string) $c['when']) ?><?= $c['decided_label'] !== '' ? ' · traitée le ' . e($c['decided_label']) : '' ?></em>
             </div>
             <span class="admin-pill tone-<?= e($tone) ?>"><?= e((string) $c['status_label']) ?></span>
           </div>
 
+          <?php if ($creation): ?>
+            <div class="me-claim-preview">
+              <div>
+                <strong><?= e((string) $c['publisher_name']) ?></strong>
+                <span><?= e(implode(' · ', array_filter([implode(', ', array_filter([(string) ($c['publisher_city'] ?? ''), (string) ($c['publisher_country'] ?? '')])), $genres !== [] ? implode(', ', array_slice(array_map('strval', $genres), 0, 5)) : '']))) ?></span>
+                <?php if (!empty($c['publisher_description'])): ?><p><?= e(mb_substr((string) $c['publisher_description'], 0, 320)) ?><?= mb_strlen((string) $c['publisher_description']) > 320 ? '…' : '' ?></p><?php endif; ?>
+                <?php if (!empty($c['publisher_website']) || !empty($c['publisher_contact_email'])): ?>
+                  <span><?= e(implode(' · ', array_filter([\Adl\Models\Publisher::websiteHost((string) ($c['publisher_website'] ?? '')), (string) ($c['publisher_contact_email'] ?? '')]))) ?></span>
+                <?php endif; ?>
+              </div>
+            </div>
+          <?php endif; ?>
+
           <div class="me-claim-signals">
             <?php if ($c['domain_match']): ?>
               <span class="me-signal is-ok"><?= icon('check-circle', 14) ?> Domaine de l'e-mail cohérent avec le site (<?= e(\Adl\Models\Publisher::websiteHost((string) ($c['publisher_website'] ?? '')) ?: 'contact connu') ?>)</span>
+            <?php elseif ($creation && empty($c['publisher_website'])): ?>
+              <span class="me-signal is-warn"><?= icon('dot', 14) ?> Aucun site web déclaré : recoupez l'existence de la maison avant de publier</span>
             <?php else: ?>
               <span class="me-signal is-warn"><?= icon('dot', 14) ?> Domaine de l'e-mail différent du site connu<?= !empty($c['publisher_website']) ? ' (' . e(\Adl\Models\Publisher::websiteHost((string) $c['publisher_website'])) . ')' : '' ?> : vérification recommandée</span>
+            <?php endif; ?>
+            <?php if ($creation && $pending): ?>
+              <?php if ($similar === []): ?>
+                <span class="me-signal is-ok"><?= icon('check-circle', 14) ?> Aucune maison au nom proche dans l'annuaire</span>
+              <?php else: ?>
+                <span class="me-signal is-warn"><?= icon('dot', 14) ?> Doublon possible :
+                  <?php foreach ($similar as $i => $s): ?><?= $i > 0 ? ', ' : '' ?><a href="<?= e(url('/admin/maisons-edition/' . (int) $s['id'])) ?>"><?= e((string) $s['name']) ?></a><?= $s['location_label'] !== '' ? ' (' . e($s['location_label']) . ')' : '' ?><?php endforeach; ?>
+                </span>
+              <?php endif; ?>
             <?php endif; ?>
             <?php if (!empty($c['already_owned'])): ?>
               <span class="me-signal is-warn"><?= icon('dot', 14) ?> La fiche est déjà attribuée à un autre compte</span>
             <?php endif; ?>
-            <?php if (!empty($c['publisher_country'])): ?>
+            <?php if (!$creation && !empty($c['publisher_country'])): ?>
               <span class="me-signal"><?= e(implode(', ', array_filter([(string) ($c['publisher_city'] ?? ''), (string) $c['publisher_country']]))) ?></span>
             <?php endif; ?>
           </div>
@@ -93,7 +121,10 @@ $pageUrl = static function (int $p) use ($q, $liste): string {
           <?php endif; ?>
 
           <div class="admin-actions">
-            <a class="admin-ghost" href="<?= e(url((string) $c['publisher_href'])) ?>" target="_blank" rel="noopener">Voir la fiche</a>
+            <a class="admin-ghost" href="<?= e(url((string) $c['publisher_href'])) ?>" target="_blank" rel="noopener"><?= $creation && $pending ? 'Prévisualiser la fiche' : 'Voir la fiche' ?></a>
+            <?php if ($creation): ?>
+              <a class="admin-ghost" href="<?= e(url('/admin/maisons-edition/' . (int) $c['publisher_id'])) ?>">Corriger la fiche</a>
+            <?php endif; ?>
             <?php if (!empty($c['publisher_website'])): ?>
               <a class="admin-ghost" href="<?= e((string) $c['publisher_website']) ?>" target="_blank" rel="noopener nofollow">Site officiel</a>
             <?php endif; ?>
@@ -103,7 +134,7 @@ $pageUrl = static function (int $p) use ($q, $liste): string {
                 <?= csrf_field() ?>
                 <input type="hidden" name="status" value="approved">
                 <input type="hidden" name="back" value="<?= e($back) ?>">
-                <button class="btn-navy" type="submit"<?= !empty($c['already_owned']) ? ' onclick="return confirm(\'La fiche est déjà attribuée à un autre compte. Réattribuer ?\');"' : '' ?>>Attribuer la fiche</button>
+                <button class="btn-navy" type="submit"<?= !empty($c['already_owned']) ? ' onclick="return confirm(\'La fiche est déjà attribuée à un autre compte. Réattribuer ?\');"' : ($creation && $similar !== [] ? ' onclick="return confirm(\'Des maisons au nom proche existent déjà. Publier quand même cette nouvelle fiche ?\');"' : '') ?>><?= $creation ? 'Publier la fiche' : 'Attribuer la fiche' ?></button>
               </form>
               <details class="me-refuse">
                 <summary class="admin-ghost">Refuser…</summary>
@@ -111,7 +142,7 @@ $pageUrl = static function (int $p) use ($q, $liste): string {
                   <?= csrf_field() ?>
                   <input type="hidden" name="status" value="refused">
                   <input type="hidden" name="back" value="<?= e($back) ?>">
-                  <textarea class="textarea" name="note" rows="2" required minlength="5" maxlength="600" placeholder="Motif transmis au demandeur (ex. : adresse e-mail non rattachée à la maison, fonction non vérifiable…)"></textarea>
+                  <textarea class="textarea" name="note" rows="2" required minlength="5" maxlength="600" placeholder="<?= $creation ? 'Motif transmis au demandeur (ex. : maison déjà présente dans l\'annuaire, activité non vérifiable, hors périmètre…)' : 'Motif transmis au demandeur (ex. : adresse e-mail non rattachée à la maison, fonction non vérifiable…)' ?>"></textarea>
                   <button class="admin-ghost" type="submit">Confirmer le refus</button>
                 </form>
               </details>
@@ -149,7 +180,7 @@ $pageUrl = static function (int $p) use ($q, $liste): string {
             <span><?= e($p['location_label'] !== '' ? $p['location_label'] : 'Lieu non renseigné') ?> · <?= e($p['size_label']) ?><?= $p['group_label'] !== '' ? ' · ' . e($p['group_label']) : '' ?></span>
           </span>
           <span class="me-admin-meta">
-            <?php if ($p['status'] !== 'published'): ?><span class="admin-pill tone-grey">Masquée</span><?php endif; ?>
+            <?php if ($p['status'] === \Adl\Models\Publisher::STATUS_PENDING): ?><span class="admin-pill tone-orange">En attente</span><?php elseif ($p['status'] !== 'published'): ?><span class="admin-pill tone-grey">Masquée</span><?php endif; ?>
             <?php if ($p['is_claimed']): ?><span class="admin-pill tone-green">Gérée · <?= e($p['owner_name'] !== '' ? $p['owner_name'] : (string) ($p['owner_email'] ?? '')) ?></span><?php endif; ?>
             <?php if (!$p['has_contact']): ?><span class="admin-pill tone-orange">Sans coordonnées</span><?php endif; ?>
           </span>

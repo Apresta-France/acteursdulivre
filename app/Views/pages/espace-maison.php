@@ -12,19 +12,25 @@ if ($p && $p['country'] !== '' && !in_array($p['country'], $countryNames, true))
     $countryNames[] = $p['country'];
 }
 sort($countryNames);
+$isPending = $p && ($p['status'] ?? '') === Publisher::STATUS_PENDING;
 ?>
 <div class="espace-page me-espace">
   <div class="espace-page-head">
     <div>
       <h1>Ma maison d'édition</h1>
-      <p><?= $p ? 'Vous gérez la fiche « ' . e($p['name']) . ' » dans l\'annuaire des maisons d\'édition.' : 'Revendiquez la fiche de votre maison pour la tenir à jour et recevoir les messages des membres.' ?></p>
+      <p><?= $p
+          ? ($isPending
+              ? 'Votre fiche « ' . e($p['name']) . ' » est en attente de validation par l\'équipe.'
+              : 'Vous gérez la fiche « ' . e($p['name']) . ' » dans l\'annuaire des maisons d\'édition.')
+          : 'Revendiquez la fiche de votre maison, ou ajoutez-la si elle manque, pour la tenir à jour et recevoir les messages des membres.' ?></p>
     </div>
     <div class="vitrine-head-actions">
       <?php if ($p): ?>
-        <a class="btn-ghost" href="<?= e(url($p['href'])) ?>">Voir la fiche publique</a>
+        <a class="btn-ghost" href="<?= e(url($p['href'])) ?>"><?= $isPending ? 'Prévisualiser la fiche' : 'Voir la fiche publique' ?></a>
         <button class="btn-orange" type="submit" form="me-form">Enregistrer</button>
       <?php else: ?>
-        <a class="btn-orange" href="<?= e(url('/maisons-edition')) ?>">Trouver ma maison</a>
+        <a class="btn-ghost" href="<?= e(url('/maisons-edition')) ?>">Trouver ma maison</a>
+        <a class="btn-orange" href="<?= e(url('/maisons-edition/ajouter')) ?>">Ajouter ma maison</a>
       <?php endif; ?>
     </div>
   </div>
@@ -37,7 +43,7 @@ sort($countryNames);
       <span class="dash-ico"><?= icon('store', 18) ?></span>
       <div>
         <strong>Aucune fiche attribuée pour le moment</strong>
-        <em>Cherchez votre maison dans l'annuaire puis cliquez sur « Revendiquer la fiche ». Si elle n'y figure pas encore, <a href="<?= e(url('/contact')) ?>">écrivez-nous</a> : nous la créons et vous l'attribuons.</em>
+        <em>Cherchez votre maison dans l'annuaire puis cliquez sur « Revendiquer la fiche ». Si elle n'y figure pas encore, <a href="<?= e(url('/maisons-edition/ajouter')) ?>">ajoutez-la</a> : la fiche est créée immédiatement et publiée après vérification.</em>
       </div>
     </section>
 
@@ -46,10 +52,11 @@ sort($countryNames);
         <h2 class="espace-group-title">Mes demandes</h2>
         <div class="admin-stack">
           <?php foreach ($claims as $c): ?>
+            <?php $linkable = !$c['is_creation'] || ($c['publisher_status'] ?? '') === Publisher::STATUS_PUBLISHED; ?>
             <div class="me-claim-row">
               <div>
-                <a href="<?= e(url($c['publisher_href'])) ?>"><strong><?= e((string) $c['publisher_name']) ?></strong></a>
-                <span>Envoyée le <?= e($c['when']) ?><?= $c['decided_label'] !== '' ? ' · traitée le ' . e($c['decided_label']) : '' ?></span>
+                <?php if ($linkable): ?><a href="<?= e(url($c['publisher_href'])) ?>"><strong><?= e((string) $c['publisher_name']) ?></strong></a><?php else: ?><strong><?= e((string) $c['publisher_name']) ?></strong><?php endif; ?>
+                <span><?= e($c['kind_label']) ?> · envoyée le <?= e($c['when']) ?><?= $c['decided_label'] !== '' ? ' · traitée le ' . e($c['decided_label']) : '' ?></span>
                 <?php if (($c['status'] ?? '') === 'refused' && !empty($c['admin_note'])): ?><em>Motif : <?= e((string) $c['admin_note']) ?></em><?php endif; ?>
               </div>
               <span class="status-pill status-<?= e((string) $c['status']) ?>"><?= e($c['status_label']) ?></span>
@@ -59,13 +66,23 @@ sort($countryNames);
       </div>
     <?php endif; ?>
   <?php else: ?>
-    <section class="avail-banner is-available">
-      <span class="dash-ico dash-ico-accent"><?= icon('check-circle', 18) ?></span>
-      <div>
-        <strong>Fiche gérée par votre maison</strong>
-        <em>Attribuée le <?= e(admin_date((string) $p['claimed_at'])) ?>. Elle affiche le badge « Fiche gérée par la maison » ; les membres connectés peuvent vous écrire via la messagerie et consulter vos coordonnées.</em>
-      </div>
-    </section>
+    <?php if ($isPending): ?>
+      <section class="avail-banner">
+        <span class="dash-ico"><?= icon('clock', 18) ?></span>
+        <div>
+          <strong>Fiche en attente de validation</strong>
+          <em>Proposée le <?= e(admin_date((string) $p['created_at'])) ?>. Elle n'est pas encore visible dans l'annuaire : l'équipe la vérifie, en général sous deux jours ouvrés. Profitez-en pour la compléter, tout ce que vous enregistrez ici sera publié avec elle.</em>
+        </div>
+      </section>
+    <?php else: ?>
+      <section class="avail-banner is-available">
+        <span class="dash-ico dash-ico-accent"><?= icon('check-circle', 18) ?></span>
+        <div>
+          <strong>Fiche gérée par votre maison</strong>
+          <em>Attribuée le <?= e(admin_date((string) $p['claimed_at'])) ?>. Elle affiche le badge « Fiche gérée par la maison » ; les membres connectés peuvent vous écrire via la messagerie et consulter vos coordonnées.</em>
+        </div>
+      </section>
+    <?php endif; ?>
 
     <form id="me-form" class="vitrine-form" method="post" action="<?= e(url('/espace/maison-edition')) ?>" enctype="multipart/form-data">
       <?= csrf_field() ?>

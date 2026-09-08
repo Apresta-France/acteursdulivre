@@ -139,6 +139,9 @@ $val = static fn (string $k, string $d = ''): string => (string) ($p[$k] ?? $d);
             <input type="checkbox" name="published" value="1"<?= $isNew || $val('status', 'published') === 'published' ? ' checked' : '' ?>>
             Visible dans l'annuaire public
           </label>
+          <?php if (!$isNew && $val('status') === Publisher::STATUS_PENDING): ?>
+            <p class="field-help">Fiche proposée par un membre, <strong>en attente de validation</strong>. Publiez-la depuis l'onglet Revendications pour prévenir le demandeur par e-mail, ou cochez la case ci-dessus pour la rendre visible sans notification.</p>
+          <?php endif; ?>
         </div>
       </div>
 

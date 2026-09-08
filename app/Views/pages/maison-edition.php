@@ -45,7 +45,9 @@ $facts[] = ['Ligne éditoriale', $p['typology_label'], '/maisons-edition?typolog
   </nav>
 
   <?php if ($isHidden): ?>
-    <div class="flash flash-warn" style="margin: 16px 44px 0;">Cette fiche est masquée : seuls son gestionnaire et l'administration peuvent la voir.</div>
+    <div class="flash flash-warn" style="margin: 16px 44px 0;"><?= ($p['status'] ?? '') === \Adl\Models\Publisher::STATUS_PENDING
+        ? 'Cette fiche est en attente de validation par l\'équipe : seuls son gestionnaire et l\'administration peuvent la voir. Elle sera publiée dans l\'annuaire dès validation.'
+        : 'Cette fiche est masquée : seuls son gestionnaire et l\'administration peuvent la voir.' ?></div>
   <?php endif; ?>
 
   <div class="profile-hero me-hero">
@@ -60,7 +62,11 @@ $facts[] = ['Ligne éditoriale', $p['typology_label'], '/maisons-edition?typolog
       <div class="profile-hero-line">
         <div class="profile-hero-name"><h1><?= e($p['name']) ?></h1></div>
         <span class="profile-badge">Maison d'édition</span>
-        <?php if ($p['is_claimed']): ?>
+        <?php if (($p['status'] ?? '') === \Adl\Models\Publisher::STATUS_PENDING): ?>
+          <span class="profile-badge me-badge-pending"><?= icon('clock', 13) ?> En attente de validation</span>
+        <?php elseif (($p['status'] ?? '') !== 'published'): ?>
+          <span class="profile-badge me-badge-pending">Fiche masquée</span>
+        <?php elseif ($p['is_claimed']): ?>
           <span class="profile-badge me-badge-verified"><?= icon('check-circle', 13) ?> Fiche gérée par la maison</span>
         <?php endif; ?>
         <?php if ($p['is_independent']): ?>
@@ -83,7 +89,7 @@ $facts[] = ['Ligne éditoriale', $p['typology_label'], '/maisons-edition?typolog
     </div>
     <div class="profile-hero-actions">
       <?php if ($isOwner): ?>
-        <p class="profile-avail-note">Vous gérez cette fiche.</p>
+        <p class="profile-avail-note"><?= ($p['status'] ?? '') === \Adl\Models\Publisher::STATUS_PENDING ? 'Prévisualisation : cette fiche n\'est visible que par vous pour l\'instant.' : 'Vous gérez cette fiche.' ?></p>
         <a class="btn-orange" href="<?= e(url('/espace/maison-edition')) ?>">Modifier ma fiche</a>
       <?php elseif (!$viewer): ?>
         <p class="profile-avail-note">Coordonnées et prise de contact réservées aux membres.</p>

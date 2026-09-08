@@ -369,6 +369,13 @@ final class AdminController
         $liste = in_array($listeFiltre, ['claimed', 'hidden', 'nocontact'], true) ? $listeFiltre : 'toutes';
         try {
             $claims = PublisherClaim::forAdmin($filtre);
+            foreach ($claims as &$claim) {
+                $claim['similar'] = [];
+                if ($claim['is_creation'] && $claim['status'] === PublisherClaim::STATUS_PENDING) {
+                    $claim['similar'] = Publisher::similar((string) $claim['publisher_name'], (string) ($claim['publisher_country'] ?? ''), (int) $claim['publisher_id'], 4);
+                }
+            }
+            unset($claim);
             $pendingCount = PublisherClaim::countPending();
             $fiches = Publisher::adminList($q, $liste, max(1, $request->int('page', 1) ?? 1));
             $stats = [
@@ -417,9 +424,15 @@ final class AdminController
         $admin = Auth::requireAdmin();
         try {
             $claim = PublisherClaim::decide((int) $id, $request->string('status'), $request->string('note'), (int) $admin['id']);
-            flash('saved', $request->string('status') === PublisherClaim::STATUS_APPROVED
-                ? 'Fiche « ' . $claim['publisher_name'] . ' » attribuée à ' . $claim['who'] . '. Le demandeur a été prévenu.'
-                : 'Demande refusée. Le motif a été transmis au demandeur.');
+            $approved = $request->string('status') === PublisherClaim::STATUS_APPROVED;
+            $creation = PublisherClaim::isCreation($claim);
+            flash('saved', $approved
+                ? ($creation
+                    ? 'Fiche « ' . $claim['publisher_name'] . ' » publiée dans l\'annuaire et attribuée à ' . $claim['who'] . '. Le demandeur a été prévenu.'
+                    : 'Fiche « ' . $claim['publisher_name'] . ' » attribuée à ' . $claim['who'] . '. Le demandeur a été prévenu.')
+                : ($creation
+                    ? 'Proposition refusée : la fiche reste masquée et détachée du compte. Le motif a été transmis au demandeur.'
+                    : 'Demande refusée. Le motif a été transmis au demandeur.'));
         } catch (Throwable $e) {
             flash('error', $e->getMessage());
         }
@@ -481,7 +494,10 @@ final class AdminController
                 'contact_phone' => $request->string('contact_phone'),
                 'submissions_note' => $request->string('submissions_note'),
                 'segments' => $request->string('segments'),
-                'status' => $request->bool('published') ? 'published' : 'hidden',
+                // Une fiche proposée par un membre reste « en attente » tant qu'elle n'est pas publiée.
+                'status' => $request->bool('published')
+                    ? Publisher::STATUS_PUBLISHED
+                    : (($publisher['status'] ?? '') === Publisher::STATUS_PENDING ? Publisher::STATUS_PENDING : Publisher::STATUS_HIDDEN),
             ];
             $logo = store_upload($request->file('logo'), 'publishers', ['jpg', 'jpeg', 'png', 'webp'], 2 * 1024 * 1024);
             if ($logo !== null) {

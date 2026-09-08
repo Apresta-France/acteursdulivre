@@ -9278,6 +9278,7 @@ body.is-landing .mega-btn { display: none !important; }
 .me-hero-logo img { padding: 10px; }
 .me-badge-verified { background: #2E6B45; color: #fff; font-size: 11px; padding: 5px 9px; letter-spacing: .06em; text-transform: uppercase; }
 .me-badge-indie { background: rgba(255,255,255,.14); color: #fff; }
+.me-badge-pending { display: inline-flex; align-items: center; gap: 5px; background: #F2B15B; color: #3A2A05; font-size: 11px; padding: 5px 9px; letter-spacing: .06em; text-transform: uppercase; }
 .me-genre-link { text-decoration: none; }
 .me-genre-link:hover { background: rgba(255,255,255,.2); color: #fff; }
 .me-body { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 40px; }
@@ -9348,6 +9349,61 @@ body.is-landing .mega-btn { display: none !important; }
 .me-steps { margin: 0; padding: 0 0 0 22px; display: flex; flex-direction: column; gap: 12px; font-size: 14px; color: #4A5A6B; }
 .me-steps li strong { display: block; color: var(--navy); }
 .me-steps li span { display: block; line-height: 1.5; margin-top: 2px; }
+.me-side-text { margin: 0; font-size: 14px; line-height: 1.55; color: #4A5A6B; }
+.me-side-text a { color: var(--navy); }
+
+/* Ajouter une maison */
+.me-form-title { font-family: var(--display); font-size: 17px; color: var(--navy); margin: 10px 0 -4px; padding-top: 14px; border-top: 1px solid #EEF1F4; }
+.me-form-title:first-of-type { border-top: 0; padding-top: 0; margin-top: 0; }
+.me-dup {
+  margin: 22px 0 0;
+  padding: 18px 20px;
+  border: 1px solid #F2B15B;
+  background: #FFF8EC;
+  border-radius: 14px;
+}
+.me-dup h2 { margin: 0 0 4px; font-family: var(--display); font-size: 17px; color: var(--navy); }
+.me-dup p { margin: 0 0 12px; font-size: 14px; color: #4A5A6B; }
+.me-dup-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.me-dup-list li {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  padding: 10px 12px;
+  background: #fff;
+  border: 1px solid #EFE2C8;
+  border-radius: 10px;
+}
+.me-dup-logo {
+  width: 36px; height: 36px; border-radius: 8px; overflow: hidden;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: var(--navy); color: #fff; font-family: var(--display); font-size: 12px;
+}
+.me-dup-logo img { width: 100%; height: 100%; object-fit: contain; background: #fff; }
+.me-dup-main strong { display: block; color: var(--navy); }
+.me-dup-main span { display: block; font-size: 13px; color: #66768A; }
+.me-dup-confirm { border: 1px solid #F2B15B; background: #FFF8EC; border-radius: 10px; padding: 10px 12px; }
+.me-add-cta {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin: 28px 0 0;
+  padding: 18px 22px;
+  border: 1px dashed #C9D3DD;
+  border-radius: 14px;
+  background: #FAFBFC;
+}
+.me-add-cta > div { flex: 1; min-width: 0; }
+.me-add-cta strong { display: block; color: var(--navy); }
+.me-add-cta > div > span { display: block; font-size: 14px; color: #66768A; margin-top: 2px; }
+.me-add-cta .btn-navy { flex-shrink: 0; }
+@media (max-width: 720px) {
+  .me-add-cta { flex-direction: column; align-items: flex-start; }
+  .me-add-cta .btn-navy { width: 100%; justify-content: center; }
+  .me-dup-list li { grid-template-columns: 36px minmax(0, 1fr); }
+  .me-dup-list li .btn-ghost { grid-column: 1 / -1; justify-content: center; }
+}
 
 /* Espace membre */
 .me-espace .avail-banner a { color: var(--navy); text-decoration: underline; }
@@ -9378,7 +9434,19 @@ body.is-landing .mega-btn { display: none !important; }
 .me-claim-card .admin-dossier-who strong { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px; }
 .me-claim-card .admin-dossier-who a { color: var(--navy); text-decoration: none; }
 .me-claim-card .admin-dossier-who a:hover { color: #D85D3F; }
+.me-claim-card.is-creation { border-left: 3px solid #F2B15B; }
+.me-claim-preview {
+  margin: 14px 0 0;
+  padding: 12px 16px;
+  border: 1px solid #E8EDF2;
+  border-radius: 10px;
+  background: #fff;
+}
+.me-claim-preview strong { display: block; color: var(--navy); }
+.me-claim-preview span { display: block; font-size: 13px; color: #66768A; margin-top: 2px; }
+.me-claim-preview p { margin: 8px 0; font-size: 14px; line-height: 1.55; color: #34434F; }
 .me-claim-signals { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0 0; }
+.me-signal a { color: inherit; font-weight: 600; }
 .me-signal {
   display: inline-flex;
   align-items: center;
