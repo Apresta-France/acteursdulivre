@@ -1528,11 +1528,19 @@ final class Prototype
 
     private static function headerCta(bool $seeks, bool $offers): ?array
     {
-        if ($seeks) {
-            return ['label' => 'Publier une recherche', 'href' => '/espace/publier'];
-        }
         if ($offers) {
-            return ['label' => 'Proposer une prestation', 'href' => '/espace/prestations/creer'];
+            return [
+                'label' => 'Proposer une prestation',
+                'short' => 'Proposer',
+                'href' => '/espace/prestations/creer',
+            ];
+        }
+        if ($seeks) {
+            return [
+                'label' => 'Publier une recherche',
+                'short' => 'Publier',
+                'href' => '/espace/publier',
+            ];
         }
         return null;
     }

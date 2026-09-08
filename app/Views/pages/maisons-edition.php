@@ -181,16 +181,6 @@ if ((int) $pager['pages'] > 1) {
         </div>
       </div>
 
-      <form class="me-search" method="get" action="<?= e(url($pagerPath)) ?>" role="search">
-        <?= $hidden('genre', $genre) ?><?= $hidden('taille', $size) ?><?= $hidden('typologie', $typology) ?>
-        <?php if ($independent): ?><input type="hidden" name="independant" value="1"><?php endif; ?>
-        <?php if ($scope === 'all'): ?><?= $hidden('pays', $countrySel) ?><?php endif; ?>
-        <?php if ($scope !== 'city'): ?><?= $hidden('ville', $citySel) ?><?php endif; ?>
-        <label class="sr-only" for="me-q">Rechercher une maison d'édition</label>
-        <input id="me-q" class="input" type="search" name="q" value="<?= e($q) ?>" placeholder="Nom, ville, genre, groupe… (ex. Gallimard, Arles, poésie, jeunesse)" autocomplete="off">
-        <button class="btn-navy" type="submit">Rechercher</button>
-      </form>
-
       <?php if ($scope === 'all' && $q === '' && $genre === '' && $countrySel === ''): ?>
         <div class="me-country-strip">
           <?php foreach (array_slice($facets['countries'], 0, 12) as $c): ?>

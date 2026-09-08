@@ -83,7 +83,7 @@
   <?php if (!empty($isArticle) && !empty($article['img'])): ?>
   <link rel="preload" as="image" href="<?= e((string) $article['img']) ?>">
   <?php endif; ?>
-  <link rel="stylesheet" href="<?= e(asset('css/app.css')) ?>?v=m199">
+  <link rel="stylesheet" href="<?= e(asset('css/app.css')) ?>?v=m200">
   <link rel="icon" href="<?= e(asset('img/favicon.ico')) ?>?v=3" sizes="any">
   <link rel="icon" type="image/png" href="<?= e(asset('img/favicon-32x32.png')) ?>?v=3" sizes="32x32">
   <link rel="apple-touch-icon" href="<?= e(asset('img/apple-touch-icon.png')) ?>?v=3">
@@ -124,6 +124,19 @@
         </div>
       </div>
 
+      <?php
+        $headerPath = parse_url((string) ($_SERVER['REQUEST_URI'] ?? '/'), PHP_URL_PATH) ?: '/';
+        $headerPath = $headerPath !== '/' ? rtrim($headerPath, '/') : '/';
+        $headerSearchPublishers = $headerPath === '/maisons-edition'
+            || str_starts_with($headerPath, '/maisons-edition/');
+        $headerSearchAction = $headerSearchPublishers ? '/maisons-edition' : '/recherche';
+        $headerSearchPlaceholder = $headerSearchPublishers
+            ? 'Nom, ville, genre éditorial…'
+            : 'correcteur roman, illustration jeunesse…';
+        $headerSearchLabel = $headerSearchPublishers
+            ? 'Rechercher une maison d’édition'
+            : 'Rechercher un prestataire, une prestation ou un appel d’offres';
+      ?>
       <header class="site-header">
         <a href="<?= e(url('/')) ?>" class="brand" aria-label="acteursdulivre.fr — accueil">
           <picture>
@@ -131,12 +144,10 @@
             <img src="<?= e(asset('img/logo.png')) ?>?v=4" alt="acteursdulivre.fr — place de marché des métiers du livre" width="212" height="58" decoding="async">
           </picture>
         </a>
-        <form class="search" role="search" action="<?= e(url('/recherche')) ?>" method="get" data-live-search data-api="<?= e(url('/api/recherche')) ?>" autocomplete="off" toolname="search_directory" tooldescription="Rechercher un prestataire, une prestation ou un appel d'offres parmi les métiers du livre.">
+        <form class="search" role="search" action="<?= e(url($headerSearchAction)) ?>" method="get"<?= $headerSearchPublishers ? '' : ' data-live-search data-api="' . e(url('/api/recherche')) . '"' ?> autocomplete="off" toolname="search_directory" tooldescription="<?= e($headerSearchLabel) ?>.">
           <?php
             $headerSearchType = (string) ($searchType ?? '');
             if ($headerSearchType === '' || $headerSearchType === 'all') {
-                $headerPath = parse_url((string) ($_SERVER['REQUEST_URI'] ?? '/'), PHP_URL_PATH) ?: '/';
-                $headerPath = $headerPath !== '/' ? rtrim($headerPath, '/') : '/';
                 $headerSearchType = match ($headerPath) {
                     '/prestations' => 'prestations',
                     '/prestataires' => 'prestataires',
@@ -148,11 +159,11 @@
           <?php if ($headerSearchType !== '' && $headerSearchType !== 'all' && array_key_exists($headerSearchType, \Adl\Data\Catalog::TYPES)): ?>
             <input type="hidden" name="type" value="<?= e($headerSearchType) ?>">
           <?php endif; ?>
-          <label class="sr-only" for="header-search-q">Rechercher un prestataire, une prestation ou un appel d'offres</label>
-          <input id="header-search-q" type="search" name="q" value="<?= e($query ?? '') ?>" placeholder="correcteur roman, illustration jeunesse…" autocomplete="off" data-live-input aria-label="Rechercher un prestataire, une prestation ou un appel d'offres" toolparamdescription="Mots-clés : métier, genre littéraire ou besoin.">
-          <input type="hidden" name="ville" value="<?= e($searchCity ?? '') ?>" data-header-ville>
+          <label class="sr-only" for="header-search-q"><?= e($headerSearchLabel) ?></label>
+          <input id="header-search-q" type="search" name="q" value="<?= e($query ?? '') ?>" placeholder="<?= e($headerSearchPlaceholder) ?>" autocomplete="off"<?= $headerSearchPublishers ? '' : ' data-live-input' ?> aria-label="<?= e($headerSearchLabel) ?>" toolparamdescription="Mots-clés : métier, genre littéraire ou besoin.">
+          <?php if (!$headerSearchPublishers): ?><input type="hidden" name="ville" value="<?= e($searchCity ?? '') ?>" data-header-ville><?php endif; ?>
           <button type="submit">Chercher</button>
-          <div class="search-suggest" data-live-panel hidden></div>
+          <?php if (!$headerSearchPublishers): ?><div class="search-suggest" data-live-panel hidden></div><?php endif; ?>
         </form>
         <?php if (!empty($logged)): ?>
           <?php
@@ -206,9 +217,6 @@
                 Forum<?php if ($headerUnreadForum > 0): ?><span class="badge-orange"><?= $headerUnreadForum > 99 ? '99+' : $headerUnreadForum ?></span><?php endif; ?>
               </a>
               <a href="<?= e(url('/maisons-edition')) ?>"<?= !empty($isMaisons) ? ' aria-current="page"' : '' ?>>Maisons d'édition</a>
-              <?php if (!empty($headerCta)): ?>
-                <a href="<?= e(url($headerCta['href'])) ?>"><?= e($headerCta['label']) ?></a>
-              <?php endif; ?>
             </nav>
           <?php else: ?>
             <nav class="header-nav">
@@ -226,6 +234,13 @@
             <a class="btn-navy header-signup" href="<?= e(url('/inscription')) ?>">
               <span class="header-signup-full">Créer un compte</span>
               <span class="header-signup-short">S'inscrire</span>
+            </a>
+          </div>
+        <?php elseif (!empty($headerCta)): ?>
+          <div class="header-actions">
+            <a class="btn-navy header-cta" href="<?= e(url($headerCta['href'])) ?>" aria-label="<?= e($headerCta['label']) ?>">
+              <span class="header-cta-full"><?= e($headerCta['label']) ?></span>
+              <span class="header-cta-short"><?= e($headerCta['short'] ?? $headerCta['label']) ?></span>
             </a>
           </div>
         <?php endif; ?>
