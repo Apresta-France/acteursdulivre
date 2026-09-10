@@ -234,6 +234,7 @@ if ($hasSeveralPackages && count($packageDelays) > 1) {
           <p class="field-help">Délai, adaptation, disponibilité… la réponse arrive dans votre messagerie.</p>
           <form method="post" action="<?= e(url('/espace/messages')) ?>">
             <?= csrf_field() ?>
+            <?= form_guard_fields('message') ?>
             <input type="hidden" name="avec" value="<?= (int) ($service['user_id'] ?? 0) ?>">
             <input type="hidden" name="sujet" value="<?= e((string) $service['title']) ?>">
             <input type="hidden" name="prestation" value="<?= (int) ($service['id'] ?? 0) ?>">

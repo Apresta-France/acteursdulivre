@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Adl\Controllers;
 
 use Adl\Core\Auth;
+use Adl\Core\BotGuard;
 use Adl\Core\Request;
 use Adl\Core\View;
 use Adl\Data\Seo;
@@ -14,6 +15,7 @@ use Adl\Models\ForumCategory;
 use Adl\Models\ForumPost;
 use Adl\Models\ForumTopic;
 use Adl\Models\Report;
+use Adl\Models\Salon;
 
 final class ForumController
 {
@@ -310,6 +312,28 @@ final class ForumController
         $user = Auth::user();
         $userId = (int) ($user['id'] ?? 0);
 
+        $guard = BotGuard::consume('forum-new', $request);
+        if ($guard !== BotGuard::OK) {
+            flash('error', BotGuard::RETRY_MESSAGE);
+            flash('old', [
+                'category_id' => $request->int('category_id'),
+                'title' => $request->string('title'),
+                'body' => $request->string('body'),
+                'tags' => $request->string('tags'),
+            ]);
+            redirect('/forum/nouveau');
+        }
+        if (rate_limited('forum-new-user', (string) $userId, 8, 3600)) {
+            flash('error', BotGuard::TOO_MANY_MESSAGE);
+            flash('old', [
+                'category_id' => $request->int('category_id'),
+                'title' => $request->string('title'),
+                'body' => $request->string('body'),
+                'tags' => $request->string('tags'),
+            ]);
+            redirect('/forum/nouveau');
+        }
+
         try {
             $topic = ForumTopic::create($userId, [
                 'category_id' => $request->int('category_id'),
@@ -352,6 +376,18 @@ final class ForumController
             not_found('Cette discussion n\'existe pas.');
         }
 
+        $guard = BotGuard::consume('forum-reply', $request);
+        if ($guard !== BotGuard::OK) {
+            flash('error', BotGuard::RETRY_MESSAGE);
+            flash('old', ['body' => $request->string('body')]);
+            redirect((string) $topic['href'] . '#repondre');
+        }
+        if (rate_limited('forum-post-user', (string) $userId, 20, 3600)) {
+            flash('error', BotGuard::TOO_MANY_MESSAGE);
+            flash('old', ['body' => $request->string('body')]);
+            redirect((string) $topic['href'] . '#repondre');
+        }
+
         try {
             ForumPost::create((int) $topic['id'], $userId, [
                 'body' => $request->string('body'),
@@ -383,6 +419,18 @@ final class ForumController
             not_found('Cet article n’est plus en ligne.');
         }
 
+        $guard = BotGuard::consume('article-comment', $request);
+        if ($guard !== BotGuard::OK) {
+            flash('article_comment_error', BotGuard::RETRY_MESSAGE);
+            flash('article_comment_old', ['body' => $request->string('body')]);
+            redirect((string) $article['href'] . '#commentaires');
+        }
+        if (rate_limited('forum-post-user', (string) $userId, 20, 3600)) {
+            flash('article_comment_error', BotGuard::TOO_MANY_MESSAGE);
+            flash('article_comment_old', ['body' => $request->string('body')]);
+            redirect((string) $article['href'] . '#commentaires');
+        }
+
         try {
             $result = ForumTopic::commentOnArticle($article, $userId, [
                 'body' => $request->string('body'),
@@ -392,6 +440,48 @@ final class ForumController
             flash('article_comment_error', user_error_message($e, 'Impossible de publier ce commentaire.'));
             flash('article_comment_old', ['body' => $request->string('body')]);
             redirect((string) $article['href'] . '#commentaires');
+        }
+
+        flash('saved', !empty($result['created']) ? 'Discussion ouverte sur le forum.' : 'Commentaire publié.');
+        redirect((string) $result['topic']['href'] . '#post-' . (int) $result['post']['id']);
+    }
+
+    public function salonComment(Request $request, string $slug): void
+    {
+        Auth::requireUser();
+        $user = Auth::user();
+        $userId = (int) ($user['id'] ?? 0);
+
+        try {
+            $salon = Salon::find($slug);
+        } catch (\Throwable) {
+            $salon = null;
+        }
+        if (!$salon) {
+            not_found('Ce salon n’est plus dans l’agenda.');
+        }
+
+        $guard = BotGuard::consume('salon-comment', $request);
+        if ($guard !== BotGuard::OK) {
+            flash('salon_comment_error', BotGuard::RETRY_MESSAGE);
+            flash('salon_comment_old', ['body' => $request->string('body')]);
+            redirect((string) $salon['href'] . '#commentaires');
+        }
+        if (rate_limited('forum-post-user', (string) $userId, 20, 3600)) {
+            flash('salon_comment_error', BotGuard::TOO_MANY_MESSAGE);
+            flash('salon_comment_old', ['body' => $request->string('body')]);
+            redirect((string) $salon['href'] . '#commentaires');
+        }
+
+        try {
+            $result = ForumTopic::commentOnSalon($salon, $userId, [
+                'body' => $request->string('body'),
+                'no_ai' => $request->bool('no_ai'),
+            ]);
+        } catch (\Throwable $e) {
+            flash('salon_comment_error', user_error_message($e, 'Impossible de publier ce commentaire.'));
+            flash('salon_comment_old', ['body' => $request->string('body')]);
+            redirect((string) $salon['href'] . '#commentaires');
         }
 
         flash('saved', !empty($result['created']) ? 'Discussion ouverte sur le forum.' : 'Commentaire publié.');

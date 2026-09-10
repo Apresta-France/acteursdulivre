@@ -84,6 +84,7 @@ $isOwnProfile = $viewer && (int) ($viewer['id'] ?? 0) === (int) ($p['user_id'] ?
         <p class="profile-avail-note">Planning actuellement chargé. Vous pouvez laisser un message pour une date ultérieure.</p>
         <form method="post" action="<?= e(url('/espace/messages')) ?>">
           <?= csrf_field() ?>
+          <?= form_guard_fields('message') ?>
           <input type="hidden" name="avec" value="<?= (int) ($p['user_id'] ?? 0) ?>">
           <input type="hidden" name="sujet" value="Message">
           <button class="btn-orange" type="submit">Envoyer un message</button>
@@ -91,12 +92,14 @@ $isOwnProfile = $viewer && (int) ($viewer['id'] ?? 0) === (int) ($p['user_id'] ?
       <?php else: ?>
         <form method="post" action="<?= e(url('/espace/messages')) ?>">
           <?= csrf_field() ?>
+          <?= form_guard_fields('message') ?>
           <input type="hidden" name="avec" value="<?= (int) ($p['user_id'] ?? 0) ?>">
           <input type="hidden" name="sujet" value="Demande de devis">
           <button class="btn-orange" type="submit">Demander un devis</button>
         </form>
         <form method="post" action="<?= e(url('/espace/messages')) ?>">
           <?= csrf_field() ?>
+          <?= form_guard_fields('message') ?>
           <input type="hidden" name="avec" value="<?= (int) ($p['user_id'] ?? 0) ?>">
           <button class="btn-ghost-light" type="submit">Envoyer un message</button>
         </form>
@@ -413,6 +416,7 @@ $isOwnProfile = $viewer && (int) ($viewer['id'] ?? 0) === (int) ($p['user_id'] ?
           <summary>Signaler ce profil</summary>
           <form method="post" action="<?= e(url('/signaler')) ?>">
             <?= csrf_field() ?>
+            <?= form_guard_fields('report') ?>
             <input type="hidden" name="type" value="user">
             <input type="hidden" name="id" value="<?= (int) ($p['user_id'] ?? 0) ?>">
             <input type="hidden" name="back" value="<?= e((string) ($p['href'] ?? '/')) ?>">

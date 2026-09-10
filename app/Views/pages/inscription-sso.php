@@ -20,6 +20,7 @@ $providerLabel = OAuth::label((string) ($pending['provider'] ?? 'google'));
     </div>
     <form method="post" action="<?= e(url('/inscription/sso')) ?>" class="auth-form">
       <?= csrf_field() ?>
+      <?= form_guard_fields('register-sso') ?>
       <p class="field" style="margin-bottom: 0;">Que souhaitez-vous faire ?</p>
       <div class="intent-grid">
         <label class="intent-card<?= $seeksOn ? ' is-on' : '' ?>" data-intent-card>

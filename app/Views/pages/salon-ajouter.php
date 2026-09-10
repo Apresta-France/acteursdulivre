@@ -50,6 +50,7 @@ $countryOld = (string) old('country', 'France');
 
         <form class="me-claim-form me-add-form" method="post" action="<?= e(url('/salons/ajouter')) ?>">
           <?= csrf_field() ?>
+          <?= form_guard_fields('salon-add') ?>
 
           <h2 class="me-form-title">Le salon</h2>
           <div>

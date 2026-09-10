@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Adl\Controllers;
 
 use Adl\Core\Auth;
+use Adl\Core\BotGuard;
 use Adl\Core\Mailer;
 use Adl\Core\OAuth;
 use Adl\Core\Request;
@@ -39,7 +40,19 @@ final class AuthController
         $email = $request->string('email');
         $password = $request->string('password');
 
-        $ip = (string) ($_SERVER['REMOTE_ADDR'] ?? '0');
+        $guard = BotGuard::consume('login', $request);
+        if ($guard === BotGuard::HONEYPOT) {
+            flash('error', 'E-mail ou mot de passe incorrect.');
+            $_SESSION['_old'] = ['email' => $email];
+            redirect('/connexion');
+        }
+        if ($guard !== BotGuard::OK) {
+            flash('error', BotGuard::RETRY_MESSAGE);
+            $_SESSION['_old'] = ['email' => $email];
+            redirect('/connexion');
+        }
+
+        $ip = client_ip_hash();
         if (rate_limited('login-ip', $ip, 12, 900) || rate_limited('login-email', strtolower($email), 8, 900)) {
             flash('error', 'Trop de tentatives. Réessayez dans quelques minutes.');
             $_SESSION['_old'] = ['email' => $email];
@@ -106,6 +119,18 @@ final class AuthController
                 'offers_services' => $offers ? '1' : '',
             ];
         };
+
+        $guard = BotGuard::consume('register', $request);
+        if ($guard !== BotGuard::OK) {
+            flash('error', BotGuard::RETRY_MESSAGE);
+            $remember();
+            redirect('/inscription');
+        }
+        if (rate_limited('register-ip', client_ip_hash(), 5, 3600) || rate_limited('register-email', $email, 5, 3600)) {
+            flash('error', BotGuard::TOO_MANY_MESSAGE);
+            $remember();
+            redirect('/inscription');
+        }
 
         if (!filter_var($email, FILTER_VALIDATE_EMAIL) || strlen($password) < 8 || $first === '' || $last === '') {
             flash('error', 'Merci de renseigner un e-mail valide, un mot de passe de 8 caractères, un prénom et un nom.');
@@ -206,7 +231,16 @@ final class AuthController
     public function forgot(Request $request): void
     {
         $email = strtolower($request->string('email'));
-        $ip = (string) ($_SERVER['REMOTE_ADDR'] ?? '0');
+        $guard = BotGuard::consume('forgot', $request);
+        if ($guard === BotGuard::HONEYPOT) {
+            flash('saved', true);
+            redirect('/mot-de-passe-oublie');
+        }
+        if ($guard !== BotGuard::OK) {
+            flash('error', BotGuard::RETRY_MESSAGE);
+            redirect('/mot-de-passe-oublie');
+        }
+        $ip = client_ip_hash();
         if (rate_limited('reset-ip', $ip, 8, 3600) || rate_limited('reset-email', $email, 3, 3600)) {
             flash('error', 'Trop de demandes. Réessayez plus tard.');
             redirect('/mot-de-passe-oublie');
@@ -376,6 +410,16 @@ final class AuthController
             unset($_SESSION['_oauth_pending']);
             flash('error', 'La connexion Google ou Facebook n\'est pas disponible pour le moment.');
             redirect('/inscription');
+        }
+
+        $guard = BotGuard::consume('register-sso', $request);
+        if ($guard !== BotGuard::OK) {
+            flash('error', BotGuard::RETRY_MESSAGE);
+            redirect('/inscription/sso');
+        }
+        if (rate_limited('register-ip', client_ip_hash(), 5, 3600)) {
+            flash('error', BotGuard::TOO_MANY_MESSAGE);
+            redirect('/inscription/sso');
         }
 
         $seeks = $request->bool('seeks_services');

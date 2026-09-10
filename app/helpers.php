@@ -96,23 +96,53 @@ function rate_limited(string $action, string $id, int $max, int $window): bool
         return false;
     }
     $file = $dir . '/' . hash('sha256', $safe) . '.json';
+    $fp = @fopen($file, 'c+');
+    if ($fp === false) {
+        return false;
+    }
+    if (!flock($fp, LOCK_EX)) {
+        fclose($fp);
+        return false;
+    }
     $now = time();
+    $raw = stream_get_contents($fp);
     $hits = [];
-    if (is_file($file)) {
-        $raw = @file_get_contents($file);
-        $decoded = is_string($raw) ? json_decode($raw, true) : null;
+    if (is_string($raw) && $raw !== '') {
+        $decoded = json_decode($raw, true);
         if (is_array($decoded)) {
             $hits = $decoded;
         }
     }
     $hits = array_values(array_filter($hits, static fn ($t) => is_int($t) && $t > $now - $window));
-    if (count($hits) >= $max) {
-        @file_put_contents($file, json_encode($hits), LOCK_EX);
-        return true;
+    $limited = count($hits) >= $max;
+    if (!$limited) {
+        $hits[] = $now;
     }
-    $hits[] = $now;
-    @file_put_contents($file, json_encode($hits), LOCK_EX);
-    return false;
+    rewind($fp);
+    ftruncate($fp, 0);
+    fwrite($fp, json_encode($hits) ?: '[]');
+    fflush($fp);
+    flock($fp, LOCK_UN);
+    fclose($fp);
+
+    return $limited;
+}
+
+function client_ip(): string
+{
+    $ip = trim((string) ($_SERVER['REMOTE_ADDR'] ?? ''));
+
+    return $ip !== '' ? $ip : '0';
+}
+
+function client_ip_hash(): string
+{
+    return hash('sha256', client_ip());
+}
+
+function form_guard_fields(string $formId): string
+{
+    return \Adl\Core\BotGuard::fields($formId);
 }
 
 function url(string $path = '/'): string

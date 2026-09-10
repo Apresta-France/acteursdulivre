@@ -8,6 +8,7 @@
     <?php require ADL_ROOT . '/app/Views/partials/oauth-buttons.php'; ?>
     <form method="post" action="<?= e(url('/connexion')) ?>" class="auth-form">
       <?= csrf_field() ?>
+      <?= form_guard_fields('login') ?>
       <div>
         <label class="field" for="email">E-mail</label>
         <input class="input" id="email" type="email" name="email" value="<?= e((string) old('email')) ?>" placeholder="vous@exemple.fr" required>

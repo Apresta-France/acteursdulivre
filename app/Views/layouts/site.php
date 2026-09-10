@@ -83,7 +83,7 @@
   <?php if (!empty($isArticle) && !empty($article['img'])): ?>
   <link rel="preload" as="image" href="<?= e((string) $article['img']) ?>">
   <?php endif; ?>
-  <link rel="stylesheet" href="<?= e(asset('css/app.css')) ?>?v=m216">
+  <link rel="stylesheet" href="<?= e(asset('css/app.css')) ?>?v=m217">
   <link rel="icon" href="<?= e(asset('img/favicon.ico')) ?>?v=3" sizes="any">
   <link rel="icon" type="image/png" href="<?= e(asset('img/favicon-32x32.png')) ?>?v=3" sizes="32x32">
   <link rel="apple-touch-icon" href="<?= e(asset('img/apple-touch-icon.png')) ?>?v=3">
@@ -302,6 +302,7 @@
           </div>
           <form class="footer-news-form" action="<?= e(url('/newsletter')) ?>" method="post" toolname="subscribe_newsletter" tooldescription="Inscrire une adresse e-mail à la lettre hebdomadaire des métiers du livre. Confirmation par e-mail, désinscription en un clic.">
             <?= csrf_field() ?>
+            <?= form_guard_fields('newsletter') ?>
             <input type="hidden" name="back" value="<?= e((string) ($_SERVER['REQUEST_URI'] ?? '/')) ?>">
             <label class="sr-only" for="footer-news-email">Adresse e-mail pour la lettre d'information</label>
             <input id="footer-news-email" type="email" name="email" placeholder="votre@email.fr" required autocomplete="email" toolparamdescription="Adresse e-mail pour recevoir la lettre.">

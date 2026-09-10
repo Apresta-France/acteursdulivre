@@ -58,6 +58,7 @@ return static function (Router $router): void {
     $router->get('/salons', [PageController::class, 'salons']);
     $router->get('/salons/ajouter', [PageController::class, 'salonAddForm']);
     $router->post('/salons/ajouter', [PageController::class, 'salonAdd']);
+    $router->post('/salons/{slug}/commenter', [ForumController::class, 'salonComment']);
     $router->get('/salons/{slug}', [PageController::class, 'salon']);
     $router->get('/forum', [ForumController::class, 'index']);
     $router->get('/forum/nouveau', [ForumController::class, 'createForm']);

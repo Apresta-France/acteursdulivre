@@ -213,6 +213,7 @@ $renderWork = static function (array $w, bool $big): void {
       <?php else: ?>
         <form method="post" action="<?= e(url('/espace/messages')) ?>">
           <?= csrf_field() ?>
+          <?= form_guard_fields('message') ?>
           <input type="hidden" name="avec" value="<?= (int) ($a['user_id'] ?? 0) ?>">
           <input type="hidden" name="sujet" value="Contact auteur">
           <button class="btn-orange" type="submit">Écrire à l'auteur</button>
@@ -371,6 +372,7 @@ $renderWork = static function (array $w, bool $big): void {
               <summary>Signaler cette fiche</summary>
               <form method="post" action="<?= e(url('/signaler')) ?>">
                 <?= csrf_field() ?>
+                <?= form_guard_fields('report') ?>
                 <input type="hidden" name="type" value="user">
                 <input type="hidden" name="id" value="<?= (int) ($a['user_id'] ?? 0) ?>">
                 <input type="hidden" name="back" value="<?= e((string) ($a['href'] ?? '/auteurs')) ?>">

@@ -38,6 +38,7 @@ $hostHint = $p['website_host'] !== '' ? $p['website_host'] : '';
       <?php else: ?>
         <form class="me-claim-form" method="post" action="<?= e(url($p['href'] . '/revendiquer')) ?>">
           <?= csrf_field() ?>
+          <?= form_guard_fields('publisher-claim') ?>
           <div class="form-grid-2">
             <div>
               <label class="field" for="role_title">Votre fonction dans la maison</label>

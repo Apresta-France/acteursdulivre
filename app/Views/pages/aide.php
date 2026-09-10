@@ -63,6 +63,7 @@ if ($q !== '') {
         <div class="side-kicker">Signaler un abus</div>
         <form method="post" action="<?= e(url('/signaler')) ?>">
           <?= csrf_field() ?>
+          <?= form_guard_fields('report') ?>
           <input type="hidden" name="type" value="user">
           <input type="hidden" name="back" value="/aide">
           <label class="field" for="help-reason">Motif</label>

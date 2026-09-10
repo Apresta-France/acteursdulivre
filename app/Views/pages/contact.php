@@ -10,6 +10,7 @@
     <?php endif; ?>
     <form method="post" action="<?= e(url('/contact')) ?>" style="display: flex; flex-direction: column; gap: 20px; max-width: 620px;">
       <?= csrf_field() ?>
+      <?= form_guard_fields('contact') ?>
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
         <div>
           <label class="field" for="name">Nom</label>

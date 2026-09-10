@@ -140,6 +140,7 @@ $attachmentExt = strtoupper((string) pathinfo($attachmentName, PATHINFO_EXTENSIO
           <?php if (!empty($error)): ?><div class="flash flash-error"><?= e((string) $error) ?></div><?php endif; ?>
           <form method="post" action="<?= e(url('/missions/' . ($live['slug'] ?? '') . '/candidater')) ?>">
             <?= csrf_field() ?>
+            <?= form_guard_fields('apply') ?>
             <div class="form-grid-2">
               <div>
                 <label class="field" for="price">Votre tarif (€)</label>
@@ -198,6 +199,7 @@ $attachmentExt = strtoupper((string) pathinfo($attachmentName, PATHINFO_EXTENSIO
           <summary>Signaler cette recherche</summary>
           <form method="post" action="<?= e(url('/signaler')) ?>">
             <?= csrf_field() ?>
+            <?= form_guard_fields('report') ?>
             <input type="hidden" name="type" value="mission">
             <input type="hidden" name="id" value="<?= (int) ($live['id'] ?? 0) ?>">
             <input type="hidden" name="back" value="<?= e((string) ($live['href'] ?? '/missions')) ?>">

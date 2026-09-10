@@ -15,6 +15,7 @@ $offersOn = old('offers_services', '1') !== '';
     ?>
     <form method="post" action="<?= e(url('/inscription')) ?>" class="auth-form">
       <?= csrf_field() ?>
+      <?= form_guard_fields('register') ?>
       <p class="field" style="margin-bottom: 0;">Que souhaitez-vous faire ?</p>
       <div class="intent-grid">
         <label class="intent-card<?= $seeksOn ? ' is-on' : '' ?>" data-intent-card>

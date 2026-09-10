@@ -60,6 +60,7 @@ $typoOld = (string) old('typology_key', 'specialise');
 
         <form class="me-claim-form me-add-form" method="post" action="<?= e(url('/maisons-edition/ajouter')) ?>" enctype="multipart/form-data">
           <?= csrf_field() ?>
+          <?= form_guard_fields('publisher-add') ?>
 
           <h2 class="me-form-title">La maison</h2>
           <div class="form-grid-2">

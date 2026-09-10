@@ -23,6 +23,7 @@ $invalid = !empty($invalid);
     <?php endif; ?>
     <form method="post" action="<?= e(url('/recommandation/' . rawurlencode((string) ($request['token'] ?? '')))) ?>" class="recommandation-form">
       <?= csrf_field() ?>
+      <?= form_guard_fields('recommendation') ?>
       <div>
         <label class="field" for="reco-name">Votre nom</label>
         <input class="input" id="reco-name" name="name" required value="<?= e((string) (old('name') ?: $request['recipient_name'] ?? '')) ?>">

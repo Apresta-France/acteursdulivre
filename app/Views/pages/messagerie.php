@@ -94,6 +94,7 @@ $alreadyReported = !empty($alreadyReported);
           </div>
           <form class="inbox-compose" method="post" action="<?= e(url('/espace/messages/' . (int) $thread['id'])) ?>" enctype="multipart/form-data" data-dropzone>
             <?= csrf_field() ?>
+            <?= form_guard_fields('message') ?>
             <textarea class="textarea" name="body" rows="3" placeholder="Votre message…"></textarea>
             <label class="dropzone" data-dropzone-zone>
               <input class="file-pick-input" type="file" name="attachment" accept=".pdf,.jpg,.jpeg,.png,.webp,.txt,.doc,.docx,.odt">

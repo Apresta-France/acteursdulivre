@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Adl\Controllers;
 
 use Adl\Core\Auth;
+use Adl\Core\BotGuard;
 use Adl\Core\Request;
 use Adl\Core\View;
 use Adl\Data\Catalog;
@@ -1722,6 +1723,26 @@ final class AccountController
     {
         $user = Auth::requireUser();
         $avec = $request->int('avec');
+        if ($request->isPost()) {
+            $guard = BotGuard::consume('message', $request);
+            $back = safe_internal_path($request->string('retour'));
+            if ($guard !== BotGuard::OK) {
+                flash('error', BotGuard::RETRY_MESSAGE);
+                if ($back) {
+                    $_SESSION['_old'] = ['message' => $request->string('message')];
+                    redirect($back);
+                }
+                redirect('/espace/messages');
+            }
+            if (rate_limited('message-user', (string) $user['id'], 30, 3600)) {
+                flash('error', BotGuard::TOO_MANY_MESSAGE);
+                if ($back) {
+                    $_SESSION['_old'] = ['message' => $request->string('message')];
+                    redirect($back);
+                }
+                redirect('/espace/messages');
+            }
+        }
         if ($avec && $avec === (int) $user['id']) {
             flash('error', 'Vous ne pouvez pas vous écrire à vous-même.');
             $avec = null;
@@ -1840,6 +1861,15 @@ final class AccountController
     public function messageSend(Request $request, string $id): void
     {
         $user = Auth::requireUser();
+        $guard = BotGuard::consume('message', $request);
+        if ($guard !== BotGuard::OK) {
+            flash('error', BotGuard::RETRY_MESSAGE);
+            redirect('/espace/messages/' . (int) $id);
+        }
+        if (rate_limited('message-user', (string) $user['id'], 30, 3600)) {
+            flash('error', BotGuard::TOO_MANY_MESSAGE);
+            redirect('/espace/messages/' . (int) $id);
+        }
         try {
             Conversation::send((int) $id, (int) $user['id'], $request->string('body'), $request->file('attachment'));
             Analytics::action('message');
@@ -1866,6 +1896,17 @@ final class AccountController
         $mission = Mission::findBySlug($slug);
         if (!$mission) {
             not_found('Cette recherche n\'est plus disponible.');
+        }
+        $guard = BotGuard::consume('apply', $request);
+        if ($guard !== BotGuard::OK) {
+            flash('error', BotGuard::RETRY_MESSAGE);
+            flash('old', $request->all());
+            redirect('/missions/' . rawurlencode($slug));
+        }
+        if (rate_limited('apply-user', (string) $user['id'], 12, 3600)) {
+            flash('error', BotGuard::TOO_MANY_MESSAGE);
+            flash('old', $request->all());
+            redirect('/missions/' . rawurlencode($slug));
         }
         try {
             Application::create(

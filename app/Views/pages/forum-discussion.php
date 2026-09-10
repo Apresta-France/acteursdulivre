@@ -78,6 +78,11 @@ $forumFlashError = trim((string) ($forumFlashError ?? ''));
           Cette discussion a été ouverte depuis un article du journal.
           <a href="<?= e(url((string) $topic['article_href'])) ?>">Lire l’article d’origine</a>
         </div>
+      <?php elseif (!empty($topic['salon_href'])): ?>
+        <div class="forum-notice">
+          Cette discussion a été ouverte depuis une fiche salon.
+          <a href="<?= e(url((string) $topic['salon_href'])) ?>">Voir la fiche de l’événement</a>
+        </div>
       <?php endif; ?>
       <?php if ($op): ?>
         <article class="forum-post" id="post-<?= (int) $op['id'] ?>">
@@ -96,6 +101,7 @@ $forumFlashError = trim((string) ($forumFlashError ?? ''));
               <?php if ($logged): ?>
                 <form class="forum-inline-form" method="post" action="<?= e(url('/signaler')) ?>">
                   <?= csrf_field() ?>
+                  <?= form_guard_fields('report') ?>
                   <input type="hidden" name="type" value="forum_post">
                   <input type="hidden" name="id" value="<?= (int) $op['id'] ?>">
                   <input type="hidden" name="reason" value="ia">
@@ -156,6 +162,7 @@ $forumFlashError = trim((string) ($forumFlashError ?? ''));
                     <?php if ($logged): ?>
                       <form class="forum-inline-form" method="post" action="<?= e(url('/signaler')) ?>">
                         <?= csrf_field() ?>
+                        <?= form_guard_fields('report') ?>
                         <input type="hidden" name="type" value="forum_post">
                         <input type="hidden" name="id" value="<?= (int) $r['id'] ?>">
                         <input type="hidden" name="reason" value="ia">
@@ -221,6 +228,7 @@ $forumFlashError = trim((string) ($forumFlashError ?? ''));
       <?php if ($canReply): ?>
         <form class="forum-compose" id="repondre" method="post" action="<?= e(url($topicHref . '/repondre')) ?>" data-forum-compose data-min-chars="<?= (int) \Adl\Models\ForumPost::MIN_BODY ?>">
           <?= csrf_field() ?>
+          <?= form_guard_fields('forum-reply') ?>
           <input type="hidden" name="parent_id" value="" data-parent-id>
           <div class="forum-compose-head">
             <?= avatar_html($user ?? [], 40, 'forum-avatar') ?>

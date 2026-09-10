@@ -6,6 +6,12 @@ $description = trim((string) ($s['description'] ?? ''));
 $notes = trim((string) ($s['notes'] ?? ''));
 $confirmed = !empty($s['confirmed']);
 $cover = asset('img/covers/salons-evenements.webp') . '?v=1';
+$discussion = is_array($salonForumTopic ?? null) ? $salonForumTopic : null;
+$commentError = trim((string) ($salonCommentError ?? ''));
+$commentOld = is_array($salonCommentOld ?? null) ? $salonCommentOld : [];
+$salonHref = (string) ($s['href'] ?? '/salons/' . ($s['slug'] ?? ''));
+$authNext = rawurlencode($salonHref . '#commentaires');
+$salonUser = auth_user();
 
 $glance = [];
 $when = trim((string) ($s['when_dates'] ?? $s['when'] ?? ''));
@@ -157,6 +163,82 @@ if ($infoLines !== []) {
       <?php if ($notes !== '' && $notes !== '-'): ?>
         <p class="salon-notes"><?= e($notes) ?></p>
       <?php endif; ?>
+
+      <section class="article-comments" id="commentaires" aria-labelledby="salon-comments-title">
+        <div class="article-comments-head">
+          <div>
+            <p class="journal-kicker">La discussion continue sur le forum</p>
+            <h2 id="salon-comments-title">Et vous, qu’en pensez-vous&nbsp;?</h2>
+          </div>
+          <?php if ($discussion && (string) ($discussion['href'] ?? '') !== ''): ?>
+            <?php $commentCount = (int) ($discussion['reply_count'] ?? 0) + 1; ?>
+            <a class="article-comments-count" href="<?= e(url((string) $discussion['href'])) ?>">
+              <?= e(format_int($commentCount)) ?> commentaire<?= $commentCount > 1 ? 's' : '' ?>
+            </a>
+          <?php endif; ?>
+        </div>
+
+        <p class="article-comments-intro">
+          Votre commentaire ouvre ou rejoint un sujet dans la rubrique Diffusion et librairies du forum, afin que toute la communauté puisse participer.
+        </p>
+
+        <?php if ($discussion && (string) ($discussion['href'] ?? '') !== ''): ?>
+          <p class="article-comments-topic">
+            Discussion classée dans
+            <a href="<?= e(url((string) $discussion['category_href'])) ?>"><?= e((string) $discussion['category_name']) ?></a>.
+            <a href="<?= e(url((string) $discussion['href'])) ?>">Voir tous les échanges</a>
+          </p>
+        <?php endif; ?>
+
+        <?php if (!empty($logged) && (empty($discussion) || empty($discussion['is_locked']))): ?>
+          <form class="forum-compose article-comment-form" method="post" action="<?= e(url($salonHref . '/commenter')) ?>" data-forum-compose data-min-chars="<?= (int) \Adl\Models\ForumPost::MIN_BODY ?>">
+            <?= csrf_field() ?>
+            <?= form_guard_fields('salon-comment') ?>
+            <div class="forum-compose-head">
+              <?= avatar_html($salonUser ?? [], 40, 'forum-avatar') ?>
+              <div class="forum-compose-who">
+                <div class="forum-post-name"><?= $discussion ? 'Votre commentaire' : 'Lancer la discussion' ?></div>
+                <div class="forum-aside-meta">Votre message sera publié sur le forum.</div>
+              </div>
+              <span class="forum-pin">Sans IA</span>
+            </div>
+            <div class="forum-compose-body">
+              <?php if ($commentError !== ''): ?>
+                <p class="forum-compose-error" data-compose-error data-server-error><?= e($commentError) ?></p>
+              <?php else: ?>
+                <p class="forum-compose-error" data-compose-error hidden></p>
+              <?php endif; ?>
+              <?php
+                $forumWysiwygName = 'body';
+                $forumWysiwygValue = (string) ($commentOld['body'] ?? '');
+                $forumWysiwygPlaceholder = 'Partagez un retour de stand, un conseil pratique ou une information utile sur cet événement.';
+                $forumWysiwygRows = 6;
+                $forumWysiwygRequired = true;
+                require ADL_ROOT . '/app/Views/partials/forum-wysiwyg.php';
+              ?>
+              <label class="forum-engage">
+                <input type="checkbox" name="no_ai" value="1" required>
+                <span>Je confirme que ce commentaire est de ma main et qu’aucune IA générative n’a été utilisée pour le produire.</span>
+              </label>
+              <p class="forum-compose-block" data-compose-block hidden role="status" aria-live="polite"></p>
+              <div class="forum-compose-actions">
+                <button type="submit" class="btn-orange"><?= $discussion ? 'Publier mon commentaire' : 'Commenter et ouvrir le sujet' ?></button>
+                <span class="forum-draft-count" data-draft-count role="status" aria-live="polite">Minimum <?= (int) \Adl\Models\ForumPost::MIN_BODY ?> caractères pour publier</span>
+              </div>
+            </div>
+          </form>
+        <?php elseif (!empty($discussion['is_locked'])): ?>
+          <p class="article-comments-locked">Cette discussion est actuellement fermée aux nouveaux commentaires.</p>
+        <?php else: ?>
+          <div class="article-comments-auth">
+            <p>Connectez-vous ou créez votre compte gratuitement pour participer.</p>
+            <div class="article-comments-actions">
+              <a class="btn-orange" href="<?= e(url('/connexion?next=' . $authNext)) ?>">Se connecter</a>
+              <a class="btn-ghost" href="<?= e(url('/inscription?next=' . $authNext)) ?>">Créer mon compte</a>
+            </div>
+          </div>
+        <?php endif; ?>
+      </section>
     </div>
 
     <aside class="salon-fiche-side">

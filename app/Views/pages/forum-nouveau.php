@@ -30,6 +30,7 @@ if ($oldCat <= 0 && $preselect !== '') {
     <div class="forum-split forum-split-narrow" data-forum-similar data-api="<?= e(url('/api/forum/similaires')) ?>">
       <form class="forum-compose forum-compose-new" method="post" action="<?= e(url('/forum/nouveau')) ?>" data-forum-compose data-min-chars="80">
         <?= csrf_field() ?>
+        <?= form_guard_fields('forum-new') ?>
         <div class="forum-compose-head">
           <div class="forum-compose-who">
             <div class="forum-post-name">Votre discussion</div>

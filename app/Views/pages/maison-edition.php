@@ -101,6 +101,7 @@ $facts[] = ['Ligne éditoriale', $p['typology_label'], '/maisons-edition?typolog
         <?php if ($p['is_claimed'] && !empty($p['owner_user_id'])): ?>
           <form method="post" action="<?= e(url('/espace/messages')) ?>">
             <?= csrf_field() ?>
+            <?= form_guard_fields('message') ?>
             <input type="hidden" name="avec" value="<?= (int) $p['owner_user_id'] ?>">
             <input type="hidden" name="sujet" value="<?= e('Contact via la fiche ' . $p['name']) ?>">
             <button class="btn-orange" type="submit">Écrire à la maison</button>
@@ -111,6 +112,7 @@ $facts[] = ['Ligne éditoriale', $p['typology_label'], '/maisons-edition?typolog
         <?php elseif ($p['has_contact']): ?>
           <form method="post" action="<?= e(url($p['href'] . '/contact')) ?>">
             <?= csrf_field() ?>
+            <?= form_guard_fields('publisher-contact') ?>
             <button class="<?= $p['is_claimed'] ? 'btn-ghost-light' : 'btn-orange' ?>" type="submit"<?= $contactLeft <= 0 ? ' disabled title="Plafond quotidien atteint"' : '' ?>>Prendre contact</button>
           </form>
           <p class="profile-avail-note"><?= $contactLeft > 0 ? 'Encore ' . $contactLeft . ' ' . ($contactLeft > 1 ? 'fiches de contact' : 'fiche de contact') . ' aujourd\'hui.' : 'Plafond quotidien atteint : revenez demain.' ?></p>
@@ -185,6 +187,7 @@ $facts[] = ['Ligne éditoriale', $p['typology_label'], '/maisons-edition?typolog
             <?php if ($p['has_contact'] && $contactLeft > 0): ?>
               <form method="post" action="<?= e(url($p['href'] . '/contact')) ?>">
                 <?= csrf_field() ?>
+                <?= form_guard_fields('publisher-contact') ?>
                 <button class="btn-navy" type="submit">Prendre contact</button>
               </form>
             <?php endif; ?>

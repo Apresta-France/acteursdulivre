@@ -10,6 +10,7 @@
     <?php endif; ?>
     <form method="post" action="<?= e(url('/mot-de-passe-oublie')) ?>" class="auth-form">
       <?= csrf_field() ?>
+      <?= form_guard_fields('forgot') ?>
       <div>
         <label class="field" for="email">E-mail</label>
         <input class="input" id="email" type="email" name="email" required placeholder="vous@exemple.fr">

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Adl\Controllers;
 
 use Adl\Core\Auth;
+use Adl\Core\BotGuard;
 use Adl\Core\Request;
 use Adl\Core\View;
 use Adl\Data\Seo;
@@ -215,6 +216,11 @@ final class PublisherController
             flash('error', 'Créez un compte ou connectez-vous pour consulter les coordonnées de cette maison d\'édition.');
             redirect('/connexion');
         }
+        $guard = BotGuard::consume('publisher-contact', $request);
+        if ($guard !== BotGuard::OK) {
+            flash('error', BotGuard::RETRY_MESSAGE);
+            redirect($publisher['href'] . '#contact');
+        }
         try {
             Publisher::revealContact((int) $publisher['id'], (int) $viewer['id']);
             Analytics::action('maison_contact');
@@ -261,6 +267,17 @@ final class PublisherController
         $publisher = $this->safeFind($slug);
         if (!$publisher || !Publisher::isPublic($publisher)) {
             not_found();
+        }
+        $guard = BotGuard::consume('publisher-claim', $request);
+        if ($guard !== BotGuard::OK) {
+            flash('error', BotGuard::RETRY_MESSAGE);
+            $_SESSION['_old'] = $request->all();
+            redirect($publisher['href'] . '/revendiquer');
+        }
+        if (rate_limited('publisher-claim-user', (string) $user['id'], 6, 3600)) {
+            flash('error', BotGuard::TOO_MANY_MESSAGE);
+            $_SESSION['_old'] = $request->all();
+            redirect($publisher['href'] . '/revendiquer');
         }
         if (!$request->bool('attest')) {
             flash('error', 'Merci de confirmer que vous êtes habilité à représenter cette maison.');
@@ -345,9 +362,21 @@ final class PublisherController
         $back = self::BASE . '/ajouter';
         $keep = static function () use ($request): void {
             $all = $request->all();
-            unset($all['_token'], $all['logo']);
+            unset($all['_token'], $all['logo'], $all['_gate'], $all['company_website']);
             $_SESSION['_old'] = $all;
         };
+
+        $guard = BotGuard::consume('publisher-add', $request);
+        if ($guard !== BotGuard::OK) {
+            flash('error', BotGuard::RETRY_MESSAGE);
+            $keep();
+            redirect($back);
+        }
+        if (rate_limited('publisher-add-user', (string) $user['id'], 6, 3600)) {
+            flash('error', BotGuard::TOO_MANY_MESSAGE);
+            $keep();
+            redirect($back);
+        }
 
         if (!$request->bool('attest')) {
             flash('error', 'Merci de confirmer que vous êtes habilité à représenter cette maison.');

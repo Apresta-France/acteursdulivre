@@ -138,7 +138,7 @@ $articleUser = auth_user();
             <p class="journal-kicker">La discussion continue sur le forum</p>
             <h2 id="article-comments-title">Et vous, qu’en pensez-vous&nbsp;?</h2>
           </div>
-          <?php if ($discussion): ?>
+          <?php if ($discussion && (string) ($discussion['href'] ?? '') !== ''): ?>
             <?php $commentCount = (int) ($discussion['reply_count'] ?? 0) + 1; ?>
             <a class="article-comments-count" href="<?= e(url((string) $discussion['href'])) ?>">
               <?= e(format_int($commentCount)) ?> commentaire<?= $commentCount > 1 ? 's' : '' ?>
@@ -150,7 +150,7 @@ $articleUser = auth_user();
           Votre commentaire ouvre ou rejoint un sujet dans la rubrique adaptée du forum, afin que toute la communauté puisse participer.
         </p>
 
-        <?php if ($discussion): ?>
+        <?php if ($discussion && (string) ($discussion['href'] ?? '') !== ''): ?>
           <p class="article-comments-topic">
             Discussion classée dans
             <a href="<?= e(url((string) $discussion['category_href'])) ?>"><?= e((string) $discussion['category_name']) ?></a>.
@@ -161,6 +161,7 @@ $articleUser = auth_user();
         <?php if (!empty($logged) && (empty($discussion) || empty($discussion['is_locked']))): ?>
           <form class="forum-compose article-comment-form" method="post" action="<?= e(url($articleHref . '/commenter')) ?>" data-forum-compose data-min-chars="<?= (int) \Adl\Models\ForumPost::MIN_BODY ?>">
             <?= csrf_field() ?>
+            <?= form_guard_fields('article-comment') ?>
             <div class="forum-compose-head">
               <?= avatar_html($articleUser ?? [], 40, 'forum-avatar') ?>
               <div class="forum-compose-who">

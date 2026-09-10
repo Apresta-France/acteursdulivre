@@ -183,6 +183,10 @@ final class Auth
                         'delay' => trim((string) ($_POST['delay'] ?? '')),
                         'message' => $message,
                     ];
+                } elseif (preg_match('#^(/journal/[^/]+)/commenter$#', $path, $m)) {
+                    $uri = $m[1] . '#commentaires';
+                } elseif (preg_match('#^(/salons/[^/]+)/commenter$#', $path, $m)) {
+                    $uri = $m[1] . '#commentaires';
                 } else {
                     $uri = $path;
                 }

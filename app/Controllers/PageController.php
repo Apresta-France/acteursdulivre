@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Adl\Controllers;
 
 use Adl\Core\Auth;
+use Adl\Core\BotGuard;
 use Adl\Core\Mailer;
 use Adl\Core\Request;
 use Adl\Core\View;
@@ -836,11 +837,25 @@ final class PageController
         } catch (\Throwable) {
         }
 
+        try {
+            $salonForumTopic = ForumTopic::findBySalon((int) $salon['id'], false);
+        } catch (\Throwable) {
+            $salonForumTopic = null;
+        }
+        if (is_array($salonForumTopic) && ($salonForumTopic['status'] ?? '') !== 'visible') {
+            $salonForumTopic['is_locked'] = true;
+            $salonForumTopic['href'] = '';
+            $salonForumTopic['category_href'] = '';
+        }
+
         View::page('salon', [
             'title' => (string) $salon['name'],
             'meta' => $meta,
             'salon' => $salon,
             'upcoming' => $upcoming,
+            'salonForumTopic' => $salonForumTopic,
+            'salonCommentError' => flash('salon_comment_error'),
+            'salonCommentOld' => flash('salon_comment_old') ?: [],
         ]);
     }
 
@@ -899,6 +914,21 @@ final class PageController
             'contact_name' => $request->string('contact_name'),
             'contact_email' => $request->string('contact_email'),
         ];
+        $guard = BotGuard::consume('salon-add', $request);
+        if ($guard === BotGuard::HONEYPOT) {
+            flash('salon_proposed', true);
+            redirect('/salons/ajouter');
+        }
+        if ($guard !== BotGuard::OK) {
+            flash('error', BotGuard::RETRY_MESSAGE);
+            $_SESSION['_old'] = $old;
+            redirect('/salons/ajouter');
+        }
+        if (rate_limited('salon-add-ip', client_ip_hash(), 8, 3600)) {
+            flash('error', BotGuard::TOO_MANY_MESSAGE);
+            $_SESSION['_old'] = $old;
+            redirect('/salons/ajouter');
+        }
         $similar = [];
         try {
             $similar = Salon::similar($old['name'], $old['city'], 4);
@@ -1035,9 +1065,14 @@ final class PageController
         }
 
         try {
-            $articleForumTopic = ForumTopic::findByArticle((int) $article['id']);
+            $articleForumTopic = ForumTopic::findByArticle((int) $article['id'], false);
         } catch (\Throwable) {
             $articleForumTopic = null;
+        }
+        if (is_array($articleForumTopic) && ($articleForumTopic['status'] ?? '') !== 'visible') {
+            $articleForumTopic['is_locked'] = true;
+            $articleForumTopic['href'] = '';
+            $articleForumTopic['category_href'] = '';
         }
 
         $published = (string) ($article['published_at'] ?? '');
@@ -1116,6 +1151,22 @@ final class PageController
 
     public function newsletter(Request $request): void
     {
+        $back = $request->string('back');
+        $redirectTo = $back !== '' ? $back : '/';
+        $guard = BotGuard::consume('newsletter', $request);
+        if ($guard === BotGuard::HONEYPOT) {
+            flash('saved', 'Vérifiez votre boîte : un e-mail de confirmation vient d’être envoyé.');
+            redirect($redirectTo);
+        }
+        if ($guard !== BotGuard::OK) {
+            flash('error', BotGuard::RETRY_MESSAGE);
+            redirect($redirectTo);
+        }
+        $email = strtolower($request->string('email'));
+        if (rate_limited('newsletter-ip', client_ip_hash(), 10, 3600) || rate_limited('newsletter-email', $email, 3, 3600)) {
+            flash('error', BotGuard::TOO_MANY_MESSAGE);
+            redirect($redirectTo);
+        }
         try {
             $email = $request->string('email');
             $user = Auth::user();
@@ -1188,6 +1239,21 @@ final class PageController
 
     public function report(Request $request): void
     {
+        $back = $request->string('back');
+        $redirectTo = $back !== '' ? $back : '/aide';
+        $guard = BotGuard::consume('report', $request);
+        if ($guard === BotGuard::HONEYPOT) {
+            flash('saved', 'Signalement reçu. L\'équipe de modération le traitera.');
+            redirect($redirectTo);
+        }
+        if ($guard !== BotGuard::OK) {
+            flash('error', BotGuard::RETRY_MESSAGE);
+            redirect($redirectTo);
+        }
+        if (rate_limited('report-ip', client_ip_hash(), 6, 3600)) {
+            flash('error', BotGuard::TOO_MANY_MESSAGE);
+            redirect($redirectTo);
+        }
         $viewer = Auth::user();
         try {
             $type = $request->string('type', 'user');
@@ -1259,6 +1325,22 @@ final class PageController
 
     public function recommandationSave(Request $request, string $token): void
     {
+        $guard = BotGuard::consume('recommendation', $request);
+        if ($guard === BotGuard::HONEYPOT) {
+            $this->renderRecommandation($token, true);
+            unset($_SESSION['_old']);
+            return;
+        }
+        if ($guard !== BotGuard::OK) {
+            flash('error', BotGuard::RETRY_MESSAGE);
+            $this->renderRecommandation($token, false);
+            return;
+        }
+        if (rate_limited('reco-ip', client_ip_hash(), 8, 3600)) {
+            flash('error', BotGuard::TOO_MANY_MESSAGE);
+            $this->renderRecommandation($token, false);
+            return;
+        }
         try {
             if (!$request->bool('sincere')) {
                 throw new \RuntimeException('Confirmez que cette recommandation est sincère.');
@@ -1447,6 +1529,22 @@ final class PageController
         $name = $request->string('name');
         $message = $request->string('message');
         $old = ['name' => $name, 'email' => $email, 'message' => $message];
+
+        $guard = BotGuard::consume('contact', $request);
+        if ($guard === BotGuard::HONEYPOT) {
+            flash('contact_sent', true);
+            redirect('/contact');
+        }
+        if ($guard !== BotGuard::OK) {
+            flash('error', BotGuard::RETRY_MESSAGE);
+            $_SESSION['_old'] = $old;
+            redirect('/contact');
+        }
+        if (rate_limited('contact-ip', client_ip_hash(), 5, 3600) || rate_limited('contact-email', strtolower($email), 3, 3600)) {
+            flash('error', BotGuard::TOO_MANY_MESSAGE);
+            $_SESSION['_old'] = $old;
+            redirect('/contact');
+        }
 
         if (!filter_var($email, FILTER_VALIDATE_EMAIL) || $message === '') {
             flash('error', 'Merci d\'indiquer un e-mail valide et votre message.');
