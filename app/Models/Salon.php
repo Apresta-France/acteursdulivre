@@ -32,6 +32,12 @@ final class Salon
         9 => 'sept.', 10 => 'oct.', 11 => 'nov.', 12 => 'déc.',
     ];
 
+    private const MONTHS_LONG = [
+        1 => 'Janvier', 2 => 'Février', 3 => 'Mars', 4 => 'Avril',
+        5 => 'Mai', 6 => 'Juin', 7 => 'Juillet', 8 => 'Août',
+        9 => 'Septembre', 10 => 'Octobre', 11 => 'Novembre', 12 => 'Décembre',
+    ];
+
     public static function tableExists(): bool
     {
         try {
@@ -421,7 +427,18 @@ final class Salon
         $row['iso'] = $start;
         $row['day'] = $start !== '' ? (string) (int) substr($start, 8, 2) : '—';
         $row['month'] = $start !== '' ? (self::MONTHS[(int) substr($start, 5, 2)] ?? '') : '';
-        $row['when'] = self::formatWhen($start, $end, (string) ($row['dates_raw'] ?? ''), !empty($row['dates_confirmed']));
+        $row['confirmed'] = !empty($row['dates_confirmed']);
+        $row['when_dates'] = self::formatWhen($start, $end, (string) ($row['dates_raw'] ?? ''), true);
+        $row['when'] = self::formatWhen($start, $end, (string) ($row['dates_raw'] ?? ''), $row['confirmed']);
+        if ($start !== '') {
+            $monthNum = (int) substr($start, 5, 2);
+            $year = (int) substr($start, 0, 4);
+            $row['month_key'] = substr($start, 0, 7);
+            $row['month_heading'] = trim((self::MONTHS_LONG[$monthNum] ?? '') . ' ' . $year);
+        } else {
+            $row['month_key'] = 'sans-date';
+            $row['month_heading'] = 'Dates à confirmer';
+        }
         return $row;
     }
 

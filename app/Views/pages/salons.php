@@ -52,14 +52,43 @@ $countLabel = format_int($total) . ' ' . ($total > 1 ? 'salons' : 'salon');
 if ((int) $pager['pages'] > 1) {
     $countLabel .= ' · page ' . (int) $pager['page'] . ' / ' . (int) $pager['pages'];
 }
+
+$groups = [];
+foreach ($salons as $event) {
+    $key = (string) ($event['month_key'] ?? 'sans-date');
+    if (!isset($groups[$key])) {
+        $groups[$key] = [
+            'label' => (string) ($event['month_heading'] ?? 'Dates à confirmer'),
+            'items' => [],
+        ];
+    }
+    $groups[$key]['items'][] = $event;
+}
 ?>
 <div class="search-page co-salons-page">
+  <section class="profile-hero salon-hero">
+    <div class="profile-hero-main">
+      <nav class="search-crumb salon-crumb" aria-label="Fil d'Ariane">
+        <a href="<?= e(url('/')) ?>">Accueil</a>
+        <span aria-hidden="true"> · </span>
+        <a href="<?= e(url('/communaute')) ?>">Communauté</a>
+        <span aria-hidden="true"> · </span>
+        <span>Agenda des salons</span>
+      </nav>
+      <h1>Agenda des salons du livre</h1>
+      <p class="profile-hero-sub">Salons du livre, festivals et foires en France et en Europe, de septembre 2026 à septembre 2027. Dates à reconfirmer sur le site de chaque manifestation.</p>
+    </div>
+    <div class="profile-hero-actions">
+      <a class="btn-orange" href="<?= e(url('/salons/ajouter')) ?>">Ajouter un salon</a>
+    </div>
+  </section>
+
   <div class="search-layout">
     <aside class="search-aside">
       <div class="search-aside-head">
         <span>Filtres</span>
         <?php if ($active !== []): ?>
-          <a href="<?= e(url($pagerPath)) ?>">Réinitialiser</a>
+          <a href="<?= e(url($pagerPath)) ?>">Tout effacer</a>
         <?php endif; ?>
       </div>
       <?php if ($active !== []): ?>
@@ -101,13 +130,11 @@ if ((int) $pager['pages'] > 1) {
         <?php if ($facets['categories'] !== []): ?>
           <div class="sf-group">
             <div class="sf-group-label">Catégorie</div>
-            <div class="sf-opts">
+            <div class="salon-cat-chips">
               <?php foreach ($facets['categories'] as $opt): ?>
-                <label class="sf-opt">
+                <label class="salon-chip<?= $opt['v'] === $category ? ' is-on' : '' ?>">
                   <input type="radio" name="cat" value="<?= e($opt['v']) ?>"<?= $opt['v'] === $category ? ' checked' : '' ?> onchange="this.form.submit()">
-                  <span class="sf-box" aria-hidden="true"></span>
-                  <span class="sf-txt"><?= e($opt['l']) ?></span>
-                  <span class="sf-n"><?= (int) $opt['n'] ?></span>
+                  <span><?= e($opt['l']) ?></span>
                 </label>
               <?php endforeach; ?>
             </div>
@@ -116,27 +143,16 @@ if ((int) $pager['pages'] > 1) {
         <button class="btn-ghost me-filters-submit" type="submit">Appliquer les filtres</button>
       </form>
 
-      <div class="search-aside-card">
+      <div class="search-aside-card side-card-warm">
         <div class="search-aside-title">Un salon manque ?</div>
         <p>Cette liste est une sélection France + Europe, sept. 2026 – sept. 2027. Proposez le vôtre : l’équipe le publie après vérification.</p>
-        <a class="btn-ghost" href="<?= e(url('/salons/ajouter')) ?>">Ajouter un salon</a>
+        <a class="btn-navy" href="<?= e(url('/salons/ajouter')) ?>">Ajouter un salon</a>
       </div>
     </aside>
 
     <div>
-      <nav class="search-crumb" aria-label="Fil d'Ariane">
-        <a href="<?= e(url('/')) ?>">Accueil</a>
-        <span aria-hidden="true"> · </span>
-        <a href="<?= e(url('/communaute')) ?>">Communauté</a>
-        <span aria-hidden="true"> · </span>
-        <span>Agenda des salons</span>
-      </nav>
-
-      <div class="search-head">
-        <div>
-          <h1>Agenda des salons <span><?= e($countLabel) ?></span></h1>
-          <p class="journal-lead">Salons du livre, festivals et foires en France et en Europe. Dates à reconfirmer sur le site de chaque manifestation.</p>
-        </div>
+      <div class="salon-toolbar">
+        <span class="salon-count"><?= e($countLabel) ?></span>
       </div>
 
       <?php if ($salons === []): ?>
@@ -145,22 +161,59 @@ if ((int) $pager['pages'] > 1) {
           <span>Essayez un autre mot-clé, retirez un filtre, ou <a href="<?= e(url('/salons/ajouter')) ?>">proposez un salon</a>.</span>
         </div>
       <?php else: ?>
-        <div class="co-agenda">
-          <?php foreach ($salons as $event): ?>
-            <a class="co-event" href="<?= e(url((string) ($event['href'] ?? '/salons'))) ?>">
-              <time class="co-event-date" datetime="<?= e((string) ($event['iso'] ?? '')) ?>">
-                <strong><?= e((string) ($event['day'] ?? '')) ?></strong>
-                <span><?= e((string) ($event['month'] ?? '')) ?></span>
-              </time>
-              <div class="co-event-main">
-                <div class="co-event-tags">
-                  <?php if (!empty($event['kind'])): ?><span class="mk-tag"><?= e((string) $event['kind']) ?></span><?php endif; ?>
-                  <?php if (!empty($event['when'])): ?><span class="co-event-when"><?= e((string) $event['when']) ?></span><?php endif; ?>
-                </div>
-                <h3><?= e((string) ($event['name'] ?? '')) ?></h3>
-                <p><?= e((string) ($event['place'] ?? '')) ?></p>
+        <div class="salon-agenda">
+          <?php foreach ($groups as $group): ?>
+            <?php
+              $n = count($group['items']);
+              $groupCount = format_int($n) . ' ' . ($n > 1 ? 'salons' : 'salon');
+            ?>
+            <section class="salon-month">
+              <div class="salon-month-head">
+                <h2><?= e($group['label']) ?></h2>
+                <span><?= e($groupCount) ?></span>
+                <span class="salon-month-line" aria-hidden="true"></span>
               </div>
-            </a>
+              <div class="salon-month-list">
+                <?php foreach ($group['items'] as $event): ?>
+                  <?php
+                    $regionOrCountry = (string) ($event['region'] ?? '');
+                    if ($regionOrCountry === '' || $regionOrCountry === '—') {
+                        $countryName = (string) ($event['country'] ?? '');
+                        $regionOrCountry = ($countryName !== '' && $countryName !== 'France') ? $countryName : '';
+                    }
+                    $attendance = (string) ($event['attendance'] ?? '');
+                    if (str_starts_with(mb_strtolower($attendance), 'non trouvé')) {
+                        $attendance = '';
+                    }
+                    $metaParts = array_filter([
+                        (string) ($event['when_dates'] ?? $event['when'] ?? ''),
+                        (string) ($event['city'] ?? ''),
+                        $regionOrCountry,
+                        $attendance,
+                    ], static fn (string $v): bool => $v !== '' && $v !== '—');
+                  ?>
+                  <a class="salon-row" href="<?= e(url((string) ($event['href'] ?? '/salons'))) ?>">
+                    <time class="salon-row-date" datetime="<?= e((string) ($event['iso'] ?? '')) ?>">
+                      <strong><?= e((string) ($event['day'] ?? '')) ?></strong>
+                      <span><?= e((string) ($event['month'] ?? '')) ?></span>
+                    </time>
+                    <div class="salon-row-main">
+                      <div class="salon-row-top">
+                        <h3><?= e((string) ($event['name'] ?? '')) ?></h3>
+                        <?php if (!empty($event['kind'])): ?><span class="mk-tag"><?= e((string) $event['kind']) ?></span><?php endif; ?>
+                        <?php if (empty($event['confirmed'])): ?>
+                          <span class="salon-flag">Dates à confirmer</span>
+                        <?php endif; ?>
+                      </div>
+                      <?php if ($metaParts !== []): ?>
+                        <p><?= e(implode(' · ', $metaParts)) ?></p>
+                      <?php endif; ?>
+                    </div>
+                    <span class="btn-navy salon-row-cta">Voir la fiche</span>
+                  </a>
+                <?php endforeach; ?>
+              </div>
+            </section>
           <?php endforeach; ?>
         </div>
       <?php endif; ?>
@@ -170,12 +223,12 @@ if ((int) $pager['pages'] > 1) {
         require ADL_ROOT . '/app/Views/partials/search-pager.php';
       ?>
 
-      <aside class="me-add-cta">
+      <aside class="salon-cta">
         <div>
           <strong>Votre salon n’est pas dans l’agenda ?</strong>
-          <span>Proposez-le : l’équipe le publie après vérification.</span>
+          <span>Proposez-le : l’équipe vérifie les dates auprès de l’organisateur avant publication.</span>
         </div>
-        <a class="btn-navy" href="<?= e(url('/salons/ajouter')) ?>">Ajouter un salon</a>
+        <a class="btn-orange" href="<?= e(url('/salons/ajouter')) ?>">Ajouter un salon</a>
       </aside>
     </div>
   </div>
