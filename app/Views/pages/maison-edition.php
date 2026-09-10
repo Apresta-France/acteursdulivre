@@ -15,6 +15,7 @@ $related = $related ?? [];
 $contactLeft = (int) ($contactLeft ?? 0);
 $isHidden = !Publisher::isPublic($p);
 $description = trim((string) ($p['description'] ?? ''));
+$submissions = trim((string) ($p['submissions_note'] ?? ''));
 $facts = [];
 if ($p['country'] !== '') {
     $facts[] = ['Pays', $p['country'] . ($p['region'] !== '' ? ' (' . $p['region'] . ')' : ''), $p['country_href']];
@@ -30,9 +31,10 @@ if ($p['group_label'] !== '') {
 }
 $facts[] = ['Taille', $p['size_label'], '/maisons-edition?taille=' . $p['size_key']];
 $facts[] = ['Ligne éditoriale', $p['typology_label'], '/maisons-edition?typologie=' . $p['typology_key']];
+$contactHref = $p['href'] . '/contact';
 ?>
 <div class="profile-page me-fiche">
-  <nav class="search-crumb" aria-label="Fil d'Ariane">
+  <nav class="search-crumb me-fiche-crumb" aria-label="Fil d'Ariane">
     <a href="<?= e(url('/')) ?>">Accueil</a>
     <span aria-hidden="true"> · </span>
     <a href="<?= e(url('/communaute')) ?>">Communauté</a>
@@ -47,7 +49,7 @@ $facts[] = ['Ligne éditoriale', $p['typology_label'], '/maisons-edition?typolog
   </nav>
 
   <?php if ($isHidden): ?>
-    <div class="flash flash-warn" style="margin: 16px 44px 0;"><?= ($p['status'] ?? '') === \Adl\Models\Publisher::STATUS_PENDING
+    <div class="flash flash-warn me-fiche-flash"><?= ($p['status'] ?? '') === \Adl\Models\Publisher::STATUS_PENDING
         ? 'Cette fiche est en attente de validation par l\'équipe : seuls son gestionnaire et l\'administration peuvent la voir. Elle sera publiée dans l\'annuaire dès validation.'
         : 'Cette fiche est masquée : seuls son gestionnaire et l\'administration peuvent la voir.' ?></div>
   <?php endif; ?>
@@ -108,12 +110,12 @@ $facts[] = ['Ligne éditoriale', $p['typology_label'], '/maisons-edition?typolog
           </form>
         <?php endif; ?>
         <?php if ($revealed): ?>
-          <a class="<?= $p['is_claimed'] ? 'btn-ghost-light' : 'btn-orange' ?>" href="#contact">Voir les coordonnées</a>
+          <a class="btn-navy me-coord-btn is-done" href="#contact">Coordonnées affichées</a>
         <?php elseif ($p['has_contact']): ?>
-          <form method="post" action="<?= e(url($p['href'] . '/contact')) ?>">
+          <form method="post" action="<?= e(url($contactHref)) ?>">
             <?= csrf_field() ?>
             <?= form_guard_fields('publisher-contact') ?>
-            <button class="<?= $p['is_claimed'] ? 'btn-ghost-light' : 'btn-orange' ?>" type="submit"<?= $contactLeft <= 0 ? ' disabled title="Plafond quotidien atteint"' : '' ?>>Prendre contact</button>
+            <button class="btn-orange" type="submit"<?= $contactLeft <= 0 ? ' disabled title="Plafond quotidien atteint"' : '' ?>>Voir les coordonnées</button>
           </form>
           <p class="profile-avail-note"><?= $contactLeft > 0 ? 'Encore ' . $contactLeft . ' ' . ($contactLeft > 1 ? 'fiches de contact' : 'fiche de contact') . ' aujourd\'hui.' : 'Plafond quotidien atteint : revenez demain.' ?></p>
         <?php else: ?>
@@ -132,8 +134,8 @@ $facts[] = ['Ligne éditoriale', $p['typology_label'], '/maisons-edition?typolog
     </div>
   </div>
 
-  <div class="profile-body me-body">
-    <div>
+  <div class="me-fiche-layout">
+    <div class="me-fiche-main">
       <h2 id="presentation">Présentation</h2>
       <?php if ($description !== ''): ?>
         <div class="profile-text"><?= nl2br(e($description)) ?></div>
@@ -148,11 +150,6 @@ $facts[] = ['Ligne éditoriale', $p['typology_label'], '/maisons-edition?typolog
             <a class="chip" href="<?= e(url($g['href'])) ?>"><?= e($g['label']) ?></a>
           <?php endforeach; ?>
         </div>
-      <?php endif; ?>
-
-      <?php if (trim((string) ($p['submissions_note'] ?? '')) !== ''): ?>
-        <h2 id="manuscrits">Envoi de manuscrits</h2>
-        <div class="profile-text"><?= nl2br(e((string) $p['submissions_note'])) ?></div>
       <?php endif; ?>
 
       <h2 id="contact">Coordonnées et contact</h2>
@@ -180,22 +177,20 @@ $facts[] = ['Ligne éditoriale', $p['typology_label'], '/maisons-edition?typolog
         <?php endif; ?>
       <?php elseif ($viewer): ?>
         <div class="me-gate">
-          <?= icon('mail', 22) ?>
           <div>
-            <strong>Coordonnées disponibles sur demande</strong>
-            <p>Cliquez sur « Prendre contact » pour afficher le site, l'e-mail et l'adresse de la maison. Chaque compte peut consulter <?= Publisher::CONTACT_DAILY_LIMIT ?> fiches de contact par jour.</p>
-            <?php if ($p['has_contact'] && $contactLeft > 0): ?>
-              <form method="post" action="<?= e(url($p['href'] . '/contact')) ?>">
-                <?= csrf_field() ?>
-                <?= form_guard_fields('publisher-contact') ?>
-                <button class="btn-navy" type="submit">Prendre contact</button>
-              </form>
-            <?php endif; ?>
+            <strong>Coordonnées réservées aux membres</strong>
+            <p>Site, adresse et contact éditorial. Vous pouvez consulter les coordonnées de <?= Publisher::CONTACT_DAILY_LIMIT ?> maisons par jour<?= $contactLeft > 0 ? ' — il vous en reste ' . $contactLeft . ' aujourd\'hui' : '' ?>.</p>
           </div>
+          <?php if ($p['has_contact'] && $contactLeft > 0): ?>
+            <form method="post" action="<?= e(url($contactHref)) ?>">
+              <?= csrf_field() ?>
+              <?= form_guard_fields('publisher-contact') ?>
+              <button class="btn-orange" type="submit">Voir les coordonnées</button>
+            </form>
+          <?php endif; ?>
         </div>
       <?php else: ?>
         <div class="me-gate">
-          <?= icon('id', 22) ?>
           <div>
             <strong>Réservé aux membres d'acteursdulivre.fr</strong>
             <p>Créez un compte gratuit pour consulter les coordonnées des maisons d'édition et leur écrire. Cette règle protège les éditeurs des envois automatisés et garantit des échanges entre vrais professionnels du livre.</p>
@@ -222,6 +217,36 @@ $facts[] = ['Ligne éditoriale', $p['typology_label'], '/maisons-edition?typolog
       <?php elseif (!$viewer && !$p['is_claimed']): ?>
         <p class="me-contact-note">Vous représentez cette maison ? <a href="<?= e(url('/inscription')) ?>">Créez un compte</a> puis revendiquez la fiche pour en prendre la main.</p>
       <?php endif; ?>
+
+      <?php if ($related !== []): ?>
+        <section class="me-related">
+          <h2>Autres maisons <?= e(\Adl\Controllers\PublisherController::countryPhrase($p['country'])) ?></h2>
+          <div class="me-mini-grid">
+            <?php foreach ($related as $r): ?>
+              <a class="me-mini" href="<?= e(url((string) $r['href'])) ?>">
+                <div class="me-card-logo">
+                  <?php if ($r['logo_src'] !== ''): ?>
+                    <img src="<?= e($r['logo_src']) ?>" alt="" width="44" height="44" loading="lazy">
+                  <?php else: ?>
+                    <span class="me-mono" aria-hidden="true"><?= e($r['initials']) ?></span>
+                  <?php endif; ?>
+                </div>
+                <div class="me-mini-body">
+                  <div class="me-mini-kicker"><?= e($r['size_label']) ?></div>
+                  <strong><?= e((string) $r['name']) ?></strong>
+                  <span><?= e($r['location_label']) ?></span>
+                  <?php if ($r['genres'] !== []): ?>
+                    <div class="me-row-genres">
+                      <?php foreach (array_slice($r['genres'], 0, 2) as $g): ?><span><?= e($g) ?></span><?php endforeach; ?>
+                    </div>
+                  <?php endif; ?>
+                </div>
+              </a>
+            <?php endforeach; ?>
+          </div>
+          <a class="btn-ghost me-related-more" href="<?= e(url($p['country_href'])) ?>">Toutes les maisons <?= e(\Adl\Controllers\PublisherController::countryPhrase($p['country'])) ?></a>
+        </section>
+      <?php endif; ?>
     </div>
 
     <aside class="me-side">
@@ -236,6 +261,15 @@ $facts[] = ['Ligne éditoriale', $p['typology_label'], '/maisons-edition?typolog
           <?php endforeach; ?>
         </dl>
       </div>
+      <?php if ($submissions !== ''): ?>
+        <div class="side-card">
+          <div class="side-kicker">Manuscrits</div>
+          <div class="me-manuscrits">
+            <span class="me-manuscrits-dot" aria-hidden="true"></span>
+            <p><?= nl2br(e($submissions)) ?></p>
+          </div>
+        </div>
+      <?php endif; ?>
       <?php if ($isAdmin): ?>
         <div class="side-card">
           <div class="side-kicker">Administration</div>
@@ -244,39 +278,16 @@ $facts[] = ['Ligne éditoriale', $p['typology_label'], '/maisons-edition?typolog
       <?php endif; ?>
       <div class="side-card side-card-warm">
         <div class="side-kicker">Une erreur ?</div>
-        <p style="font-size: 14px; color: #4A5A6B; margin: 0 0 12px;">Une information obsolète ou une maison manquante : dites-le-nous.</p>
+        <p class="me-side-note">Une information obsolète, une collection oubliée ou une maison qui a fermé : dites-le-nous.</p>
         <a class="btn-ghost" href="<?= e(url('/contact')) ?>">Signaler</a>
       </div>
+      <?php if (!$isOwner): ?>
+        <div class="side-card forum-panel-dark">
+          <div class="forum-panel-heading">Préparer votre envoi</div>
+          <p>Un manuscrit relu et une lettre d'accompagnement soignée changent tout. Correcteurs et lecteurs éditoriaux répondent en 48 h.</p>
+          <a class="btn-orange" href="<?= e(url($viewer ? '/espace/publier' : '/inscription')) ?>">Publier une recherche</a>
+        </div>
+      <?php endif; ?>
     </aside>
   </div>
-
-  <?php if ($related !== []): ?>
-    <section class="me-related">
-      <h2>Autres maisons <?= e(\Adl\Controllers\PublisherController::countryPhrase($p['country'])) ?></h2>
-      <div class="me-grid is-compact">
-        <?php foreach ($related as $r): ?>
-          <a class="me-card" href="<?= e(url((string) $r['href'])) ?>">
-            <div class="me-card-logo">
-              <?php if ($r['logo_src'] !== ''): ?>
-                <img src="<?= e($r['logo_src']) ?>" alt="" width="56" height="56" loading="lazy">
-              <?php else: ?>
-                <span class="me-mono" aria-hidden="true"><?= e($r['initials']) ?></span>
-              <?php endif; ?>
-            </div>
-            <div class="me-card-body">
-              <div class="me-card-kicker"><span><?= e($r['size_label']) ?></span></div>
-              <strong><?= e((string) $r['name']) ?></strong>
-              <span class="me-card-where"><?= e($r['location_label']) ?></span>
-              <?php if ($r['genres'] !== []): ?>
-                <div class="me-card-genres">
-                  <?php foreach (array_slice($r['genres'], 0, 2) as $g): ?><span class="chip-static dark"><?= e($g) ?></span><?php endforeach; ?>
-                </div>
-              <?php endif; ?>
-            </div>
-          </a>
-        <?php endforeach; ?>
-      </div>
-      <p style="margin: 18px 0 0;"><a class="btn-ghost" href="<?= e(url($p['country_href'])) ?>">Toutes les maisons <?= e(\Adl\Controllers\PublisherController::countryPhrase($p['country'])) ?></a></p>
-    </section>
-  <?php endif; ?>
 </div>

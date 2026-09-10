@@ -34,6 +34,12 @@ final class Publisher
         'mixte' => 'Généraliste avec spécialités',
     ];
 
+    public const SORTS = [
+        'az' => 'A → Z',
+        'recentes' => 'Plus récentes',
+        'taille' => 'Taille',
+    ];
+
     /** Slugs réservés sous /maisons-edition/ qui ne peuvent pas désigner une maison. */
     private const RESERVED_SLUGS = ['pays', 'genre', 'taille', 'recherche', 'nouvelle', 'contact', 'revendiquer', 'ajouter'];
 
@@ -399,7 +405,7 @@ final class Publisher
     }
 
     /**
-     * @param array{q?: string, country?: string, city?: string, genre?: string, size?: string, typology?: string, independent?: string} $filters
+     * @param array{q?: string, country?: string, city?: string, genre?: string, size?: string, typology?: string, independent?: string, sort?: string} $filters
      * @return array{items: list<array<string, mixed>>, total: int, pages: int, page: int}
      */
     public static function search(array $filters, int $page = 1, int $perPage = self::PER_PAGE): array
@@ -410,11 +416,16 @@ final class Publisher
         $page = max(1, min($page, $pages));
 
         $q = search_norm(trim((string) ($filters['q'] ?? '')));
+        $sort = (string) ($filters['sort'] ?? 'az');
         $order = 'name ASC';
         $orderParams = [];
         if ($q !== '') {
             $order = 'CASE WHEN name_search = ? THEN 0 WHEN name_search LIKE ? THEN 1 WHEN name_search LIKE ? THEN 2 ELSE 3 END, name ASC';
             $orderParams = [$q, $q . '%', '%' . $q . '%'];
+        } elseif ($sort === 'recentes') {
+            $order = '(founded_year IS NULL) ASC, founded_year DESC, name ASC';
+        } elseif ($sort === 'taille') {
+            $order = 'FIELD(size_key, "grand-groupe", "eti", "pme", "micro"), name ASC';
         }
 
         $rows = Database::fetchAll(
@@ -1041,6 +1052,19 @@ final class Publisher
             : (trim((string) ($row['parent_group'] ?? '')) !== '' ? (string) $row['parent_group'] : '');
         $row['owner_name'] = trim((string) (($row['owner_first_name'] ?? '') . ' ' . ($row['owner_last_name'] ?? '')));
         return $row;
+    }
+
+    public static function letterKey(string $name): string
+    {
+        $n = search_norm($name);
+        $first = $n !== '' ? strtoupper($n[0]) : '';
+        if ($first >= '0' && $first <= '9') {
+            return '0-9';
+        }
+        if ($first >= 'A' && $first <= 'Z') {
+            return $first;
+        }
+        return '#';
     }
 
     public static function initials(string $name): string

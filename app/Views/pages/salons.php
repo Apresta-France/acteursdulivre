@@ -99,7 +99,7 @@ foreach ($salons as $event) {
         </div>
       <?php endif; ?>
 
-      <form class="search-filters" method="get" action="<?= e(url($pagerPath)) ?>">
+      <form class="search-filters salon-filters" method="get" action="<?= e(url($pagerPath)) ?>">
         <?= $hidden('q', $q) ?>
         <?php if ($facets['countries'] !== []): ?>
           <div class="sf-group">
@@ -118,7 +118,7 @@ foreach ($salons as $event) {
             <div class="sf-opts">
               <?php foreach ($facets['regions'] as $opt): ?>
                 <label class="sf-opt">
-                  <input type="radio" name="region" value="<?= e($opt['v']) ?>"<?= $opt['v'] === $region ? ' checked' : '' ?> onchange="this.form.submit()">
+                  <input type="checkbox" name="region" value="<?= e($opt['v']) ?>"<?= $opt['v'] === $region ? ' checked' : '' ?> data-salon-autosubmit>
                   <span class="sf-box" aria-hidden="true"></span>
                   <span class="sf-txt"><?= e($opt['l']) ?></span>
                   <span class="sf-n"><?= (int) $opt['n'] ?></span>
@@ -133,7 +133,7 @@ foreach ($salons as $event) {
             <div class="salon-cat-chips">
               <?php foreach ($facets['categories'] as $opt): ?>
                 <label class="salon-chip<?= $opt['v'] === $category ? ' is-on' : '' ?>">
-                  <input type="radio" name="cat" value="<?= e($opt['v']) ?>"<?= $opt['v'] === $category ? ' checked' : '' ?> onchange="this.form.submit()">
+                  <input type="checkbox" name="cat" value="<?= e($opt['v']) ?>"<?= $opt['v'] === $category ? ' checked' : '' ?> data-salon-autosubmit>
                   <span><?= e($opt['l']) ?></span>
                 </label>
               <?php endforeach; ?>
@@ -233,3 +233,21 @@ foreach ($salons as $event) {
     </div>
   </div>
 </div>
+<script>
+(function () {
+  var form = document.querySelector('.salon-filters');
+  if (!form) return;
+  form.querySelectorAll('[data-salon-autosubmit]').forEach(function (el) {
+    el.addEventListener('change', function () {
+      if (el.checked) {
+        form.querySelectorAll('input[name="' + el.name + '"]').forEach(function (other) {
+          if (other !== el) other.checked = false;
+        });
+      }
+      form.requestSubmit ? form.requestSubmit() : form.submit();
+    });
+  });
+  var submit = form.querySelector('.me-filters-submit');
+  if (submit) submit.hidden = true;
+})();
+</script>

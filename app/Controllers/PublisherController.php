@@ -605,6 +605,10 @@ final class PublisherController
             'typology' => $request->string('typologie'),
             'independent' => $request->bool('independant') ? '1' : '',
         ];
+        $sort = $request->string('tri');
+        if (isset(Publisher::SORTS[$sort]) && $sort !== 'az') {
+            $out['sort'] = $sort;
+        }
         $country = $request->string('pays');
         if ($country !== '') {
             $out['country'] = mb_substr($country, 0, 60);
@@ -639,6 +643,9 @@ final class PublisherController
         }
         if (($filters['independent'] ?? '') === '1') {
             $q['independant'] = '1';
+        }
+        if (($filters['sort'] ?? '') !== '') {
+            $q['tri'] = $filters['sort'];
         }
         if ($scope === 'all') {
             if (($filters['country'] ?? '') !== '') {
