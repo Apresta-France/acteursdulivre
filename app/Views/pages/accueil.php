@@ -29,11 +29,13 @@ $query = (string) ($query ?? '');
         <button class="btn-orange" type="submit">Chercher</button>
         <div class="search-suggest" data-live-panel hidden></div>
       </form>
+      <?php if ($homeQuick !== []): ?>
       <div class="mk-chips">
         <?php foreach ($homeQuick as $q): ?>
           <a href="<?= e(url('/recherche') . '?q=' . rawurlencode((string) $q)) ?>"><?= e((string) $q) ?></a>
         <?php endforeach; ?>
       </div>
+      <?php endif; ?>
     </div>
     <div class="mk-hero-visual">
       <?php

@@ -2006,14 +2006,224 @@ final class Catalog
     }
 
     /**
-     * Suggestions d'accueil : formulations réellement cherchées.
-     * On garde les exemples du hero, et on complète avec des requêtes du catalogue.
+     * Suggestions d'accueil : requêtes qui correspondent au catalogue en ligne.
      *
      * @return list<string>
      */
     public static function homeQuick(int $limit = 5): array
     {
-        return array_slice(self::HOME_QUICK_PREFERRED, 0, $limit);
+        $limit = max(1, $limit);
+        $candidates = [];
+        $add = static function (string $label, int $weight, string $trade = '') use (&$candidates): void {
+            $label = trim(preg_replace('/\s+/u', ' ', $label) ?? '');
+            if ($label === '' || mb_strlen($label) > 40) {
+                return;
+            }
+            $key = search_norm($label);
+            if ($key === '') {
+                return;
+            }
+            if (!isset($candidates[$key])) {
+                $candidates[$key] = ['label' => $label, 'score' => 0, 'trade' => $trade];
+            }
+            $candidates[$key]['score'] += $weight;
+            if ($trade !== '' && $candidates[$key]['trade'] === '') {
+                $candidates[$key]['trade'] = $trade;
+            }
+        };
+
+        $items = array_merge(self::services(), self::providers(), self::missions());
+        if ($items === []) {
+            return [];
+        }
+        foreach ($items as $item) {
+            self::collectHomeQuickFromItem($item, $add);
+        }
+
+        foreach (self::HOME_QUICK_PREFERRED as $preferred) {
+            $key = search_norm($preferred);
+            if (isset($candidates[$key])) {
+                $candidates[$key]['score'] += 3;
+            }
+        }
+
+        uasort($candidates, static function (array $a, array $b): int {
+            return ($b['score'] <=> $a['score']) ?: strcmp((string) $a['label'], (string) $b['label']);
+        });
+
+        $picked = [];
+        $usedTrades = [];
+        foreach ([true, false] as $uniqueTrade) {
+            foreach ($candidates as $candidate) {
+                if (count($picked) >= $limit) {
+                    break 2;
+                }
+                $trade = (string) $candidate['trade'];
+                if ($uniqueTrade && $trade !== '' && isset($usedTrades[$trade])) {
+                    continue;
+                }
+                if (self::homeQuickTooClose((string) $candidate['label'], $picked)) {
+                    continue;
+                }
+                $picked[] = (string) $candidate['label'];
+                if ($trade !== '') {
+                    $usedTrades[$trade] = true;
+                }
+            }
+        }
+
+        return $picked;
+    }
+
+    /**
+     * @param array<string, mixed> $item
+     * @param callable(string, int, string): void $add
+     */
+    private static function collectHomeQuickFromItem(array $item, callable $add): void
+    {
+        $trades = [];
+        $resolved = self::resolveTrade((string) ($item['cat'] ?? ''));
+        if ($resolved !== null) {
+            $trades[] = $resolved;
+        }
+        foreach (is_array($item['trades'] ?? null) ? $item['trades'] : [] as $trade) {
+            $resolved = self::resolveTrade((string) $trade);
+            if ($resolved !== null && !in_array($resolved, $trades, true)) {
+                $trades[] = $resolved;
+            }
+        }
+        $mainTrade = $trades[0] ?? '';
+        foreach ($trades as $trade) {
+            $add($trade, 6, $trade);
+        }
+
+        $specs = [];
+        foreach (array_merge(
+            [(string) ($item['specialty'] ?? '')],
+            is_array($item['genres'] ?? null) ? $item['genres'] : [],
+            is_array($item['specialties'] ?? null) ? $item['specialties'] : []
+        ) as $spec) {
+            $spec = trim((string) $spec);
+            if ($spec === '' || $spec === Taxonomy::GLOBAL_NAME || in_array($spec, $specs, true)) {
+                continue;
+            }
+            $specs[] = $spec;
+            $phrase = self::homeQuickPhrase($mainTrade, $spec);
+            if ($phrase !== null) {
+                $add($phrase, 12, $mainTrade);
+            } elseif (!self::addHomeQuickSkill($spec, $mainTrade, $add)) {
+                $add($spec, 8, $mainTrade);
+            }
+        }
+
+        $kind = (string) ($item['kind'] ?? '');
+        if ($kind === 'prestataires') {
+            return;
+        }
+        $title = trim((string) ($item['title'] ?? ''));
+        if ($title === '') {
+            return;
+        }
+        foreach (self::homeQuickTermsInText($title) as $term) {
+            $add($term, 5, $mainTrade);
+            $phrase = self::homeQuickPhrase($mainTrade, $term);
+            if ($phrase !== null) {
+                $add($phrase, 10, $mainTrade);
+            }
+        }
+    }
+
+    private static function homeQuickPhrase(string $trade, string $spec): ?string
+    {
+        $trade = trim($trade);
+        $spec = trim($spec);
+        if ($trade === '' || $spec === '' || $spec === Taxonomy::GLOBAL_NAME) {
+            return null;
+        }
+        if (!in_array($trade, self::TEXT_TRADES, true) || !in_array($spec, Profile::GENRES, true)) {
+            return null;
+        }
+        $needle = search_norm($spec);
+        $hay = search_norm($trade);
+        if ($needle === '' || str_contains($hay, $needle) || str_contains($needle, $hay)) {
+            return null;
+        }
+        $label = self::homeQuickGenreLabel($spec);
+        return $trade . ' ' . self::homeQuickDe($label) . $label;
+    }
+
+    private static function homeQuickGenreLabel(string $spec): string
+    {
+        if (str_contains($spec, '&') || str_contains($spec, ' ')) {
+            return $spec;
+        }
+        return mb_strtolower($spec);
+    }
+
+    private static function homeQuickDe(string $word): string
+    {
+        $first = mb_strtolower(mb_substr($word, 0, 1));
+        if (preg_match('/[aeiouyàâäéèêëïîôùûü]/u', $first) === 1) {
+            return "d'";
+        }
+        return 'de ';
+    }
+
+    /** @return list<string> */
+    private static function homeQuickTermsInText(string $text): array
+    {
+        $norm = search_norm($text);
+        if ($norm === '') {
+            return [];
+        }
+        $out = [];
+        foreach (Profile::GENRES as $genre) {
+            $needle = search_norm($genre);
+            if ($needle !== '' && str_contains($norm, $needle)) {
+                $out[] = $genre;
+            }
+        }
+        return $out;
+    }
+
+    /** @param callable(string, int, string): void $add */
+    private static function addHomeQuickSkill(string $spec, string $trade, callable $add): bool
+    {
+        $needle = search_norm($spec);
+        if (mb_strlen($needle) < 5) {
+            return false;
+        }
+        $stem = (string) preg_replace('/(iques|ique|ies|ie|s)$/', '', $needle);
+        if (mb_strlen($stem) < 5) {
+            $stem = $needle;
+        }
+        $tradeNorm = search_norm($trade);
+        $found = false;
+        foreach (self::SKILL_SUGGESTIONS as $skill) {
+            $hay = search_norm($skill);
+            if ($hay === '' || (!str_contains($hay, $needle) && !str_contains($hay, $stem))) {
+                continue;
+            }
+            if ($tradeNorm !== '' && !str_contains($hay, $tradeNorm)) {
+                continue;
+            }
+            $add($skill, 10, $trade);
+            $found = true;
+        }
+        return $found;
+    }
+
+    /** @param list<string> $picked */
+    private static function homeQuickTooClose(string $label, array $picked): bool
+    {
+        $norm = search_norm($label);
+        foreach ($picked as $existing) {
+            $other = search_norm($existing);
+            if ($norm === $other || str_contains($norm, $other) || str_contains($other, $norm)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /** @return list<array{v: string, k: string}> */
