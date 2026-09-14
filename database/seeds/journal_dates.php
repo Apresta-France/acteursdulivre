@@ -42,4 +42,5 @@ return [
     'section-auteur-fiche-publique' => '2026-09-03 07:45:00',
     'partager-fiche-kit-vitrine' => '2026-09-07 10:00:00',
     'autoedition-guide-complet' => '2026-09-07 17:30:00',
+    'fiche-prestataire-oeuvres-creations-tribune-forum' => '2026-09-14 10:00:00',
 ];
