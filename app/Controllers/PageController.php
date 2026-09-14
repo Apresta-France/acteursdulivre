@@ -16,6 +16,7 @@ use Adl\Data\LegalPages;
 use Adl\Data\Seo;
 use Adl\Data\Share;
 use Adl\Data\Sitemap;
+use Adl\Data\Tools;
 use Adl\Models\Analytics;
 use Adl\Models\ContactMessage;
 use Adl\Models\Application;
@@ -218,6 +219,7 @@ final class PageController
             'install', 'journal', 'mentions-legales', 'metiers', 'missions',
             'mot-de-passe', 'newsletter', 'prestataires', 'prestations', 'public',
             'questions', 'recherche', 'regles-ia', 'signaler', 'tarifs', 'forum',
+            'communaute', 'salons', 'outils', 'maisons-edition',
         ];
         if (in_array($slug, $reserved, true)) {
             not_found();
@@ -789,6 +791,63 @@ final class PageController
             'publisherCount' => $publisherCount,
             'agenda' => self::communityAgendaPreview(),
             'salonCount' => self::salonCount(),
+        ]);
+    }
+
+    public function outils(Request $request): void
+    {
+        View::page('outils', [
+            'title' => 'Outils du livre',
+            'meta' => Seo::forScreen('outils'),
+            'tools' => Tools::all(),
+        ]);
+    }
+
+    public function outil(Request $request, string $slug): void
+    {
+        $tool = Tools::find($slug);
+        if ($tool === null || empty($tool['available'])) {
+            not_found('Cet outil n\'existe pas.');
+        }
+
+        if ($slug !== 'volume') {
+            not_found('Cet outil n\'existe pas.');
+        }
+
+        $unit = Tools::normalizeUnit($request->string('u'));
+        $amount = Tools::parseAmount($request->string('n'));
+        $stats = $amount !== null ? Tools::fromAmount($amount, $unit) : Tools::fromAmount(0, 'signes');
+        $stats = $stats ?? Tools::fromAmount(0, 'signes');
+        $rateUnit = Tools::normalizeRateUnit($request->string('tu'));
+        $rate = Tools::parseRate($request->string('tarif'));
+        $simulated = ($rate !== null && is_array($stats)) ? Tools::simulate($stats, $rate, $rateUnit) : null;
+
+        $title = (string) $tool['title'];
+        $path = Tools::path($slug);
+        $meta = Seo::forScreen('outil-volume', [
+            'path' => $path,
+            'breadcrumbs' => [
+                ['name' => Seo::BRAND, 'url' => '/'],
+                ['name' => 'Communauté', 'url' => '/communaute'],
+                ['name' => 'Outils', 'url' => Tools::path()],
+                ['name' => $title, 'url' => $path],
+            ],
+        ]);
+
+        View::page('outil-volume', [
+            'title' => (string) (Seo::catalog()['outil-volume']['title'] ?? $title),
+            'meta' => $meta,
+            'tool' => $tool,
+            'unit' => $unit,
+            'amount' => $amount,
+            'stats' => $stats,
+            'unitLabels' => Tools::unitLabels(),
+            'rateUnitLabels' => Tools::rateUnitLabels(),
+            'rate' => $rate,
+            'rateUnit' => $rateUnit,
+            'simulated' => $simulated,
+            'faqs' => Tools::volumeFaqs(),
+            'jsConfig' => Tools::jsConfig(),
         ]);
     }
 

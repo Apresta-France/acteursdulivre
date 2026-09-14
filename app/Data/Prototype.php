@@ -42,7 +42,7 @@ final class Prototype
             'Confiance', 'Aide', 'Questions', 'Metier', 'Apropos', 'Journal', 'Article', 'Contact', 'Legal',
             'Connexion', 'Notifications', 'MesPrestations', 'MesMissions', 'Candidatures', 'Favoris',
             'Avis', 'Vitrine', 'Parametres', 'Facturation', 'Bienvenue', 'Statistiques', 'Forum', 'EspaceForum',
-            'Landing', 'Besoin', 'Communaute', 'Salons', 'Salon',
+            'Landing', 'Besoin', 'Communaute', 'Outils', 'Salons', 'Salon',
         ] as $name) {
             $key = 'is' . $name;
             if (!isset($data[$key])) {
@@ -69,6 +69,7 @@ final class Prototype
             'bienvenue' => 'isBienvenue', 'statistiques' => 'isStatistiques',
             'espace-forum' => 'isEspaceForum',
             'communaute' => 'isCommunaute',
+            'outils' => 'isOutils', 'outil-volume' => 'isOutils',
             'salons' => 'isSalons', 'salon' => 'isSalon', 'salon-ajouter' => 'isSalons',
             'maisons-edition' => 'isMaisons', 'maisons-edition-pays' => 'isMaisons', 'maison-edition' => 'isMaison',
             'maison-edition-revendiquer' => 'isMaison', 'maison-edition-ajouter' => 'isMaisons', 'espace-maison' => 'isEspaceMaison',
@@ -137,6 +138,7 @@ final class Prototype
                 ['label' => 'Comment ça marche', 'href' => '/comment-ca-marche'],
                 ['label' => 'Les auteurs', 'href' => '/auteurs'],
                 ['label' => 'La communauté', 'href' => '/communaute'],
+                ['label' => 'Outils du livre', 'href' => '/outils'],
                 ['label' => 'Agenda des salons', 'href' => '/salons'],
                 ['label' => 'Maisons d\'édition', 'href' => '/maisons-edition'],
                 ['label' => 'À propos', 'href' => '/a-propos'],

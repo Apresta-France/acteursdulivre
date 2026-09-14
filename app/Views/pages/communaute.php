@@ -12,7 +12,7 @@ $salonCount = (int) ($salonCount ?? count($agenda));
     <div class="forum-hero-copy">
       <div class="forum-kicker">Communauté</div>
       <h1>Se retrouver hors des missions.</h1>
-      <p class="forum-lead">Le forum, l’annuaire des maisons d’édition et l’agenda des salons : trois portes pour parler métier, trouver un éditeur, ou savoir où poser un stand.</p>
+      <p class="forum-lead">Le forum, l’annuaire des maisons d’édition, l’agenda des salons et les outils métier : quatre portes pour parler métier, trouver un éditeur, préparer un stand, ou cadrer un volume.</p>
     </div>
     <div class="forum-hero-actions">
       <div class="forum-hero-stats">
@@ -51,6 +51,12 @@ $salonCount = (int) ($salonCount ?? count($agenda));
         <h2>Agenda</h2>
         <p>Dates, villes, type de manifestation. Pour préparer un stand, une dédicace, ou simplement y aller.</p>
         <span class="co-door-cta">Voir les prochains salons →</span>
+      </a>
+      <a class="co-door" href="<?= e(url('/outils')) ?>">
+        <span class="co-door-ico" aria-hidden="true"><?= icon('counter', 22) ?></span>
+        <h2>Outils</h2>
+        <p>Signes, feuillets, mots : pour cadrer un devis avant d’écrire au prestataire. Le manuscrit ne quitte pas votre navigateur.</p>
+        <span class="co-door-cta">Ouvrir les outils →</span>
       </a>
     </div>
   </section>

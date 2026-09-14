@@ -83,7 +83,7 @@
   <?php if (!empty($isArticle) && !empty($article['img'])): ?>
   <link rel="preload" as="image" href="<?= e((string) $article['img']) ?>">
   <?php endif; ?>
-  <link rel="stylesheet" href="<?= e(asset('css/app.css')) ?>?v=m226">
+  <link rel="stylesheet" href="<?= e(asset('css/app.css')) ?>?v=m231">
   <link rel="icon" href="<?= e(asset('img/favicon.ico')) ?>?v=3" sizes="any">
   <link rel="icon" type="image/png" href="<?= e(asset('img/favicon-32x32.png')) ?>?v=3" sizes="32x32">
   <link rel="apple-touch-icon" href="<?= e(asset('img/apple-touch-icon.png')) ?>?v=3">
@@ -216,11 +216,13 @@
           <?php if (!empty($logged)): ?>
             <nav class="header-nav">
               <?php require ADL_ROOT . '/app/Views/partials/header-communaute.php'; ?>
+              <?php require ADL_ROOT . '/app/Views/partials/header-outils.php'; ?>
             </nav>
           <?php else: ?>
             <nav class="header-nav">
               <?php require ADL_ROOT . '/app/Views/partials/header-communaute.php'; ?>
-              <a href="<?= e(url('/comment-ca-marche')) ?>">Comment ça marche</a>
+              <?php require ADL_ROOT . '/app/Views/partials/header-outils.php'; ?>
+              <a href="<?= e(url('/comment-ca-marche')) ?>">Fonctionnement</a>
               <a href="<?= e(url('/missions')) ?>">Appels d'offres</a>
               <a class="header-login-menu" href="<?= e(url('/connexion')) ?>">Se connecter</a>
             </nav>
@@ -385,6 +387,6 @@
       <?php endif; ?>
     </div>
   <?php endif; ?>
-  <script src="<?= e(asset('js/app.js')) ?>?v=m100"></script>
+  <script src="<?= e(asset('js/app.js')) ?>?v=m103"></script>
 </body>
 </html>

@@ -201,6 +201,8 @@ final class Sitemap
             ['path' => '/journal', 'priority' => '0.8'],
             ['path' => '/forum', 'priority' => '0.8'],
             ['path' => '/communaute', 'priority' => '0.7'],
+            ['path' => '/outils', 'priority' => '0.7'],
+            ['path' => '/outils/volume', 'priority' => '0.7'],
             ['path' => '/salons', 'priority' => '0.7'],
             ['path' => '/besoin', 'priority' => '0.7'],
             ['path' => '/comment-ca-marche', 'priority' => '0.7'],

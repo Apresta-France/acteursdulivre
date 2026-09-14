@@ -60,9 +60,9 @@
     });
   }
 
-  function setCommunauteOpen(open) {
-    document.querySelectorAll('[data-communaute-menu]').forEach(function (menu) {
-      var btn = menu.querySelector('[data-communaute-toggle]');
+  function setHeaderDropsOpen(open) {
+    document.querySelectorAll('[data-header-drop]').forEach(function (menu) {
+      var btn = menu.querySelector('[data-header-drop-toggle]');
       menu.classList.toggle('is-open', open);
       if (btn) btn.setAttribute('aria-expanded', open ? 'true' : 'false');
     });
@@ -74,7 +74,7 @@
       if (willOpen) {
         setNavOpen(false);
         setUserMenusOpen(false);
-        setCommunauteOpen(false);
+        setHeaderDropsOpen(false);
       }
       setMegaOpen(willOpen);
     });
@@ -175,8 +175,8 @@
     });
   });
 
-  document.querySelectorAll('[data-communaute-menu]').forEach(function (menu) {
-    var btn = menu.querySelector('[data-communaute-toggle]');
+  document.querySelectorAll('[data-header-drop]').forEach(function (menu) {
+    var btn = menu.querySelector('[data-header-drop-toggle]');
     if (!btn) return;
     function setOpen(open) {
       menu.classList.toggle('is-open', open);
@@ -185,12 +185,13 @@
     btn.addEventListener('click', function (event) {
       event.stopPropagation();
       var willOpen = !menu.classList.contains('is-open');
+      setHeaderDropsOpen(false);
       if (willOpen) {
         setNavOpen(false);
         setMegaOpen(false);
         setUserMenusOpen(false);
+        setOpen(true);
       }
-      setOpen(willOpen);
     });
     document.addEventListener('click', function (event) {
       if (!menu.contains(event.target)) setOpen(false);
@@ -215,7 +216,7 @@
       if (willOpen) {
         setNavOpen(false);
         setMegaOpen(false);
-        setCommunauteOpen(false);
+        setHeaderDropsOpen(false);
       }
       setOpen(willOpen);
     });
@@ -247,7 +248,7 @@
         if (willOpen && className === 'is-nav-open') {
           setUserMenusOpen(false);
           setMegaOpen(false);
-          setCommunauteOpen(false);
+          setHeaderDropsOpen(false);
         }
         set(willOpen);
       });
@@ -4347,6 +4348,304 @@
     }
     if (svgBtn) {
       svgBtn.addEventListener('click', function () { downloadShareSvg(root); });
+    }
+  });
+
+  document.querySelectorAll('[data-volume-tool]').forEach(function (root) {
+    var cfg = {};
+    try { cfg = JSON.parse(root.getAttribute('data-volume-config') || '{}'); } catch (e) {}
+    var feuillet = Number(cfg.feuillet) || 1500;
+    var signsPerWord = Number(cfg.signsPerWord) || 6;
+    var readWpm = Number(cfg.readWpm) || 230;
+    var audioWpm = Number(cfg.audioWpm) || 155;
+    var correctionSample = Number(cfg.correctionSample) || 520000;
+    var correctionLow = Number(cfg.correctionLow) || 620;
+    var correctionHigh = Number(cfg.correctionHigh) || 1100;
+    var translationLow = Number(cfg.translationLow) || 0.12;
+    var translationHigh = Number(cfg.translationHigh) || 0.22;
+    var amountMax = Number(cfg.amountMax) || 100000000;
+    var rateMax = Number(cfg.rateMax) || 10000;
+    var textMax = Number(cfg.textMax) || 500000;
+    var spaceRatio = (signsPerWord - 1) / signsPerWord;
+    var textArea = root.querySelector('[data-volume-text]');
+    var amountInput = root.querySelector('[data-volume-amount]');
+    var unitSelect = root.querySelector('[data-volume-unit]');
+    var rateInput = root.querySelector('[data-volume-rate]');
+    var rateUnitSelect = root.querySelector('[data-volume-rate-unit]');
+    var rateTotal = root.querySelector('[data-volume-rate-total]');
+    var rateHint = root.querySelector('[data-volume-rate-hint]');
+    var copyBtn = root.querySelector('[data-volume-copy]');
+    var resetBtn = root.querySelector('[data-volume-reset]');
+    var numberForm = root.querySelector('#volume-panel-number');
+    var lastSummary = '';
+    var mode = (root.querySelector('.tool-mode.is-on') || {}).getAttribute('data-volume-mode') || 'text';
+
+    function emptyStats() {
+      return { sec: 0, senc: 0, words: 0, feuillets: 0, readMin: 0, audioMin: 0 };
+    }
+
+    function formatInt(n) {
+      return Math.round(n).toLocaleString('fr-FR');
+    }
+
+    function formatNumber(n, maxDecimals) {
+      if (!isFinite(n)) return '—';
+      if (Math.abs(n - Math.round(n)) < 0.05) return formatInt(n);
+      return n.toLocaleString('fr-FR', { minimumFractionDigits: 0, maximumFractionDigits: maxDecimals || 1 });
+    }
+
+    function formatDuration(minutes) {
+      if (minutes <= 0) return '—';
+      if (minutes < 1) return 'moins d’1 min';
+      if (minutes < 60) return String(Math.round(minutes)) + ' min';
+      var hours = Math.floor(minutes / 60);
+      var rest = Math.round(minutes - hours * 60);
+      if (rest === 60) { hours += 1; rest = 0; }
+      if (rest === 0) return formatInt(hours) + ' h';
+      return formatInt(hours) + ' h ' + rest + ' min';
+    }
+
+    function parseAmount(raw) {
+      var value = String(raw || '').replace(/\u00a0/g, ' ').replace(/\s/g, '').replace(',', '.');
+      if (!value || !isFinite(Number(value))) return null;
+      var n = Number(value);
+      if (n < 0 || n > amountMax) return null;
+      return n;
+    }
+
+    function parseRate(raw) {
+      var n = parseAmount(raw);
+      if (n === null || n <= 0 || n > rateMax) return null;
+      return n;
+    }
+
+    function formatEuros(n) {
+      if (n <= 0 || !isFinite(n)) return '—';
+      if (n < 20 && Math.abs(n - Math.round(n)) >= 0.005) {
+        return n.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
+      }
+      return formatInt(n) + ' €';
+    }
+
+    function simulate(stats, rate, rateUnit) {
+      if (!rate) return null;
+      var qty = 0;
+      if (rateUnit === 'mots') qty = stats.words;
+      else if (rateUnit === 'mille') qty = stats.sec / 1000;
+      else qty = stats.feuillets;
+      if (qty <= 0) return null;
+      return qty * rate;
+    }
+
+    function fromSecSencWords(sec, senc, words) {
+      sec = Math.max(0, Math.round(sec));
+      senc = Math.max(0, Math.round(senc));
+      words = Math.max(0, Math.round(words));
+      return {
+        sec: sec,
+        senc: senc,
+        words: words,
+        feuillets: sec > 0 ? sec / feuillet : 0,
+        readMin: words > 0 ? words / readWpm : 0,
+        audioMin: words > 0 ? words / audioWpm : 0
+      };
+    }
+
+    function countText(text) {
+      text = String(text || '').replace(/\r\n/g, '\n').replace(/\r/g, '\n').trim();
+      if (text.length > textMax) text = Array.from(text).slice(0, textMax).join('');
+      if (!text) return emptyStats();
+      var chars = Array.from(text);
+      var sec = chars.length;
+      var senc = Array.from(text.replace(/\s+/g, '')).length;
+      var words = text.split(/\s+/).filter(Boolean).length;
+      return fromSecSencWords(sec, senc, words);
+    }
+
+    function fromAmount(amount, unit) {
+      if (amount === null || amount === 0) return emptyStats();
+      var sec = 0;
+      var senc = 0;
+      var words = 0;
+      if (unit === 'signes-nc') {
+        senc = amount;
+        sec = amount / spaceRatio;
+        words = amount / (signsPerWord - 1);
+      } else if (unit === 'mots') {
+        words = amount;
+        sec = amount * signsPerWord;
+        senc = amount * (signsPerWord - 1);
+      } else if (unit === 'feuillets') {
+        sec = amount * feuillet;
+        senc = sec * spaceRatio;
+        words = sec / signsPerWord;
+      } else {
+        sec = amount;
+        senc = amount * spaceRatio;
+        words = amount / signsPerWord;
+      }
+      return fromSecSencWords(sec, senc, words);
+    }
+
+    function setText(el, value) {
+      if (el) el.textContent = value;
+    }
+
+    function eurosRange(low, high) {
+      return formatInt(low) + ' et ' + formatInt(high) + ' €';
+    }
+
+    function syncUrl(stats) {
+      if (!window.history || !window.history.replaceState) return;
+      var url = new URL(window.location.href);
+      var amount = (mode === 'number' && amountInput) ? parseAmount(amountInput.value) : null;
+      if (mode === 'number' && stats.sec > 0 && amount) {
+        url.searchParams.set('n', String(amount).replace('.', ','));
+        url.searchParams.set('u', (unitSelect && unitSelect.value) || 'signes');
+      } else {
+        url.searchParams.delete('n');
+        url.searchParams.delete('u');
+      }
+      var rate = parseRate(rateInput ? rateInput.value : '');
+      if (rate) {
+        url.searchParams.set('tarif', String(rate).replace('.', ','));
+        url.searchParams.set('tu', (rateUnitSelect && rateUnitSelect.value) || 'feuillets');
+      } else {
+        url.searchParams.delete('tarif');
+        url.searchParams.delete('tu');
+      }
+      history.replaceState(null, '', url.pathname + url.search);
+    }
+
+    function render(stats) {
+      var has = stats.sec > 0;
+      setText(root.querySelector('[data-volume-sec]'), has ? formatNumber(stats.sec, 0) : '—');
+      setText(root.querySelector('[data-volume-senc]'), has ? formatNumber(stats.senc, 0) : '—');
+      setText(root.querySelector('[data-volume-words]'), has ? formatNumber(stats.words, 0) : '—');
+      setText(root.querySelector('[data-volume-feuillets]'), has ? formatNumber(stats.feuillets, 1) : '—');
+      setText(root.querySelector('[data-volume-read]'), has ? formatDuration(stats.readMin) : '—');
+      setText(root.querySelector('[data-volume-audio]'), has ? formatDuration(stats.audioMin) : '—');
+      if (copyBtn) copyBtn.disabled = !has;
+      var rate = parseRate(rateInput ? rateInput.value : '');
+      var rateUnit = (rateUnitSelect && rateUnitSelect.value) || 'feuillets';
+      var simulated = has ? simulate(stats, rate, rateUnit) : null;
+      lastSummary = has
+        ? formatNumber(stats.sec, 0) + ' signes espaces compris · '
+          + formatNumber(stats.senc, 0) + ' hors espaces · '
+          + formatNumber(stats.words, 0) + ' mots · '
+          + formatNumber(stats.feuillets, 1) + ' feuillets · lecture '
+          + formatDuration(stats.readMin) + ' · audio '
+          + formatDuration(stats.audioMin)
+        : '';
+      if (simulated && lastSummary) {
+        var rateLabel = rateUnitSelect && rateUnitSelect.options[rateUnitSelect.selectedIndex]
+          ? rateUnitSelect.options[rateUnitSelect.selectedIndex].text
+          : '';
+        lastSummary += ' · ' + formatEuros(simulated);
+        if (rate && rateLabel) lastSummary += ' (' + formatNumber(rate, 2) + ' ' + rateLabel + ')';
+      }
+      if (rateTotal) {
+        rateTotal.textContent = simulated ? formatEuros(simulated) : '—';
+        rateTotal.classList.toggle('is-empty', !simulated);
+      }
+      if (rateHint) {
+        if (simulated) rateHint.textContent = 'Volume × votre tarif. Ce n’est pas un devis.';
+        else if (rate && !has) rateHint.textContent = 'Indiquez d’abord un volume, à gauche.';
+        else rateHint.textContent = 'Correction : souvent au feuillet. Traduction : souvent au mot.';
+      }
+
+      var correctionBox = root.querySelector('[data-volume-correction]');
+      var translationBox = root.querySelector('[data-volume-translation]');
+      if (correctionBox) {
+        var showCorrection = stats.sec >= 8000;
+        correctionBox.hidden = !showCorrection;
+        if (showCorrection) {
+          setText(
+            root.querySelector('[data-volume-correction-range]'),
+            eurosRange(
+              Math.round(stats.sec * correctionLow / correctionSample),
+              Math.round(stats.sec * correctionHigh / correctionSample)
+            )
+          );
+        }
+      }
+      if (translationBox) {
+        var showTranslation = stats.words >= 1500;
+        translationBox.hidden = !showTranslation;
+        if (showTranslation) {
+          setText(
+            root.querySelector('[data-volume-translation-range]'),
+            eurosRange(
+              Math.round(stats.words * translationLow),
+              Math.round(stats.words * translationHigh)
+            )
+          );
+        }
+      }
+      syncUrl(stats);
+    }
+
+    function currentStats() {
+      if (mode === 'text') return countText(textArea ? textArea.value : '');
+      return fromAmount(parseAmount(amountInput ? amountInput.value : ''), (unitSelect && unitSelect.value) || 'signes');
+    }
+
+    function setMode(next) {
+      mode = next === 'number' ? 'number' : 'text';
+      root.querySelectorAll('[data-volume-mode]').forEach(function (btn) {
+        var on = btn.getAttribute('data-volume-mode') === mode;
+        btn.classList.toggle('is-on', on);
+        btn.setAttribute('aria-selected', on ? 'true' : 'false');
+      });
+      var textPanel = root.querySelector('#volume-panel-text');
+      var numberPanel = root.querySelector('#volume-panel-number');
+      if (textPanel) textPanel.hidden = mode !== 'text';
+      if (numberPanel) numberPanel.hidden = mode !== 'number';
+      render(currentStats());
+    }
+
+    root.querySelectorAll('[data-volume-mode]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        setMode(btn.getAttribute('data-volume-mode'));
+      });
+    });
+    if (textArea) {
+      textArea.addEventListener('input', function () { if (mode === 'text') render(currentStats()); });
+    }
+    if (amountInput) {
+      amountInput.addEventListener('input', function () { if (mode === 'number') render(currentStats()); });
+    }
+    if (unitSelect) {
+      unitSelect.addEventListener('change', function () { if (mode === 'number') render(currentStats()); });
+    }
+    if (rateInput) {
+      rateInput.addEventListener('input', function () { render(currentStats()); });
+    }
+    if (rateUnitSelect) {
+      rateUnitSelect.addEventListener('change', function () { render(currentStats()); });
+    }
+    if (numberForm) {
+      numberForm.addEventListener('submit', function (event) {
+        event.preventDefault();
+        render(currentStats());
+      });
+    }
+    if (copyBtn) {
+      copyBtn.addEventListener('click', function () {
+        if (!lastSummary) return;
+        copyText(lastSummary).then(function () {
+          showToast('Résultat copié.');
+        }).catch(function () {
+          showToast('Copie impossible.');
+        });
+      });
+    }
+    if (resetBtn) {
+      resetBtn.addEventListener('click', function () {
+        if (textArea) textArea.value = '';
+        if (amountInput) amountInput.value = '';
+        render(emptyStats());
+      });
     }
   });
 })();

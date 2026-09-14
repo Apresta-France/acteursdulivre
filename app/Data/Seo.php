@@ -65,8 +65,18 @@ final class Seo
             ],
             'communaute' => [
                 'title' => 'La communauté des métiers du livre',
-                'description' => 'Forum, annuaire des maisons d\'édition et agenda des salons : se retrouver hors des missions.',
+                'description' => 'Forum, annuaire des maisons d\'édition, agenda des salons et outils métier : se retrouver hors des missions.',
                 'path' => '/communaute',
+            ],
+            'outils' => [
+                'title' => 'Outils du livre',
+                'description' => 'Compteur de signes et convertisseur de feuillets, gratuits. Pour cadrer un devis de correction, de traduction ou de narration — sans envoyer le manuscrit.',
+                'path' => '/outils',
+            ],
+            'outil-volume' => [
+                'title' => 'Compteur de signes et feuillets',
+                'description' => 'Convertissez signes, mots et feuillets de 1 500. Collez un texte : le décompte reste dans votre navigateur. Ordres de grandeur pour correction, traduction et livre audio.',
+                'path' => '/outils/volume',
             ],
             'salons' => [
                 'title' => 'Agenda des salons du livre — France et Europe',
@@ -477,6 +487,7 @@ final class Seo
             'comment' => self::commentFaqs(),
             'tarifs' => self::tarifsFaqs(),
             'questions' => self::questionsFaqs(),
+            'outil-volume' => Tools::volumeFaqs(),
             default => [],
         };
     }
@@ -1085,6 +1096,21 @@ final class Seo
         if ($screen === 'accueil') {
             return [];
         }
+        if ($screen === 'outils') {
+            return [
+                ['name' => self::BRAND, 'url' => '/'],
+                ['name' => 'Communauté', 'url' => '/communaute'],
+                ['name' => 'Outils', 'url' => '/outils'],
+            ];
+        }
+        if ($screen === 'outil-volume') {
+            return [
+                ['name' => self::BRAND, 'url' => '/'],
+                ['name' => 'Communauté', 'url' => '/communaute'],
+                ['name' => 'Outils', 'url' => '/outils'],
+                ['name' => 'Signes et feuillets', 'url' => '/outils/volume'],
+            ];
+        }
         $name = match ($screen) {
             'comment' => 'Comment ça marche',
             'tarifs' => 'Tarifs',
@@ -1093,6 +1119,8 @@ final class Seo
             'journal' => 'Le journal',
             'forum' => 'Forum',
             'communaute' => 'Communauté',
+            'outils' => 'Outils',
+            'outil-volume' => 'Signes et feuillets',
             'salons' => 'Agenda des salons',
             'aide' => 'Centre d\'aide',
             'questions' => 'Questions fréquentes',
@@ -1184,7 +1212,8 @@ acteursdulivre.fr met en relation des porteurs de projet (auteurs, éditeurs, co
 - [Appels d'offres]({$home}missions) : recherches publiées par les porteurs de projet
 - [Métiers]({$home}metiers/correction) : pages métiers, exemple correction
 - [Maisons d'édition]({$home}maisons-edition) : annuaire de plus de 600 éditeurs en France et en Europe, par pays ([exemple : France]({$home}maisons-edition/pays/france)), ville et genre ; les coordonnées sont réservées aux membres connectés et les maisons peuvent revendiquer leur fiche
-- [Communauté]({$home}communaute) : forum, annuaire des maisons d'édition et agenda des salons
+- [Communauté]({$home}communaute) : forum, annuaire des maisons d'édition, agenda des salons et outils métier
+- [Outils]({$home}outils) : compteur de signes, convertisseur de feuillets
 - [Agenda des salons]({$home}salons) : salons du livre et festivals en France et en Europe (2026-2027)
 - [Forum]({$home}forum) : discussions métier (tarifs, contrats, fabrication)
 - [Par besoin]({$home}besoin) : pages d'entrée par besoin (correction, couverture, impression…), utilisées aussi pour les campagnes

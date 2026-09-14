@@ -51,6 +51,7 @@ final class Analytics
         'mdp' => 'Mot de passe',
         'espace' => 'Espace membre',
         'newsletter' => 'Newsletter',
+        'outils' => 'Outils',
         'erreur' => 'Page d’erreur',
         'autre' => 'Autre page',
     ];
@@ -1083,6 +1084,13 @@ final class Analytics
         }
         if ($head === 'besoin' && $slug !== '' && $tail === '') {
             return ['page' => 'landing', 'path' => '/besoin/' . $slug, 'entity' => ['landing', $slug]];
+        }
+        if ($head === 'outils') {
+            return [
+                'page' => 'outils',
+                'path' => $slug === '' ? '/outils' : '/outils/' . $slug,
+                'entity' => null,
+            ];
         }
 
         return ['page' => 'autre', 'path' => '/' . $head, 'entity' => null];
