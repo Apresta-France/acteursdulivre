@@ -5451,6 +5451,36 @@ img.profile-avatar,
   border-radius: 12px;
   background: #fff;
 }
+.admin-contact-wrap .admin-contact-head,
+.admin-contact-wrap .admin-contact-row {
+  grid-template-columns: 150px minmax(180px, 0.9fr) minmax(220px, 1.6fr) 120px;
+}
+.admin-contact-row.is-open {
+  box-shadow: inset 3px 0 0 var(--orange);
+  background: #FFFCFA;
+}
+.admin-contact-row.is-open:hover { background: #FDF6F2; }
+.admin-contact-who { display: block; font-size: 15px; color: #14202C; font-weight: 500; }
+.admin-contact-row.is-open .admin-contact-who { font-weight: 600; }
+.admin-contact-body {
+  white-space: pre-wrap;
+  font-size: 15px;
+  line-height: 1.65;
+  color: #14202C;
+  background: #fff;
+  border: 1px solid #E8ECF1;
+  border-radius: 12px;
+  padding: 20px 22px;
+}
+.admin-contact-body.is-reply {
+  background: #F7FAFC;
+}
+.admin-contact-form { margin-top: 22px; max-width: 720px; }
+.admin-contact-form .admin-h2 { margin-top: 28px; }
+@media (max-width: 800px) {
+  .admin-contact-wrap .admin-contact-head,
+  .admin-contact-wrap .admin-contact-row { min-width: 720px; }
+}
 .admin-pager {
   display: flex;
   gap: 8px;

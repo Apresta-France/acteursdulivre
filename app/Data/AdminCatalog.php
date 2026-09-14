@@ -8,6 +8,7 @@ use Adl\Core\Auth;
 use Adl\Core\Migrator;
 use Adl\Models\Article;
 use Adl\Models\Commission;
+use Adl\Models\ContactMessage;
 use Adl\Models\Invoice;
 use Adl\Models\Mission;
 use Adl\Models\Order;
@@ -32,7 +33,7 @@ final class AdminCatalog
         $user = Auth::user();
         $data = array_merge(self::shared($user, $screen, $extra['query'] ?? ''), self::content(), self::liveOverlay(), $extra);
         $data['screen'] = $screen;
-        $flags = ['dash', 'verif', 'moderation', 'users', 'catalogue', 'missions', 'finances', 'litiges', 'avis', 'preouverture', 'cms', 'reglages', 'stats'];
+        $flags = ['dash', 'verif', 'moderation', 'users', 'catalogue', 'missions', 'finances', 'litiges', 'contact', 'avis', 'preouverture', 'cms', 'reglages', 'stats'];
         foreach ($flags as $id) {
             $data['is' . ucfirst($id)] = $id === $screen;
         }
@@ -51,6 +52,7 @@ final class AdminCatalog
             ['verif', 'Vérifications', $badges['verif'], '', '/admin/verifications'],
             ['moderation', 'Modération', $badges['moderation'], '', '/admin/moderation'],
             ['litiges', 'Litiges', $badges['litiges'], '', '/admin/litiges'],
+            ['contact', 'Messages', $badges['contact'], '', '/admin/contact'],
             ['avis', 'Avis', $badges['avis'], '', '/admin/avis'],
             ['maisons', 'Maisons d\'édition', $badges['maisons'], '', '/admin/maisons-edition'],
             ['salons', 'Agenda des salons', $badges['salons'], '', '/admin/salons'],
@@ -103,6 +105,7 @@ final class AdminCatalog
                 static fn (): int => Report::countOpen() + Article::countPendingSubmissions()
             ),
             'litiges' => self::badgeCount(static fn (): int => Order::countByStatus('dispute')),
+            'contact' => self::badgeCount(static fn (): int => ContactMessage::countOpen()),
             'avis' => self::badgeCount(static fn (): int => Report::countOpenForType('review')),
             'maisons' => self::badgeCount(static fn (): int => PublisherClaim::countPending()),
             'salons' => self::badgeCount(static fn (): int => SalonProposal::countPending()),
@@ -129,6 +132,7 @@ final class AdminCatalog
             'verif' => 'Vérifications',
             'moderation' => 'Modération',
             'litiges' => 'Litiges',
+            'contact' => 'Messages',
             'avis' => 'Avis',
             'maisons' => 'Maisons d\'édition',
             'salons' => 'Agenda des salons',
@@ -308,6 +312,7 @@ final class AdminCatalog
             ['label' => 'Contenus signalés', 'note' => 'modération éditoriale', 'n' => 0, 'age' => '—', 'sla' => 'Aucun signalement', 'slaStyle' => self::pill('grey'), 'href' => '/admin/moderation'],
             ['label' => 'Missions ouvertes', 'note' => 'appels d\'offres publics', 'n' => $openMissions, 'age' => '—', 'sla' => $openMissions > 0 ? 'En ligne' : 'Aucune mission', 'slaStyle' => self::pill($openMissions > 0 ? 'green' : 'grey'), 'href' => '/admin/missions'],
             ['label' => 'Litiges ouverts', 'note' => 'médiation', 'n' => 0, 'age' => '—', 'sla' => 'Aucun litige', 'slaStyle' => self::pill('grey'), 'href' => '/admin/litiges'],
+            ['label' => 'Messages de contact', 'note' => 'formulaire du site', 'n' => 0, 'age' => '—', 'sla' => 'Aucun message', 'slaStyle' => self::pill('grey'), 'href' => '/admin/contact'],
             ['label' => 'Avis contestés', 'note' => 'contestation par le prestataire', 'n' => 0, 'age' => '—', 'sla' => 'Aucun avis', 'slaStyle' => self::pill('grey'), 'href' => '/admin/avis'],
         ];
     }

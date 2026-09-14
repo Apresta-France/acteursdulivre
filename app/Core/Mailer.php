@@ -15,7 +15,7 @@ final class Mailer
     /**
      * @param array{unsubscribe_url?: string, headers?: array<string, string>, template_slug?: string, source?: string} $options
      */
-    public static function send(string $to, string $subject, string $html, string $text = '', array $options = []): void
+    public static function send(string $to, string $subject, string $html, string $text = '', array $options = []): ?int
     {
         $from = self::fromAddress();
         $fromName = self::fromName();
@@ -55,7 +55,7 @@ final class Mailer
             throw $e;
         }
 
-        self::record($to, $subject, $wrapped, $text, $options, $status, $error);
+        return self::record($to, $subject, $wrapped, $text, $options, $status, $error);
     }
 
     public static function usesSmtp(): bool
@@ -87,7 +87,7 @@ final class Mailer
         ];
     }
 
-    public static function sendTemplate(string $slug, string $to, array $vars = []): void
+    public static function sendTemplate(string $slug, string $to, array $vars = []): ?int
     {
         $template = EmailTemplate::findBySlug($slug);
         if (!$template) {
@@ -95,7 +95,7 @@ final class Mailer
         }
         $subject = self::replace($template['subject'], $vars);
         $html = self::replace($template['body_html'], $vars);
-        self::send($to, $subject, $html, '', [
+        return self::send($to, $subject, $html, '', [
             'template_slug' => $slug,
         ]);
     }
@@ -168,9 +168,9 @@ final class Mailer
     /**
      * @param array<string, mixed> $options
      */
-    private static function record(string $to, string $subject, string $html, string $text, array $options, string $status, ?string $error): void
+    private static function record(string $to, string $subject, string $html, string $text, array $options, string $status, ?string $error): ?int
     {
-        EmailLog::record([
+        return EmailLog::record([
             'recipient' => $to,
             'subject' => $subject,
             'body_html' => $html,

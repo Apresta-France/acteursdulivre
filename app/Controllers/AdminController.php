@@ -23,6 +23,7 @@ use Adl\Models\Analytics;
 use Adl\Models\Article;
 use Adl\Models\AuthorPage;
 use Adl\Models\Commission;
+use Adl\Models\ContactMessage;
 use Adl\Models\Conversation;
 use Adl\Models\EmailLog;
 use Adl\Models\EmailTemplate;
@@ -112,6 +113,7 @@ final class AdminController
             'chart' => $chart,
             'files' => [
                 ['label' => 'Profils à vérifier', 'n' => $pendingVerif, 'href' => '/admin/verifications', 'note' => 'dossiers prestataires'],
+                ['label' => 'Messages de contact', 'n' => self::contactCount(), 'href' => '/admin/contact', 'note' => 'formulaire « Nous écrire »'],
                 ['label' => 'Missions ouvertes', 'n' => $openMissions, 'href' => '/admin/missions', 'note' => 'appels d’offres'],
                 ['label' => 'Factures en retard', 'n' => $overdue, 'href' => '/admin/finances', 'note' => 'commissions échues'],
                 ['label' => 'Litiges', 'n' => $disputes, 'href' => '/admin/litiges', 'note' => 'commandes en médiation'],
@@ -1672,6 +1674,92 @@ final class AdminController
         ]);
     }
 
+    public function contactInbox(Request $request): void
+    {
+        $query = $request->string('q', '');
+        $filtre = $this->filtre($request, ['open', 'replied', 'handled', 'tous'], ContactMessage::STATUS_OPEN);
+        $page = max(1, (int) ($request->int('page', 1) ?? 1));
+        try {
+            $found = ContactMessage::search($query, $filtre, $page);
+            $openCount = ContactMessage::countOpen();
+        } catch (Throwable) {
+            $found = ['items' => [], 'total' => 0, 'page' => 1, 'pages' => 1, 'per_page' => ContactMessage::PER_PAGE];
+            $openCount = 0;
+        }
+        $n = $found['total'];
+        $subtitle = format_int($n) . ' ' . ($n > 1 ? 'messages' : 'message');
+        if ($query !== '') {
+            $subtitle .= ' pour « ' . $query . ' »';
+        }
+
+        $this->page('contact', 'admin/contact', [
+            'contactQuery' => $query,
+            'filtre' => $filtre,
+            'messages' => $found['items'],
+            'pager' => $found,
+            'openCount' => $openCount,
+            'contactFilters' => $this->filterLinks('/admin/contact', [
+                'open' => 'À traiter',
+                'replied' => 'Répondus',
+                'handled' => 'Traités',
+                'tous' => 'Tous',
+            ], $filtre, $query !== '' ? ['q' => $query] : []),
+            'contactSubtitle' => $subtitle,
+        ]);
+    }
+
+    public function contactShow(Request $request, string $id): void
+    {
+        Auth::requireAdmin();
+        try {
+            $message = ContactMessage::find((int) $id);
+        } catch (Throwable) {
+            $message = null;
+        }
+        if (!$message) {
+            flash('error', 'Message introuvable.');
+            redirect('/admin/contact');
+        }
+        $this->page('contact', 'admin/contact-show', [
+            'title' => 'Message de ' . (string) ($message['who'] ?? 'contact'),
+            'message' => $message,
+        ]);
+    }
+
+    public function contactSave(Request $request, string $id): void
+    {
+        $admin = Auth::requireAdmin();
+        $action = $request->string('action');
+        $note = $request->string('note');
+        $back = $request->string('back');
+        $target = $back !== '' ? $back : '/admin/contact/' . (int) $id;
+        try {
+            if ($action === 'reply') {
+                ContactMessage::reply((int) $id, (int) $admin['id'], $request->string('reply'), $note);
+                flash('saved', 'Réponse envoyée.');
+                unset($_SESSION['_old']);
+            } elseif ($action === 'handle') {
+                ContactMessage::markHandled((int) $id, (int) $admin['id'], $note);
+                flash('saved', 'Message marqué comme traité.');
+                $target = $back !== '' ? $back : '/admin/contact';
+            } elseif ($action === 'reopen') {
+                ContactMessage::reopen((int) $id, (int) $admin['id'], $note);
+                flash('saved', 'Message rouvert.');
+            } elseif ($action === 'note') {
+                ContactMessage::saveNote((int) $id, $note);
+                flash('saved', 'Note enregistrée.');
+            } else {
+                flash('error', 'Action inconnue.');
+            }
+        } catch (Throwable $e) {
+            if ($action === 'reply') {
+                $_SESSION['_old'] = ['reply' => $request->string('reply')];
+            }
+            flash('error', user_error_message($e));
+        }
+        redirect($target);
+    }
+
     public function migrations(Request $request): void
     {
         $status = Migrator::status();
@@ -1719,6 +1807,15 @@ final class AdminController
     {
         try {
             return Report::countOpen();
+        } catch (Throwable) {
+            return 0;
+        }
+    }
+
+    private static function contactCount(): int
+    {
+        try {
+            return ContactMessage::countOpen();
         } catch (Throwable) {
             return 0;
         }

@@ -30,12 +30,12 @@ final class EmailLog
      *   error?: string|null
      * } $data
      */
-    public static function record(array $data): void
+    public static function record(array $data): ?int
     {
         $recipient = mb_substr(trim((string) ($data['recipient'] ?? '')), 0, 191);
         $subject = mb_substr(trim((string) ($data['subject'] ?? '')), 0, 255);
         if ($recipient === '' && $subject === '') {
-            return;
+            return null;
         }
 
         $slug = trim((string) ($data['template_slug'] ?? ''));
@@ -66,8 +66,10 @@ final class EmailLog
                     $error !== '' ? mb_substr($error, 0, 255) : null,
                 ]
             );
+            return (int) Database::lastId();
         } catch (\Throwable) {
             // La table peut manquer pendant une migration ; l'envoi ne doit pas échouer.
+            return null;
         }
     }
 

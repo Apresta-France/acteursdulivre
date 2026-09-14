@@ -282,6 +282,9 @@ return static function (Router $router): void {
     $router->post('/admin/migrations', [AdminController::class, 'migrationsApply']);
     $router->get('/admin/envois', [AdminController::class, 'envois']);
     $router->get('/admin/envois/{id}', [AdminController::class, 'envoiShow']);
+    $router->get('/admin/contact', [AdminController::class, 'contactInbox']);
+    $router->get('/admin/contact/{id}', [AdminController::class, 'contactShow']);
+    $router->post('/admin/contact/{id}', [AdminController::class, 'contactSave']);
 
     $router->get('/{slug}/{city}', [PageController::class, 'metierVille']);
 };

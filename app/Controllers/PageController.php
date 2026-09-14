@@ -17,6 +17,7 @@ use Adl\Data\Seo;
 use Adl\Data\Share;
 use Adl\Data\Sitemap;
 use Adl\Models\Analytics;
+use Adl\Models\ContactMessage;
 use Adl\Models\Application;
 use Adl\Models\Article;
 use Adl\Models\AuthorPage;
@@ -1552,23 +1553,43 @@ final class PageController
             redirect('/contact');
         }
 
+        $contactId = 0;
         try {
-            Mailer::sendTemplate('contact-interne', Mailer::fromAddress(), [
+            $contactId = ContactMessage::create([
+                'name' => $name,
+                'email' => $email,
+                'body' => $message,
+            ]);
+        } catch (\Throwable) {
+        }
+
+        $logId = null;
+        try {
+            $logId = Mailer::sendTemplate('contact-interne', Mailer::fromAddress(), [
                 'nom' => $name !== '' ? $name : 'Visiteur',
                 'email' => $email,
                 'message' => $message,
             ]);
         } catch (\Throwable $e) {
             try {
-                Mailer::send(
+                $logId = Mailer::send(
                     Mailer::fromAddress(),
                     'Message de contact',
                     '<p><strong>' . e($name) . '</strong> (' . e($email) . ')</p><p>' . nl2br(e($message)) . '</p>'
                 );
             } catch (\Throwable) {
-                flash('error', 'Le message n\'a pas pu être envoyé. Réessayez dans un instant.');
-                $_SESSION['_old'] = $old;
-                redirect('/contact');
+                if ($contactId < 1) {
+                    flash('error', 'Le message n\'a pas pu être envoyé. Réessayez dans un instant.');
+                    $_SESSION['_old'] = $old;
+                    redirect('/contact');
+                }
+            }
+        }
+
+        if ($contactId > 0 && $logId) {
+            try {
+                ContactMessage::setEmailLogId($contactId, (int) $logId);
+            } catch (\Throwable) {
             }
         }
 
