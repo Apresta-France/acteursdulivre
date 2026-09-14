@@ -31,6 +31,7 @@ use Adl\Models\OrderFile;
 use Adl\Models\OrderMilestone;
 use Adl\Models\PortfolioItem;
 use Adl\Models\Profile;
+use Adl\Models\Publisher;
 use Adl\Models\Recommendation;
 use Adl\Models\Review;
 use Adl\Models\ReviewRequest;
@@ -115,6 +116,26 @@ final class AccountController
         } catch (\Throwable) {
         }
 
+        $authorCompletion = 0;
+        $authorEnabled = false;
+        $authorWorksCount = 0;
+        $authorPublicHref = '';
+        $publisherOwned = null;
+        try {
+            $authorPage = AuthorPage::findByUser((int) $user['id']);
+            if ($authorPage) {
+                $authorWorksCount = AuthorWork::countForPage((int) $authorPage['id']);
+                $authorCompletion = AuthorPage::completion($authorPage, $authorWorksCount);
+                $authorEnabled = AuthorPage::isPublic($authorPage);
+                $authorPublicHref = AuthorPage::publicHref($authorPage);
+            }
+        } catch (\Throwable) {
+        }
+        try {
+            $publisherOwned = Publisher::findForOwner((int) $user['id']);
+        } catch (\Throwable) {
+        }
+
         View::page('dashboard', [
             'title' => 'Tableau de bord',
             'error' => flash('error'),
@@ -142,6 +163,11 @@ final class AccountController
             'forumMine' => $forumMine,
             'notifyForumFollowed' => !isset($user['notify_forum_followed']) || (int) $user['notify_forum_followed'] === 1,
             'notifyForumMine' => !isset($user['notify_forum_mine']) || (int) $user['notify_forum_mine'] === 1,
+            'authorCompletion' => $authorCompletion,
+            'authorEnabled' => $authorEnabled,
+            'authorWorksCount' => $authorWorksCount,
+            'authorPublicHref' => $authorPublicHref,
+            'publisherOwned' => $publisherOwned,
         ]);
     }
 
@@ -2206,7 +2232,10 @@ final class AccountController
                 'website' => $request->string('website'),
                 'socials' => self::rows($request->list('socials'), ['network', 'url']),
                 'trades' => $trades,
-                'skills' => self::rows($request->list('skills'), ['label', 'niveau']),
+                'skills' => array_values(array_filter(
+                    self::rows($request->list('skills'), ['label', 'niveau']),
+                    static fn (array $skill): bool => $skill['label'] !== ''
+                )),
                 'tools' => self::stringList($request->string('tools')),
                 'genres' => $genres,
                 'languages_list' => self::rows($request->list('languages_list'), ['langue', 'niveau']),

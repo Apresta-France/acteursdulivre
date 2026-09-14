@@ -19,6 +19,7 @@ $openTo = $a['open_to_labels'] ?? [];
 $website = trim((string) ($a['website'] ?? ''));
 $wikipedia = trim((string) ($a['wikipedia_url'] ?? ''));
 $hasSide = $website !== '' || $wikipedia !== '' || $links !== [] || $openTo !== [] || !empty($a['profile_href']) || ($a['member_since_label'] ?? '') !== '';
+$heroPhoto = user_avatar_src($a);
 
 $renderWork = static function (array $w, bool $big): void {
     $images = $w['images'] ?? [];
@@ -154,7 +155,7 @@ $renderWork = static function (array $w, bool $big): void {
     </div>
   <?php endif; ?>
 
-  <div class="profile-hero auteur-hero">
+  <div class="profile-hero auteur-hero<?= $heroPhoto !== '' ? ' profile-hero-has-photo' : '' ?>"<?php if ($heroPhoto !== ''): ?> style="--profile-hero-photo: url('<?= e($heroPhoto) ?>')"<?php endif; ?>>
     <?= avatar_html($a, 104, 'avatar profile-avatar') ?>
     <div class="profile-hero-main">
       <div class="profile-hero-line">

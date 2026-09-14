@@ -2415,7 +2415,10 @@ final class Catalog
             'languages' => (string) ($profile['languages'] ?? ''),
             'languages_list' => $profile['languages_list'] ?? [],
             'trades' => $trades,
-            'skills' => $profile['skills'] ?? [],
+            'skills' => array_values(array_filter(
+                $profile['skills'] ?? [],
+                static fn ($skill): bool => is_array($skill) && trim((string) ($skill['label'] ?? '')) !== ''
+            )),
             'tools' => $profile['tools'] ?? [],
             'genres' => $profile['genres'] ?? [],
             'experiences' => $profile['experiences'] ?? [],

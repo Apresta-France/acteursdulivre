@@ -50,6 +50,7 @@ if ($hasAvis) {
 if ($showActivity) {
     $profileTabs[] = ['id' => 'activite', 'label' => 'Activité'];
 }
+$heroPhoto = user_avatar_src($p);
 ?>
 <div class="profile-page">
   <nav class="search-crumb" aria-label="Fil d'Ariane">
@@ -59,7 +60,7 @@ if ($showActivity) {
     <span aria-hidden="true"> · </span>
     <span><?= e((string) $p['name']) ?></span>
   </nav>
-  <div class="profile-hero">
+  <div class="profile-hero<?= $heroPhoto !== '' ? ' profile-hero-has-photo' : '' ?>"<?php if ($heroPhoto !== ''): ?> style="--profile-hero-photo: url('<?= e($heroPhoto) ?>')"<?php endif; ?>>
     <?= avatar_html($p, 104, 'avatar profile-avatar') ?>
     <div class="profile-hero-main">
       <div class="profile-hero-line">
@@ -597,7 +598,14 @@ if ($showActivity) {
           <?php endif; ?>
           <?php if ($p['website'] !== ''): ?>
             <?php $website = (string) $p['website']; ?>
-            <div><span>Site</span><?php if (preg_match('#^https?://#i', $website)): ?><a href="<?= e($website) ?>" target="_blank" rel="noopener noreferrer"><?= e($website) ?></a><?php else: ?><strong><?= e($website) ?></strong><?php endif; ?></div>
+            <div>
+              <span>Site</span>
+              <?php if (preg_match('#^https?://#i', $website)): ?>
+                <a href="<?= e($website) ?>" target="_blank" rel="noopener noreferrer" title="<?= e($website) ?>">Voir le site</a>
+              <?php else: ?>
+                <strong><?= e($website) ?></strong>
+              <?php endif; ?>
+            </div>
           <?php endif; ?>
           <?php if (!empty($authorHref)): ?>
             <div><span>Auteur</span><a href="<?= e(url((string) $authorHref)) ?>">Voir la fiche auteur et les œuvres</a></div>

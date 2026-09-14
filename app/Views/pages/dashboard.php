@@ -57,6 +57,12 @@ if ($upcomingTodos !== []) {
     $todoGroups[] = ['label' => '', 'items' => $upcomingTodos];
 }
 $platformNews = $platformNews ?? [];
+$authorCompletion = (int) ($authorCompletion ?? 0);
+$authorEnabled = !empty($authorEnabled);
+$authorWorksCount = (int) ($authorWorksCount ?? 0);
+$authorPublicHref = (string) ($authorPublicHref ?? '');
+$publisherOwned = is_array($publisherOwned ?? null) ? $publisherOwned : null;
+$publisherName = trim((string) ($publisherOwned['name'] ?? ''));
 ?>
 <div class="espace-page dash-page">
   <div class="espace-page-head">
@@ -130,6 +136,21 @@ $platformNews = $platformNews ?? [];
       <span>
         <strong>Alertes</strong>
         <em><?= $unreadAlerts ?> nouvelle<?= $unreadAlerts > 1 ? 's' : '' ?></em>
+      </span>
+    </a>
+    <a class="dash-stat" href="<?= e(url('/espace/auteur')) ?>">
+      <span class="dash-ico<?= $authorEnabled ? ' dash-ico-accent' : '' ?>"><?= icon('book', 18) ?></span>
+      <span>
+        <strong>Fiche auteur</strong>
+        <em><?php
+          if ($authorEnabled) {
+              echo 'Activée · complétée à ' . $authorCompletion . ' %';
+          } elseif ($authorCompletion > 0) {
+              echo 'Brouillon · ' . $authorCompletion . ' %';
+          } else {
+              echo 'À compléter';
+          }
+        ?></em>
       </span>
     </a>
     <?php if ($seeks): ?>
@@ -328,6 +349,76 @@ $platformNews = $platformNews ?? [];
     </div>
   <?php endif; ?>
 
+  <section class="dash-section" id="communaute">
+    <div class="dash-section-head">
+      <div>
+        <h2>Communauté</h2>
+        <p class="dash-section-lead">Complétez votre fiche auteur pour partager vos livres, rattacher le catalogue de votre maison, publier une tribune ou intervenir sur le forum.</p>
+      </div>
+      <a href="<?= e(url('/espace/auteur')) ?>">Ma fiche auteur →</a>
+    </div>
+    <div class="dash-cards">
+      <a class="dash-card dash-card-accent" href="<?= e(url('/espace/auteur')) ?>">
+        <span class="dash-ico"><?= icon('book', 20) ?></span>
+        <strong><?= $authorCompletion > 0 ? 'Ma fiche auteur' : 'Compléter ma fiche auteur' ?></strong>
+        <span><?php
+          if ($authorEnabled) {
+              echo 'Fiche activée, complétée à ' . $authorCompletion . ' %. Elle apparaît dans l\'annuaire des auteurs.';
+          } elseif ($authorCompletion > 0) {
+              echo 'Fiche complétée à ' . $authorCompletion . ' %. Activez-la pour apparaître dans l\'annuaire et partager vos œuvres.';
+          } else {
+              echo 'Biographie, genres, presse : une page publique pour vos livres, distincte de la vitrine prestataire.';
+          }
+        ?></span>
+        <span class="dash-card-cta"><?= $authorCompletion > 0 ? ($authorEnabled ? 'Modifier la fiche' : 'Continuer') : 'Commencer' ?> <?= icon('arrow', 14) ?></span>
+      </a>
+      <a class="dash-card" href="<?= e(url($authorWorksCount > 0 ? '/espace/auteur/oeuvres' : '/espace/auteur/oeuvres/creer')) ?>">
+        <span class="dash-ico"><?= icon('plus-box', 20) ?></span>
+        <strong><?= $authorWorksCount > 0 ? 'Mes œuvres' : 'Partager mes œuvres' ?></strong>
+        <span><?php
+          if ($authorWorksCount > 0) {
+              echo $authorWorksCount . ' œuvre' . ($authorWorksCount > 1 ? 's' : '') . ' sur votre fiche.';
+              echo $publisherName !== ''
+                  ? ' Rattachez aussi les titres déjà parus chez ' . e($publisherName) . '.'
+                  : ' Ajoutez un titre ou rattachez ceux déjà parus chez votre maison.';
+          } elseif ($publisherName !== '') {
+              echo 'Ajoutez vos livres, ou rattachez ceux déjà parus chez ' . e($publisherName) . '.';
+          } else {
+              echo 'Ajoutez vos livres, ou rattachez ceux déjà parus chez votre maison d\'édition.';
+          }
+        ?></span>
+        <span class="dash-card-cta"><?= $authorWorksCount > 0 ? 'Gérer les œuvres' : 'Ajouter une œuvre' ?> <?= icon('arrow', 14) ?></span>
+      </a>
+      <?php if ($publisherOwned): ?>
+        <a class="dash-card" href="<?= e(url('/espace/maison-edition')) ?>">
+          <span class="dash-ico"><?= icon('store', 20) ?></span>
+          <strong>Ma maison d'édition</strong>
+          <span>Tenez à jour la fiche « <?= e($publisherName) ?> » et reliez-y les œuvres de votre catalogue.</span>
+          <span class="dash-card-cta">Ouvrir la fiche <?= icon('arrow', 14) ?></span>
+        </a>
+      <?php else: ?>
+        <a class="dash-card" href="<?= e(url('/espace/maison-edition')) ?>">
+          <span class="dash-ico"><?= icon('store', 20) ?></span>
+          <strong>Rattacher une maison</strong>
+          <span>Revendiquez la fiche de votre maison d'édition pour relier son catalogue à vos œuvres.</span>
+          <span class="dash-card-cta">Trouver ma maison <?= icon('arrow', 14) ?></span>
+        </a>
+      <?php endif; ?>
+      <a class="dash-card" href="<?= e(url('/espace/tribune/nouvelle')) ?>">
+        <span class="dash-ico"><?= icon('file-plus', 20) ?></span>
+        <strong>Publier une tribune</strong>
+        <span>Proposez un texte au journal : un point de vue, une expérience ou une réflexion sur le métier.</span>
+        <span class="dash-card-cta">Écrire une tribune <?= icon('arrow', 14) ?></span>
+      </a>
+      <a class="dash-card" href="<?= e(url('/forum/nouveau')) ?>">
+        <span class="dash-ico"><?= icon('chat', 20) ?></span>
+        <strong>Poster sur le forum</strong>
+        <span>Ouvrez une discussion ou répondez aux autres membres : tarifs, contrats, papier, délais.</span>
+        <span class="dash-card-cta">Ouvrir une discussion <?= icon('arrow', 14) ?></span>
+      </a>
+    </div>
+  </section>
+
   <section class="dash-section dash-forum" id="forum">
     <div class="dash-section-head">
       <h2>Forum</h2>
@@ -447,6 +538,11 @@ $platformNews = $platformNews ?? [];
         <?php endif; ?>
       <?php endif; ?>
       <a class="dash-chip" href="<?= e(url('/espace/auteur')) ?>"><?= icon('book', 16) ?> Fiche auteur</a>
+      <?php if ($authorEnabled && $authorPublicHref !== ''): ?>
+        <a class="dash-chip" href="<?= e(url($authorPublicHref)) ?>"><?= icon('book', 16) ?> Fiche auteur publique</a>
+      <?php endif; ?>
+      <a class="dash-chip" href="<?= e(url('/espace/maison-edition')) ?>"><?= icon('store', 16) ?> Maison d'édition</a>
+      <a class="dash-chip" href="<?= e(url('/espace/tribune')) ?>"><?= icon('file-plus', 16) ?> Tribune</a>
       <a class="dash-chip" href="<?= e(url('/espace/forum')) ?>"><?= icon('chat', 16) ?> Forum</a>
       <a class="dash-chip" href="<?= e(url('/espace/parametres')) ?>"><?= icon('gear', 16) ?> Paramètres</a>
       <a class="dash-chip" href="<?= e(url('/aide')) ?>"><?= icon('book', 16) ?> Centre d'aide</a>
