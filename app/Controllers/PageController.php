@@ -16,6 +16,7 @@ use Adl\Data\LegalPages;
 use Adl\Data\Seo;
 use Adl\Data\Share;
 use Adl\Data\Sitemap;
+use Adl\Data\Spine;
 use Adl\Data\Tools;
 use Adl\Models\Analytics;
 use Adl\Models\ContactMessage;
@@ -810,10 +811,18 @@ final class PageController
             not_found('Cet outil n\'existe pas.');
         }
 
-        if ($slug !== 'volume') {
-            not_found('Cet outil n\'existe pas.');
-        }
+        match ($slug) {
+            'volume' => $this->outilVolume($request, $tool),
+            'dos' => $this->outilDos($request, $tool),
+            default => not_found('Cet outil n\'existe pas.'),
+        };
+    }
 
+    /**
+     * @param array<string, mixed> $tool
+     */
+    private function outilVolume(Request $request, array $tool): void
+    {
         $unit = Tools::normalizeUnit($request->string('u'));
         $amount = Tools::parseAmount($request->string('n'));
         $stats = $amount !== null ? Tools::fromAmount($amount, $unit) : Tools::fromAmount(0, 'signes');
@@ -823,12 +832,11 @@ final class PageController
         $simulated = ($rate !== null && is_array($stats)) ? Tools::simulate($stats, $rate, $rateUnit) : null;
 
         $title = (string) $tool['title'];
-        $path = Tools::path($slug);
+        $path = Tools::path('volume');
         $meta = Seo::forScreen('outil-volume', [
             'path' => $path,
             'breadcrumbs' => [
                 ['name' => Seo::BRAND, 'url' => '/'],
-                ['name' => 'Communauté', 'url' => '/communaute'],
                 ['name' => 'Outils', 'url' => Tools::path()],
                 ['name' => $title, 'url' => $path],
             ],
@@ -848,6 +856,50 @@ final class PageController
             'simulated' => $simulated,
             'faqs' => Tools::volumeFaqs(),
             'jsConfig' => Tools::jsConfig(),
+        ]);
+    }
+
+    /**
+     * @param array<string, mixed> $tool
+     */
+    private function outilDos(Request $request, array $tool): void
+    {
+        $input = Spine::fromQuery(
+            $request->string('f'),
+            $request->string('papier'),
+            $request->string('r'),
+            $request->string('p'),
+            $request->string('w'),
+            $request->string('h'),
+            $request->string('g'),
+            $request->string('v'),
+            $request->string('b'),
+            $request->string('rabats'),
+            $request->string('rw')
+        );
+        $result = Spine::compute($input);
+        $title = (string) $tool['title'];
+        $path = Tools::path('dos');
+        $meta = Seo::forScreen('outil-dos', [
+            'path' => $path,
+            'breadcrumbs' => [
+                ['name' => Seo::BRAND, 'url' => '/'],
+                ['name' => 'Outils', 'url' => Tools::path()],
+                ['name' => $title, 'url' => $path],
+            ],
+        ]);
+
+        View::page('outil-dos', [
+            'title' => (string) (Seo::catalog()['outil-dos']['title'] ?? $title),
+            'meta' => $meta,
+            'tool' => $tool,
+            'input' => $input,
+            'result' => $result,
+            'formats' => Spine::formats(),
+            'papers' => Spine::papers(),
+            'bindings' => Spine::bindings(),
+            'faqs' => Spine::faqs(),
+            'jsConfig' => Spine::jsConfig(),
         ]);
     }
 

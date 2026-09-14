@@ -49,6 +49,15 @@ final class Tools
                 'icon' => 'counter',
                 'available' => true,
             ],
+            [
+                'slug' => 'dos',
+                'title' => 'Dos et couverture',
+                'kicker' => 'Fabrication',
+                'lead' => 'Format, pagination, papier : largeur de dos, fonds perdus et taille du PDF couverture. L’imprimeur a le dernier mot.',
+                'href' => self::path('dos'),
+                'icon' => 'trade-reliure',
+                'available' => true,
+            ],
         ];
     }
 

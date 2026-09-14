@@ -4648,4 +4648,284 @@
       });
     }
   });
+
+  document.querySelectorAll('[data-spine-tool]').forEach(function (root) {
+    var cfg = {};
+    try { cfg = JSON.parse(root.getAttribute('data-spine-config') || '{}'); } catch (e) {}
+    var formats = cfg.formats || {};
+    var papers = cfg.papers || {};
+    var formatSelect = root.querySelector('[data-spine-format]');
+    var paperSelect = root.querySelector('[data-spine-paper]');
+    var bindingSelect = root.querySelector('[data-spine-binding]');
+    var pagesInput = root.querySelector('[data-spine-pages]');
+    var widthInput = root.querySelector('[data-spine-width]');
+    var heightInput = root.querySelector('[data-spine-height]');
+    var grammageInput = root.querySelector('[data-spine-grammage]');
+    var bulkInput = root.querySelector('[data-spine-bulk]');
+    var bleedInput = root.querySelector('[data-spine-bleed]');
+    var flapsInput = root.querySelector('[data-spine-flaps]');
+    var flapInput = root.querySelector('[data-spine-flap]');
+    var customFormat = root.querySelector('[data-spine-custom-format]');
+    var customPaper = root.querySelector('[data-spine-custom-paper]');
+    var flapWrap = root.querySelector('[data-spine-flap-wrap]');
+    var flapsSwitch = root.querySelector('.tool-switch');
+    var flapsLabel = root.querySelector('[data-spine-flaps-label]');
+    var spreadWrap = root.querySelector('[data-spine-spread-wrap]');
+    var spread = root.querySelector('[data-spine-spread]');
+    var caption = root.querySelector('[data-spine-caption]');
+    var warningsBox = root.querySelector('[data-spine-warnings]');
+    var summaryEl = root.querySelector('[data-spine-summary]');
+    var copyBtn = root.querySelector('[data-spine-copy]');
+    var resetBtn = root.querySelector('[data-spine-reset]');
+    var form = root.querySelector('[data-spine-form]');
+    var lastSummary = summaryEl ? summaryEl.textContent : '';
+
+    function clamp(n, min, max) {
+      return Math.max(min, Math.min(max, n));
+    }
+
+    function parseDecimal(raw) {
+      var value = String(raw || '').replace(/\u00a0/g, ' ').replace(/\s/g, '').replace(',', '.');
+      if (!value || !isFinite(Number(value))) return null;
+      return Number(value);
+    }
+
+    function parseIntValue(raw, fallback) {
+      var n = parseDecimal(raw);
+      if (n === null) return fallback;
+      return Math.round(n);
+    }
+
+    function formatNumber(n, maxDecimals) {
+      if (!isFinite(n)) return '—';
+      if (Math.abs(n - Math.round(n)) < 0.05) return Math.round(n).toLocaleString('fr-FR');
+      return n.toLocaleString('fr-FR', { minimumFractionDigits: 0, maximumFractionDigits: maxDecimals || 1 });
+    }
+
+    function formatMm(n, decimals) {
+      return formatNumber(n, decimals) + ' mm';
+    }
+
+    function formatSize(w, h) {
+      return formatNumber(w, 1) + ' × ' + formatNumber(h, 1) + ' mm';
+    }
+
+    function toggle(el, on) {
+      if (!el) return;
+      el.classList.toggle('is-hidden', !on);
+      el.hidden = !on;
+    }
+
+    function readInput() {
+      var format = (formatSelect && formatSelect.value) || 'roman';
+      var paper = (paperSelect && paperSelect.value) || 'bouffant-80';
+      var binding = (bindingSelect && bindingSelect.value) === 'relie' ? 'relie' : 'broche';
+      var presetF = formats[format] || formats.roman || { w: 140, h: 210 };
+      var presetP = papers[paper] || papers['bouffant-80'] || { g: 80, v: 1.8 };
+      var width = format === 'custom' ? (parseDecimal(widthInput && widthInput.value) ?? presetF.w) : Number(presetF.w);
+      var height = format === 'custom' ? (parseDecimal(heightInput && heightInput.value) ?? presetF.h) : Number(presetF.h);
+      var grammage = paper === 'custom' ? (parseDecimal(grammageInput && grammageInput.value) ?? presetP.g) : Number(presetP.g);
+      var bulk = paper === 'custom' ? (parseDecimal(bulkInput && bulkInput.value) ?? presetP.v) : Number(presetP.v);
+      var bleed = parseDecimal(bleedInput && bleedInput.value);
+      if (bleed === null) bleed = 5;
+      var flaps = !!(flapsInput && flapsInput.checked && binding === 'broche');
+      var flap = parseDecimal(flapInput && flapInput.value);
+      if (flap === null) flap = 80;
+      return {
+        format: format,
+        paper: paper,
+        binding: binding,
+        pages: clamp(parseIntValue(pagesInput && pagesInput.value, 280), cfg.pagesMin || 16, cfg.pagesMax || 2000),
+        width: clamp(width, cfg.sizeMin || 80, cfg.sizeMax || 420),
+        height: clamp(height, cfg.sizeMin || 80, cfg.sizeMax || 420),
+        grammage: clamp(grammage, cfg.grammageMin || 50, cfg.grammageMax || 300),
+        bulk: clamp(bulk, cfg.bulkMin || 0.6, cfg.bulkMax || 2.6),
+        bleed: clamp(bleed, 0, cfg.bleedMax || 15),
+        flaps: flaps,
+        flap: clamp(flap, cfg.flapMin || 40, cfg.flapMax || 140)
+      };
+    }
+
+    function compute(input) {
+      var sheet = input.grammage * input.bulk / 1000;
+      var spine = (input.pages / 2) * sheet;
+      var hinge = input.binding === 'relie' ? (cfg.hinge || 8) : 0;
+      var square = input.binding === 'relie' ? (cfg.square || 3) : 0;
+      var panelW = input.width + square;
+      var coverW = (2 * panelW) + spine + (2 * hinge) + (2 * input.bleed);
+      if (input.flaps) coverW += 2 * input.flap;
+      var coverH = input.height + (2 * square) + (2 * input.bleed);
+      var warnings = [];
+      if (input.pages % 2 !== 0) {
+        warnings.push('Une pagination impaire est inhabituelle. On compte généralement un nombre pair de pages.');
+      } else if (input.pages % 4 !== 0) {
+        warnings.push('L’offset se cale souvent par 4 ou 16 pages. Arrondissez avant le BAT.');
+      }
+      if (spine < 6) warnings.push('Dos étroit : un titre au dos sera difficile à poser.');
+      if (spine > 45) warnings.push('Dos très épais : vérifiez le façonnage (couture, dos carré collé, cartonnage).');
+      if (input.binding === 'relie') {
+        warnings.push('Le cartonnage ajoute charnières et cartons. L’atelier confirme les cotes de la jaquette ou des plats.');
+      }
+      var parts = [];
+      if (input.flaps) parts.push({ id: 'flap-back', label: 'Rabat 4e', mm: input.flap });
+      parts.push({ id: 'back', label: '4e', mm: panelW });
+      if (hinge > 0) parts.push({ id: 'hinge', label: 'Charnière', mm: hinge });
+      parts.push({ id: 'spine', label: 'Dos', mm: spine });
+      if (hinge > 0) parts.push({ id: 'hinge', label: 'Charnière', mm: hinge });
+      parts.push({ id: 'front', label: '1re', mm: panelW });
+      if (input.flaps) parts.push({ id: 'flap-front', label: 'Rabat 1re', mm: input.flap });
+      var binding = input.binding === 'relie' ? 'relié' : 'broché';
+      var summary = 'Dos ' + formatMm(spine, 1)
+        + ' · PDF couverture ' + formatSize(coverW, coverH)
+        + ' · intérieur ' + formatSize(input.width, input.height)
+        + ' · ' + input.pages + ' pages · ' + formatNumber(input.grammage, 0) + ' g vol. ' + formatNumber(input.bulk, 2)
+        + ' · fond perdu ' + formatMm(input.bleed, 0)
+        + ' · ' + binding;
+      if (input.flaps) summary += ' · rabats ' + formatMm(input.flap, 0);
+      return { sheet: sheet, spine: spine, coverW: coverW, coverH: coverH, warnings: warnings, parts: parts, summary: summary };
+    }
+
+    function setOut(name, value) {
+      var el = root.querySelector('[data-spine-out="' + name + '"]');
+      if (el) el.textContent = value;
+    }
+
+    function renderSpread(parts, input, result) {
+      if (!spread) return;
+      var total = parts.reduce(function (sum, part) { return sum + part.mm; }, 0) || 1;
+      var height = Math.round(Math.min(188, Math.max(112, input.height * 0.62)));
+      var bleedPx = Math.round(Math.min(28, Math.max(6, input.bleed * 2.2)));
+      if (spreadWrap) {
+        spreadWrap.style.setProperty('--spread-h', height + 'px');
+        spreadWrap.style.setProperty('--bleed-px', bleedPx + 'px');
+      }
+      spread.innerHTML = parts.map(function (part) {
+        var pct = (part.mm / total) * 100;
+        var decimals = part.id === 'spine' ? 1 : 0;
+        return '<div class="tool-spread-part is-' + part.id + '" style="flex: 0 0 ' + pct.toFixed(2) + '%">'
+          + '<strong>' + part.label + '</strong>'
+          + '<span>' + formatMm(part.mm, decimals) + '</span></div>';
+      }).join('');
+      if (caption) {
+        var line = 'À plat, face imprimée. Dos ' + formatMm(result.spine, 1)
+          + ' · hauteur ' + formatMm(input.height, 0) + '.';
+        if (input.flaps) line += ' Rabats ' + formatMm(input.flap, 0) + '.';
+        if (input.binding === 'relie') line += ' Cartonnage, charnières comprises.';
+        caption.textContent = line;
+      }
+    }
+
+    function param(n) {
+      return String(n).replace('.', ',');
+    }
+
+    function syncUrl(input) {
+      if (!window.history || !window.history.replaceState) return;
+      var url = new URL(window.location.href);
+      var defaults = { format: 'roman', paper: 'bouffant-80', binding: 'broche', pages: 280, bleed: 5 };
+      if (input.format !== defaults.format) url.searchParams.set('f', input.format);
+      else url.searchParams.delete('f');
+      if (input.pages !== defaults.pages) url.searchParams.set('p', String(input.pages));
+      else url.searchParams.delete('p');
+      if (input.paper !== defaults.paper) url.searchParams.set('papier', input.paper);
+      else url.searchParams.delete('papier');
+      if (input.binding !== defaults.binding) url.searchParams.set('r', input.binding);
+      else url.searchParams.delete('r');
+      if (input.bleed !== defaults.bleed) url.searchParams.set('b', param(input.bleed));
+      else url.searchParams.delete('b');
+      if (input.format === 'custom') {
+        url.searchParams.set('w', param(input.width));
+        url.searchParams.set('h', param(input.height));
+      } else {
+        url.searchParams.delete('w');
+        url.searchParams.delete('h');
+      }
+      if (input.paper === 'custom') {
+        url.searchParams.set('g', param(input.grammage));
+        url.searchParams.set('v', param(input.bulk));
+      } else {
+        url.searchParams.delete('g');
+        url.searchParams.delete('v');
+      }
+      if (input.flaps) {
+        url.searchParams.set('rabats', '1');
+        url.searchParams.set('rw', param(input.flap));
+      } else {
+        url.searchParams.delete('rabats');
+        url.searchParams.delete('rw');
+      }
+      history.replaceState(null, '', url.pathname + url.search);
+    }
+
+    function render() {
+      var input = readInput();
+      toggle(customFormat, input.format === 'custom');
+      toggle(customPaper, input.paper === 'custom');
+      if (flapsInput) {
+        flapsInput.disabled = input.binding === 'relie';
+        if (input.binding === 'relie') flapsInput.checked = false;
+      }
+      input.flaps = !!(flapsInput && flapsInput.checked && input.binding === 'broche');
+      if (flapsSwitch) flapsSwitch.classList.toggle('is-on', input.flaps);
+      if (flapsLabel) {
+        flapsLabel.textContent = input.binding === 'relie' ? 'Pas sur un cartonnage' : 'Broché avec rabats';
+      }
+      toggle(flapWrap, input.flaps);
+      var result = compute(input);
+      setOut('spine', formatMm(result.spine, 1));
+      setOut('cover', formatSize(result.coverW, result.coverH));
+      setOut('trim', formatSize(input.width, input.height));
+      setOut('sheet', formatMm(result.sheet, 2));
+      setOut('pages', String(input.pages));
+      setOut('bleed', formatMm(input.bleed, 0));
+      setOut('bleed-label', formatMm(input.bleed, 0));
+      renderSpread(result.parts, input, result);
+      lastSummary = result.summary;
+      if (summaryEl) summaryEl.textContent = lastSummary;
+      if (warningsBox) {
+        warningsBox.hidden = result.warnings.length === 0;
+        warningsBox.innerHTML = result.warnings.map(function (w) { return '<p>' + w + '</p>'; }).join('');
+      }
+      syncUrl(input);
+    }
+
+    [formatSelect, paperSelect, bindingSelect, pagesInput, widthInput, heightInput, grammageInput, bulkInput, bleedInput, flapsInput, flapInput].forEach(function (el) {
+      if (!el) return;
+      el.addEventListener('input', render);
+      el.addEventListener('change', render);
+    });
+    if (form) {
+      form.addEventListener('submit', function (event) {
+        event.preventDefault();
+        render();
+      });
+    }
+    if (copyBtn) {
+      copyBtn.addEventListener('click', function () {
+        if (!lastSummary) return;
+        copyText(lastSummary).then(function () {
+          showToast('Résultat copié.');
+        }).catch(function () {
+          showToast('Copie impossible.');
+        });
+      });
+    }
+    if (resetBtn) {
+      resetBtn.addEventListener('click', function () {
+        if (formatSelect) formatSelect.value = 'roman';
+        if (paperSelect) paperSelect.value = 'bouffant-80';
+        if (bindingSelect) bindingSelect.value = 'broche';
+        if (pagesInput) pagesInput.value = '280';
+        if (widthInput) widthInput.value = '140';
+        if (heightInput) heightInput.value = '210';
+        if (grammageInput) grammageInput.value = '80';
+        if (bulkInput) bulkInput.value = '1,8';
+        if (bleedInput) bleedInput.value = '5';
+        if (flapsInput) { flapsInput.checked = false; flapsInput.disabled = false; }
+        if (flapInput) flapInput.value = '80';
+        render();
+      });
+    }
+    render();
+  });
 })();
