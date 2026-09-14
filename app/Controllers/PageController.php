@@ -23,6 +23,7 @@ use Adl\Models\Article;
 use Adl\Models\AuthorPage;
 use Adl\Models\AuthorWork;
 use Adl\Models\Favorite;
+use Adl\Models\ForumPost;
 use Adl\Models\ForumTopic;
 use Adl\Models\Invoice;
 use Adl\Models\Mission;
@@ -408,12 +409,29 @@ final class PageController
         $public = Catalog::profileToPublic($profile);
         $avatar = trim((string) ($public['avatar_src'] ?? ''));
         $ogImage = $avatar !== '' ? $avatar : null;
+        $userId = (int) ($profile['user_id'] ?? 0);
+        $viewer = Auth::user();
+        $isOwnProfile = $viewer && (int) ($viewer['id'] ?? 0) === $userId;
         $authorHref = '';
+        $authorWorks = [];
         try {
-            $authorPage = AuthorPage::findByUser((int) ($profile['user_id'] ?? 0));
-            if ($authorPage && AuthorPage::isPublic($authorPage)) {
-                $authorHref = (string) $authorPage['href'];
+            $authorPage = AuthorPage::findByUser($userId);
+            if ($authorPage && (AuthorPage::isPublic($authorPage) || $isOwnProfile)) {
+                if (AuthorPage::isPublic($authorPage)) {
+                    $authorHref = (string) $authorPage['href'];
+                }
+                $authorWorks = AuthorWork::forPage((int) $authorPage['id']);
             }
+        } catch (\Throwable) {
+        }
+        $forumActivity = [];
+        $tribuneArticles = [];
+        try {
+            $forumActivity = ForumPost::recentPublicByUser($userId, 5);
+        } catch (\Throwable) {
+        }
+        try {
+            $tribuneArticles = Article::publishedForAuthor($userId, 4);
         } catch (\Throwable) {
         }
         View::page('profil', [
@@ -421,6 +439,9 @@ final class PageController
             'slug' => $slug,
             'liveProfile' => $public,
             'authorHref' => $authorHref,
+            'authorWorks' => $authorWorks,
+            'forumActivity' => $forumActivity,
+            'tribuneArticles' => $tribuneArticles,
             'meta' => Seo::build(
                 Seo::profileTitle($public),
                 Seo::profileDescription($public),

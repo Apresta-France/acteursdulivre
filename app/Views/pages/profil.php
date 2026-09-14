@@ -5,6 +5,51 @@ if (!$p) {
 }
 $viewer = \Adl\Core\Auth::user();
 $isOwnProfile = $viewer && (int) ($viewer['id'] ?? 0) === (int) ($p['user_id'] ?? 0);
+$authorWorks = $authorWorks ?? [];
+$authorHref = (string) ($authorHref ?? '');
+$forumActivity = $forumActivity ?? [];
+$tribuneArticles = $tribuneArticles ?? [];
+$doesLines = \Adl\Models\Profile::scopeLines($p['does'] ?? '');
+$doesNotLines = \Adl\Models\Profile::scopeLines($p['does_not'] ?? '');
+$hasAbout = ($p['presentation'] ?? '') !== '' || $doesLines !== [] || $doesNotLines !== [];
+$hasSkills = !empty($p['skills']);
+$hasPortfolio = !empty($p['portfolio']);
+$hasWorks = $authorWorks !== [];
+$showWorks = $hasWorks || $isOwnProfile;
+$hasExperiences = !empty($p['experiences']);
+$hasEducation = !empty($p['education']);
+$hasParcours = $hasExperiences || $hasEducation;
+$hasServices = !empty($p['services']);
+$hasReviews = !empty($p['reviews']);
+$hasRecos = !empty($p['recommendations']);
+$hasAvis = $hasReviews || $hasRecos;
+$hasActivity = $forumActivity !== [] || $tribuneArticles !== [];
+$showActivity = $hasActivity || $isOwnProfile;
+$profileTabs = [];
+if ($hasAbout) {
+    $profileTabs[] = ['id' => 'a-propos', 'label' => 'À propos'];
+}
+if ($hasSkills) {
+    $profileTabs[] = ['id' => 'competences', 'label' => 'Compétences'];
+}
+if ($hasPortfolio) {
+    $profileTabs[] = ['id' => 'creations', 'label' => (string) ($p['portfolio_heading'] ?? 'Créations')];
+}
+if ($showWorks) {
+    $profileTabs[] = ['id' => 'oeuvres', 'label' => 'Œuvres'];
+}
+if ($hasParcours) {
+    $profileTabs[] = ['id' => 'parcours', 'label' => 'Parcours'];
+}
+if ($hasServices) {
+    $profileTabs[] = ['id' => 'prestations', 'label' => 'Prestations'];
+}
+if ($hasAvis) {
+    $profileTabs[] = ['id' => 'avis', 'label' => 'Avis'];
+}
+if ($showActivity) {
+    $profileTabs[] = ['id' => 'activite', 'label' => 'Activité'];
+}
 ?>
 <div class="profile-page">
   <nav class="search-crumb" aria-label="Fil d'Ariane">
@@ -116,17 +161,36 @@ $isOwnProfile = $viewer && (int) ($viewer['id'] ?? 0) === (int) ($p['user_id'] ?
     </div>
   </div>
 
+  <?php if (count($profileTabs) > 1): ?>
+    <nav class="profile-nav" data-profile-nav aria-label="Sections de la fiche">
+      <div class="tab-row">
+        <?php foreach ($profileTabs as $i => $tab): ?>
+          <a class="tab<?= $i === 0 ? ' is-on' : '' ?>" href="#<?= e($tab['id']) ?>" data-profile-tab="<?= e($tab['id']) ?>"><?= e($tab['label']) ?></a>
+        <?php endforeach; ?>
+      </div>
+    </nav>
+  <?php endif; ?>
+
+  <?php if ($isOwnProfile): ?>
+    <div class="profile-owner-bar">
+      <span>C’est votre fiche. Ajoutez un élément pour la tenir à jour.</span>
+      <div class="profile-owner-actions">
+        <a class="btn-ghost" href="<?= e(url('/espace/auteur/oeuvres/creer')) ?>">Ajouter une œuvre</a>
+        <a class="btn-ghost" href="<?= e(url('/forum/nouveau')) ?>">Ouvrir une discussion</a>
+        <a class="btn-ghost" href="<?= e(url('/espace/tribune/nouvelle')) ?>">Écrire une tribune</a>
+        <a class="btn-ghost" href="<?= e(url('/espace/prestations/creer')) ?>">Ajouter une prestation</a>
+      </div>
+    </div>
+  <?php endif; ?>
+
   <div class="profile-body">
     <div>
+      <?php if ($hasAbout): ?>
+      <section class="profile-block" id="a-propos">
       <?php if ($p['presentation'] !== ''): ?>
         <h2>À propos</h2>
         <p class="profile-text"><?= nl2br(e((string) $p['presentation'])) ?></p>
       <?php endif; ?>
-
-      <?php
-        $doesLines = \Adl\Models\Profile::scopeLines($p['does'] ?? '');
-        $doesNotLines = \Adl\Models\Profile::scopeLines($p['does_not'] ?? '');
-      ?>
       <?php if ($doesLines !== [] || $doesNotLines !== []): ?>
         <div class="profile-scope<?= ($doesLines === [] || $doesNotLines === []) ? ' is-single' : '' ?>">
           <?php if ($doesLines !== []): ?>
@@ -151,9 +215,17 @@ $isOwnProfile = $viewer && (int) ($viewer['id'] ?? 0) === (int) ($p['user_id'] ?
           <?php endif; ?>
         </div>
       <?php endif; ?>
+      </section>
+      <?php endif; ?>
 
-      <?php if (!empty($p['skills'])): ?>
-        <h2>Compétences</h2>
+      <?php if ($hasSkills): ?>
+      <section class="profile-block" id="competences">
+        <div class="profile-section-head">
+          <h2>Compétences</h2>
+          <?php if ($isOwnProfile): ?>
+            <a class="profile-section-cta" href="<?= e(url('/espace/vitrine?onglet=competences')) ?>">Modifier</a>
+          <?php endif; ?>
+        </div>
         <div class="skill-list">
           <?php foreach ($p['skills'] as $skill): ?>
             <div class="skill-row">
@@ -162,9 +234,10 @@ $isOwnProfile = $viewer && (int) ($viewer['id'] ?? 0) === (int) ($p['user_id'] ?
             </div>
           <?php endforeach; ?>
         </div>
+      </section>
       <?php endif; ?>
 
-      <?php if (!empty($p['portfolio'])): ?>
+      <?php if ($hasPortfolio): ?>
         <?php
           $portfolioTypes = array_values(array_unique(array_map(
               static fn (array $it): string => (string) ($it['media_type'] ?? 'image'),
@@ -178,7 +251,13 @@ $isOwnProfile = $viewer && (int) ($viewer['id'] ?? 0) === (int) ($p['user_id'] ?
               $gridClass .= ' is-files';
           }
         ?>
-        <h2><?= e((string) ($p['portfolio_heading'] ?? 'Créations et exemples')) ?></h2>
+      <section class="profile-block" id="creations">
+        <div class="profile-section-head">
+          <h2><?= e((string) ($p['portfolio_heading'] ?? 'Créations et exemples')) ?></h2>
+          <?php if ($isOwnProfile): ?>
+            <a class="profile-section-cta" href="<?= e(url('/espace/vitrine?onglet=portfolio')) ?>">Ajouter un exemple</a>
+          <?php endif; ?>
+        </div>
         <div class="<?= e($gridClass) ?>">
           <?php foreach ($p['portfolio'] as $item): ?>
             <?php
@@ -248,10 +327,64 @@ $isOwnProfile = $viewer && (int) ($viewer['id'] ?? 0) === (int) ($p['user_id'] ?
             <button type="button" class="zoom-modal-nav is-next" data-zoom-next aria-label="Exemple suivant" hidden>›</button>
           </dialog>
         <?php endif; ?>
+      </section>
       <?php endif; ?>
 
-      <?php if (!empty($p['experiences'])): ?>
-        <h2>Parcours</h2>
+      <?php if ($showWorks): ?>
+      <section class="profile-block" id="oeuvres">
+        <div class="profile-section-head">
+          <h2>Œuvres</h2>
+          <div class="profile-section-links">
+            <?php if ($authorHref !== ''): ?>
+              <a class="profile-section-cta" href="<?= e(url($authorHref)) ?>">Fiche auteur</a>
+            <?php endif; ?>
+            <?php if ($isOwnProfile): ?>
+              <a class="profile-section-cta" href="<?= e(url($hasWorks ? '/espace/auteur/oeuvres' : '/espace/auteur/oeuvres/creer')) ?>"><?= $hasWorks ? 'Gérer les œuvres' : 'Ajouter une œuvre' ?></a>
+            <?php endif; ?>
+          </div>
+        </div>
+        <?php if ($hasWorks): ?>
+          <div class="profile-works">
+            <?php foreach (array_slice($authorWorks, 0, 6) as $work): ?>
+              <?php
+                $workHref = $authorHref !== ''
+                    ? $authorHref . '#oeuvre-' . (int) $work['id']
+                    : '/espace/auteur/oeuvres/' . (int) $work['id'];
+                $workMeta = trim(implode(' · ', array_filter([
+                    (string) ($work['kind_label'] ?? ''),
+                    (string) ($work['year'] ?? ''),
+                ])));
+              ?>
+              <a class="profile-work" href="<?= e(url($workHref)) ?>">
+                <span class="profile-work-cover<?= ($work['cover'] ?? '') === '' ? ' is-empty' : '' ?>"<?= ($work['cover'] ?? '') !== '' ? ' style="background-image:url(\'' . e((string) $work['cover']) . '\')"' : '' ?>>
+                  <?php if (($work['cover'] ?? '') === ''): ?><?= icon('book', 22) ?><?php endif; ?>
+                </span>
+                <strong><?= e((string) ($work['title'] ?? '')) ?></strong>
+                <?php if ($workMeta !== ''): ?><span><?= e($workMeta) ?></span><?php endif; ?>
+              </a>
+            <?php endforeach; ?>
+          </div>
+          <?php if (count($authorWorks) > 6 && $authorHref !== ''): ?>
+            <p class="profile-more"><a href="<?= e(url($authorHref)) ?>">Voir les <?= count($authorWorks) ?> œuvres</a></p>
+          <?php endif; ?>
+        <?php else: ?>
+          <div class="profile-empty">
+            <p>Aucune œuvre n’est encore affichée sur votre fiche auteur.</p>
+            <a class="btn-ghost" href="<?= e(url('/espace/auteur/oeuvres/creer')) ?>">Ajouter une œuvre</a>
+          </div>
+        <?php endif; ?>
+      </section>
+      <?php endif; ?>
+
+      <?php if ($hasParcours): ?>
+      <section class="profile-block" id="parcours">
+        <?php if ($hasExperiences): ?>
+        <div class="profile-section-head">
+          <h2>Parcours</h2>
+          <?php if ($isOwnProfile): ?>
+            <a class="profile-section-cta" href="<?= e(url('/espace/vitrine?onglet=parcours')) ?>">Modifier</a>
+          <?php endif; ?>
+        </div>
         <div class="timeline">
           <?php foreach ($p['experiences'] as $exp): ?>
             <div class="timeline-row">
@@ -264,10 +397,32 @@ $isOwnProfile = $viewer && (int) ($viewer['id'] ?? 0) === (int) ($p['user_id'] ?
             </div>
           <?php endforeach; ?>
         </div>
+        <?php endif; ?>
+        <?php if ($hasEducation): ?>
+        <h2<?= $hasExperiences ? '' : ' id="formation"' ?>>Formation</h2>
+        <div class="timeline">
+          <?php foreach ($p['education'] as $edu): ?>
+            <div class="timeline-row">
+              <span><?= e((string) ($edu['annee'] ?? '')) ?></span>
+              <div>
+                <strong><?= e((string) ($edu['intitule'] ?? '')) ?></strong>
+                <em><?= e((string) ($edu['ecole'] ?? '')) ?></em>
+              </div>
+            </div>
+          <?php endforeach; ?>
+        </div>
+        <?php endif; ?>
+      </section>
       <?php endif; ?>
 
-      <?php if (!empty($p['services'])): ?>
-        <h2>Prestations</h2>
+      <?php if ($hasServices): ?>
+      <section class="profile-block" id="prestations">
+        <div class="profile-section-head">
+          <h2>Prestations</h2>
+          <?php if ($isOwnProfile): ?>
+            <a class="profile-section-cta" href="<?= e(url('/espace/prestations/creer')) ?>">Ajouter une prestation</a>
+          <?php endif; ?>
+        </div>
         <div class="my-missions">
           <?php foreach ($p['services'] as $offer): ?>
             <a class="side-card" href="<?= e(url((string) $offer['href'])) ?>" style="text-decoration: none;">
@@ -279,9 +434,12 @@ $isOwnProfile = $viewer && (int) ($viewer['id'] ?? 0) === (int) ($p['user_id'] ?
             </a>
           <?php endforeach; ?>
         </div>
+      </section>
       <?php endif; ?>
 
-      <?php if (!empty($p['reviews'])): ?>
+      <?php if ($hasAvis): ?>
+      <section class="profile-block" id="avis">
+      <?php if ($hasReviews): ?>
         <h2>Avis<?php if (!empty($p['review_stats']['count'])): ?> · <?= e((string) $p['review_stats']['avg']) ?> / 5<?php endif; ?></h2>
         <div class="my-missions">
           <?php foreach ($p['reviews'] as $review): ?>
@@ -296,7 +454,7 @@ $isOwnProfile = $viewer && (int) ($viewer['id'] ?? 0) === (int) ($p['user_id'] ?
         </div>
       <?php endif; ?>
 
-      <?php if (!empty($p['recommendations'])): ?>
+      <?php if ($hasRecos): ?>
         <h2>Recommandations</h2>
         <p class="profile-text" style="margin-top: -8px;">Textes de clients hors plateforme. Ils ne comptent pas dans la note.</p>
         <div class="my-missions">
@@ -317,20 +475,64 @@ $isOwnProfile = $viewer && (int) ($viewer['id'] ?? 0) === (int) ($p['user_id'] ?
           <?php endforeach; ?>
         </div>
       <?php endif; ?>
+      </section>
+      <?php endif; ?>
 
-      <?php if (!empty($p['education'])): ?>
-        <h2>Formation</h2>
-        <div class="timeline">
-          <?php foreach ($p['education'] as $edu): ?>
-            <div class="timeline-row">
-              <span><?= e((string) ($edu['annee'] ?? '')) ?></span>
-              <div>
-                <strong><?= e((string) ($edu['intitule'] ?? '')) ?></strong>
-                <em><?= e((string) ($edu['ecole'] ?? '')) ?></em>
-              </div>
-            </div>
-          <?php endforeach; ?>
+      <?php if ($showActivity): ?>
+      <section class="profile-block" id="activite">
+        <div class="profile-section-head">
+          <h2>Activité</h2>
         </div>
+        <div class="profile-activity<?= ($forumActivity === [] || $tribuneArticles === []) && !$isOwnProfile ? ' is-single' : '' ?>">
+          <?php if ($forumActivity !== [] || $isOwnProfile): ?>
+          <div class="profile-activity-col">
+            <div class="side-kicker">Forum</div>
+            <?php if ($forumActivity !== []): ?>
+              <ul class="profile-activity-list">
+                <?php foreach ($forumActivity as $item): ?>
+                  <li>
+                    <a href="<?= e(url((string) $item['href'])) ?>">
+                      <em><?= e((string) $item['kind_label']) ?><?= ($item['category'] ?? '') !== '' ? ' · ' . e((string) $item['category']) : '' ?></em>
+                      <strong><?= e((string) $item['title']) ?></strong>
+                      <span><?= e((string) $item['when']) ?></span>
+                    </a>
+                  </li>
+                <?php endforeach; ?>
+              </ul>
+            <?php else: ?>
+              <p class="profile-empty-line">Pas encore de discussion publique.</p>
+            <?php endif; ?>
+            <?php if ($isOwnProfile): ?>
+              <a class="profile-section-cta" href="<?= e(url('/forum/nouveau')) ?>">Ouvrir une discussion</a>
+            <?php endif; ?>
+          </div>
+          <?php endif; ?>
+          <?php if ($tribuneArticles !== [] || $isOwnProfile): ?>
+          <div class="profile-activity-col">
+            <div class="side-kicker">Tribune</div>
+            <?php if ($tribuneArticles !== []): ?>
+              <ul class="profile-activity-list">
+                <?php foreach ($tribuneArticles as $article): ?>
+                  <?php $when = trim((string) ($article['when'] ?? '')); ?>
+                  <li>
+                    <a href="<?= e(url((string) $article['href'])) ?>">
+                      <em><?= e((string) ($article['cat'] ?? 'Tribune')) ?></em>
+                      <strong><?= e((string) $article['title']) ?></strong>
+                      <span><?= e($when !== '' ? $when : (string) ($article['read'] ?? '')) ?></span>
+                    </a>
+                  </li>
+                <?php endforeach; ?>
+              </ul>
+            <?php else: ?>
+              <p class="profile-empty-line">Pas encore de tribune publiée.</p>
+            <?php endif; ?>
+            <?php if ($isOwnProfile): ?>
+              <a class="profile-section-cta" href="<?= e(url('/espace/tribune/nouvelle')) ?>">Écrire une tribune</a>
+            <?php endif; ?>
+          </div>
+          <?php endif; ?>
+        </div>
+      </section>
       <?php endif; ?>
     </div>
 

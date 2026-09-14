@@ -14,6 +14,60 @@ final class ForumPost
     public const PER_PAGE = 20;
     public const MIN_BODY = 40;
 
+    /**
+     * Dernières contributions publiques d’un membre (une entrée par discussion).
+     *
+     * @return list<array{kind: string, kind_label: string, title: string, href: string, when: string, category: string}>
+     */
+    public static function recentPublicByUser(int $userId, int $limit = 5): array
+    {
+        if ($userId <= 0) {
+            return [];
+        }
+        $limit = max(1, min(12, $limit));
+        $rows = Database::fetchAll(
+            'SELECT p.id, p.is_op, p.created_at, p.topic_id,
+                    t.title, t.slug AS topic_slug,
+                    c.name AS category_name, c.slug AS category_slug
+             FROM forum_posts p
+             INNER JOIN forum_topics t ON t.id = p.topic_id AND t.status = "visible"
+             INNER JOIN forum_categories c ON c.id = t.category_id
+             WHERE p.user_id = ? AND p.status = "visible"
+             ORDER BY p.created_at DESC, p.id DESC
+             LIMIT 24',
+            [$userId]
+        );
+        $out = [];
+        $seen = [];
+        foreach ($rows as $row) {
+            $topicId = (int) ($row['topic_id'] ?? 0);
+            if ($topicId <= 0 || isset($seen[$topicId])) {
+                continue;
+            }
+            $seen[$topicId] = true;
+            $catSlug = (string) ($row['category_slug'] ?? '');
+            $topicSlug = (string) ($row['topic_slug'] ?? '');
+            $href = ($catSlug !== '' && $topicSlug !== '')
+                ? '/forum/' . $catSlug . '/' . $topicSlug
+                : '/forum';
+            if (empty($row['is_op'])) {
+                $href .= '#post-' . (int) ($row['id'] ?? 0);
+            }
+            $out[] = [
+                'kind' => !empty($row['is_op']) ? 'discussion' : 'reponse',
+                'kind_label' => !empty($row['is_op']) ? 'Discussion' : 'Réponse',
+                'title' => (string) ($row['title'] ?? ''),
+                'href' => $href,
+                'when' => time_ago($row['created_at'] ?? null),
+                'category' => (string) ($row['category_name'] ?? ''),
+            ];
+            if (count($out) >= $limit) {
+                break;
+            }
+        }
+        return $out;
+    }
+
     public static function find(int $id): ?array
     {
         $row = Database::fetch(

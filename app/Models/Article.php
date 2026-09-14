@@ -311,6 +311,25 @@ final class Article
         return array_map([self::class, 'present'], $rows);
     }
 
+    /** Tribunes publiées d’un membre, les plus récentes d’abord. */
+    public static function publishedForAuthor(int $userId, int $limit = 4): array
+    {
+        if ($userId <= 0) {
+            return [];
+        }
+        $limit = max(1, min(12, $limit));
+        $rows = Database::fetchAll(
+            'SELECT * FROM articles
+             WHERE author_id = ?
+               AND submission_status = ?
+               AND published_at IS NOT NULL AND published_at <= NOW()
+             ORDER BY published_at DESC
+             LIMIT ' . $limit,
+            [$userId, self::STATUS_APPROVED]
+        );
+        return array_map([self::class, 'present'], $rows);
+    }
+
     public static function countPublished(): int
     {
         $row = Database::fetch(

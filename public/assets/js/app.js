@@ -1584,6 +1584,72 @@
     showVitrineTab(fromUrl || (current && current.getAttribute('data-tab')) || 'identite');
   })();
 
+  (function profileNav() {
+    var nav = document.querySelector('[data-profile-nav]');
+    if (!nav) return;
+    var tabs = Array.prototype.slice.call(nav.querySelectorAll('[data-profile-tab]'));
+    if (!tabs.length) return;
+    var sections = tabs.map(function (tab) {
+      return document.getElementById(tab.getAttribute('data-profile-tab') || '');
+    }).filter(Boolean);
+    var lockedUntil = 0;
+
+    function setOn(id) {
+      tabs.forEach(function (tab) {
+        tab.classList.toggle('is-on', tab.getAttribute('data-profile-tab') === id);
+      });
+      var on = nav.querySelector('.tab.is-on');
+      if (on && on.scrollIntoView) on.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    }
+
+    function scrollToId(id, smooth) {
+      var el = document.getElementById(id);
+      if (!el) return;
+      el.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto', block: 'start' });
+    }
+
+    function activeFromScroll() {
+      var navBottom = nav.getBoundingClientRect().bottom + 12;
+      var current = sections[0] && sections[0].id;
+      sections.forEach(function (section) {
+        if (section.getBoundingClientRect().top <= navBottom) current = section.id;
+      });
+      if (current) setOn(current);
+    }
+
+    tabs.forEach(function (tab) {
+      tab.addEventListener('click', function (e) {
+        var id = tab.getAttribute('data-profile-tab');
+        if (!id || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || (typeof e.button === 'number' && e.button !== 0)) return;
+        e.preventDefault();
+        lockedUntil = Date.now() + 700;
+        setOn(id);
+        scrollToId(id, true);
+        if (history.replaceState) {
+          history.replaceState(null, '', '#' + id);
+        }
+      });
+    });
+
+    var hash = (location.hash || '').replace(/^#/, '');
+    if (hash && document.getElementById(hash)) {
+      lockedUntil = Date.now() + 700;
+      setOn(hash);
+      setTimeout(function () { scrollToId(hash, false); }, 0);
+    }
+
+    var ticking = false;
+    window.addEventListener('scroll', function () {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(function () {
+        ticking = false;
+        if (Date.now() < lockedUntil) return;
+        activeFromScroll();
+      });
+    }, { passive: true });
+  })();
+
   (function bindHiddenTabValidation() {
     var form = document.getElementById('vitrine-form');
     if (!form) return;
