@@ -70,7 +70,7 @@ final class Seo
             ],
             'outils' => [
                 'title' => 'Outils du livre',
-                'description' => 'Compteur de signes, convertisseur de feuillets et calculateur de dos de couverture. Gratuits, sans compte, sans envoyer le manuscrit.',
+                'description' => 'Compteur de signes, convertisseur de feuillets, calculateur de dos et validateur ISBN. Gratuits, sans compte, sans envoyer le manuscrit.',
                 'path' => '/outils',
             ],
             'outil-volume' => [
@@ -82,6 +82,11 @@ final class Seo
                 'title' => 'Calculateur de dos et couverture',
                 'description' => 'Largeur de dos, fonds perdus et taille du PDF couverture : format, pagination, grammage et volume du papier. L’imprimeur confirme les cotes.',
                 'path' => '/outils/dos',
+            ],
+            'outil-isbn' => [
+                'title' => 'Validateur ISBN et EAN',
+                'description' => 'Vérifiez la clé d’un ISBN-10 ou ISBN-13, voyez la structure, convertissez les deux formes et affichez le code-barres EAN. Sans attribution, sans compte.',
+                'path' => '/outils/isbn',
             ],
             'salons' => [
                 'title' => 'Agenda des salons du livre — France et Europe',
@@ -494,6 +499,7 @@ final class Seo
             'questions' => self::questionsFaqs(),
             'outil-volume' => Tools::volumeFaqs(),
             'outil-dos' => Spine::faqs(),
+            'outil-isbn' => Isbn::faqs(),
             default => [],
         };
     }
@@ -1122,6 +1128,13 @@ final class Seo
                 ['name' => 'Dos et couverture', 'url' => '/outils/dos'],
             ];
         }
+        if ($screen === 'outil-isbn') {
+            return [
+                ['name' => self::BRAND, 'url' => '/'],
+                ['name' => 'Outils', 'url' => '/outils'],
+                ['name' => 'ISBN et EAN', 'url' => '/outils/isbn'],
+            ];
+        }
         $name = match ($screen) {
             'comment' => 'Comment ça marche',
             'tarifs' => 'Tarifs',
@@ -1133,6 +1146,7 @@ final class Seo
             'outils' => 'Outils',
             'outil-volume' => 'Signes et feuillets',
             'outil-dos' => 'Dos et couverture',
+            'outil-isbn' => 'ISBN et EAN',
             'salons' => 'Agenda des salons',
             'aide' => 'Centre d\'aide',
             'questions' => 'Questions fréquentes',
@@ -1225,7 +1239,7 @@ acteursdulivre.fr met en relation des porteurs de projet (auteurs, éditeurs, co
 - [Métiers]({$home}metiers/correction) : pages métiers, exemple correction
 - [Maisons d'édition]({$home}maisons-edition) : annuaire de plus de 600 éditeurs en France et en Europe, par pays ([exemple : France]({$home}maisons-edition/pays/france)), ville et genre ; les coordonnées sont réservées aux membres connectés et les maisons peuvent revendiquer leur fiche
 - [Communauté]({$home}communaute) : forum, annuaire des maisons d'édition, agenda des salons et outils métier
-- [Outils]({$home}outils) : compteur de signes, convertisseur de feuillets, calculateur de dos de couverture
+- [Outils]({$home}outils) : compteur de signes, convertisseur de feuillets, calculateur de dos, validateur ISBN
 - [Agenda des salons]({$home}salons) : salons du livre et festivals en France et en Europe (2026-2027)
 - [Forum]({$home}forum) : discussions métier (tarifs, contrats, fabrication)
 - [Par besoin]({$home}besoin) : pages d'entrée par besoin (correction, couverture, impression…), utilisées aussi pour les campagnes

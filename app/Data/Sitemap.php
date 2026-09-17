@@ -204,6 +204,7 @@ final class Sitemap
             ['path' => '/outils', 'priority' => '0.7'],
             ['path' => '/outils/volume', 'priority' => '0.7'],
             ['path' => '/outils/dos', 'priority' => '0.7'],
+            ['path' => '/outils/isbn', 'priority' => '0.7'],
             ['path' => '/salons', 'priority' => '0.7'],
             ['path' => '/besoin', 'priority' => '0.7'],
             ['path' => '/comment-ca-marche', 'priority' => '0.7'],

@@ -58,6 +58,15 @@ final class Tools
                 'icon' => 'trade-reliure',
                 'available' => true,
             ],
+            [
+                'slug' => 'isbn',
+                'title' => 'ISBN et EAN',
+                'kicker' => 'Identifiant',
+                'lead' => 'Vérifiez la clé, voyez la structure, convertissez ISBN-10 et 13. Le code-barres de la 4e, sans attribution.',
+                'href' => self::path('isbn'),
+                'icon' => 'barcode',
+                'available' => true,
+            ],
         ];
     }
 

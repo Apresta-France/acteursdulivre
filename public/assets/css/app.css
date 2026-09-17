@@ -10795,8 +10795,8 @@ a.co-event:hover { border-color: var(--navy); color: inherit; }
 .tool-hub .forum-hero .search-crumb,
 .tool-page .forum-hero-compact .search-crumb { margin-bottom: 14px; }
 .tool-hub-doors {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  max-width: 920px;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  max-width: 1100px;
 }
 .tool-hub-note {
   display: grid;
@@ -11017,6 +11017,134 @@ a.co-event:hover { border-color: var(--navy); color: inherit; }
 .tool-warn p:last-child { margin-bottom: 0; }
 .tool-results [data-spine-out="cover"],
 .tool-results [data-spine-out="trim"] { font-size: 18px; }
+.tool-isbn-fields { display: flex; flex-direction: column; gap: 8px; }
+.tool-isbn-fields .field { margin-bottom: 8px; }
+.tool-isbn-input {
+  font-family: ui-monospace, "Cascadia Mono", "Segoe UI Mono", monospace;
+  font-size: 18px;
+  letter-spacing: .04em;
+}
+.tool-isbn-status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 10px 16px;
+  margin: 22px 0 16px;
+  padding: 12px 16px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: var(--fog);
+}
+.tool-isbn-status strong { font-size: 18px; }
+.tool-isbn-status span { font-size: 13px; color: var(--muted-2); }
+.tool-isbn-status.is-ok {
+  background: #F3F8F4;
+  border-color: #C8DEC9;
+}
+.tool-isbn-status.is-ok strong { color: #215C32; }
+.tool-isbn-status.is-bad {
+  background: var(--peach);
+  border-color: #E8C8BE;
+}
+.tool-isbn-status.is-bad strong { color: #8A3324; }
+.tool-isbn-status.is-warn {
+  background: #FFF6E8;
+  border-color: #E8D2A8;
+}
+.tool-isbn-status.is-partial,
+.tool-isbn-status.is-empty { background: var(--fog); }
+.tool-isbn-digits {
+  display: flex;
+  gap: 4px;
+  margin: 0 0 18px;
+  flex-wrap: wrap;
+}
+.tool-isbn-cell {
+  min-width: 28px;
+  height: 38px;
+  padding: 0 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--line-2);
+  border-radius: 7px;
+  background: #fff;
+  font-family: ui-monospace, "Cascadia Mono", monospace;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--navy);
+}
+.tool-isbn-cell.is-empty { color: transparent; background: var(--fog); }
+.tool-isbn-cell.is-check { border-color: var(--orange); background: #FFF8F0; }
+.tool-isbn-parts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0 0 18px;
+  min-height: 92px;
+}
+.tool-isbn-parts.is-hidden { display: none; }
+.tool-isbn-part {
+  min-width: 88px;
+  padding: 12px 8px 10px;
+  border: 1px solid var(--line-2);
+  border-radius: 10px;
+  background: #fff;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 4px;
+}
+.tool-isbn-part strong {
+  font-size: 18px;
+  letter-spacing: .04em;
+  font-variant-numeric: tabular-nums;
+  word-break: break-all;
+}
+.tool-isbn-part span {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--muted-2);
+}
+.tool-isbn-part em {
+  font-style: normal;
+  font-size: 11px;
+  color: #8496A8;
+}
+.tool-isbn-part.is-prefix { background: var(--navy); color: #fff; border-color: var(--navy); }
+.tool-isbn-part.is-prefix span,
+.tool-isbn-part.is-prefix em { color: rgba(255,255,255,.72); }
+.tool-isbn-part.is-group { background: var(--orange); color: #fff; border-color: var(--orange); }
+.tool-isbn-part.is-group span,
+.tool-isbn-part.is-group em { color: rgba(255,255,255,.86); }
+.tool-isbn-part.is-registrant { background: #F7F4EE; }
+.tool-isbn-part.is-check { background: #FFF8F0; border-color: var(--orange-soft); }
+.tool-isbn-barcode {
+  margin: 8px 0 4px;
+  padding: 16px 18px 10px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fff;
+  display: flex;
+  justify-content: center;
+}
+.tool-isbn-barcode.is-hidden { display: none; }
+.tool-isbn-svg {
+  width: 100%;
+  max-width: 420px;
+  height: auto;
+  color: var(--navy);
+}
+.tool-isbn-ocr { font-size: 11px; font-family: ui-monospace, "Cascadia Mono", monospace; }
+.tool-isbn-notes { margin: 12px 0 0; }
+.tool-isbn-notes p { margin: 0 0 8px; font-size: 13px; color: var(--muted); }
+.tool-isbn-notes p:last-child { margin-bottom: 0; }
+.tool-results [data-isbn-out="isbn13"],
+.tool-results [data-isbn-out="isbn10"],
+.tool-results [data-isbn-out="ean"] { font-size: 16px; word-break: break-all; }
 @media (max-width: 960px) {
   .tool-hub-note, .tool-layout, .tool-results, .tool-number-row { grid-template-columns: 1fr; }
   .tool-layout { padding-left: 20px; padding-right: 20px; }
@@ -11029,4 +11157,7 @@ a.co-event:hover { border-color: var(--navy); color: inherit; }
 @media (max-width: 640px) {
   .tool-results { grid-template-columns: 1fr 1fr; }
   .tool-mode { font-size: 13px; }
+  .tool-isbn-part strong { font-size: 13px; }
+  .tool-isbn-cell { min-width: 22px; height: 32px; font-size: 13px; }
+  .tool-isbn-parts { min-height: 0; }
 }

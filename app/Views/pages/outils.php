@@ -10,7 +10,7 @@ $tools = is_array($tools ?? null) ? $tools : [];
         <span>Outils</span>
       </nav>
       <h1>Outils du livre</h1>
-      <p class="forum-lead">De petits compteurs pour le quotidien : signes, feuillets, dos de couverture. Pas un logiciel d’écriture. Rien n’est généré, rien n’est envoyé.</p>
+      <p class="forum-lead">De petits compteurs pour le quotidien : signes, feuillets, dos de couverture, clé ISBN. Pas un logiciel d’écriture. Rien n’est généré, rien n’est envoyé.</p>
     </div>
     <?php if ($tools !== []): ?>
       <div class="forum-hero-actions">
@@ -41,12 +41,12 @@ $tools = is_array($tools ?? null) ? $tools : [];
       <div>
         <div class="mk-kicker">Méthode</div>
         <h2>Des unités du métier, pas du web.</h2>
-        <p>Le feuillet français fait 1&nbsp;500 signes espaces compris. Un roman courant d’environ 520&nbsp;000 signes, c’est un peu moins de 350 feuillets. Le dos se calcule ensuite sur le papier réel, pas sur un PDF écran.</p>
+        <p>Le feuillet français fait 1&nbsp;500 signes espaces compris. Un roman courant d’environ 520&nbsp;000 signes, c’est un peu moins de 350 feuillets. Le dos se calcule sur le papier réel. L’ISBN identifie une édition, pas un titre : broché et e-pub n’ont pas le même numéro.</p>
       </div>
       <div class="tool-hub-links">
         <a href="<?= e(url('/besoin/corriger-un-manuscrit')) ?>">Faire corriger un manuscrit →</a>
         <a href="<?= e(url('/besoin/maquette-de-livre')) ?>">Faire maquetter un livre →</a>
-        <a href="<?= e(url('/journal/choisir-papier-bouffant-offset-recycle')) ?>">Choisir son papier →</a>
+        <a href="<?= e(url('/journal/isbn-depot-legal-afnil-france')) ?>">ISBN, dépôt légal, AFNIL →</a>
       </div>
     </div>
   </section>

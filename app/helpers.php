@@ -1060,6 +1060,7 @@ function icon(string $name, int $size = 20): string
         'check' => '<path d="M9.1 16.5 4.8 12.2l1.6-1.6 2.7 2.7 8.4-8.4 1.6 1.6-10 10z"/>',
         'check-circle' => '<path fill-rule="evenodd" d="M12 2a10 10 0 1 1 0 20 10 10 0 0 1 0-20zm-1.5 13.3-3.6-3.6 1.5-1.5 2.1 2.1 5.2-5.2 1.5 1.5-6.7 6.7z"/>',
         'counter' => '<path fill-rule="evenodd" d="M7 2h10a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zm0 2v3.2h10V4H7zm0 5.2V20h10V9.2H7zm2.2 1.6h2.2v2.2H9.2v-2.2zm3.6 0h4.2v2.2h-4.2v-2.2zM9.2 15h2.2v2.2H9.2v-2.2zm3.6 0h4.2v2.2h-4.2V15z"/>',
+        'barcode' => '<path d="M3 4h1.8v16H3V4zm3.2 0h1.2v16H6.2V4zm2.4 0h2.4v16H8.6V4zm3.4 0h1.2v16h-1.2V4zm2.2 0h1.8v16h-1.8V4zm2.6 0h.9v16h-.9V4zm1.9 0h2.4v16h-2.4V4zm3.4 0h1.8v16h-1.8V4z"/>',
         'pause' => '<path d="M7 5h3.2v14H7V5zm6.8 0H17v14h-3.2V5z"/>',
         'play' => '<path d="M8 5.4v13.2L19.2 12 8 5.4z"/>',
         'trade-ecriture' => '<path d="M14.5 3.2 20.8 9.5 8.9 21.4H2.6v-6.3L14.5 3.2zm1.5 2.9-1.3 1.3 2.9 2.9 1.3-1.3-2.9-2.9zM5 16.1v2.9h2.9l8.2-8.2-2.9-2.9L5 16.1z"/>',

@@ -16,6 +16,7 @@ use Adl\Data\LegalPages;
 use Adl\Data\Seo;
 use Adl\Data\Share;
 use Adl\Data\Sitemap;
+use Adl\Data\Isbn;
 use Adl\Data\Spine;
 use Adl\Data\Tools;
 use Adl\Models\Analytics;
@@ -814,6 +815,7 @@ final class PageController
         match ($slug) {
             'volume' => $this->outilVolume($request, $tool),
             'dos' => $this->outilDos($request, $tool),
+            'isbn' => $this->outilIsbn($request, $tool),
             default => not_found('Cet outil n\'existe pas.'),
         };
     }
@@ -900,6 +902,36 @@ final class PageController
             'bindings' => Spine::bindings(),
             'faqs' => Spine::faqs(),
             'jsConfig' => Spine::jsConfig(),
+        ]);
+    }
+
+    /**
+     * @param array<string, mixed> $tool
+     */
+    private function outilIsbn(Request $request, array $tool): void
+    {
+        $raw = trim($request->string('n'));
+        $isDefault = $raw === '';
+        $result = Isbn::analyse($isDefault ? Isbn::DEFAULT : $raw);
+        $title = (string) $tool['title'];
+        $path = Tools::path('isbn');
+        $meta = Seo::forScreen('outil-isbn', [
+            'path' => $path,
+            'breadcrumbs' => [
+                ['name' => Seo::BRAND, 'url' => '/'],
+                ['name' => 'Outils', 'url' => Tools::path()],
+                ['name' => $title, 'url' => $path],
+            ],
+        ]);
+
+        View::page('outil-isbn', [
+            'title' => (string) (Seo::catalog()['outil-isbn']['title'] ?? $title),
+            'meta' => $meta,
+            'tool' => $tool,
+            'raw' => $isDefault ? Isbn::DEFAULT : $raw,
+            'result' => $result,
+            'faqs' => Isbn::faqs(),
+            'jsConfig' => Isbn::jsConfig(),
         ]);
     }
 

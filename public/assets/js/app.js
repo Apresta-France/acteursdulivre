@@ -4928,4 +4928,485 @@
     }
     render();
   });
+
+  document.querySelectorAll('[data-isbn-tool]').forEach(function (root) {
+    var cfg = {};
+    try { cfg = JSON.parse(root.getAttribute('data-isbn-config') || '{}'); } catch (e) {}
+    var groups = cfg.groups || {};
+    var registrant = cfg.registrant || {};
+    var hints = cfg.hints || {};
+    var defaultIsbn = cfg.default || '978-2-07-036822-8';
+    var input = root.querySelector('[data-isbn-input]');
+    var form = root.querySelector('[data-isbn-form]');
+    var statusEl = root.querySelector('[data-isbn-status]');
+    var statusLabel = root.querySelector('[data-isbn-status-label]');
+    var kindEl = root.querySelector('[data-isbn-kind]');
+    var digitsEl = root.querySelector('[data-isbn-digits]');
+    var partsEl = root.querySelector('[data-isbn-parts]');
+    var barcodeEl = root.querySelector('[data-isbn-barcode]');
+    var captionEl = root.querySelector('[data-isbn-caption]');
+    var warningsBox = root.querySelector('[data-isbn-warnings]');
+    var notesBox = root.querySelector('[data-isbn-notes]');
+    var summaryEl = root.querySelector('[data-isbn-summary]');
+    var copyBtn = root.querySelector('[data-isbn-copy]');
+    var resetBtn = root.querySelector('[data-isbn-reset]');
+    var checkCaption = root.querySelector('[data-isbn-check-caption]');
+    var lastSummary = summaryEl ? summaryEl.textContent : '';
+
+    var L = {0:'0001101',1:'0011001',2:'0010011',3:'0111101',4:'0100011',5:'0110001',6:'0101111',7:'0111011',8:'0110111',9:'0001011'};
+    var G = {0:'0100111',1:'0110011',2:'0011011',3:'0100001',4:'0011101',5:'0111001',6:'0000101',7:'0010001',8:'0001001',9:'0010111'};
+    var R = {0:'1110010',1:'1100110',2:'1101100',3:'1000010',4:'1011100',5:'1001110',6:'1010000',7:'1000100',8:'1001000',9:'1110100'};
+    var PARITY = {0:'LLLLLL',1:'LLGLGG',2:'LLGGLG',3:'LLGGGL',4:'LGLLGG',5:'LGGLLG',6:'LGGGLL',7:'LGLGLG',8:'LGLGGL',9:'LGGLGL'};
+
+    function esc(s) {
+      return String(s)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    function stripLabel(raw) {
+      return String(raw || '').trim().replace(/^\s*(?:ISBN(?:-1[03])?|EAN(?:-13)?|GTIN)\s*:?\s*/i, '').trim();
+    }
+
+    function compactIsbn(raw) {
+      return stripLabel(raw).toUpperCase().replace(/[^0-9X]/g, '');
+    }
+
+    function check13(digits) {
+      var sum = 0;
+      for (var i = 0; i < 12; i++) {
+        var n = parseInt(digits.charAt(i), 10);
+        sum += (i % 2 === 0) ? n : n * 3;
+      }
+      return String((10 - (sum % 10)) % 10);
+    }
+
+    function check10(digits) {
+      var sum = 0;
+      for (var i = 0; i < 9; i++) sum += parseInt(digits.charAt(i), 10) * (10 - i);
+      var ch = (11 - (sum % 11)) % 11;
+      return ch === 10 ? 'X' : String(ch);
+    }
+
+    function matchGroup(prefix, body) {
+      var list = (groups[prefix] || []).slice().sort(function (a, b) { return b.length - a.length; });
+      for (var i = 0; i < list.length; i++) {
+        if (body.indexOf(list[i]) === 0) return list[i];
+      }
+      return '';
+    }
+
+    function matchRegistrant(key, rest) {
+      var rules = registrant[key] || [];
+      for (var i = 0; i < rules.length; i++) {
+        var from = rules[i].from;
+        var width = from.length;
+        if (rest.length < width) continue;
+        var slice = rest.slice(0, width);
+        if (slice >= from && slice <= rules[i].to) return rules[i].len;
+      }
+      return null;
+    }
+
+    function split13(digits) {
+      var prefix = digits.slice(0, 3);
+      var check = digits.slice(12, 13);
+      var body = digits.slice(3, 12);
+      var group = matchGroup(prefix, body);
+      var rest = group ? body.slice(group.length) : body;
+      var reg = '';
+      var pub = rest;
+      if (group) {
+        var len = matchRegistrant(prefix + '-' + group, rest);
+        if (len !== null && len > 0 && len < rest.length) {
+          reg = rest.slice(0, len);
+          pub = rest.slice(len);
+        } else if (len !== null && len === rest.length) {
+          reg = rest;
+          pub = '';
+        }
+      }
+      return { prefix: prefix, group: group, registrant: reg, publication: pub, check: check };
+    }
+
+    function split10(digits) {
+      var check = digits.slice(9, 10);
+      var body = digits.slice(0, 9);
+      var group = matchGroup('978', body);
+      var rest = group ? body.slice(group.length) : body;
+      var reg = '';
+      var pub = rest;
+      if (group) {
+        var len = matchRegistrant('978-' + group, rest);
+        if (len !== null && len > 0 && len < rest.length) {
+          reg = rest.slice(0, len);
+          pub = rest.slice(len);
+        }
+      }
+      return { group: group, registrant: reg, publication: pub, check: check };
+    }
+
+    function joinHyphen(parts) {
+      return parts.filter(Boolean).join('-');
+    }
+
+    function hyphenate13(digits) {
+      var s = split13(digits);
+      return joinHyphen([s.prefix, s.group, s.registrant, s.publication, s.check]);
+    }
+
+    function hyphenate10(digits) {
+      var s = split10(digits);
+      return joinHyphen([s.group, s.registrant, s.publication, s.check]);
+    }
+
+    function parts13(digits) {
+      var s = split13(digits);
+      var key = s.prefix + '-' + s.group;
+      var out = [
+        { id: 'prefix', label: 'Préfixe', value: s.prefix, hint: s.prefix === '979' ? 'Bookland 979' : 'Bookland 978' },
+        { id: 'group', label: 'Groupe', value: s.group, hint: hints[key] || 'Agence ISBN' }
+      ];
+      if (s.registrant) out.push({ id: 'registrant', label: 'Éditeur', value: s.registrant, hint: 'Identifiant d’éditeur' });
+      if (s.publication) out.push({ id: 'publication', label: 'Publication', value: s.publication, hint: 'Titre / format' });
+      out.push({ id: 'check', label: 'Clé', value: s.check, hint: 'Contrôle' });
+      return out;
+    }
+
+    function parts10(digits) {
+      var s = split10(digits);
+      var key = '978-' + s.group;
+      var out = [{ id: 'group', label: 'Groupe', value: s.group, hint: hints[key] || 'Agence ISBN' }];
+      if (s.registrant) out.push({ id: 'registrant', label: 'Éditeur', value: s.registrant, hint: 'Identifiant d’éditeur' });
+      if (s.publication) out.push({ id: 'publication', label: 'Publication', value: s.publication, hint: 'Titre / format' });
+      out.push({ id: 'check', label: 'Clé', value: s.check, hint: 'Contrôle' });
+      return out;
+    }
+
+    function eanModules(digits) {
+      var pattern = PARITY[digits.charAt(0)];
+      if (!pattern) return '';
+      var out = '101';
+      var i;
+      for (i = 0; i < 6; i++) {
+        var d = digits.charAt(i + 1);
+        out += pattern.charAt(i) === 'G' ? G[d] : L[d];
+      }
+      out += '01010';
+      for (i = 7; i < 13; i++) out += R[digits.charAt(i)];
+      return out + '101';
+    }
+
+    function isGuard(i) {
+      return i < 3 || (i >= 45 && i < 50) || i >= 92;
+    }
+
+    function barcodeSvg(digits) {
+      if (!/^\d{13}$/.test(digits)) return '';
+      var modules = eanModules(digits);
+      if (!modules) return '';
+      var quiet = 7;
+      var width = quiet + modules.length + quiet;
+      var rects = '';
+      for (var i = 0; i < modules.length; i++) {
+        if (modules.charAt(i) !== '1') continue;
+        var h = isGuard(i) ? 64 : 58;
+        rects += '<rect x="' + (quiet + i) + '" y="0" width="1" height="' + h + '"/>';
+      }
+      return '<svg class="tool-isbn-svg" viewBox="0 0 ' + width + ' 80" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Code-barres EAN-13 ' + digits + '">'
+        + '<g fill="currentColor">' + rects + '</g>'
+        + '<text x="3.2" y="76" text-anchor="middle" fill="currentColor" class="tool-isbn-ocr">' + digits.charAt(0) + '</text>'
+        + '<text x="' + (quiet + 21) + '" y="76" text-anchor="middle" fill="currentColor" class="tool-isbn-ocr">' + digits.slice(1, 7) + '</text>'
+        + '<text x="' + (quiet + 68) + '" y="76" text-anchor="middle" fill="currentColor" class="tool-isbn-ocr">' + digits.slice(7, 13) + '</text>'
+        + '</svg>';
+    }
+
+    function startsBook(c) {
+      return c.indexOf('978') === 0 || c.indexOf('979') === 0;
+    }
+
+    function summarise(result) {
+      var lines = [];
+      if (result.hyphenated) lines.push((result.kind_label || 'ISBN') + ' : ' + result.hyphenated);
+      if (result.isbn13 && result.kind !== 'isbn13') lines.push('ISBN-13 : ' + (result.isbn13_hyphen || result.isbn13));
+      if (result.isbn10) lines.push('ISBN-10 : ' + (result.isbn10_hyphen || result.isbn10));
+      if (result.ean) lines.push('EAN : ' + result.ean);
+      if (result.check_ok === true) lines.push('Clé : valide');
+      else if (result.check_ok === false && result.expected_check) lines.push('Clé attendue : ' + result.expected_check);
+      return lines.join('\n');
+    }
+
+    function analyse(raw) {
+      var c = compactIsbn(String(raw || '').slice(0, 40));
+      var len = c.length;
+      var empty = {
+        compact: c, length: len, target: 13, status: 'empty', status_label: 'Saisissez un ISBN',
+        kind: '', kind_label: '', valid: false, check_ok: null, expected_check: null,
+        hyphenated: '', isbn13: null, isbn13_hyphen: '', isbn10: null, isbn10_hyphen: '',
+        ean: null, parts: [], warnings: [], notices: []
+      };
+      if (!c) {
+        empty.notices = ['ISBN-10 (dix caractères, éventuellement un X) ou ISBN-13 (978 ou 979).'];
+        return empty;
+      }
+      if (c.slice(0, Math.max(0, len - 1)).indexOf('X') !== -1) {
+        return Object.assign({}, empty, {
+          compact: c, length: len, target: 10, status: 'bad', status_label: 'Caractère incorrect',
+          check_ok: false,
+          warnings: ['Le X de l’ISBN-10 n’est autorisé qu’en dernière position, à la place du chiffre 10.'],
+          notices: []
+        });
+      }
+      if (len > 13) {
+        return Object.assign({}, empty, {
+          compact: c, length: len, status: 'bad', status_label: 'Trop de chiffres',
+          check_ok: false,
+          warnings: ['Un ISBN fait 10 ou 13 caractères. Vérifiez un copier-coller.'],
+          notices: []
+        });
+      }
+      if (len === 10) return analyse10(c);
+      if (len === 13) return analyse13(c);
+      if (len === 12 && startsBook(c)) {
+        var exp13 = check13(c + '0');
+        return Object.assign({}, empty, {
+          compact: c, length: 12, target: 13, status: 'partial', status_label: 'Clé attendue : ' + exp13,
+          kind: 'isbn13', kind_label: 'ISBN-13 incomplet', expected_check: exp13,
+          hyphenated: hyphenate13(c + exp13),
+          notices: ['Encore un chiffre : la clé de contrôle devrait être ' + exp13 + '.']
+        });
+      }
+      if (len === 9 && !startsBook(c)) {
+        var exp10 = check10(c + '0');
+        return Object.assign({}, empty, {
+          compact: c, length: 9, target: 10, status: 'partial', status_label: 'Clé attendue : ' + exp10,
+          kind: 'isbn10', kind_label: 'ISBN-10 incomplet', expected_check: exp10,
+          hyphenated: hyphenate10(c + exp10),
+          notices: ['Encore un caractère : la clé de contrôle devrait être ' + exp10 + '.']
+        });
+      }
+      var target = (len >= 11 || startsBook(c)) ? 13 : 10;
+      var left = target - len;
+      return Object.assign({}, empty, {
+        compact: c, length: len, target: target, status: 'partial',
+        status_label: len + ' / ' + target + ' caractères',
+        kind: target === 13 ? 'isbn13' : 'isbn10',
+        kind_label: target === 13 ? 'ISBN-13 incomplet' : 'ISBN-10 incomplet',
+        notices: ['Continuez la saisie : ' + left + ' caractère' + (left > 1 ? 's' : '') + ' encore.']
+      });
+    }
+
+    function analyse10(c) {
+      var expected = check10(c);
+      var ok = c.charAt(9) === expected;
+      var isbn13 = null;
+      var isbn13Hyphen = '';
+      if (ok) {
+        isbn13 = '978' + c.slice(0, 9) + check13('978' + c.slice(0, 9) + '0');
+        isbn13Hyphen = hyphenate13(isbn13);
+      }
+      var hyphen = hyphenate10(c);
+      return {
+        compact: c, length: 10, target: 10,
+        status: ok ? 'ok' : 'bad',
+        status_label: ok ? 'Clé valide' : 'Clé invalide',
+        kind: 'isbn10', kind_label: 'ISBN-10',
+        valid: ok, check_ok: ok, expected_check: expected,
+        hyphenated: hyphen, isbn10: c, isbn10_hyphen: hyphen,
+        isbn13: isbn13, isbn13_hyphen: isbn13Hyphen,
+        ean: ok ? isbn13 : null, parts: parts10(c),
+        warnings: ok ? [] : ['Clé invalide : le caractère de contrôle devrait être ' + expected + '.'],
+        notices: ok
+          ? ['ISBN-10 encore rencontré sur d’anciennes éditions. L’identifiant courant est l’ISBN-13.', 'Un format = un ISBN. Broché, poche et e-pub prennent chacun le leur.']
+          : []
+      };
+    }
+
+    function analyse13(c) {
+      if (!/^\d{13}$/.test(c)) {
+        return {
+          compact: c, length: 13, target: 13, status: 'bad', status_label: 'Caractère incorrect',
+          kind: '', kind_label: '', valid: false, check_ok: false, expected_check: null,
+          hyphenated: '', isbn13: null, isbn13_hyphen: '', isbn10: null, isbn10_hyphen: '',
+          ean: null, parts: [], warnings: ['L’ISBN-13 ne contient que des chiffres, pas de X.'], notices: []
+        };
+      }
+      var expected = check13(c);
+      var ok = c.charAt(12) === expected;
+      var prefix = c.slice(0, 3);
+      var isBook = prefix === '978' || prefix === '979';
+      var isIsmn = c.indexOf('9790') === 0;
+      var kind = 'ean';
+      var kindLabel = 'EAN-13';
+      if (isIsmn) { kind = 'ismn'; kindLabel = 'ISMN'; }
+      else if (isBook) { kind = 'isbn13'; kindLabel = 'ISBN-13 · EAN livre'; }
+      var hyphen = isBook ? hyphenate13(c) : (c.slice(0, 3) + '-' + c.slice(3, 12) + '-' + c.charAt(12));
+      var isbn10 = null;
+      var isbn10Hyphen = '';
+      var warnings = [];
+      var notices = [];
+      var status = 'bad';
+      var statusLabel = 'Clé invalide';
+      if (!ok) {
+        warnings.push('Clé invalide : le chiffre de contrôle devrait être ' + expected + '.');
+      } else if (isIsmn) {
+        status = 'ok';
+        statusLabel = 'ISMN valide';
+        notices.push('979-0 identifie une partition (ISMN), pas un livre.');
+      } else if (!isBook) {
+        status = 'warn';
+        statusLabel = 'EAN valide, pas un ISBN';
+        warnings.push('Ce code-barres EAN n’est pas un ISBN : un livre commence par 978 ou 979.');
+      } else {
+        status = 'ok';
+        statusLabel = 'Clé valide';
+        notices.push('L’ISBN-13 et le code-barres de la 4e sont le même nombre.');
+        notices.push('Un format = un ISBN. Broché, poche et e-pub prennent chacun le leur.');
+        if (prefix === '979') notices.push('Les ISBN en 979 n’ont pas d’équivalent ISBN-10.');
+      }
+      if (ok && prefix === '978') {
+        isbn10 = c.slice(3, 12) + check10(c.slice(3, 12) + '0');
+        isbn10Hyphen = hyphenate10(isbn10);
+      }
+      var parts = isBook ? parts13(c) : [
+        { id: 'prefix', label: 'Pays / GS1', value: c.slice(0, 3), hint: 'Préfixe EAN' },
+        { id: 'publication', label: 'Article', value: c.slice(3, 12), hint: 'Identifiant produit' },
+        { id: 'check', label: 'Clé', value: c.charAt(12), hint: 'Contrôle' }
+      ];
+      return {
+        compact: c, length: 13, target: 13, status: status, status_label: statusLabel,
+        kind: kind, kind_label: kindLabel, valid: ok && isBook && !isIsmn,
+        check_ok: ok, expected_check: expected, hyphenated: hyphen,
+        isbn13: isBook ? c : null, isbn13_hyphen: isBook ? hyphen : '',
+        isbn10: isbn10, isbn10_hyphen: isbn10Hyphen,
+        ean: ok ? c : null, parts: parts, warnings: warnings, notices: notices
+      };
+    }
+
+    function setOut(name, value) {
+      var el = root.querySelector('[data-isbn-out="' + name + '"]');
+      if (el) el.textContent = value;
+    }
+
+    function toggle(el, on) {
+      if (!el) return;
+      el.classList.toggle('is-hidden', !on);
+      el.hidden = !on;
+    }
+
+    function renderDigits(compactVal, target) {
+      if (!digitsEl) return;
+      var html = '';
+      for (var i = 0; i < target; i++) {
+        var ch = compactVal.charAt(i) || '';
+        html += '<span class="tool-isbn-cell' + (ch ? '' : ' is-empty') + (i === target - 1 ? ' is-check' : '') + '">' + esc(ch) + '</span>';
+      }
+      digitsEl.innerHTML = html;
+    }
+
+    function renderParts(parts) {
+      if (!partsEl) return;
+      if (!parts || !parts.length) {
+        toggle(partsEl, false);
+        partsEl.innerHTML = '';
+        return;
+      }
+      toggle(partsEl, true);
+      partsEl.innerHTML = parts.map(function (part) {
+        var grow = Math.max(1, String(part.value || '').length);
+        return '<div class="tool-isbn-part is-' + esc(part.id) + '" style="flex: ' + grow + ' 1 0">'
+          + '<strong>' + esc(part.value || '—') + '</strong>'
+          + '<span>' + esc(part.label || '') + '</span>'
+          + '<em>' + esc(part.hint || '') + '</em></div>';
+      }).join('');
+    }
+
+    function syncUrl(raw, result) {
+      if (!window.history || !window.history.replaceState) return;
+      var url = new URL(window.location.href);
+      var compactVal = result.compact || '';
+      var isDefault = compactIsbn(raw) === compactIsbn(defaultIsbn) || compactVal === compactIsbn(defaultIsbn);
+      if (!compactVal || isDefault) url.searchParams.delete('n');
+      else url.searchParams.set('n', result.hyphenated || compactVal);
+      window.history.replaceState({}, '', url.pathname + url.search + url.hash);
+    }
+
+    function render() {
+      var raw = input ? input.value : '';
+      var result = analyse(raw);
+      result.summary = summarise(result);
+      lastSummary = result.summary;
+      if (summaryEl) summaryEl.textContent = lastSummary;
+      if (statusEl) statusEl.className = 'tool-isbn-status is-' + result.status;
+      if (statusLabel) statusLabel.textContent = result.status_label;
+      if (kindEl) kindEl.textContent = result.kind_label || '';
+      renderDigits(result.compact, result.target);
+      renderParts(result.parts);
+      var svg = (result.status !== 'bad' && result.ean) ? barcodeSvg(result.ean) : '';
+      if (barcodeEl) {
+        barcodeEl.innerHTML = svg;
+        toggle(barcodeEl, !!svg);
+      }
+      if (captionEl) {
+        if (result.hyphenated) {
+          captionEl.textContent = result.hyphenated + (result.expected_check && result.check_ok == null ? ' · clé prévue ' + result.expected_check : '');
+        } else {
+          captionEl.textContent = 'Le schéma se remplit au fur et à mesure de la saisie.';
+        }
+      }
+      setOut('isbn13', result.isbn13_hyphen || result.isbn13 || '—');
+      setOut('isbn10', result.isbn10_hyphen || result.isbn10 || '—');
+      setOut('ean', result.ean || '—');
+      if (result.check_ok === true) {
+        setOut('check', 'Valide');
+        if (checkCaption) checkCaption.textContent = 'Clé de contrôle';
+      } else if (result.expected_check) {
+        setOut('check', result.expected_check);
+        if (checkCaption) checkCaption.textContent = 'Clé attendue';
+      } else {
+        setOut('check', '—');
+        if (checkCaption) checkCaption.textContent = 'Clé attendue';
+      }
+      if (warningsBox) {
+        warningsBox.hidden = result.warnings.length === 0;
+        warningsBox.innerHTML = result.warnings.map(function (w) { return '<p>' + esc(w) + '</p>'; }).join('');
+      }
+      if (notesBox) {
+        notesBox.hidden = result.notices.length === 0;
+        notesBox.innerHTML = result.notices.map(function (w) { return '<p>' + esc(w) + '</p>'; }).join('');
+      }
+      if (copyBtn) copyBtn.disabled = !lastSummary;
+      syncUrl(raw, result);
+    }
+
+    if (input) {
+      input.addEventListener('input', render);
+      input.addEventListener('change', render);
+    }
+    if (form) {
+      form.addEventListener('submit', function (event) {
+        event.preventDefault();
+        render();
+      });
+    }
+    if (copyBtn) {
+      copyBtn.addEventListener('click', function () {
+        if (!lastSummary) return;
+        copyText(lastSummary).then(function () {
+          showToast('Résultat copié.');
+        }).catch(function () {
+          showToast('Copie impossible.');
+        });
+      });
+    }
+    if (resetBtn) {
+      resetBtn.addEventListener('click', function () {
+        if (input) input.value = defaultIsbn;
+        render();
+      });
+    }
+    render();
+  });
 })();
