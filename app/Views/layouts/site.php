@@ -83,7 +83,7 @@
   <?php if (!empty($isArticle) && !empty($article['img'])): ?>
   <link rel="preload" as="image" href="<?= e((string) $article['img']) ?>">
   <?php endif; ?>
-  <link rel="stylesheet" href="<?= e(asset('css/app.css')) ?>?v=m235">
+  <link rel="stylesheet" href="<?= e(asset('css/app.css')) ?>?v=m251">
   <link rel="icon" href="<?= e(asset('img/favicon.ico')) ?>?v=3" sizes="any">
   <link rel="icon" type="image/png" href="<?= e(asset('img/favicon-32x32.png')) ?>?v=3" sizes="32x32">
   <link rel="apple-touch-icon" href="<?= e(asset('img/apple-touch-icon.png')) ?>?v=3">
@@ -143,7 +143,7 @@
       <header class="site-header">
         <a href="<?= e(url('/')) ?>" class="brand" aria-label="acteursdulivre.fr — accueil">
           <picture>
-            <source media="(max-width: 768px)" srcset="<?= e(asset('img/logo-mark.png')) ?>?v=1">
+            <source media="(max-width: 480px)" srcset="<?= e(asset('img/logo-mark.png')) ?>?v=1">
             <img src="<?= e(asset('img/logo.png')) ?>?v=4" alt="acteursdulivre.fr — place de marché des métiers du livre" width="212" height="58" decoding="async">
           </picture>
         </a>
@@ -387,6 +387,6 @@
       <?php endif; ?>
     </div>
   <?php endif; ?>
-  <script src="<?= e(asset('js/app.js')) ?>?v=m106"></script>
+  <script src="<?= e(asset('js/app.js')) ?>?v=m110"></script>
 </body>
 </html>
