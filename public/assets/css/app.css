@@ -6400,10 +6400,15 @@ img.profile-avatar,
 }
 .mk-kicker-light { color: #E8845F; }
 .mk-lead { font-size: 18px; line-height: 1.65; color: #4A5A6B; max-width: 36em; }
+.mk-page .mk-lead { font-size: 18px; }
+.mk-page .mk-kicker { color: var(--orange); }
+.mk-page .mk-kicker-light { color: #E8845F; }
 .mk-sub, .mk-page p { font-size: 15px; line-height: 1.65; color: #4A5A6B; }
 .mk-hero, .mk-intro, .mk-block, .mk-pad, .mk-cta, .mk-faq, .mk-split, .mk-ia, .mk-fog-pad { padding: 44px; }
-.mk-hero { display: grid; grid-template-columns: 1fr 440px; gap: 48px; align-items: center; background: linear-gradient(165deg, color-mix(in srgb, var(--beige) 52%, #fff) 0%, #fff 78%); }
+.mk-hero { display: grid; grid-template-columns: minmax(0, 1fr) 440px; gap: 48px; align-items: center; background: linear-gradient(165deg, color-mix(in srgb, var(--beige) 52%, #fff) 0%, #fff 78%); }
 .mk-hero h1 { font-size: 52px; margin: 0 0 18px; }
+.mk-hero .mk-lead { margin: 0 0 16px; }
+.mk-hero .mk-cta-actions { margin-top: 8px; }
 .mk-search { position: relative; z-index: 3; display: flex; align-items: center; background: #fff; border: 1px solid #E1E7ED; border-radius: 12px; padding: 0 6px 0 18px; height: 58px; box-shadow: 0 10px 30px rgba(2,39,70,.07); max-width: 620px; }
 .mk-search input { flex: 1; border: 0; outline: none; font-size: 16px; }
 .mk-search .search-suggest { left: 0; right: 0; }
@@ -6567,6 +6572,8 @@ img.profile-avatar,
   border: 0;
 }
 .mk-stats { border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); padding: 26px 44px; display: grid; grid-template-columns: repeat(5, 1fr); gap: 30px; background: linear-gradient(180deg, var(--wash-cool), #F0F4F8); }
+.mk-stats-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.mk-stats-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .mk-stat { color: inherit; text-decoration: none; }
 a.mk-stat { border-radius: 8px; }
 a.mk-stat:hover strong { color: var(--orange); }
@@ -7042,6 +7049,7 @@ img.mk-card-media { width: 100%; object-fit: cover; display: block; }
 .tarif-card.is-navy .mk-points li::before { color: #E8845F; }
 .tarif-card h2 { font-size: 24px; margin: 12px 0 6px; color: inherit; }
 .tarif-pct { font-family: var(--display); font-size: 44px; font-weight: 700; }
+.mk-page .tarif-pct { font-size: 44px; font-weight: 700; color: var(--navy); }
 .tarif-exemple { border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
 .tarif-exemple-head { padding: 16px 18px; background: #FBFCFE; border-bottom: 1px solid #EEF1F5; font-family: var(--display); font-weight: 500; color: var(--navy); }
 .tarif-row { display: flex; justify-content: space-between; padding: 14px 18px; border-bottom: 1px solid #F2F5F8; font-size: 15px; }
@@ -9626,94 +9634,38 @@ a.forum-tag:hover { border-color: var(--orange); color: var(--navy); }
   display: flex;
   justify-content: center;
   align-items: center;
-  padding: 18px 24px;
+  padding: 20px 44px;
   border-bottom: 1px solid var(--line);
-  background: #fff;
+  background: var(--beige);
 }
-.lp-brand img { display: block; height: 44px; width: auto; }
-.lp-page { background: #fff; }
-.lp-hero {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 440px;
-  gap: 48px;
-  align-items: center;
-  padding: 44px;
-  background: linear-gradient(165deg, color-mix(in srgb, var(--beige) 52%, #fff) 0%, #fff 78%);
+.lp-brand img { display: block; height: 58px; width: auto; }
+.lp-page .mk-block .mk-cta-actions { margin-top: 24px; }
+.lp-page .mk-head p { max-width: 46em; }
+.lp-page .mk-faq-list h3.faq-q {
+  margin: 0;
+  cursor: default;
 }
-.lp-hero h1 { font-family: var(--display); font-size: clamp(34px, 4.4vw, 52px); font-weight: 700; line-height: 1.08; letter-spacing: -.02em; color: var(--navy); margin: 0 0 16px; }
-.lp-hero .mk-lead { margin: 0 0 18px; max-width: 36em; }
-.lp-hero .mk-lead:last-of-type { margin-bottom: 22px; }
-.lp-hero-actions { display: flex; flex-wrap: wrap; gap: 12px; }
-.lp-hero .mk-hero-visual { width: 100%; }
-.lp-stats {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 22px;
-  margin-top: 26px;
+.lp-page .mk-faq-list h3.faq-q:hover { background: none; }
+.lp-page .article-body { margin: 18px 0 8px; }
+.lp-page .article-body h2 {
+  font-size: 24px;
+  font-weight: 700;
+  margin: 2em 0 12px;
 }
-.lp-stats a { text-decoration: none; color: inherit; }
-.lp-stats a:hover strong { color: var(--orange); }
-.lp-stats strong { display: block; font-family: var(--display); font-size: 28px; color: var(--navy); line-height: 1; }
-.lp-stats span { font-size: 13px; color: #66768A; }
-.lp-price {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
-  gap: 24px;
-  padding: 32px 44px;
-  border-top: 1px solid var(--line);
-  background: #FBFCFE;
+.lp-page .article-body h3 {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 1.6em 0 8px;
 }
-.lp-price-value { font-family: var(--display); font-size: 32px; font-weight: 700; color: var(--navy); margin: 6px 0 10px; }
-.lp-price p { margin: 0 0 8px; max-width: 52em; }
-.lp-price-note { font-size: 13px; color: #8496A8; }
-.lp-steps { border-top: 1px solid var(--line); grid-template-columns: repeat(3, minmax(0, 1fr)); }
-.lp-page h2 { font-family: var(--display); color: var(--navy); font-size: 27px; font-weight: 700; margin: 0; }
-.lp-page h3 { font-family: var(--display); color: var(--navy); font-size: 20px; font-weight: 500; margin: 10px 0 8px; }
-.lp-split {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 40px;
-  padding: 44px;
-  border-top: 1px solid var(--line);
-}
-.lp-split h2 { margin-bottom: 14px; }
-.lp-excludes li { color: #66768A; }
-.lp-proofs { padding: 44px; border-top: 1px solid var(--line); background: #F7F9FC; }
-.lp-proofs ul { margin: 16px 0 18px; padding: 0; list-style: none; display: grid; gap: 10px; max-width: 52em; }
-.lp-proofs li { padding-left: 18px; position: relative; color: #4A5A6B; font-size: 15px; line-height: 1.55; }
-.lp-proofs li::before { content: "·"; position: absolute; left: 0; color: var(--orange); font-weight: 700; }
-.lp-proofs a { color: var(--orange); }
-.lp-live { padding: 12px 44px 44px; border-top: 1px solid var(--line); }
-.lp-live .mk-head { margin-top: 28px; }
-.lp-live .mk-head:first-child { margin-top: 16px; }
-.lp-section-lead, .lp-bridge p {
-  margin: 0 0 22px;
-  max-width: 52em;
-  font-size: 16px;
-  line-height: 1.7;
-  color: #4A5A6B;
-}
-.lp-bridge { padding: 36px 44px 8px; border-top: 1px solid var(--line); background: #FBFCFE; }
-.lp-section-cta { margin-top: 24px; display: flex; flex-wrap: wrap; gap: 12px; }
-.lp-faq-block h2 { margin-bottom: 22px; }
-.lp-faq { display: grid; gap: 22px; max-width: 52em; }
-.lp-faq h3 { font-family: var(--display); font-size: 20px; font-weight: 600; color: var(--navy); margin: 0 0 8px; }
-.lp-faq p { margin: 0; font-size: 15px; line-height: 1.65; color: #4A5A6B; }
-.lp-ia { border-top: 1px solid var(--line); }
-.lp-journal { padding: 44px; border-top: 1px solid var(--line); }
-.lp-journal h2 { margin: 8px 0 18px; }
-.lp-journal h2 a { color: inherit; text-decoration: none; }
-.lp-journal h2 a:hover { color: var(--orange); }
-.lp-journal-body { margin-bottom: 18px; }
-.lp-journal-body h2 { font-size: 22px; margin: 28px 0 12px; }
-.lp-journal-body h3 { font-size: 18px; margin: 22px 0 8px; }
+.lp-page .article-body p { font-size: 16px; color: #14202C; }
+.lp-steps { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .lp-legal {
   margin: 0;
   padding: 20px 44px 36px;
   font-size: 13px;
-  color: #8496A8;
+  color: #7B93AC;
   border-top: 1px solid var(--line);
+  background: var(--fog);
 }
 .lp-legal a { color: #66768A; }
 .lp-legal a:hover { color: var(--orange); }
@@ -9733,33 +9685,21 @@ a.forum-tag:hover { border-color: var(--orange); color: var(--navy); }
 .ecrire-actions .btn-ghost, .ecrire-actions .btn-orange { flex: 1; justify-content: center; min-width: 140px; }
 .ecrire-complete-actions { display: flex; flex-wrap: wrap; gap: 10px; }
 body.has-founder-banner .ecrire-page { padding-bottom: calc(48px + var(--founder-banner-h, 64px)); }
-.lp-others { padding: 44px; border-top: 1px solid var(--line); }
+.lp-page .tarif-pct { display: block; margin: 4px 0 14px; font-size: 44px; font-weight: 700; color: var(--navy); }
+.lp-page .mk-split h2 { margin-bottom: 14px; }
+.lp-page .mk-block > .mk-points { margin-top: 16px; }
 .lp-other-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 12px;
-  margin-top: 18px;
 }
-.lp-other-grid a {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: 16px;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  text-decoration: none;
-  color: inherit;
-  background: #fff;
-}
-.lp-other-grid a:hover { border-color: var(--orange); }
-.lp-other-grid span { font-size: 12px; color: #8496A8; }
-.lp-other-grid strong { font-size: 15px; color: var(--navy); }
+.lp-other-grid .mk-trade { height: 100%; align-items: flex-start; }
+.lp-other-grid .mk-kicker { margin: 0 0 6px; }
 .lp-hub .mk-intro { padding-bottom: 12px; }
 .lp-hub-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 16px;
-  padding: 12px 44px 44px;
 }
 .lp-hub-card {
   display: flex;
@@ -9767,7 +9707,7 @@ body.has-founder-banner .ecrire-page { padding-bottom: calc(48px + var(--founder
   gap: 8px;
   padding: 22px;
   border: 1px solid var(--line);
-  border-radius: 16px;
+  border-radius: 14px;
   text-decoration: none;
   color: inherit;
   background: #fff;
@@ -9790,16 +9730,12 @@ body.has-founder-banner .ecrire-page { padding-bottom: calc(48px + var(--founder
 .landing-ads-body .admin-ghost { height: auto; padding: 6px 10px; text-align: left; white-space: normal; }
 .landings-admin .admin-h2 { margin: 28px 0 12px; font-size: 18px; }
 @media (max-width: 1100px) {
-  .lp-hero, .lp-split { grid-template-columns: 1fr; }
   .lp-other-grid, .lp-hub-grid { grid-template-columns: 1fr 1fr; }
   .landing-utm-grid { grid-template-columns: 1fr 1fr; }
 }
 @media (max-width: 820px) {
-  .lp-hero, .lp-price, .lp-split, .lp-proofs, .lp-live, .lp-journal, .lp-others, .lp-hub-grid, .lp-bridge, .lp-legal { padding-left: 20px; padding-right: 20px; }
-  .lp-hero { padding-top: 28px; padding-bottom: 28px; }
+  .lp-brand, .lp-legal { padding-left: 20px; padding-right: 20px; }
   body.is-landing .lp-page { padding-bottom: 88px; }
-  .lp-hero .mk-hero-visual, .lp-hero .mk-mosaic { max-width: 440px; }
-  .lp-price { flex-direction: column; align-items: flex-start; }
   .lp-sticky {
     display: flex;
     position: fixed;

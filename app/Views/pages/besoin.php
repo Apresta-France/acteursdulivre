@@ -2,14 +2,15 @@
 $clientLandings = $clientLandings ?? [];
 $offererLandings = $offererLandings ?? [];
 ?>
-<div class="lp-page lp-hub">
+<div class="mk-page lp-page lp-hub">
   <section class="mk-intro">
     <p class="mk-kicker">Trouver un prestataire</p>
     <h1>De quoi votre livre a-t-il besoin ?</h1>
     <p class="mk-lead">Une page par besoin, pour aller droit au métier : correction, couverture, impression, traduction… Inscription gratuite, travail humain, règlement hors plateforme.</p>
   </section>
 
-  <section class="lp-hub-grid">
+  <section class="mk-block">
+    <div class="lp-hub-grid">
     <?php foreach ($clientLandings as $item): ?>
       <a class="lp-hub-card" href="<?= e(url((string) $item['href'])) ?>">
         <span class="mk-kicker"><?= e((string) $item['kicker']) ?></span>
@@ -20,6 +21,7 @@ $offererLandings = $offererLandings ?? [];
         <?php endif; ?>
       </a>
     <?php endforeach; ?>
+    </div>
   </section>
 
   <?php if ($offererLandings !== []): ?>
