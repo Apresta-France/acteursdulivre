@@ -34,9 +34,10 @@
     if (!empty($isLanding)) {
         $bodyClass[] = 'is-landing';
     }
-    if ($founderOffer) {
+    if ($founderOffer && empty($isLanding)) {
         $bodyClass[] = 'has-founder-banner';
     }
+    $landingChrome = empty($isLanding);
     if (\Adl\Core\Auth::isImpersonating()) {
         $bodyClass[] = 'has-impersonation-bar';
     }
@@ -83,7 +84,7 @@
   <?php if (!empty($isArticle) && !empty($article['img'])): ?>
   <link rel="preload" as="image" href="<?= e((string) $article['img']) ?>">
   <?php endif; ?>
-  <link rel="stylesheet" href="<?= e(asset('css/app.css')) ?>?v=m251">
+  <link rel="stylesheet" href="<?= e(asset('css/app.css')) ?>?v=m253">
   <link rel="icon" href="<?= e(asset('img/favicon.ico')) ?>?v=3" sizes="any">
   <link rel="icon" type="image/png" href="<?= e(asset('img/favicon-32x32.png')) ?>?v=3" sizes="32x32">
   <link rel="apple-touch-icon" href="<?= e(asset('img/apple-touch-icon.png')) ?>?v=3">
@@ -100,6 +101,12 @@
   <div class="nav-backdrop" data-nav-close hidden></div>
   <div class="site-shell">
     <div class="site-canvas">
+      <?php if (!empty($isLanding)): ?>
+      <div class="lp-brand">
+        <img src="<?= e(asset('img/logo.png')) ?>?v=4" alt="acteursdulivre.fr — place de marché des métiers du livre" width="212" height="58" decoding="async">
+      </div>
+      <?php endif; ?>
+      <?php if ($landingChrome): ?>
       <div class="preopen">
         <span class="preopen-badge">Pré-ouverture</span>
         <span class="preopen-text">La plateforme accueille dès maintenant les <strong>auteurs et les professionnels du livre</strong> — ouverture aux clients en octobre 2026. Sans IA générative sur les missions, jamais.</span>
@@ -196,6 +203,13 @@
             </button>
             <div class="user-menu-panel" id="user-menu-panel" hidden>
               <a href="<?= e(url('/espace')) ?>"<?= !empty($isDashboard) ? ' class="is-active"' : '' ?>>Tableau de bord</a>
+              <?php foreach ($userPublicLinks ?? [] as $publicLink): ?>
+                <?php
+                  $publicHref = (string) ($publicLink['href'] ?? '');
+                  $publicActive = $publicHref !== '' && $headerPath === $publicHref;
+                ?>
+                <a href="<?= e(url($publicHref)) ?>"<?= $publicActive ? ' class="is-active"' : '' ?>><?= e((string) ($publicLink['label'] ?? 'Voir ma fiche publique')) ?></a>
+              <?php endforeach; ?>
               <a href="<?= e(url('/espace/parametres')) ?>"<?= !empty($isParametres) ? ' class="is-active"' : '' ?>>Paramètres</a>
               <?php if (!empty($isAdmin)): ?>
                 <div class="user-menu-sep"></div>
@@ -276,6 +290,7 @@
           </div>
         <?php endforeach; ?>
       </div>
+      <?php endif; ?>
 
       <main id="contenu">
         <?php if ($siteFlash = flash('saved')): ?>
@@ -296,6 +311,7 @@
         <?php endif; ?>
       </main>
 
+      <?php if ($landingChrome): ?>
       <footer class="site-footer">
         <div class="footer-news">
           <div>
@@ -369,9 +385,10 @@
           </div>
         </div>
       </footer>
+      <?php endif; ?>
     </div>
   </div>
-  <?php if ($founderOffer): ?>
+  <?php if ($founderOffer && $landingChrome): ?>
     <?php
       $founderLeft = (int) $founderOffer['remaining'];
       $founderLimit = (int) $founderOffer['limit'];
@@ -387,6 +404,6 @@
       <?php endif; ?>
     </div>
   <?php endif; ?>
-  <script src="<?= e(asset('js/app.js')) ?>?v=m110"></script>
+  <script src="<?= e(asset('js/app.js')) ?>?v=m111"></script>
 </body>
 </html>

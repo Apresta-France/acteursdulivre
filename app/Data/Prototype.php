@@ -7,11 +7,13 @@ namespace Adl\Data;
 use Adl\Core\Auth;
 use Adl\Core\DcEngine;
 use Adl\Models\Application;
+use Adl\Models\AuthorPage;
 use Adl\Models\Invoice;
 use Adl\Models\Mission;
 use Adl\Models\Notification;
 use Adl\Models\OrderMilestone;
 use Adl\Models\Profile;
+use Adl\Models\Publisher;
 use Adl\Models\Service;
 use Adl\Models\User;
 
@@ -42,7 +44,7 @@ final class Prototype
             'Confiance', 'Aide', 'Questions', 'Metier', 'Apropos', 'Journal', 'Article', 'Contact', 'Legal',
             'Connexion', 'Notifications', 'MesPrestations', 'MesMissions', 'Candidatures', 'Favoris',
             'Avis', 'Vitrine', 'Parametres', 'Facturation', 'Bienvenue', 'Statistiques', 'Forum', 'EspaceForum',
-            'Landing', 'Besoin', 'Communaute', 'Outils', 'Salons', 'Salon',
+            'Landing', 'Besoin', 'Communaute', 'Outils', 'Salons', 'Salon', 'Ecrire',
         ] as $name) {
             $key = 'is' . $name;
             if (!isset($data[$key])) {
@@ -63,6 +65,7 @@ final class Prototype
             'article' => 'isArticle', 'contact' => 'isContact', 'legal' => 'isLegal',
             'connexion' => 'isConnexion', 'notifications' => 'isNotifications',
             'landing' => 'isLanding', 'besoin' => 'isBesoin',
+            'ecrire' => 'isEcrire',
             'mesprestations' => 'isMesPrestations', 'mesmissions' => 'isMesMissions',
             'candidatures' => 'isCandidatures', 'favoris' => 'isFavoris', 'avis' => 'isAvis',
             'vitrine' => 'isVitrine', 'parametres' => 'isParametres', 'facturation' => 'isFacturation',
@@ -86,7 +89,7 @@ final class Prototype
 
         if (empty($data['meta']) || !is_array($data['meta'])) {
             $data['meta'] = Seo::forScreen($screen, $data);
-        } elseif (empty($data['meta']['robots']) && (!empty($data['inEspace']) || in_array($screen, ['connexion', 'bienvenue', 'inscription-sso'], true))) {
+        } elseif (empty($data['meta']['robots']) && (!empty($data['inEspace']) || in_array($screen, ['connexion', 'bienvenue', 'inscription-sso', 'ecrire'], true))) {
             $data['meta']['robots'] = Seo::ROBOTS_NONE;
         }
 
@@ -185,6 +188,7 @@ final class Prototype
                 self::espaceNavBadges($user, $unreadMessages, $unreadAlerts, $unreadForum, $seeks, $offers)
             ) : [],
             'headerCta' => self::headerCta($seeks, $offers),
+            'userPublicLinks' => $logged ? self::userPublicLinks($user, $offers) : [],
             'routes' => DcEngine::routes(),
             'unreadMessages' => $unreadMessages,
             'unreadAlerts' => $unreadAlerts,
@@ -1562,6 +1566,67 @@ final class Prototype
             'favoris', 'avis', 'vitrine', 'parametres', 'facturation', 'statistiques', 'espace-forum',
             'auteur', 'auteur-oeuvres', 'auteur-oeuvre', 'tribune', 'tribune-edit', 'espace-maison',
         ], true);
+    }
+
+    /**
+     * Liens vers les fiches publiques du compte (vitrine, auteur, maison),
+     * uniquement lorsqu’une page est réellement consultable.
+     *
+     * @param array<string, mixed> $user
+     * @return list<array{label: string, href: string}>
+     */
+    private static function userPublicLinks(array $user, bool $offers): array
+    {
+        $userId = (int) ($user['id'] ?? 0);
+        if ($userId < 1) {
+            return [];
+        }
+
+        $links = [];
+
+        if ($offers) {
+            try {
+                $profile = Profile::findByUser($userId);
+                $slug = trim((string) ($profile['slug'] ?? ''));
+                if ($profile && $slug !== '' && User::isPublicOfferer($user)) {
+                    $links[] = [
+                        'label' => 'Voir ma vitrine',
+                        'href' => Profile::publicHref($profile),
+                    ];
+                }
+            } catch (\Throwable) {
+            }
+        }
+
+        try {
+            $authorPage = AuthorPage::findByUser($userId);
+            $slug = trim((string) ($authorPage['slug'] ?? ''));
+            if ($authorPage && $slug !== '' && AuthorPage::isPublic($authorPage)) {
+                $links[] = [
+                    'label' => 'Voir ma fiche auteur',
+                    'href' => AuthorPage::publicHref($authorPage),
+                ];
+            }
+        } catch (\Throwable) {
+        }
+
+        try {
+            $publisher = Publisher::findForOwner($userId);
+            $slug = trim((string) ($publisher['slug'] ?? ''));
+            if ($publisher && $slug !== '' && Publisher::isPublic($publisher)) {
+                $links[] = [
+                    'label' => 'Voir ma maison d\'édition',
+                    'href' => (string) ($publisher['href'] ?? ('/maisons-edition/' . $slug)),
+                ];
+            }
+        } catch (\Throwable) {
+        }
+
+        if (count($links) === 1) {
+            $links[0]['label'] = 'Voir ma fiche publique';
+        }
+
+        return $links;
     }
 
     private static function headerCta(bool $seeks, bool $offers): ?array

@@ -205,10 +205,30 @@ final class Auth
                     'mission' => (int) ($_POST['mission'] ?? 0),
                     'message' => $message,
                 ];
+                redirect('/ecrire');
             }
             redirect('/connexion');
         }
         return $user;
+    }
+
+    /** @return array{avec: int, sujet: string, prestation: int, mission: int, message: string}|null */
+    public static function pendingMessage(): ?array
+    {
+        if (session_status() !== PHP_SESSION_ACTIVE) {
+            return null;
+        }
+        $pending = $_SESSION['_pending_message'] ?? null;
+        if (!is_array($pending) || (int) ($pending['avec'] ?? 0) < 1) {
+            return null;
+        }
+        return [
+            'avec' => (int) $pending['avec'],
+            'sujet' => (string) ($pending['sujet'] ?? ''),
+            'prestation' => (int) ($pending['prestation'] ?? 0),
+            'mission' => (int) ($pending['mission'] ?? 0),
+            'message' => (string) ($pending['message'] ?? ''),
+        ];
     }
 
     public static function requireAdmin(): array

@@ -1748,6 +1748,11 @@ final class AccountController
     public function messages(Request $request): void
     {
         $user = Auth::requireUser();
+        if ($request->string('plus-tard') === '1') {
+            unset($_SESSION['_complete_profile']);
+            $_SESSION['_onboarding_snooze'] = 1;
+            redirect('/espace/messages');
+        }
         $avec = $request->int('avec');
         if ($request->isPost()) {
             $guard = BotGuard::consume('message', $request);
@@ -1818,12 +1823,18 @@ final class AccountController
             'messages' => [],
             'saved' => flash('saved'),
             'error' => flash('error'),
+            'completeProfile' => !empty($_SESSION['_complete_profile']) && empty($_SESSION['_onboarding_snooze']) && Onboarding::isPending($user),
         ]);
     }
 
     public function messageShow(Request $request, string $id): void
     {
         $user = Auth::requireUser();
+        if ($request->string('plus-tard') === '1') {
+            unset($_SESSION['_complete_profile']);
+            $_SESSION['_onboarding_snooze'] = 1;
+            redirect('/espace/messages/' . (int) $id);
+        }
         $thread = Conversation::findForUser((int) $id, (int) $user['id']);
         if (!$thread) {
             not_found('Cette conversation est introuvable.');
@@ -1838,6 +1849,7 @@ final class AccountController
             'alreadyReported' => Conversation::hasOpenReport((int) $id, (int) $user['id']),
             'saved' => flash('saved'),
             'error' => flash('error'),
+            'completeProfile' => !empty($_SESSION['_complete_profile']) && empty($_SESSION['_onboarding_snooze']) && Onboarding::isPending($user),
         ]);
     }
 

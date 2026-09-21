@@ -2507,9 +2507,9 @@
       return (mediaSelect && mediaSelect.value) || row.getAttribute('data-media-type') || 'image';
     }
 
-    function setPreview(url) {
+    function setPreview(url, fromObjectUrl) {
       if (!preview) return;
-      if (objectUrl) {
+      if (objectUrl && objectUrl !== url) {
         URL.revokeObjectURL(objectUrl);
         objectUrl = '';
       }
@@ -2518,6 +2518,7 @@
         preview.style.backgroundImage = '';
         return;
       }
+      if (fromObjectUrl) objectUrl = url;
       preview.hidden = false;
       preview.style.backgroundImage = 'url("' + String(url).replace(/"/g, '\\"') + '")';
     }
@@ -2554,6 +2555,7 @@
         fileInput.value = '';
       }
       if (media !== 'image') setPreview('');
+      setFilename('');
       setError('');
     }
 
@@ -2587,13 +2589,12 @@
           return;
         }
         setError('');
-        setFilename(file.name);
         if (media === 'image') {
-          if (objectUrl) URL.revokeObjectURL(objectUrl);
-          objectUrl = URL.createObjectURL(file);
-          setPreview(objectUrl);
+          setPreview(URL.createObjectURL(file), true);
+          setFilename('');
         } else {
           setPreview('');
+          setFilename(file.name);
         }
       });
     }

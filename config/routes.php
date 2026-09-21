@@ -100,6 +100,8 @@ return static function (Router $router): void {
 
     $router->get('/connexion', [AuthController::class, 'loginForm']);
     $router->post('/connexion', [AuthController::class, 'login']);
+    $router->get('/ecrire', [AuthController::class, 'continueForm']);
+    $router->post('/ecrire', [AuthController::class, 'continueGuest']);
     $router->get('/mot-de-passe-oublie', [AuthController::class, 'forgotForm']);
     $router->post('/mot-de-passe-oublie', [AuthController::class, 'forgot']);
     $router->get('/mot-de-passe/{token}', [AuthController::class, 'resetForm']);

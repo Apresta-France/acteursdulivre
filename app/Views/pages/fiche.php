@@ -243,7 +243,7 @@ if ($hasSeveralPackages && count($packageDelays) > 1) {
             <textarea class="textarea" id="fiche-question" name="message" required maxlength="8000" rows="4" placeholder="Bonjour, je voudrais savoir…"><?= e((string) old('message')) ?></textarea>
             <button class="btn-ghost" type="submit">Poser une question</button>
             <?php if (!$viewer): ?>
-              <p class="field-help fiche-ask-note">Vous pourrez vous connecter ou créer un compte juste après l’envoi.</p>
+              <p class="field-help fiche-ask-note">Nom et e-mail suffisent pour envoyer. Vous pourrez vous connecter ou compléter plus tard.</p>
             <?php endif; ?>
           </form>
         </div>

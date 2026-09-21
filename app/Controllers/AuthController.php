@@ -84,6 +84,165 @@ final class AuthController
         redirect($intended);
     }
 
+    public function continueForm(Request $request): void
+    {
+        if (Auth::check()) {
+            $user = Auth::user() ?? [];
+            if (self::consumePendingMessage($user)) {
+                return;
+            }
+            redirect('/espace/messages');
+        }
+        $pending = Auth::pendingMessage();
+        if ($pending === null) {
+            redirect('/connexion');
+        }
+        $recipientName = 'le prestataire';
+        try {
+            $other = User::find((int) $pending['avec']);
+            if ($other) {
+                $name = User::displayName($other);
+                if ($name !== '') {
+                    $recipientName = $name;
+                }
+            }
+        } catch (Throwable) {
+        }
+        View::page('ecrire', [
+            'title' => 'Envoyer votre message',
+            'error' => flash('error'),
+            'pending' => $pending,
+            'recipientName' => $recipientName,
+            'showLogin' => !empty($_SESSION['_ecrire_login']),
+        ]);
+        unset($_SESSION['_ecrire_login']);
+    }
+
+    public function continueGuest(Request $request): void
+    {
+        if (Auth::check()) {
+            $user = Auth::user() ?? [];
+            if (self::consumePendingMessage($user)) {
+                return;
+            }
+            redirect('/espace/messages');
+        }
+        $pending = Auth::pendingMessage();
+        if ($pending === null) {
+            redirect('/connexion');
+        }
+
+        $intent = $request->string('intent');
+        if ($intent === 'login') {
+            redirect('/connexion');
+        }
+
+        $name = trim($request->string('name'));
+        $email = strtolower($request->string('email'));
+        $message = trim($request->string('message'));
+        if ($message === '') {
+            $message = (string) ($pending['message'] ?? '');
+        }
+        if (mb_strlen($message) > 8000) {
+            $message = mb_substr($message, 0, 8000);
+        }
+
+        $remember = static function () use ($name, $email, $message): void {
+            $_SESSION['_old'] = [
+                'name' => $name,
+                'email' => $email,
+                'message' => $message,
+            ];
+        };
+
+        $guard = BotGuard::consume('ecrire', $request);
+        if ($guard === BotGuard::HONEYPOT) {
+            flash('saved', 'Votre message a été envoyé.');
+            redirect('/');
+        }
+        if ($guard !== BotGuard::OK) {
+            flash('error', BotGuard::RETRY_MESSAGE);
+            $remember();
+            redirect('/ecrire');
+        }
+        if (rate_limited('register-ip', client_ip_hash(), 5, 3600) || rate_limited('register-email', $email, 5, 3600)) {
+            flash('error', BotGuard::TOO_MANY_MESSAGE);
+            $remember();
+            redirect('/ecrire');
+        }
+
+        [$first, $last] = self::splitFullName($name);
+        if ($first === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            flash('error', 'Indiquez votre nom et une adresse e-mail valide.');
+            $remember();
+            redirect('/ecrire');
+        }
+
+        $existing = User::findByEmail($email);
+        if ($existing) {
+            flash('error', 'Un compte existe déjà avec cet e-mail. Connectez-vous pour envoyer le message.');
+            $remember();
+            $_SESSION['_ecrire_login'] = 1;
+            $_SESSION['_old']['email'] = $email;
+            redirect('/ecrire');
+        }
+
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            $_SESSION['_pending_message']['message'] = $message;
+        }
+
+        $id = User::create([
+            'email' => $email,
+            'password' => bin2hex(random_bytes(24)),
+            'first_name' => $first,
+            'last_name' => $last,
+            'seeks_services' => true,
+            'offers_services' => false,
+            'role' => 'client',
+        ]);
+
+        unset($_SESSION['_old'], $_SESSION['_ecrire_login']);
+        $user = User::find($id) ?? ['id' => $id, 'onboarding_done_at' => null, 'email' => $email, 'first_name' => $first];
+        Auth::login($user);
+        self::persistSignupAcceptances($id, false);
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            $_SESSION['_complete_profile'] = 1;
+        }
+        try {
+            $landing = Landings::fromSession();
+            if ($landing) {
+                \Adl\Models\Analytics::landingConversion((string) $landing['slug']);
+            }
+        } catch (Throwable) {
+        }
+        try {
+            Mailer::sendTemplate('bienvenue', $email, [
+                'prenom' => $first,
+                'lien_espace' => url('/espace/bienvenue'),
+            ]);
+        } catch (Throwable) {
+        }
+
+        if (!self::consumePendingMessage($user, true)) {
+            flash('saved', 'Votre échange est ouvert.');
+            redirect('/espace/messages');
+        }
+    }
+
+    /** @return array{0: string, 1: string} */
+    private static function splitFullName(string $name): array
+    {
+        $name = trim(preg_replace('/\s+/u', ' ', $name) ?? '');
+        if (mb_strlen($name) < 2) {
+            return ['', ''];
+        }
+        $name = mb_substr($name, 0, 180);
+        $parts = explode(' ', $name, 2);
+        $first = mb_substr($parts[0], 0, 120);
+        $last = mb_substr($parts[1] ?? '', 0, 120);
+        return [$first, $last];
+    }
+
     public function registerForm(Request $request): void
     {
         if (Auth::check()) {

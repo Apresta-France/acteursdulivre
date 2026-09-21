@@ -39,6 +39,28 @@ final class Landings
         ['num' => '03', 'title' => 'Livrez, le client note', 'body' => 'La première mission est offerte. Ensuite la commission est le dernier jalon.'],
     ];
 
+    /** @var array<string, array{one: string, many: string, title: string, project: string}> */
+    public const PEOPLE = [
+        'Écriture' => ['one' => 'auteur', 'many' => 'auteurs', 'title' => 'Auteurs', 'project' => 'projet'],
+        'Correction' => ['one' => 'correcteur', 'many' => 'correcteurs', 'title' => 'Correctrices & correcteurs', 'project' => 'manuscrit'],
+        'Bêta-lecture' => ['one' => 'bêta-lecteur', 'many' => 'bêta-lecteurs', 'title' => 'Bêta-lectrices & bêta-lecteurs', 'project' => 'manuscrit'],
+        'Illustration' => ['one' => 'illustrateur', 'many' => 'illustrateurs', 'title' => 'Illustratrices & illustrateurs', 'project' => 'livre'],
+        'Traduction' => ['one' => 'traducteur', 'many' => 'traducteurs', 'title' => 'Traductrices & traducteurs', 'project' => 'livre'],
+        'Maquette' => ['one' => 'maquettiste', 'many' => 'maquettistes', 'title' => 'Maquettistes', 'project' => 'livre'],
+        'Édition' => ['one' => 'éditeur', 'many' => 'éditeurs', 'title' => 'Éditrices & éditeurs', 'project' => 'ouvrage'],
+        'Impression' => ['one' => 'imprimeur', 'many' => 'imprimeurs', 'title' => 'Imprimeurs', 'project' => 'livre'],
+        'Presse & com' => ['one' => 'attaché de presse', 'many' => 'attachés de presse', 'title' => 'Attaché·es de presse', 'project' => 'livre'],
+        'Librairie' => ['one' => 'libraire', 'many' => 'libraires', 'title' => 'Libraires', 'project' => 'livre'],
+        'Audio' => ['one' => 'narrateur', 'many' => 'narrateurs', 'title' => 'Narratrices & narrateurs', 'project' => 'livre'],
+        'Agent littéraire' => ['one' => 'agent littéraire', 'many' => 'agents littéraires', 'title' => 'Agents littéraires', 'project' => 'manuscrit'],
+        'Coach littéraire' => ['one' => 'coach', 'many' => 'coachs', 'title' => 'Coachs littéraires', 'project' => 'manuscrit'],
+        'Iconographie' => ['one' => 'iconographe', 'many' => 'iconographes', 'title' => 'Iconographes', 'project' => 'ouvrage'],
+        'Lecture éditoriale' => ['one' => 'lecteur éditorial', 'many' => 'lecteurs éditoriaux', 'title' => 'Lectrices & lecteurs éditoriaux', 'project' => 'manuscrit'],
+        'Photographie' => ['one' => 'photographe', 'many' => 'photographes', 'title' => 'Photographes', 'project' => 'ouvrage'],
+        'Reliure' => ['one' => 'relieur', 'many' => 'relieurs', 'title' => 'Relieurs', 'project' => 'livre'],
+        'Juridique' => ['one' => 'juriste', 'many' => 'juristes', 'title' => 'Juristes', 'project' => 'contrat'],
+    ];
+
     /** @return list<array<string, mixed>> */
     public static function all(): array
     {
@@ -218,9 +240,46 @@ final class Landings
                     'title' => (string) ($article['title'] ?? ''),
                     'excerpt' => (string) ($article['excerpt'] ?? ''),
                     'href' => (string) ($article['href'] ?? ('/journal/' . $journalSlug)),
+                    'body_html' => (string) ($article['body_html'] ?? $article['body'] ?? ''),
                 ];
             }
         }
+
+        $people = self::people($trade);
+        $leadParagraphs = $landing['lead_paragraphs'] ?? [];
+        if (!is_array($leadParagraphs)) {
+            $leadParagraphs = [];
+        }
+        $leadParagraphs = array_values(array_filter(array_map(
+            static fn ($p): string => trim((string) $p),
+            $leadParagraphs
+        )));
+        $servicesTitle = trim((string) ($landing['services_title'] ?? ''));
+        if ($servicesTitle === '') {
+            $servicesTitle = $trade !== ''
+                ? 'Prestations de ' . mb_strtolower($trade)
+                : 'Prestations à prix affiché';
+        }
+        $servicesIntro = trim((string) ($landing['services_intro'] ?? ''));
+        if ($servicesIntro === '') {
+            $servicesIntro = 'Le prix d’une prestation dépend de nombreux critères, parmi lesquels le volume ou encore le degré de profondeur attendu. L’avantage sur Acteurs du Livre, c’est que vous partez d’un devis personnalisé, et que vous validez chaque étape du projet avec votre prestataire ; garantie de confiance pour tous les deux.';
+        }
+        $servicesCta = trim((string) ($landing['services_cta'] ?? ''));
+        if ($servicesCta === '') {
+            $servicesCta = 'Trouver un ' . $people['one'] . ' adapté';
+        }
+        $providersTitle = trim((string) ($landing['providers_title'] ?? ''));
+        if ($providersTitle === '') {
+            $providersTitle = $people['title'];
+        }
+        $providersBridge = trim((string) ($landing['providers_bridge'] ?? ''));
+        if ($providersBridge === '') {
+            $providersBridge = 'Sur Acteurs du Livre, vous pouvez contacter n’importe quel ' . $people['one'] . ' pour demander plus d’informations, discuter d’un prix, ou pour en savoir plus sur le déroulement d’une prestation. Notre plateforme vous permet de faire un choix éclairé, adapté à vos besoins et à vos priorités.';
+        }
+        $heroCostLabel = trim((string) ($landing['hero_cost_label'] ?? 'Combien ça coûte'));
+        $heroFindLabel = trim((string) ($landing['hero_find_label'] ?? ('Trouver un ' . $people['one'])));
+        $ctaFind = trim((string) ($landing['cta_find'] ?? ('Trouver un ' . $people['one'] . ' pour mon ' . $people['project'])));
+        $ctaPublish = trim((string) ($landing['cta_publish'] ?? ('Publier ma propre recherche ' . self::de($people['one']))));
 
         $others = [];
         foreach (self::all() as $other) {
@@ -251,6 +310,19 @@ final class Landings
             'journal_page' => $journal,
             'others' => $others,
             'hero_img' => photo(abs(crc32($slug)) % 6),
+            'people' => $people,
+            'lead_paragraphs' => $leadParagraphs,
+            'services_title' => $servicesTitle,
+            'services_intro' => $servicesIntro,
+            'services_cta' => $servicesCta,
+            'providers_title' => $providersTitle,
+            'providers_bridge' => $providersBridge,
+            'hero_cost_label' => $heroCostLabel,
+            'hero_find_label' => $heroFindLabel,
+            'cta_find' => $ctaFind,
+            'cta_publish' => $ctaPublish,
+            'preview_services' => $audience === 'prestataire' ? 3 : 6,
+            'preview_providers' => $audience === 'prestataire' ? 3 : 9,
         ]);
     }
 
@@ -264,6 +336,32 @@ final class Landings
             $urls[] = ['loc' => self::path((string) $row['slug']), 'priority' => '0.7'];
         }
         return $urls;
+    }
+
+    /**
+     * @return array{one: string, many: string, title: string, project: string}
+     */
+    public static function people(string $trade): array
+    {
+        return self::PEOPLE[$trade] ?? [
+            'one' => 'prestataire',
+            'many' => 'prestataires',
+            'title' => 'Prestataires',
+            'project' => 'projet',
+        ];
+    }
+
+    public static function de(string $noun): string
+    {
+        $noun = ltrim($noun);
+        if ($noun === '') {
+            return 'de';
+        }
+        $first = mb_strtolower(mb_substr($noun, 0, 1));
+        if (in_array($first, ['a', 'à', 'â', 'e', 'é', 'è', 'ê', 'ë', 'i', 'î', 'ï', 'o', 'ô', 'u', 'ù', 'û', 'y'], true)) {
+            return "d’" . $noun;
+        }
+        return 'de ' . $noun;
     }
 
     /** @param array<string, mixed> $row */
@@ -280,6 +378,7 @@ final class Landings
             'kicker' => '',
             'h1' => '',
             'lead' => '',
+            'lead_paragraphs' => [],
             'meta_title' => '',
             'meta_description' => '',
             'price' => '',
@@ -319,10 +418,15 @@ final class Landings
                 'trade' => 'Correction',
                 'need' => 'Corriger un manuscrit',
                 'kicker' => 'Correction',
-                'h1' => 'Faire corriger un manuscrit',
-                'lead' => 'Trouvez un correcteur pour une passe orthotypographique, une relecture sur épreuves, ou une préparation de copie. Prix affichés ou devis, travail humain uniquement.',
-                'meta_title' => 'Faire corriger un manuscrit — correcteurs du livre',
-                'meta_description' => 'Correcteurs pour roman, essai ou jeunesse. 620 à 1 100 € pour un roman courant. Sans IA générative, devis comparables.',
+                'h1' => 'Corriger votre manuscrit avant publication : comment faire',
+                'lead' => 'Vous venez de terminer la rédaction de votre manuscrit ? Félicitations ! La phase de correction est incontournable, que vous cherchiez un éditeur ou que vous publiiez vous-même.',
+                'lead_paragraphs' => [
+                    'Vous venez de terminer la rédaction de votre manuscrit ? Félicitations !',
+                    'Si votre projet est maintenant de trouver un éditeur ou de publier votre livre vous-même, la phase de correction est incontournable. Même une excellente histoire peut peiner à convaincre si quelques fautes ou erreurs d’inattention viennent décrédibiliser ou gripper le plaisir de lecture. À l’heure actuelle, l’intelligence artificielle n’est clairement pas en mesure de remplacer le coup d’œil d’un correcteur professionnel, qui saura déceler la moindre coquille, aussi discrète soit-elle.',
+                    'Vous avez passé des mois – peut-être des années – à travailler sur votre manuscrit. Il serait dommage de bâcler une étape-clé telle que la correction et de gâcher le potentiel de votre travail. Imaginez le temps et l’énergie investis, pour au final tout compromettre à cause d’un « s » manquant ou d’un mot de liaison oublié… Soyez exigeant jusqu’au bout, vous ne le regretterez pas !',
+                ],
+                'meta_title' => 'Corriger un manuscrit avant publication — correcteurs du livre',
+                'meta_description' => 'Comment faire corriger un manuscrit avant publication. Prestations, correcteurs vérifiés, devis personnalisé. Sans IA générative.',
                 'price' => '620 à 1 100 €',
                 'price_detail' => 'Roman d’environ 520 000 signes, passe orthotypographique. Une préparation de copie du même volume se situe plutôt entre 1 200 et 2 400 € — autre métier, autre brief.',
                 'includes' => [
@@ -335,10 +439,19 @@ final class Landings
                     'Une « correction IA » relue à la va-vite.',
                     'La mise en pages : c’est la maquette, après le texte stabilisé.',
                 ],
+                'services_title' => 'Prestations de correction de manuscrit',
+                'services_intro' => 'Le prix d’une prestation de correction dépend de nombreux critères, parmi lesquels la taille du manuscrit ou encore le degré de profondeur attendu (style, typographie, cohérence, etc.). L’avantage sur Acteurs du Livre, c’est que vous partez d’un devis personnalisé, et que vous validez chaque étape du projet avec votre prestataire ; garantie de confiance pour tous les deux.',
+                'services_cta' => 'Trouver un correcteur adapté',
+                'providers_title' => 'Correctrices & correcteurs',
+                'providers_bridge' => 'Sur Acteurs du Livre, vous pouvez contacter n’importe quel correcteur pour demander plus d’informations, discuter d’un prix, ou pour en savoir plus sur le déroulement d’une prestation. Notre plateforme vous permet de faire un choix éclairé, adapté à vos besoins et à vos priorités.',
+                'hero_cost_label' => 'Combien ça coûte',
+                'hero_find_label' => 'Trouver un correcteur',
+                'cta_find' => 'Trouver un correcteur pour mon manuscrit',
+                'cta_publish' => 'Publier ma propre recherche de correcteur',
                 'faq' => [
-                    ['q' => 'Correction ou préparation de copie ?', 'a' => 'La correction chasse les fautes sur un texte que vous assumez. La préparation de copie recoud la syntaxe, les répétitions, le rythme. Ce n’est pas le même tarif, ni le même brief. En cas de doute, publiez une recherche : les devis le diront.'],
-                    ['q' => 'Faut-il un compte pour demander un devis ?', 'a' => 'Oui, l’inscription est gratuite. Vous publiez une recherche ou vous commandez une prestation cadrée. Le prestataire vous règle hors plateforme ; la plateforme suit les jalons.'],
                     ['q' => 'Travaillez-vous avec l’IA ?', 'a' => 'Non, pas pour les livrables. Les outils de métier (correcteur orthographique, mémoire) restent autorisés. Un texte « corrigé » par une IA générative n’a pas sa place ici.'],
+                    ['q' => 'Comment se déroule une prestation de correction ?', 'a' => 'Vous contactez un correcteur depuis sa vitrine ou une prestation à prix affiché, ou vous publiez une recherche ouverte aux devis. Le prestataire vous envoie un devis personnalisé : volume, périmètre (orthographe, typographie, cohérence…), délai. Vous validez ce devis dans le suivi. Le travail avance jalon par jalon — facture, règlement déclaré hors plateforme, livraison. Vous confirmez et notez : c’est le dernier jalon, pour vous comme pour le correcteur.'],
+                    ['q' => 'Comment savoir si les correcteurs sont fiables ?', 'a' => 'Les comptes prestataires sont vérifiés à l’entrée : justificatif d’activité, une référence professionnelle contrôlée, et pour certains métiers un entretien. Les diplômes et certifications figurent sur la vitrine, dans le parcours. Un badge « profil vérifié » atteste de ces éléments déclaratifs — ce n’est pas une caution sur chaque virgule, mais un filtre contre les faux profils. Les avis n’apparaissent qu’après une mission livrée et notée.'],
                 ],
                 'journal' => 'cout-correction-manuscrit-2026',
                 'cta_secondary' => 'Voir les correcteurs',

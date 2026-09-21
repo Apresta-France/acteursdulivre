@@ -275,7 +275,6 @@ $heroPhoto = user_avatar_src($p);
                 <a
                   class="portfolio-item-media"
                   href="<?= e((string) $item['img']) ?>"
-                  style="background-image:url('<?= e((string) $item['img']) ?>')"
                   data-zoom
                   data-zoom-title="<?= e($itemTitle) ?>"
                   data-zoom-caption="<?= e($itemCaption) ?>"
@@ -284,6 +283,14 @@ $heroPhoto = user_avatar_src($p);
                   aria-controls="portfolio-zoom"
                   aria-label="<?= e('Agrandir : ' . ($itemTitle !== '' ? $itemTitle : 'exemple')) ?>"
                 >
+                  <img
+                    src="<?= e((string) $item['img']) ?>"
+                    alt="<?= e($itemTitle !== '' ? $itemTitle : 'Exemple') ?>"
+                    width="480"
+                    height="640"
+                    loading="lazy"
+                    decoding="async"
+                  >
                   <span class="portfolio-item-zoom" aria-hidden="true"><?= icon('search', 16) ?></span>
                 </a>
               <?php elseif ($itemMedia === 'text' && $itemExcerpt !== ''): ?>
@@ -303,7 +310,7 @@ $heroPhoto = user_avatar_src($p);
                 <strong><?= e($itemTitle) ?></strong>
                 <span><?= e($itemCaption) ?></span>
                 <?php if ($itemDesc !== ''): ?>
-                  <p><?= e($itemDesc) ?></p>
+                  <p class="portfolio-item-blurb"><?= e($itemDesc) ?></p>
                 <?php endif; ?>
               </figcaption>
             </figure>

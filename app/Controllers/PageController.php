@@ -288,9 +288,11 @@ final class PageController
         $providers = ['results' => [], 'count' => 0];
         $services = ['results' => [], 'count' => 0];
         $missions = ['results' => [], 'count' => 0];
+        $previewServices = (int) ($presented['preview_services'] ?? 3);
+        $previewProviders = (int) ($presented['preview_providers'] ?? 3);
         try {
-            $providers = Catalog::search('', 'prestataires', $trade, $preview);
-            $services = Catalog::search('', 'prestations', $trade, $preview);
+            $providers = Catalog::search('', 'prestataires', $trade, $previewProviders);
+            $services = Catalog::search('', 'prestations', $trade, $previewServices);
             if ($trade !== '') {
                 $missions = Catalog::search('', 'missions', $trade, $preview);
             } else {

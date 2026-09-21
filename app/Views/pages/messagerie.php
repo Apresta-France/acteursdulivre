@@ -19,6 +19,18 @@ $alreadyReported = !empty($alreadyReported);
   <?php if (!empty($saved)): ?>
     <div class="flash flash-ok"><?= e(is_string($saved) ? $saved : 'Envoyé.') ?></div>
   <?php endif; ?>
+  <?php if (!empty($completeProfile)): ?>
+    <div class="dash-onboard ecrire-complete">
+      <div>
+        <strong>Votre message est parti.</strong>
+        <em>Pour la suite, quelques informations aident le prestataire à vous répondre dans de bonnes conditions. Vous pouvez aussi le faire plus tard.</em>
+      </div>
+      <div class="ecrire-complete-actions">
+        <a class="btn-orange" href="<?= e(url('/espace/bienvenue')) ?>">Compléter mes infos</a>
+        <a class="btn-ghost" href="<?= e(url(!empty($thread['id']) ? '/espace/messages/' . (int) $thread['id'] . '?plus-tard=1' : '/espace/messages?plus-tard=1')) ?>">Plus tard</a>
+      </div>
+    </div>
+  <?php endif; ?>
 
   <?php if ($threads === [] && !$thread): ?>
     <div class="search-empty">
