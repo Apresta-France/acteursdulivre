@@ -9634,17 +9634,17 @@ a.forum-tag:hover { border-color: var(--orange); color: var(--navy); }
 .lp-page { background: #fff; }
 .lp-hero {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 420px;
+  grid-template-columns: minmax(0, 1fr) 440px;
   gap: 48px;
   align-items: center;
   padding: 44px;
   background: linear-gradient(165deg, color-mix(in srgb, var(--beige) 52%, #fff) 0%, #fff 78%);
 }
-.lp-hero-copy-only { grid-template-columns: minmax(0, 54rem); justify-content: start; }
 .lp-hero h1 { font-family: var(--display); font-size: clamp(34px, 4.4vw, 52px); font-weight: 700; line-height: 1.08; letter-spacing: -.02em; color: var(--navy); margin: 0 0 16px; }
-.lp-hero .mk-lead { margin: 0 0 18px; max-width: 46em; }
+.lp-hero .mk-lead { margin: 0 0 18px; max-width: 36em; }
 .lp-hero .mk-lead:last-of-type { margin-bottom: 22px; }
 .lp-hero-actions { display: flex; flex-wrap: wrap; gap: 12px; }
+.lp-hero .mk-hero-visual { width: 100%; }
 .lp-stats {
   display: flex;
   flex-wrap: wrap;
@@ -9655,8 +9655,6 @@ a.forum-tag:hover { border-color: var(--orange); color: var(--navy); }
 .lp-stats a:hover strong { color: var(--orange); }
 .lp-stats strong { display: block; font-family: var(--display); font-size: 28px; color: var(--navy); line-height: 1; }
 .lp-stats span { font-size: 13px; color: #66768A; }
-.lp-hero-visual { border-radius: 18px; overflow: hidden; min-height: 240px; background: #F4F6F9; }
-.lp-hero-visual img { width: 100%; height: 100%; object-fit: cover; display: block; min-height: 240px; }
 .lp-price {
   display: flex;
   justify-content: space-between;
@@ -9800,7 +9798,7 @@ body.has-founder-banner .ecrire-page { padding-bottom: calc(48px + var(--founder
   .lp-hero, .lp-price, .lp-split, .lp-proofs, .lp-live, .lp-journal, .lp-others, .lp-hub-grid, .lp-bridge, .lp-legal { padding-left: 20px; padding-right: 20px; }
   .lp-hero { padding-top: 28px; padding-bottom: 28px; }
   body.is-landing .lp-page { padding-bottom: 88px; }
-  .lp-hero-visual { max-width: 440px; }
+  .lp-hero .mk-hero-visual, .lp-hero .mk-mosaic { max-width: 440px; }
   .lp-price { flex-direction: column; align-items: flex-start; }
   .lp-sticky {
     display: flex;

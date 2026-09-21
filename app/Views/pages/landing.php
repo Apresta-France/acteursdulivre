@@ -22,7 +22,6 @@ $primaryHref = (string) ($lp['primary_href'] ?? '/inscription');
 $secondaryHref = (string) ($lp['secondary_href'] ?? '/prestataires');
 $primaryLabel = (string) ($lp['primary_label'] ?? 'Créer un compte');
 $secondaryLabel = (string) ($lp['secondary_label'] ?? 'Voir les prestataires');
-$heroImg = (string) ($lp['hero_img'] ?? photo(0));
 $providerCount = (int) ($providerCount ?? 0);
 $serviceCount = (int) ($serviceCount ?? 0);
 $missionCount = (int) ($missionCount ?? 0);
@@ -52,7 +51,7 @@ $stickyHref = $isOfferer ? $primaryHref : $prestatairesHref;
 $stickyLabel = $isOfferer ? $primaryLabel : $heroFindLabel;
 ?>
 <div class="lp-page<?= $isOfferer ? ' lp-offerer' : ' lp-client' ?>">
-  <section class="lp-hero<?= $isOfferer ? '' : ' lp-hero-copy-only' ?>">
+  <section class="lp-hero">
     <div class="lp-hero-copy">
       <?php if ($kicker !== ''): ?>
         <p class="mk-kicker"><?= e($kicker) ?></p>
@@ -97,12 +96,46 @@ $stickyLabel = $isOfferer ? $primaryLabel : $heroFindLabel;
         </div>
       <?php endif; ?>
     </div>
-    <?php if ($isOfferer): ?>
-      <div class="lp-hero-visual" aria-hidden="true">
-        <img src="<?= e($heroImg) ?>" alt="" width="480" height="340" fetchpriority="high" decoding="async">
+    <?php
+      $heroImgs = is_array($homeHeroImgs ?? null) && count($homeHeroImgs) >= 3
+        ? array_values($homeHeroImgs)
+        : home_hero_photos();
+      $heroSrcs = json_encode($heroImgs, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+    ?>
+    <div class="mk-hero-visual">
+      <div class="mk-mosaic" aria-hidden="true" data-hero-mosaic data-hero-srcs="<?= e((string) $heroSrcs) ?>">
+        <div class="mk-mosaic-a">
+          <img src="<?= e((string) ($heroImgs[0] ?? '')) ?>" alt="" width="214" height="312" fetchpriority="high" decoding="async">
+        </div>
+        <div class="mk-mosaic-b">
+          <img src="<?= e((string) ($heroImgs[1] ?? '')) ?>" alt="" width="214" height="150" decoding="async">
+        </div>
+        <div class="mk-mosaic-c">
+          <img src="<?= e((string) ($heroImgs[2] ?? '')) ?>" alt="" width="214" height="150" decoding="async">
+        </div>
       </div>
-    <?php endif; ?>
+      <a class="mk-hero-play" href="https://youtu.be/3ceBiEN9RJ8" data-video-open aria-haspopup="dialog" aria-controls="home-video" aria-label="Lire la vidéo de présentation">
+        <span class="mk-hero-play-btn" aria-hidden="true"><?= icon('play', 28) ?></span>
+        <span class="mk-hero-play-label">Lecture</span>
+      </a>
+    </div>
   </section>
+
+  <dialog
+    class="mk-video-modal"
+    id="home-video"
+    aria-labelledby="home-video-title"
+    data-video-src="https://www.youtube-nocookie.com/embed/3ceBiEN9RJ8?autoplay=1&amp;rel=0"
+    data-video-title="Vidéo de présentation — Acteurs du livre"
+  >
+    <div class="mk-video-modal-inner">
+      <div class="mk-video-modal-bar">
+        <h2 id="home-video-title">Vidéo de présentation</h2>
+        <button type="button" class="mk-video-modal-close" data-video-close aria-label="Fermer">×</button>
+      </div>
+      <div class="mk-video-frame" data-video-frame></div>
+    </div>
+  </dialog>
 
   <?php if ($isOfferer && $price !== ''): ?>
     <section class="lp-price">
