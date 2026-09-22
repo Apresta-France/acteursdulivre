@@ -6799,7 +6799,7 @@ img.mk-card-media { width: 100%; object-fit: cover; display: block; }
 .mk-mission span { font-size: 13px; color: #8FA8C0; }
 .mk-mission em { font-family: var(--display); font-size: 18px; font-style: normal; font-weight: 700; }
 .mk-tag-light { font-family: var(--display); font-size: 11px; letter-spacing: .07em; text-transform: uppercase; color: #E8845F; border: 1px solid rgba(232,132,95,.45); padding: 3px 8px; border-radius: 4px; }
-.mk-go { color: #E8845F !important; }
+.mk-go { display: block; white-space: nowrap; color: #E8845F !important; }
 .mk-dashed { display: block; margin-top: 12px; border: 1px dashed rgba(255,255,255,.22); border-radius: 12px; padding: 18px 22px; color: #E4EDF5; text-align: center; }
 .mk-dashed:hover { color: #fff; }
 .mk-empty, .mk-empty-light { color: #66768A; }
@@ -9640,6 +9640,43 @@ a.forum-tag:hover { border-color: var(--orange); color: var(--navy); }
 }
 .lp-brand img { display: block; height: 58px; width: auto; }
 .lp-page .mk-block .mk-cta-actions { margin-top: 24px; }
+.lp-page .mk-cta-actions .btn-orange,
+.lp-page .mk-cta-actions .btn-ghost {
+  height: 50px;
+  min-height: 50px;
+  padding: 0 26px;
+  font-size: 16px;
+  box-sizing: border-box;
+}
+.lp-cta-center { justify-content: center; width: 100%; }
+.lp-page .mk-lead strong,
+.lp-page .mk-head p strong { font-weight: 700; color: var(--navy); }
+.lp-faq-ia {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(260px, .85fr);
+  align-items: stretch;
+  border-top: 1px solid var(--line);
+}
+.lp-faq-ia-faq { padding: 44px; }
+.lp-faq-ia-faq h2 { margin-bottom: 22px; }
+.lp-ia-side {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  min-width: 0;
+  border-top: 0;
+  border-left: 1px solid #F4DFD8;
+}
+.lp-page .lp-ia-side.mk-ia {
+  display: flex;
+  grid-template-columns: none;
+}
+.lp-ia-side .mk-ia-icon { flex-shrink: 0; }
+@media (min-width: 821px) {
+  .lp-page .lp-faq-ia {
+    grid-template-columns: minmax(0, 1.15fr) minmax(260px, .85fr);
+  }
+}
 .lp-page .mk-head p { max-width: 46em; }
 .lp-page .mk-faq-list h3.faq-q {
   margin: 0;
@@ -9735,6 +9772,9 @@ body.has-founder-banner .ecrire-page { padding-bottom: calc(48px + var(--founder
 }
 @media (max-width: 820px) {
   .lp-brand, .lp-legal { padding-left: 20px; padding-right: 20px; }
+  .lp-faq-ia { grid-template-columns: 1fr; }
+  .lp-ia-side { border-left: 0; border-top: 1px solid #F4DFD8; }
+  .lp-faq-ia-faq { padding: 28px 20px; }
   body.is-landing .lp-page { padding-bottom: 88px; }
   .lp-sticky {
     display: flex;

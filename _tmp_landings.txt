@@ -1,0 +1,29 @@
+{Titre} ADL landings
+{Titre1} Global
+{Paragraphedeliste} Virer le header et le  | footer | .
+{Paragraphedeliste} Faire simplement  | une en-tête |  avec le logo centré non-cliquable.
+{Paragraphedeliste} Idéalement, ce serait cool qu’un client potentiel sans compte puisse initier un contact avec un presta en mode  | seamless | , c’est-à-dire sans avoir l’impression de créer un compte. Il pourrait simplement renseigner son nom et son adresse email dans le process, et une fois l’échange initié, on lui demande de compléter ses infos. En gros, dans le workflow :  | choix entre « Se connecter » |  et « Plus tard » ?
+{Titre1} Hero
+{} [b]Commencer par une grosse accroche | .  | Ex : |  « Corriger votre manuscrit  | avant |  publication :  | comment faire |  ».
+{} [b]Descriptif adapté | .  | Ex : |  
+{} Vous venez de terminer la rédaction de votre manuscrit ? Félicitations ! 
+{} Si votre projet est maintenant de  | [b]trouver un éditeur |  ou de  | [b]publier votre livre vous-même | , la phase de correction est  | incontournable | . Même une excellente histoire peut peiner à convaincre si quelques fautes ou erreurs d’inattention viennent  | décrédibiliser ou  | gripper le plaisir de lecture. À l’heure actuelle, l’intelligence artificielle n’est |  clairement |  pas en mesure  | remplacer le coup d’œil d’ | un correcteur professionnel | , qui saura déceler la moindre coquille ; aussi discrète soit-elle | .
+{} [b]Vous avez passé des mois – peut-être des années – à travailler sur votre manuscrit | . Il serait dommage de bâcler une étape-clé telle que la correction et de gâcher le potentiel de votre travail. |  Imaginez le temps et l’énergie investis, pour au final tout compromettre à cause d’un « s » manquant ou d’un mot de liaison oublié… |  Soyez  | exigeant |  jusqu’au bout | , vous ne le regretterez pas |  !
+{} [i][Bouton « Combien ça coûte » -> section prestations puis profils] [Bouton « Trouver un correcteur » -> page de tous les correcteurs]
+{Titre1} Prestations de correction de manuscrit
+{Paragraphedeliste} Texte intro : « Le prix d’une prestation de correction dépend de nombreux critères, parmi lesquels la  | [b]taille du manuscrit |  ou encore le  | [b]degré de profondeur |  attendu (style, typographie, cohérence, etc.).  | L’avantage sur Acteurs du livre, c’est que vous partez d’un devis  | personnalisé, et |  que vous |  validez chaque étape du projet avec votre prestataire ;  | [b]garantie de confiance pour tous les deux | . » |  
+{Paragraphedeliste} Afficher 6 prestas au lieu de 3
+{Paragraphedeliste} CTA «  | [i]Trouver un correcteurs adapté |  »
+{Paragraphedeliste} Texte intermédiaire : « Sur  | [i]Acteurs du livre | , vous pouvez contacter n’importe quel correcteur pour  | [b]demander plus d’informations | ,  | [b]discuter d’un prix | , ou pour  | [b]en savoir plus sur le déroulement d’une prestation | . Notre plateforme vous permet de faire un choix éclairé | , |  adapté à vos besoins et à vos priorités. »
+{Titre1} Correctrices & correcteurs
+{Paragraphedeliste} Afficher 9 prestataires au lieu de 3
+{Paragraphedeliste} CTA  | «  | [i]Voir | [i] les X correcteurs |  »
+{Titre1} 
+{Titre1} Questions et réponses autour de la correction de manuscrit
+{Titre2} FAQ |  sans accordéon
+{Paragraphedeliste} Travaillez-vous avec l’IA ? | [i]Conserver entrée existante
+{Paragraphedeliste} Comment se déroule une prestation de correction ? | [i]Description des étapes sur  | [bi]Acteurs du livre
+{Paragraphedeliste} Comment savoir si les correcteurs sont fiables ? | [i]Texte informatifs sur les comptes vérifiés, les diplômes et les certifications
+{Titre2} Encart  | des  | garantis au sujet de l’IA
+{} [i][CTA « Trouver un correcteur pour mon manuscrit »] | [i] [CTA « Publier ma propre recherche de correc | [i]teur » | [i]]
+{} À partir de «  | [b]Combien coûte une correction de manuscrit en 2026 ? |  » : conserver les sections

@@ -11,6 +11,14 @@ function e(?string $value): string
     return htmlspecialchars((string) $value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 }
 
+function landing_copy(string $text): string
+{
+    if (!str_contains($text, '<')) {
+        return e($text);
+    }
+    return strip_tags($text, '<strong><em><br>');
+}
+
 function sanitize_rich_html(?string $html): string
 {
     return \Adl\Core\RichText::sanitize((string) $html);

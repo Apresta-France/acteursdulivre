@@ -423,27 +423,30 @@ final class Catalog
      * Slug d’intention de recherche (souvent au féminin) pour les pages ville.
      * Ex. /correctrice/paris
      *
-     * @var array<string, array{slug: string, one: string, many: string, article: string}>
+     * `one` / `many` servent aux pages ville (intention de recherche).
+     * `person` est le libellé d’une personne sur une vitrine : masculin générique ou épicène.
+     *
+     * @var array<string, array{slug: string, one: string, many: string, article: string, person: string}>
      */
     public const TRADE_GEO = [
-        'Écriture' => ['slug' => 'auteure', 'one' => 'Auteure', 'many' => 'Auteures', 'article' => 'une'],
-        'Correction' => ['slug' => 'correctrice', 'one' => 'Correctrice', 'many' => 'Correctrices', 'article' => 'une'],
-        'Bêta-lecture' => ['slug' => 'beta-lectrice', 'one' => 'Bêta-lectrice', 'many' => 'Bêta-lectrices', 'article' => 'une'],
-        'Illustration' => ['slug' => 'illustratrice', 'one' => 'Illustratrice', 'many' => 'Illustratrices', 'article' => 'une'],
-        'Traduction' => ['slug' => 'traductrice', 'one' => 'Traductrice', 'many' => 'Traductrices', 'article' => 'une'],
-        'Maquette' => ['slug' => 'maquettiste', 'one' => 'Maquettiste', 'many' => 'Maquettistes', 'article' => 'un'],
-        'Édition' => ['slug' => 'editrice', 'one' => 'Éditrice', 'many' => 'Éditrices', 'article' => 'une'],
-        'Impression' => ['slug' => 'imprimeur', 'one' => 'Imprimeur', 'many' => 'Imprimeurs', 'article' => 'un'],
-        'Presse & com' => ['slug' => 'attachee-de-presse', 'one' => 'Attachée de presse', 'many' => 'Attachées de presse', 'article' => 'une'],
-        'Librairie' => ['slug' => 'libraire', 'one' => 'Libraire', 'many' => 'Libraires', 'article' => 'un'],
-        'Audio' => ['slug' => 'narratrice-audio', 'one' => 'Narratrice audio', 'many' => 'Narratrices audio', 'article' => 'une'],
-        'Agent littéraire' => ['slug' => 'agente-litteraire', 'one' => 'Agente littéraire', 'many' => 'Agentes littéraires', 'article' => 'une'],
-        'Coach littéraire' => ['slug' => 'coach-litteraire', 'one' => 'Coach littéraire', 'many' => 'Coachs littéraires', 'article' => 'un'],
-        'Iconographie' => ['slug' => 'iconographe', 'one' => 'Iconographe', 'many' => 'Iconographes', 'article' => 'un'],
-        'Lecture éditoriale' => ['slug' => 'lectrice-editoriale', 'one' => 'Lectrice éditoriale', 'many' => 'Lectrices éditoriales', 'article' => 'une'],
-        'Photographie' => ['slug' => 'photographe', 'one' => 'Photographe', 'many' => 'Photographes', 'article' => 'un'],
-        'Reliure' => ['slug' => 'relieuse', 'one' => 'Relieuse', 'many' => 'Relieuses', 'article' => 'une'],
-        'Juridique' => ['slug' => 'juriste', 'one' => 'Juriste', 'many' => 'Juristes', 'article' => 'un'],
+        'Écriture' => ['slug' => 'auteure', 'one' => 'Auteure', 'many' => 'Auteures', 'article' => 'une', 'person' => 'Auteur'],
+        'Correction' => ['slug' => 'correctrice', 'one' => 'Correctrice', 'many' => 'Correctrices', 'article' => 'une', 'person' => 'Correcteur'],
+        'Bêta-lecture' => ['slug' => 'beta-lectrice', 'one' => 'Bêta-lectrice', 'many' => 'Bêta-lectrices', 'article' => 'une', 'person' => 'Bêta-lecteur'],
+        'Illustration' => ['slug' => 'illustratrice', 'one' => 'Illustratrice', 'many' => 'Illustratrices', 'article' => 'une', 'person' => 'Illustrateur'],
+        'Traduction' => ['slug' => 'traductrice', 'one' => 'Traductrice', 'many' => 'Traductrices', 'article' => 'une', 'person' => 'Traducteur'],
+        'Maquette' => ['slug' => 'maquettiste', 'one' => 'Maquettiste', 'many' => 'Maquettistes', 'article' => 'un', 'person' => 'Maquettiste'],
+        'Édition' => ['slug' => 'editrice', 'one' => 'Éditrice', 'many' => 'Éditrices', 'article' => 'une', 'person' => 'Éditeur'],
+        'Impression' => ['slug' => 'imprimeur', 'one' => 'Imprimeur', 'many' => 'Imprimeurs', 'article' => 'un', 'person' => 'Imprimeur'],
+        'Presse & com' => ['slug' => 'attachee-de-presse', 'one' => 'Attachée de presse', 'many' => 'Attachées de presse', 'article' => 'une', 'person' => 'Attaché de presse'],
+        'Librairie' => ['slug' => 'libraire', 'one' => 'Libraire', 'many' => 'Libraires', 'article' => 'un', 'person' => 'Libraire'],
+        'Audio' => ['slug' => 'narratrice-audio', 'one' => 'Narratrice audio', 'many' => 'Narratrices audio', 'article' => 'une', 'person' => 'Narrateur audio'],
+        'Agent littéraire' => ['slug' => 'agente-litteraire', 'one' => 'Agente littéraire', 'many' => 'Agentes littéraires', 'article' => 'une', 'person' => 'Agent littéraire'],
+        'Coach littéraire' => ['slug' => 'coach-litteraire', 'one' => 'Coach littéraire', 'many' => 'Coachs littéraires', 'article' => 'un', 'person' => 'Coach littéraire'],
+        'Iconographie' => ['slug' => 'iconographe', 'one' => 'Iconographe', 'many' => 'Iconographes', 'article' => 'un', 'person' => 'Iconographe'],
+        'Lecture éditoriale' => ['slug' => 'lectrice-editoriale', 'one' => 'Lectrice éditoriale', 'many' => 'Lectrices éditoriales', 'article' => 'une', 'person' => 'Lecteur éditorial'],
+        'Photographie' => ['slug' => 'photographe', 'one' => 'Photographe', 'many' => 'Photographes', 'article' => 'un', 'person' => 'Photographe'],
+        'Reliure' => ['slug' => 'relieuse', 'one' => 'Relieuse', 'many' => 'Relieuses', 'article' => 'une', 'person' => 'Relieur'],
+        'Juridique' => ['slug' => 'juriste', 'one' => 'Juriste', 'many' => 'Juristes', 'article' => 'un', 'person' => 'Juriste'],
     ];
 
     public const TRADE_TITLES = [
@@ -796,6 +799,12 @@ final class Catalog
     public static function tradeGeoLabel(string $trade): string
     {
         return self::TRADE_GEO[$trade]['one'] ?? (self::TRADE_LABELS[$trade] ?? $trade);
+    }
+
+    /** Libellé d’une personne (vitrine), pas l’intitulé féminin des pages ville. */
+    public static function tradePersonLabel(string $trade): string
+    {
+        return self::TRADE_GEO[$trade]['person'] ?? (self::TRADE_LABELS[$trade] ?? $trade);
     }
 
     public static function tradeGeoLabelPlural(string $trade): string

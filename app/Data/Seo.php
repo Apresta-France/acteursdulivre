@@ -360,7 +360,7 @@ final class Seo
             if ($resolved === '') {
                 continue;
             }
-            $label = Catalog::tradeGeoLabel($resolved);
+            $label = Catalog::tradePersonLabel($resolved);
             if ($label !== '' && !in_array($label, $labels, true)) {
                 $labels[] = $label;
             }

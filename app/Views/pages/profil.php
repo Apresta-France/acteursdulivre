@@ -565,7 +565,7 @@ $heroPhoto = user_avatar_src($p);
                         if ($tradeName === '' || !\Adl\Data\Catalog::tradeCityHasResults($tradeName, $area)) {
                             continue;
                         }
-                        $geoLinks[] = '<a href="' . e(url(\Adl\Data\Catalog::catalogPath('prestataires', $tradeName, $area))) . '">' . e(\Adl\Data\Catalog::tradeGeoLabel($tradeName) . ' à ' . ($p['city'] ?? $area)) . '</a>';
+                        $geoLinks[] = '<a href="' . e(url(\Adl\Data\Catalog::catalogPath('prestataires', $tradeName, $area))) . '">' . e(\Adl\Data\Catalog::tradePersonLabel($tradeName) . ' à ' . ($p['city'] ?? $area)) . '</a>';
                     }
                 }
                 echo e($loc);

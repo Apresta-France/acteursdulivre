@@ -43,14 +43,16 @@ $providersTitle = (string) ($lp['providers_title'] ?? ($people['title'] ?? 'Pres
 $providersBridge = (string) ($lp['providers_bridge'] ?? '');
 $iaPoints = $iaPoints ?? [];
 $costAnchor = $services !== [] ? '#prestations' : ($providers !== [] ? '#prestataires' : '#tarif');
+$heroFindHref = !$isOfferer && $providers !== [] ? '#prestataires' : url($prestatairesHref);
+$hideBudget = !empty($lp['hide_budget']);
 $peopleMany = (string) ($people['many'] ?? 'prestataires');
 $providersCta = $providerCount > 0
     ? 'Voir les ' . format_int($providerCount) . ' ' . $peopleMany
     : 'Voir les ' . $peopleMany;
 $stickyHref = $isOfferer ? $primaryHref : $prestatairesHref;
 $stickyLabel = $isOfferer ? $primaryLabel : $heroFindLabel;
-$showProviderStat = !$isOfferer && $providerCount > 0;
-$showStats = $showProviderStat || $serviceCount > 0 || $missionCount > 0;
+$showProviderStat = $isOfferer && $providerCount > 0;
+$showStats = $isOfferer && ($showProviderStat || $serviceCount > 0 || $missionCount > 0);
 $statCount = (int) $showProviderStat + (int) ($serviceCount > 0) + (int) ($missionCount > 0);
 $faqTitle = $isOfferer
     ? 'Questions fréquentes'
@@ -71,7 +73,7 @@ $heroSrcs = json_encode($heroImgs, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICO
       <h1><?= e($h1) ?></h1>
       <?php if ($leadParagraphs !== []): ?>
         <?php foreach ($leadParagraphs as $para): ?>
-          <p class="mk-lead"><?= e((string) $para) ?></p>
+          <p class="mk-lead"><?= landing_copy((string) $para) ?></p>
         <?php endforeach; ?>
       <?php elseif ($lead !== ''): ?>
         <p class="mk-lead"><?= e($lead) ?></p>
@@ -82,7 +84,7 @@ $heroSrcs = json_encode($heroImgs, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICO
           <a class="btn-ghost" href="<?= e(url($secondaryHref)) ?>"><?= e($secondaryLabel) ?></a>
         <?php else: ?>
           <a class="btn-orange" href="<?= e($costAnchor) ?>"><?= e($heroCostLabel) ?></a>
-          <a class="btn-ghost" href="<?= e(url($prestatairesHref)) ?>"><?= e($heroFindLabel) ?></a>
+          <a class="btn-ghost" href="<?= e($heroFindHref) ?>"><?= e($heroFindLabel) ?></a>
         <?php endif; ?>
       </div>
     </div>
@@ -218,7 +220,7 @@ $heroSrcs = json_encode($heroImgs, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICO
           <div>
             <h2><?= e($servicesTitle) ?></h2>
             <?php if ($servicesIntro !== ''): ?>
-              <p><?= e($servicesIntro) ?></p>
+              <p><?= landing_copy($servicesIntro) ?></p>
             <?php endif; ?>
           </div>
         </div>
@@ -227,7 +229,7 @@ $heroSrcs = json_encode($heroImgs, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICO
             <?= search_card_html($item) ?>
           <?php endforeach; ?>
         </div>
-        <div class="mk-cta-actions">
+        <div class="mk-cta-actions lp-cta-center">
           <a class="btn-orange" href="<?= e(url($prestatairesHref)) ?>"><?= e($servicesCta) ?></a>
         </div>
       </section>
@@ -239,7 +241,7 @@ $heroSrcs = json_encode($heroImgs, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICO
           <div>
             <h2><?= e($providersTitle) ?></h2>
             <?php if ($providersBridge !== ''): ?>
-              <p><?= e($providersBridge) ?></p>
+              <p><?= landing_copy($providersBridge) ?></p>
             <?php endif; ?>
           </div>
         </div>
@@ -248,8 +250,8 @@ $heroSrcs = json_encode($heroImgs, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICO
             <?= search_card_html($item) ?>
           <?php endforeach; ?>
         </div>
-        <div class="mk-cta-actions">
-          <a class="btn-ghost" href="<?= e(url($prestatairesHref)) ?>"><?= e($providersCta) ?></a>
+        <div class="mk-cta-actions lp-cta-center">
+          <a class="btn-orange" href="<?= e(url($prestatairesHref)) ?>"><?= e($providersCta) ?></a>
         </div>
       </section>
     <?php endif; ?>
@@ -282,7 +284,35 @@ $heroSrcs = json_encode($heroImgs, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICO
     <?php endif; ?>
   <?php endif; ?>
 
-  <?php if ($faq !== []): ?>
+  <?php if ($faq !== [] && !$isOfferer): ?>
+    <section class="lp-faq-ia">
+      <div class="lp-faq-ia-faq">
+        <h2><?= e($faqTitle) ?></h2>
+        <div class="mk-faq-list">
+          <?php foreach ($faq as $f): ?>
+            <div>
+              <h3 class="faq-q"><?= e((string) ($f['q'] ?? '')) ?></h3>
+              <div class="mk-faq-a"><?= e((string) ($f['a'] ?? '')) ?></div>
+            </div>
+          <?php endforeach; ?>
+        </div>
+      </div>
+      <aside class="mk-ia lp-ia-side">
+        <div class="mk-ia-icon" aria-hidden="true">✕</div>
+        <div>
+          <div class="mk-kicker">Engagement de la plateforme</div>
+          <h2>Ici, l'intelligence artificielle générative est interdite.</h2>
+          <p>Aucun texte, aucune illustration, aucune voix livrée sur cette plateforme ne peut être produit par une IA générative. Les prestataires s'y engagent à l'inscription ; les manuscrits confiés ne sont jamais utilisés pour entraîner un modèle.</p>
+        </div>
+        <div class="mk-ia-box">
+          <?php foreach ($iaPoints as $p): ?>
+            <div><span>✕</span><?= e((string) $p) ?></div>
+          <?php endforeach; ?>
+          <a href="<?= e(url('/regles-ia')) ?>">Lire nos règles IA →</a>
+        </div>
+      </aside>
+    </section>
+  <?php elseif ($faq !== []): ?>
     <section class="mk-faq">
       <div>
         <h2><?= e($faqTitle) ?></h2>
@@ -296,9 +326,7 @@ $heroSrcs = json_encode($heroImgs, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICO
         <?php endforeach; ?>
       </div>
     </section>
-  <?php endif; ?>
-
-  <?php if (!$isOfferer): ?>
+  <?php elseif (!$isOfferer): ?>
     <section class="mk-ia">
       <div class="mk-ia-icon" aria-hidden="true">✕</div>
       <div>
@@ -313,7 +341,9 @@ $heroSrcs = json_encode($heroImgs, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICO
         <a href="<?= e(url('/regles-ia')) ?>">Lire nos règles IA →</a>
       </div>
     </section>
+  <?php endif; ?>
 
+  <?php if (!$isOfferer): ?>
     <section class="mk-cta">
       <div>
         <h2><?= e($ctaFind) ?></h2>
@@ -326,8 +356,7 @@ $heroSrcs = json_encode($heroImgs, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICO
     </section>
   <?php endif; ?>
 
-  <?php if (!$isOfferer && ($price !== '' || $includes !== [] || $excludes !== [])): ?>
-    <?php if ($price !== ''): ?>
+  <?php if (!$isOfferer && !$hideBudget && $price !== ''): ?>
       <section class="mk-block mk-wash-cool" id="tarif">
         <p class="mk-kicker">Ordre de grandeur</p>
         <p class="tarif-pct"><?= e($price) ?></p>
@@ -344,7 +373,7 @@ $heroSrcs = json_encode($heroImgs, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICO
         <?php endif; ?>
       </section>
     <?php endif; ?>
-    <?php if ($includes !== [] || $excludes !== []): ?>
+    <?php if (!$isOfferer && ($includes !== [] || $excludes !== [])): ?>
       <section class="mk-split">
         <?php if ($includes !== []): ?>
           <div>
@@ -368,9 +397,8 @@ $heroSrcs = json_encode($heroImgs, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICO
         <?php endif; ?>
       </section>
     <?php endif; ?>
-  <?php endif; ?>
 
-  <?php if ($journal): ?>
+  <?php if ($journal && !$hideBudget): ?>
     <section class="mk-block mk-wash-beige" id="cout">
       <p class="mk-kicker">Pour cadrer le budget</p>
       <h2><?= e((string) $journal['title']) ?></h2>
