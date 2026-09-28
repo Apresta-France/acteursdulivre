@@ -245,6 +245,8 @@ final class AdminController
         }
         $this->page('verif', 'admin/verifications', [
             'dossiers' => $dossiers,
+            'motifs' => Profile::verificationReminderMotifs(),
+            'filtre' => $filtre,
             'filters' => $this->filterLinks('/admin/verifications', [
                 'pending' => 'En attente',
                 'verified' => 'Vérifiés',
@@ -278,6 +280,19 @@ final class AdminController
             flash('error', $e->getMessage());
         }
         redirect('/admin/verifications');
+    }
+
+    public function verificationRemind(Request $request, string $id): void
+    {
+        Auth::requireAdmin();
+        $filtre = $request->string('filtre', 'pending');
+        try {
+            $label = Profile::remindVerification((int) $id, $request->string('motif'));
+            flash('saved', 'Relance envoyée : ' . $label . '.');
+        } catch (Throwable $e) {
+            flash('error', $e->getMessage());
+        }
+        $this->redirectVerifications($filtre);
     }
 
     public function moderation(Request $request): void
@@ -1287,7 +1302,8 @@ final class AdminController
 
     public function newsletter(Request $request): void
     {
-        $onglet = $this->filtre($request, ['lettres', 'reglages', 'abonnes'], 'lettres');
+        $onglet = $this->filtre($request, ['lettres', 'file', 'reglages', 'abonnes'], 'lettres');
+        $queueCount = NewsletterCampaign::pendingCount();
         $letters = [];
         $letterCount = 0;
         try {
@@ -1299,9 +1315,11 @@ final class AdminController
             'onglet' => $onglet,
             'nlTabs' => $this->filterLinks('/admin/newsletter', [
                 'lettres' => 'Lettres',
+                'file' => 'File' . ($queueCount > 0 ? ' (' . $queueCount . ')' : ''),
                 'reglages' => 'SMTP & envoi auto',
                 'abonnes' => 'Abonnés',
             ], $onglet),
+            'queue' => $onglet === 'file' ? NewsletterCampaign::queueSnapshot() : null,
             'letters' => $letters,
             'settings' => [
                 'newsletter_enabled' => Newsletter::enabled(),
@@ -1317,7 +1335,7 @@ final class AdminController
             'counts' => [
                 'confirmed' => Newsletter::countByStatus(Newsletter::STATUS_CONFIRMED),
                 'pending' => Newsletter::countByStatus(Newsletter::STATUS_PENDING),
-                'queue' => NewsletterCampaign::pendingCount(),
+                'queue' => $queueCount,
                 'letters' => $letterCount,
             ],
             'campaigns' => NewsletterCampaign::recent(),
@@ -1601,6 +1619,12 @@ final class AdminController
             redirect('/admin/newsletter');
         }
         return $letter;
+    }
+
+    public function newsletterQueue(Request $request): void
+    {
+        Auth::requireAdmin();
+        json_response(NewsletterCampaign::queueSnapshot());
     }
 
     public function newsletterExport(Request $request): void
@@ -2135,6 +2159,15 @@ final class AdminController
             'saved' => flash('saved'),
             'error' => flash('error'),
         ], $extra)), 'layouts/admin');
+    }
+
+    private function redirectVerifications(string $filtre): void
+    {
+        $allowed = ['pending', 'verified', 'refused', 'tous'];
+        if (!in_array($filtre, $allowed, true) || $filtre === 'pending') {
+            redirect('/admin/verifications');
+        }
+        redirect('/admin/verifications?filtre=' . $filtre);
     }
 
     /** @param list<string> $allowed */

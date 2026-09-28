@@ -4097,6 +4097,79 @@
     setInterval(refreshLive, 12000);
   }
 
+  var queueBox = document.querySelector('[data-nl-queue]');
+  if (queueBox) {
+    var queueUrl = queueBox.getAttribute('data-url');
+    function queuePill(status) {
+      var map = {
+        pending: ['En attente', 'background:#FDF3F0;color:#D85D3F;'],
+        sending: ['En cours', 'background:#EEF3F8;color:#022746;'],
+        failed: ['Échec', 'background:#FDF3F0;color:#D85D3F;']
+      };
+      var item = map[status] || [status, 'background:#F4F6F9;color:#66768A;'];
+      return '<span class="admin-pill" style="font-size:12px;padding:5px 10px;border-radius:999px;' + item[1] + '">' + escapeHtml(item[0]) + '</span>';
+    }
+    function renderQueue(data) {
+      var body = queueBox.querySelector('[data-nl-queue-body]');
+      var updated = queueBox.querySelector('[data-nl-queue-updated]');
+      var count = document.querySelector('[data-nl-queue-count]');
+      if (count) count.textContent = String(parseInt(data.pending, 10) || 0);
+      if (updated) updated.textContent = data.updated ? ' · ' + data.updated : '';
+      if (!body) return;
+      var campaigns = data.campaigns || [];
+      var waiting = data.waiting || [];
+      var failed = data.failed || [];
+      if (!campaigns.length && !waiting.length && !failed.length) {
+        body.innerHTML = '<p class="admin-users-empty">Rien en file.</p>';
+        return;
+      }
+      var html = '';
+      campaigns.forEach(function (camp) {
+        var total = parseInt(camp.total, 10) || 0;
+        var sent = parseInt(camp.sent, 10) || 0;
+        var failedN = parseInt(camp.failed, 10) || 0;
+        var skipped = parseInt(camp.skipped, 10) || 0;
+        var pending = parseInt(camp.pending, 10) || 0;
+        var done = sent + failedN + skipped;
+        var percent = Math.max(0, Math.min(100, parseInt(camp.percent, 10) || 0));
+        var subject = escapeHtml(camp.subject || '');
+        html += '<article class="admin-nl-queue-card">'
+          + '<div class="admin-nl-queue-card-head"><strong>' + subject + '</strong><span>' + done + ' / ' + total + '</span></div>'
+          + '<div class="admin-nl-queue-bar" role="progressbar" aria-valuemin="0" aria-valuemax="' + total + '" aria-valuenow="' + done + '" aria-label="Avancement de ' + subject + '"><span style="width:' + percent + '%"></span></div>'
+          + '<p>' + pending + ' en attente · ' + sent + ' envoyés · ' + failedN + ' échecs'
+          + (skipped > 0 ? ' · ' + skipped + ' ignorés' : '')
+          + '</p></article>';
+      });
+      if (waiting.length) {
+        html += '<h2>Prochaines adresses</h2><div class="admin-users-wrap"><div class="admin-users-head admin-nl-queue-head"><span>E-mail</span><span>Lettre</span><span>Statut</span></div>';
+        waiting.forEach(function (row) {
+          html += '<div class="admin-users-row admin-nl-row-static admin-nl-queue-row"><span>' + escapeHtml(row.email) + '</span><span>' + escapeHtml(row.subject) + '</span><span>' + queuePill(row.status) + '</span></div>';
+        });
+        html += '</div>';
+        var more = parseInt(data.waiting_more, 10) || 0;
+        if (more > 0) html += '<p class="field-help">' + more + ' autre' + (more > 1 ? 's' : '') + ' encore en file.</p>';
+      }
+      if (failed.length) {
+        html += '<h2>Échecs</h2><div class="admin-users-wrap"><div class="admin-users-head admin-nl-queue-head"><span>E-mail</span><span>Erreur</span><span>Lettre</span></div>';
+        failed.forEach(function (row) {
+          html += '<div class="admin-users-row admin-nl-row-static admin-nl-queue-row"><span>' + escapeHtml(row.email) + '</span><span>' + escapeHtml(row.error || 'Échec') + '</span><span>' + escapeHtml(row.subject) + '</span></div>';
+        });
+        html += '</div>';
+        var failedMore = parseInt(data.failed_more, 10) || 0;
+        if (failedMore > 0) html += '<p class="field-help">' + failedMore + ' autre' + (failedMore > 1 ? 's' : '') + ' échec' + (failedMore > 1 ? 's' : '') + '.</p>';
+      }
+      body.innerHTML = html;
+    }
+    function refreshQueue() {
+      if (!queueUrl || document.hidden) return;
+      fetch(queueUrl, { credentials: 'same-origin', headers: { Accept: 'application/json' } })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (data) { if (data) renderQueue(data); })
+        .catch(function () {});
+    }
+    setInterval(refreshQueue, 10000);
+  }
+
   document.querySelectorAll('[data-forum-compose]').forEach(function (form) {
     var ta = form.querySelector('textarea[name="body"]');
     var editor = form.querySelector('.wysiwyg-editor');

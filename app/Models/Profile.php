@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Adl\Models;
 
 use Adl\Core\Database;
+use Adl\Core\Mailer;
 use Adl\Data\Cities;
 
 final class Profile
@@ -106,6 +107,8 @@ final class Profile
     public const VERIFY_VERIFIED = 'verified';
     public const VERIFY_REFUSED = 'refused';
 
+    public const REMIND_KIND = 'verification_remind';
+
     /** @return list<array<string, mixed>> */
     public static function forAdmin(string $filter = 'pending'): array
     {
@@ -123,7 +126,9 @@ final class Profile
         $sql .= ' ORDER BY p.updated_at DESC, p.id DESC';
         $params = in_array($filter, ['verified', 'refused'], true) ? [$filter] : [];
         $rows = Database::fetchAll($sql, $params);
-        return array_map(static function (array $row): array {
+        $userIds = array_map(static fn (array $row): int => (int) $row['user_id'], $rows);
+        $reminders = self::lastVerificationReminders($userIds);
+        return array_map(static function (array $row) use ($reminders): array {
             $row['trades'] = self::decode($row['trades_json'] ?? null);
             $row['name'] = User::displayName($row);
             $row['doc_href'] = !empty($row['verification_doc_path'])
@@ -135,8 +140,174 @@ final class Profile
                 self::VERIFY_REFUSED => 'Refusé',
                 default => 'En attente',
             };
+            $remind = $reminders[(int) $row['user_id']] ?? null;
+            $row['reminded_at'] = (string) ($remind['sent_at'] ?? '');
+            $row['reminded_motif'] = (string) ($remind['subject_type'] ?? '');
             return $row;
         }, $rows);
+    }
+
+    /**
+     * Motifs proposés à l’admin pour une relance de dossier en attente.
+     *
+     * @return array<string, array{label: string, subject: string, message: string, path: string, action: string}>
+     */
+    public static function verificationReminderMotifs(): array
+    {
+        return [
+            'profil' => [
+                'label' => 'Compléter le profil',
+                'subject' => 'Votre profil est en attente de validation',
+                'message' => 'La validation de votre profil est en attente : le compte manque encore de contenu. Une photo, une présentation, vos métiers, un tarif et quelques exemples permettent de comprendre votre activité. Complétez la vitrine, le dossier pourra ensuite être repris.',
+                'path' => '/espace/vitrine',
+                'action' => 'Compléter ma vitrine',
+            ],
+            'justificatif' => [
+                'label' => 'Envoyer un justificatif d’activité',
+                'subject' => 'Il manque un justificatif pour valider votre profil',
+                'message' => 'La validation de votre profil est en attente : nous n’avons pas encore de justificatif d’activité. Un KBIS, un avis de situation SIRENE, une attestation URSSAF ou un document équivalent suffit. Déposez-le depuis votre vitrine, et indiquez votre numéro SIRET dans la note si vous en avez un.',
+                'path' => '/espace/vitrine#justificatif',
+                'action' => 'Envoyer le justificatif',
+            ],
+            'illisible' => [
+                'label' => 'Justificatif illisible ou incomplet',
+                'subject' => 'Votre justificatif n’est pas exploitable',
+                'message' => 'La validation de votre profil est en attente : le fichier reçu est illisible, tronqué ou incomplet. Renvoyez un document net, où l’on lit votre nom et votre activité (KBIS, avis SIRENE, attestation URSSAF ou équivalent).',
+                'path' => '/espace/vitrine#justificatif',
+                'action' => 'Renvoyer le justificatif',
+            ],
+            'identite' => [
+                'label' => 'Justificatif incohérent avec le compte',
+                'subject' => 'Le justificatif ne correspond pas au compte',
+                'message' => 'La validation de votre profil est en attente : le document ne permet pas de rattacher l’activité au nom du compte. Envoyez un justificatif à votre nom, ou précisez dans la note le lien entre le compte et la structure (nom commercial, société).',
+                'path' => '/espace/vitrine#justificatif',
+                'action' => 'Mettre le dossier à jour',
+            ],
+            'photo' => [
+                'label' => 'Ajouter une photo',
+                'subject' => 'Ajoutez une photo pour faire avancer la validation',
+                'message' => 'La validation de votre profil est en attente : il manque une photo. Un portrait réel permet de reconnaître la personne derrière la vitrine. Ajoutez-la depuis votre espace, le dossier pourra être repris.',
+                'path' => '/espace/vitrine#vitrine-avatar',
+                'action' => 'Ajouter ma photo',
+            ],
+            'activite' => [
+                'label' => 'Préciser l’activité',
+                'subject' => 'Précisez votre activité pour la validation',
+                'message' => 'La validation de votre profil est en attente : la présentation est trop courte, ou trop vague, pour comprendre ce que vous proposez. Décrivez votre métier, pour qui vous travaillez et ce que vous livrez. Quelques lignes concrètes suffisent.',
+                'path' => '/espace/vitrine#presentation',
+                'action' => 'Préciser mon activité',
+            ],
+            'exemples' => [
+                'label' => 'Ajouter des exemples de travail',
+                'subject' => 'Ajoutez des exemples pour faire valider votre profil',
+                'message' => 'La validation de votre profil est en attente : il manque des exemples de travail. Une ou deux pièces (couverture, extrait, maquette, lien) montrent votre pratique. Si le texte d’un client est confidentiel, un extrait anonymisé convient.',
+                'path' => '/espace/vitrine?onglet=portfolio',
+                'action' => 'Ajouter des exemples',
+            ],
+            'tarif' => [
+                'label' => 'Indiquer un tarif',
+                'subject' => 'Indiquez un tarif pour faire valider votre profil',
+                'message' => 'La validation de votre profil est en attente : aucun tarif n’est indiqué. Un prix, un forfait ou une fourchette aide à comprendre votre offre. Vous pouvez le préciser sur votre vitrine.',
+                'path' => '/espace/vitrine#hourly_rate',
+                'action' => 'Indiquer un tarif',
+            ],
+        ];
+    }
+
+    public static function remindVerification(int $userId, string $motif): string
+    {
+        $motifs = self::verificationReminderMotifs();
+        $item = $motifs[$motif] ?? null;
+        if ($item === null) {
+            throw new \InvalidArgumentException('Choisissez un motif de relance.');
+        }
+        $profile = self::findByUser($userId);
+        if (!$profile) {
+            throw new \RuntimeException('Profil introuvable.');
+        }
+        $status = (string) ($profile['verification_status'] ?? '');
+        if ($status !== '' && $status !== self::VERIFY_PENDING) {
+            throw new \RuntimeException('Cette relance concerne un dossier encore en attente.');
+        }
+        $user = User::find($userId);
+        if (!$user || User::isClosed($user)) {
+            throw new \RuntimeException('Ce compte ne peut pas recevoir de relance.');
+        }
+        $email = trim((string) ($user['email'] ?? ''));
+        if ($email === '') {
+            throw new \RuntimeException('Adresse e-mail manquante.');
+        }
+
+        self::ensureVerificationReminderTemplate();
+        $prenom = trim((string) ($user['first_name'] ?? ''));
+        Mailer::sendTemplate('relance-verification', $email, [
+            'prenom' => $prenom,
+            'sujet' => $item['subject'],
+            'message' => $item['message'],
+            'lien' => url($item['path']),
+            'action' => $item['action'],
+        ]);
+
+        try {
+            $profileId = (int) ($profile['id'] ?? 0);
+            Notification::create(
+                $userId,
+                $item['subject'],
+                $item['message'],
+                $item['path'],
+                self::REMIND_KIND,
+                'profile',
+                $profileId > 0 ? $profileId : null
+            );
+        } catch (\Throwable) {
+            // L’e-mail est déjà parti.
+        }
+
+        ReminderSend::record(self::REMIND_KIND, $userId, $motif, null);
+        return $item['label'];
+    }
+
+    public static function ensureVerificationReminderTemplate(): void
+    {
+        EmailTemplate::ensure(
+            'relance-verification',
+            'Relance — vérification de profil',
+            '{{ sujet }}',
+            '<p>Bonjour {{ prenom }},</p><p>{{ message }}</p><p><a href="{{ lien }}">{{ action }}</a></p>',
+            'prenom, sujet, message, lien, action'
+        );
+    }
+
+    /**
+     * @param list<int> $userIds
+     * @return array<int, array<string, mixed>>
+     */
+    private static function lastVerificationReminders(array $userIds): array
+    {
+        $userIds = array_values(array_unique(array_filter(
+            $userIds,
+            static fn (int $id): bool => $id > 0
+        )));
+        if ($userIds === []) {
+            return [];
+        }
+        $placeholders = implode(',', array_fill(0, count($userIds), '?'));
+        $rows = Database::fetchAll(
+            "SELECT r.user_id, r.subject_type, r.sent_at
+             FROM reminder_sends r
+             INNER JOIN (
+                 SELECT user_id, MAX(id) AS id
+                 FROM reminder_sends
+                 WHERE kind = ? AND user_id IN ({$placeholders})
+                 GROUP BY user_id
+             ) last ON last.id = r.id",
+            array_merge([self::REMIND_KIND], $userIds)
+        );
+        $out = [];
+        foreach ($rows as $row) {
+            $out[(int) $row['user_id']] = $row;
+        }
+        return $out;
     }
 
     public static function countPendingVerification(): int

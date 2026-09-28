@@ -1,9 +1,11 @@
 <?php
 $dossiers = $dossiers ?? [];
+$motifs = $motifs ?? [];
+$filtre = (string) ($filtre ?? 'pending');
 ?>
 <div class="admin-page">
   <h1>Vérifications</h1>
-  <p class="admin-lead">Validez les vitrines des prestataires. Un profil vérifié reste public ; le refus n’empêche pas le compte de fonctionner, il signale un dossier à reprendre.</p>
+  <p class="admin-lead">Validez les vitrines des prestataires. Un profil vérifié reste public ; le refus n’empêche pas le compte de fonctionner, il signale un dossier à reprendre. Pour un dossier en attente, Relancer envoie un e-mail qui explique ce qui bloque.</p>
   <?php if (!empty($saved)): ?><div class="flash flash-ok"><?= e(is_string($saved) ? $saved : 'Enregistré.') ?></div><?php endif; ?>
   <?php if (!empty($error)): ?><div class="flash flash-error"><?= e((string) $error) ?></div><?php endif; ?>
 
@@ -52,7 +54,46 @@ $dossiers = $dossiers ?? [];
             </form>
           <?php endif; ?>
         </div>
+        <?php if ($d['status'] === 'pending'):
+            $remindedAt = (string) ($d['reminded_at'] ?? '');
+            $remindedMotif = (string) ($d['reminded_motif'] ?? '');
+            $remindedTs = $remindedAt !== '' ? strtotime($remindedAt) : false;
+            $remindedWhen = $remindedTs === false ? $remindedAt : date('d/m/Y à H:i', $remindedTs);
+            $remindedLabel = (string) ($motifs[$remindedMotif]['label'] ?? '');
+            $selectId = 'relance-motif-' . (int) $d['user_id'];
+            ?>
+          <form class="admin-relance" method="post" action="<?= e(url('/admin/verifications/' . (int) $d['user_id'] . '/relance')) ?>">
+            <?= csrf_field() ?>
+            <input type="hidden" name="filtre" value="<?= e($filtre) ?>">
+            <label class="sr-only" for="<?= e($selectId) ?>">Motif de la relance</label>
+            <select class="input" id="<?= e($selectId) ?>" name="motif" required>
+              <option value="">Choisir un motif</option>
+              <?php foreach ($motifs as $key => $motif): ?>
+                <option value="<?= e((string) $key) ?>" data-detail="<?= e((string) $motif['message']) ?>"><?= e((string) $motif['label']) ?></option>
+              <?php endforeach; ?>
+            </select>
+            <button class="btn-navy" type="submit">Relancer</button>
+            <p class="admin-relance-preview" data-relance-preview hidden></p>
+            <?php if ($remindedAt !== ''): ?>
+              <p class="admin-relance-note">Dernière relance le <?= e($remindedWhen) ?><?= $remindedLabel !== '' ? ' · ' . e($remindedLabel) : '' ?></p>
+            <?php endif; ?>
+          </form>
+        <?php endif; ?>
       </article>
     <?php endforeach; ?>
   </div>
 </div>
+<script>
+document.querySelectorAll('.admin-relance').forEach(function (form) {
+  var select = form.querySelector('select[name="motif"]');
+  var preview = form.querySelector('[data-relance-preview]');
+  if (!select || !preview) return;
+  var show = function () {
+    var option = select.options[select.selectedIndex];
+    var text = option ? (option.getAttribute('data-detail') || '') : '';
+    preview.hidden = text === '';
+    preview.textContent = text;
+  };
+  select.addEventListener('change', show);
+});
+</script>

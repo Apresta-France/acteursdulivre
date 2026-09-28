@@ -708,7 +708,7 @@ if ($rateKind === \Adl\Models\Profile::RATE_PERCENT || str_contains($rateValue, 
 
   <?php require ADL_ROOT . '/app/Views/partials/vitrine-partage.php'; ?>
 
-  <section class="espace-panel" style="margin-top: 8px; max-width: 860px;" data-hide-on-tab="<?= e($hideFormTabs) ?>"<?= $formHidden ? ' hidden' : '' ?>>
+  <section class="espace-panel" id="justificatif" style="margin-top: 8px; max-width: 860px;" data-hide-on-tab="<?= e($hideFormTabs) ?>"<?= $formHidden ? ' hidden' : '' ?>>
     <div class="espace-panel-head">
       <h2 class="espace-section-title">Justificatif d'activité</h2>
     </div>

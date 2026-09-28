@@ -47,7 +47,7 @@ $statusLabels = [
   <div class="admin-nl-kpis">
     <div><strong><?= (int) ($counts['letters'] ?? 0) ?></strong><span>lettres conçues</span></div>
     <div><strong><?= (int) ($counts['confirmed'] ?? 0) ?></strong><span>abonnés confirmés</span></div>
-    <div><strong><?= (int) ($counts['queue'] ?? 0) ?></strong><span>envois encore en file</span></div>
+    <a href="<?= e(url('/admin/newsletter?filtre=file')) ?>"><strong data-nl-queue-count><?= (int) ($counts['queue'] ?? 0) ?></strong><span>envois encore en file</span></a>
     <div><strong><?= !empty($s['newsletter_enabled']) ? 'Oui' : 'Non' ?></strong><span>envoi automatique</span></div>
   </div>
 
@@ -111,7 +111,7 @@ $statusLabels = [
               ?>
             <div class="admin-users-row admin-nl-row-static">
               <span><?= e((string) ($c['created_at'] ?? '')) ?></span>
-              <span><?= e((string) ($c['subject'] ?? '')) ?><br><em><?= (int) ($c['sent_count'] ?? 0) ?> envoyés · <?= (int) ($c['fail_count'] ?? 0) ?> échecs</em></span>
+              <span><?= e((string) ($c['subject'] ?? '')) ?><br><em><?= (int) ($c['sent_count'] ?? 0) ?> envoyés<?php $pendingN = (int) ($c['pending_n'] ?? 0); if ($pendingN > 0): ?> · <?= $pendingN ?> en file<?php endif; ?> · <?= (int) ($c['fail_count'] ?? 0) ?> échecs</em></span>
               <span><?= e((($c['source'] ?? '') === 'weekly' ? 'Hebdo' : 'Manuel') . ((($c['audience'] ?? '') === 'accounts') ? ' · comptes' : '')) ?></span>
               <span><span class="admin-pill" style="<?= e(AdminCatalog::pill($tone)) ?>"><?= e($label) ?></span></span>
             </div>
@@ -220,6 +220,87 @@ $statusLabels = [
       <div class="admin-nl-preview-body"><?= $preview['html'] ?? '' ?></div>
     </section>
   <?php endif; ?>
+  <?php endif; ?>
+
+  <?php if ($onglet === 'file'):
+      $queue = is_array($queue ?? null) ? $queue : [];
+      $qCampaigns = $queue['campaigns'] ?? [];
+      $qWaiting = $queue['waiting'] ?? [];
+      $qFailed = $queue['failed'] ?? [];
+      $qStatus = [
+          'pending' => ['En attente', 'orange'],
+          'sending' => ['En cours', 'navy'],
+          'failed' => ['Échec', 'orange'],
+      ];
+      ?>
+  <section class="admin-nl-block" data-nl-queue data-url="<?= e(url('/admin/newsletter/file')) ?>">
+    <h2 class="admin-nl-h2" style="margin-top:0;">File d’envoi</h2>
+    <p class="field-help" data-nl-queue-meta>Le cron envoie <?= (int) ($queue['batch'] ?? 25) ?> message<?= ((int) ($queue['batch'] ?? 25)) > 1 ? 's' : '' ?> par passage. Cette page se met à jour toute seule.<span data-nl-queue-updated><?= !empty($queue['updated']) ? ' · ' . e((string) $queue['updated']) : '' ?></span></p>
+    <div data-nl-queue-body>
+      <?php if ($qCampaigns === [] && $qWaiting === [] && $qFailed === []): ?>
+        <p class="admin-users-empty">Rien en file.</p>
+      <?php endif; ?>
+      <?php foreach ($qCampaigns as $camp):
+          $total = (int) ($camp['total'] ?? 0);
+          $done = (int) ($camp['sent'] ?? 0) + (int) ($camp['failed'] ?? 0) + (int) ($camp['skipped'] ?? 0);
+          $percent = (int) ($camp['percent'] ?? 0);
+          ?>
+        <article class="admin-nl-queue-card">
+          <div class="admin-nl-queue-card-head">
+            <strong><?= e((string) ($camp['subject'] ?? '')) ?></strong>
+            <span><?= $done ?> / <?= $total ?></span>
+          </div>
+          <div class="admin-nl-queue-bar" role="progressbar" aria-valuemin="0" aria-valuemax="<?= $total ?>" aria-valuenow="<?= $done ?>" aria-label="Avancement de <?= e((string) ($camp['subject'] ?? 'la lettre')) ?>">
+            <span style="width: <?= max(0, min(100, $percent)) ?>%"></span>
+          </div>
+          <p><?= (int) ($camp['pending'] ?? 0) ?> en attente · <?= (int) ($camp['sent'] ?? 0) ?> envoyés · <?= (int) ($camp['failed'] ?? 0) ?> échecs<?php if ((int) ($camp['skipped'] ?? 0) > 0): ?> · <?= (int) $camp['skipped'] ?> ignorés<?php endif; ?></p>
+        </article>
+      <?php endforeach; ?>
+      <?php if ($qWaiting !== []): ?>
+        <h2>Prochaines adresses</h2>
+        <div class="admin-users-wrap">
+          <div class="admin-users-head admin-nl-queue-head">
+            <span>E-mail</span>
+            <span>Lettre</span>
+            <span>Statut</span>
+          </div>
+          <?php foreach ($qWaiting as $row):
+              $st = (string) ($row['status'] ?? '');
+              [$label, $tone] = $qStatus[$st] ?? [$st, 'grey'];
+              ?>
+            <div class="admin-users-row admin-nl-row-static admin-nl-queue-row">
+              <span><?= e((string) ($row['email'] ?? '')) ?></span>
+              <span><?= e((string) ($row['subject'] ?? '')) ?></span>
+              <span><span class="admin-pill" style="<?= e(AdminCatalog::pill($tone)) ?>"><?= e($label) ?></span></span>
+            </div>
+          <?php endforeach; ?>
+        </div>
+        <?php if ((int) ($queue['waiting_more'] ?? 0) > 0): ?>
+          <p class="field-help"><?= (int) $queue['waiting_more'] ?> autre<?= (int) $queue['waiting_more'] > 1 ? 's' : '' ?> encore en file.</p>
+        <?php endif; ?>
+      <?php endif; ?>
+      <?php if ($qFailed !== []): ?>
+        <h2>Échecs</h2>
+        <div class="admin-users-wrap">
+          <div class="admin-users-head admin-nl-queue-head">
+            <span>E-mail</span>
+            <span>Erreur</span>
+            <span>Lettre</span>
+          </div>
+          <?php foreach ($qFailed as $row): ?>
+            <div class="admin-users-row admin-nl-row-static admin-nl-queue-row">
+              <span><?= e((string) ($row['email'] ?? '')) ?></span>
+              <span><?= e((string) (($row['error'] ?? '') !== '' ? $row['error'] : 'Échec')) ?></span>
+              <span><?= e((string) ($row['subject'] ?? '')) ?></span>
+            </div>
+          <?php endforeach; ?>
+        </div>
+        <?php if ((int) ($queue['failed_more'] ?? 0) > 0): ?>
+          <p class="field-help"><?= (int) $queue['failed_more'] ?> autre<?= (int) $queue['failed_more'] > 1 ? 's' : '' ?> échec<?= (int) $queue['failed_more'] > 1 ? 's' : '' ?>.</p>
+        <?php endif; ?>
+      <?php endif; ?>
+    </div>
+  </section>
   <?php endif; ?>
 
   <?php if ($onglet === 'abonnes'): ?>

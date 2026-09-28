@@ -214,6 +214,7 @@ return static function (Router $router): void {
     $router->get('/admin/statistiques/live', [AdminController::class, 'statistiquesLive']);
     $router->get('/admin/verifications', [AdminController::class, 'verifications']);
     $router->get('/admin/verifications/{id}/justificatif', [AdminController::class, 'verificationFile']);
+    $router->post('/admin/verifications/{id}/relance', [AdminController::class, 'verificationRemind']);
     $router->post('/admin/verifications/{id}', [AdminController::class, 'verificationSave']);
     $router->get('/admin/moderation', [AdminController::class, 'moderation']);
     $router->post('/admin/moderation/{type}/{id}', [AdminController::class, 'moderationSave']);
@@ -270,6 +271,7 @@ return static function (Router $router): void {
     $router->post('/admin/newsletter/envoyer', [AdminController::class, 'newsletterSend']);
     $router->post('/admin/newsletter/desinscrire', [AdminController::class, 'newsletterUnsub']);
     $router->get('/admin/newsletter/export', [AdminController::class, 'newsletterExport']);
+    $router->get('/admin/newsletter/file', [AdminController::class, 'newsletterQueue']);
     $router->get('/admin/newsletter/lettre/{id}', [AdminController::class, 'newsletterLetterEdit']);
     $router->post('/admin/newsletter/lettre/{id}', [AdminController::class, 'newsletterLetterSave']);
     $router->post('/admin/newsletter/lettre/{id}/test', [AdminController::class, 'newsletterLetterTest']);

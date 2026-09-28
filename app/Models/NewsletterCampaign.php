@@ -133,8 +133,91 @@ final class NewsletterCampaign
     public static function recent(int $limit = 12): array
     {
         return Database::fetchAll(
-            'SELECT * FROM newsletter_campaigns ORDER BY id DESC LIMIT ' . max(1, $limit)
+            'SELECT c.*,
+                (SELECT COUNT(*) FROM newsletter_deliveries d WHERE d.campaign_id = c.id AND d.status = "pending") AS pending_n
+             FROM newsletter_campaigns c
+             ORDER BY c.id DESC
+             LIMIT ' . max(1, $limit)
         );
+    }
+
+    /**
+     * Campagnes encore en file, prochaines adresses, échecs.
+     *
+     * @return array{
+     *   pending: int,
+     *   sending: int,
+     *   batch: int,
+     *   updated: string,
+     *   campaigns: list<array<string, int|string>>,
+     *   waiting: list<array<string, string>>,
+     *   waiting_more: int,
+     *   failed: list<array<string, string>>,
+     *   failed_more: int
+     * }
+     */
+    public static function queueSnapshot(): array
+    {
+        $totals = Database::fetch(
+            'SELECT
+                SUM(status = "pending") AS pending,
+                SUM(status = "sending") AS sending,
+                SUM(status = "failed") AS failed
+             FROM newsletter_deliveries'
+        ) ?: [];
+        $pending = (int) ($totals['pending'] ?? 0);
+        $sending = (int) ($totals['sending'] ?? 0);
+        $failedTotal = (int) ($totals['failed'] ?? 0);
+
+        $campaignRows = Database::fetchAll(
+            'SELECT c.id, c.subject, c.status,
+                    COUNT(d.id) AS total_n,
+                    SUM(d.status = "sent") AS sent_n,
+                    SUM(d.status = "failed") AS failed_n,
+                    SUM(d.status = "skipped") AS skipped_n,
+                    SUM(d.status = "pending") AS pending_n,
+                    SUM(d.status = "sending") AS sending_n
+             FROM newsletter_campaigns c
+             INNER JOIN newsletter_deliveries d ON d.campaign_id = c.id
+             WHERE EXISTS (
+                 SELECT 1 FROM newsletter_deliveries x
+                 WHERE x.campaign_id = c.id AND x.status IN ("pending", "sending")
+             )
+             GROUP BY c.id, c.subject, c.status
+             ORDER BY c.id DESC'
+        );
+        $campaigns = [];
+        foreach ($campaignRows as $row) {
+            $total = (int) ($row['total_n'] ?? 0);
+            $done = (int) ($row['sent_n'] ?? 0) + (int) ($row['failed_n'] ?? 0) + (int) ($row['skipped_n'] ?? 0);
+            $campaigns[] = [
+                'id' => (int) ($row['id'] ?? 0),
+                'subject' => (string) ($row['subject'] ?? ''),
+                'status' => (string) ($row['status'] ?? ''),
+                'total' => $total,
+                'sent' => (int) ($row['sent_n'] ?? 0),
+                'failed' => (int) ($row['failed_n'] ?? 0),
+                'skipped' => (int) ($row['skipped_n'] ?? 0),
+                'pending' => (int) ($row['pending_n'] ?? 0),
+                'sending' => (int) ($row['sending_n'] ?? 0),
+                'percent' => $total > 0 ? (int) round(100 * $done / $total) : 0,
+            ];
+        }
+
+        $waiting = self::deliveryRows(['pending', 'sending'], 60, 'ASC');
+        $failed = self::deliveryRows(['failed'], 30, 'DESC');
+
+        return [
+            'pending' => $pending,
+            'sending' => $sending,
+            'batch' => Newsletter::batchSize(),
+            'updated' => date('H:i:s'),
+            'campaigns' => $campaigns,
+            'waiting' => $waiting,
+            'waiting_more' => max(0, $pending + $sending - count($waiting)),
+            'failed' => $failed,
+            'failed_more' => max(0, $failedTotal - count($failed)),
+        ];
     }
 
     /** @return list<array<string, mixed>> */
@@ -212,6 +295,41 @@ final class NewsletterCampaign
     {
         $row = Database::fetch('SELECT COUNT(*) AS n FROM newsletter_deliveries WHERE status = "pending"');
         return (int) ($row['n'] ?? 0);
+    }
+
+    /**
+     * @param list<string> $statuses
+     * @return list<array<string, string>>
+     */
+    private static function deliveryRows(array $statuses, int $limit, string $direction): array
+    {
+        $allowed = ['pending', 'sending', 'failed'];
+        $statuses = array_values(array_intersect($statuses, $allowed));
+        if ($statuses === []) {
+            return [];
+        }
+        $marks = implode(', ', array_fill(0, count($statuses), '?'));
+        $order = $direction === 'DESC' ? 'DESC' : 'ASC';
+        $rows = Database::fetchAll(
+            'SELECT d.email, d.status, d.error, c.subject
+             FROM newsletter_deliveries d
+             JOIN newsletter_campaigns c ON c.id = d.campaign_id
+             WHERE d.status IN (' . $marks . ')
+             ORDER BY d.id ' . $order . '
+             LIMIT ' . max(1, min(100, $limit)),
+            $statuses
+        );
+        $out = [];
+        foreach ($rows as $row) {
+            $out[] = [
+                'email' => (string) ($row['email'] ?? ''),
+                'status' => (string) ($row['status'] ?? ''),
+                'error' => (string) ($row['error'] ?? ''),
+                'subject' => (string) ($row['subject'] ?? ''),
+            ];
+        }
+
+        return $out;
     }
 
     public static function releaseStaleSending(): int
