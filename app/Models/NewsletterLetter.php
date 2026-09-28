@@ -117,8 +117,18 @@ final class NewsletterLetter
         }
         $row['blocks'] = $blocks;
         $row['id'] = (int) ($row['id'] ?? 0);
-        $row['status_label'] = self::statusLabel((string) ($row['status'] ?? self::STATUS_DRAFT));
-        $row['status_tone'] = self::statusTone((string) ($row['status'] ?? self::STATUS_DRAFT));
+        $status = (string) ($row['status'] ?? self::STATUS_DRAFT);
+        $row['status_label'] = self::statusLabel($status);
+        $row['status_tone'] = self::statusTone($status);
+        $campaignId = (int) ($row['campaign_id'] ?? 0);
+        if ($status === self::STATUS_SENT && $campaignId > 0) {
+            $campaign = NewsletterCampaign::find($campaignId);
+            $campaignStatus = (string) ($campaign['status'] ?? '');
+            if (in_array($campaignStatus, [NewsletterCampaign::STATUS_QUEUED, NewsletterCampaign::STATUS_SENDING], true)) {
+                $row['status_label'] = 'En file';
+                $row['status_tone'] = 'navy';
+            }
+        }
         return $row;
     }
 }

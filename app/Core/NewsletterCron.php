@@ -62,30 +62,29 @@ final class NewsletterCron
 
             NewsletterCampaign::releaseStaleSending();
             $stats['skipped'] = NewsletterCampaign::skipUnsubscribedPending();
-            if (Newsletter::enabled()) {
-                $batch = NewsletterCampaign::pendingBatch(Newsletter::batchSize());
-                foreach ($batch as $row) {
-                    $deliveryId = (int) $row['id'];
-                    $campaignId = (int) $row['campaign_id'];
-                    if (!NewsletterCampaign::claimDelivery($deliveryId)) {
-                        continue;
-                    }
-                    NewsletterCampaign::markSending($campaignId);
-                    $unsub = url('/newsletter/desinscription/' . (string) $row['unsub_token']);
-                    try {
-                        NewsletterMailer::send(
-                            (string) $row['email'],
-                            (string) $row['subject'],
-                            (string) $row['body_html'],
-                            $unsub
-                        );
-                        NewsletterCampaign::markDelivery($deliveryId, $campaignId, 'sent');
-                        $stats['sent']++;
-                    } catch (Throwable $e) {
-                        NewsletterCampaign::markDelivery($deliveryId, $campaignId, 'failed', $e->getMessage());
-                        $stats['failed']++;
-                        $errors[] = $e->getMessage();
-                    }
+            // Une campagne déjà en file part même si l’envoi hebdomadaire automatique est coupé.
+            $batch = NewsletterCampaign::pendingBatch(Newsletter::batchSize());
+            foreach ($batch as $row) {
+                $deliveryId = (int) $row['id'];
+                $campaignId = (int) $row['campaign_id'];
+                if (!NewsletterCampaign::claimDelivery($deliveryId)) {
+                    continue;
+                }
+                NewsletterCampaign::markSending($campaignId);
+                $unsub = url('/newsletter/desinscription/' . (string) $row['unsub_token']);
+                try {
+                    NewsletterMailer::send(
+                        (string) $row['email'],
+                        (string) $row['subject'],
+                        (string) $row['body_html'],
+                        $unsub
+                    );
+                    NewsletterCampaign::markDelivery($deliveryId, $campaignId, 'sent');
+                    $stats['sent']++;
+                } catch (Throwable $e) {
+                    NewsletterCampaign::markDelivery($deliveryId, $campaignId, 'failed', $e->getMessage());
+                    $stats['failed']++;
+                    $errors[] = $e->getMessage();
                 }
             }
             $stats['pending'] = NewsletterCampaign::pendingCount();
