@@ -7779,6 +7779,26 @@ img.mk-card-media { width: 100%; object-fit: cover; display: block; }
 .admin-nl-letters-row { grid-template-columns: 2.2fr 0.8fr 1.1fr 0.7fr; }
 .admin-nl-row-static { cursor: default; }
 .admin-nl-row-static em { font-style: normal; color: #8496A8; font-size: 12px; }
+.admin-nl-audience {
+  margin: 18px 0 0;
+  padding: 0;
+  border: 0;
+}
+.admin-nl-audience legend {
+  font-size: 13px;
+  color: #66768A;
+  margin-bottom: 6px;
+}
+.admin-nl-audience label {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  margin: 8px 0;
+  font-size: 14px;
+  color: #14202C;
+}
+.admin-nl-audience input { margin-top: 3px; }
+.admin-nl-audience em { font-style: normal; color: #8496A8; }
 .admin-nl-studio { padding-top: 18px; }
 .admin-nl-studio-bar {
   display: flex;

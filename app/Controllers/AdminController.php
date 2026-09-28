@@ -1424,11 +1424,14 @@ final class AdminController
             $catalog = NewsletterBuilder::catalog();
         } catch (Throwable) {
         }
+        $campaignId = (int) ($letter['campaign_id'] ?? 0);
         $this->page('newsletter', 'admin/newsletter-lettre', [
             'title' => $letter['id'] ? (string) $letter['subject'] : 'Nouvelle lettre',
             'letter' => $letter,
             'catalog' => $catalog,
             'confirmedCount' => Newsletter::countByStatus(Newsletter::STATUS_CONFIRMED),
+            'accountCount' => Newsletter::countAccountRecipients(),
+            'campaign' => $campaignId > 0 ? NewsletterCampaign::find($campaignId) : null,
             'tested' => flash('tested'),
         ]);
     }
@@ -1513,13 +1516,31 @@ final class AdminController
         try {
             $this->newsletterPersistCurrent($request, (int) $letter['id']);
             $letter = NewsletterLetter::find((int) $letter['id']) ?? $letter;
-            $campaignId = NewsletterCampaign::queue([
+            $audience = NewsletterCampaign::audience($request->string('audience', NewsletterCampaign::AUDIENCE_CONFIRMED));
+            $payload = [
                 'subject' => (string) $letter['subject'],
                 'html' => (string) $letter['body_html'],
-            ], 'manual');
-            NewsletterLetter::markSent((int) $letter['id'], $campaignId);
-            NewsletterCron::run(false);
-            flash('saved', 'Lettre mise en file et premier lot envoyé.');
+            ];
+            $existingId = (int) ($letter['campaign_id'] ?? 0);
+            $existing = $existingId > 0 ? NewsletterCampaign::find($existingId) : null;
+            if ($existing) {
+                $stats = NewsletterCampaign::relaunch($existingId, $payload, $audience);
+                NewsletterLetter::markSent((int) $letter['id'], $existingId);
+                NewsletterCron::run(false);
+                $detail = $stats['added'] . ' nouvelle' . ($stats['added'] > 1 ? 's' : '') . ' adresse' . ($stats['added'] > 1 ? 's' : '') . ' en file, '
+                    . $stats['already'] . ' avaient déjà reçu la lettre';
+                if ($stats['retried'] > 0) {
+                    $detail .= ', ' . $stats['retried'] . ' échec' . ($stats['retried'] > 1 ? 's' : '') . ' relancé' . ($stats['retried'] > 1 ? 's' : '');
+                }
+                flash('saved', 'Campagne mise à jour : ' . $detail . '.');
+            } else {
+                $campaignId = NewsletterCampaign::queue($payload, 'manual', $audience);
+                NewsletterLetter::markSent((int) $letter['id'], $campaignId);
+                NewsletterCron::run(false);
+                flash('saved', $audience === NewsletterCampaign::AUDIENCE_ACCOUNTS
+                    ? 'Lettre mise en file pour tous les comptes. Premier lot envoyé.'
+                    : 'Lettre mise en file pour les abonnés confirmés. Premier lot envoyé.');
+            }
             redirect('/admin/newsletter');
         } catch (Throwable $e) {
             flash('error', user_error_message($e));

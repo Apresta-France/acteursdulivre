@@ -13,6 +13,8 @@ final class Newsletter
     public const STATUS_PENDING = 'pending';
     public const STATUS_CONFIRMED = 'confirmed';
     public const STATUS_UNSUBSCRIBED = 'unsubscribed';
+    /** Compte destinataire d’un envoi ponctuel, sans inscription à la lettre. */
+    public const STATUS_ACCOUNT = 'account';
 
     public static function subscribe(string $email, string $source = 'footer', ?int $userId = null, bool $immediate = false): string
     {
@@ -141,6 +143,54 @@ final class Newsletter
         );
     }
 
+    /**
+     * Comptes actifs ou en attente, même sans la case lettre cochée.
+     * Les désinscrits explicites sont exclus. N’inscrit pas à la lettre hebdomadaire.
+     *
+     * @return list<array<string, mixed>>
+     */
+    public static function accountRecipients(): array
+    {
+        $rows = Database::fetchAll(
+            'SELECT id, email FROM users
+             WHERE deleted_at IS NULL
+               AND status IN ("active", "pending")
+               AND email <> ""
+             ORDER BY id ASC'
+        );
+        $out = [];
+        $seen = [];
+        foreach ($rows as $user) {
+            $email = strtolower(trim((string) ($user['email'] ?? '')));
+            if ($email === '' || isset($seen[$email]) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                continue;
+            }
+            $seen[$email] = true;
+            $subscriber = self::ensureAccountRecipient((int) $user['id'], $email);
+            if ($subscriber !== null) {
+                $out[] = $subscriber;
+            }
+        }
+
+        return $out;
+    }
+
+    public static function countAccountRecipients(): int
+    {
+        $row = Database::fetch(
+            'SELECT COUNT(DISTINCT LOWER(u.email)) AS n
+             FROM users u
+             LEFT JOIN newsletter_subscribers s ON LOWER(s.email) = LOWER(u.email)
+             WHERE u.deleted_at IS NULL
+               AND u.status IN ("active", "pending")
+               AND u.email <> ""
+               AND (s.id IS NULL OR s.status <> ?)',
+            [self::STATUS_UNSUBSCRIBED]
+        );
+
+        return (int) ($row['n'] ?? 0);
+    }
+
     public static function countByStatus(?string $status = null): int
     {
         if ($status === null) {
@@ -155,7 +205,10 @@ final class Newsletter
     public static function adminList(int $limit = 200): array
     {
         return Database::fetchAll(
-            'SELECT * FROM newsletter_subscribers ORDER BY created_at DESC, id DESC LIMIT ' . max(1, $limit)
+            'SELECT * FROM newsletter_subscribers
+             WHERE status <> ?
+             ORDER BY created_at DESC, id DESC LIMIT ' . max(1, $limit),
+            [self::STATUS_ACCOUNT]
         );
     }
 
@@ -209,6 +262,38 @@ final class Newsletter
     public static function sourceUrl(): string
     {
         return trim(self::setting('newsletter_source_url', ''));
+    }
+
+    /** @return array<string, mixed>|null null si la personne s’est désinscrite */
+    private static function ensureAccountRecipient(int $userId, string $email): ?array
+    {
+        $row = self::findByEmail($email);
+        if ($row && ($row['status'] ?? '') === self::STATUS_UNSUBSCRIBED) {
+            return null;
+        }
+        if ($row) {
+            if (trim((string) ($row['unsub_token'] ?? '')) === '') {
+                $token = self::freshToken();
+                Database::query(
+                    'UPDATE newsletter_subscribers SET unsub_token = ?, user_id = COALESCE(user_id, ?) WHERE id = ?',
+                    [$token, $userId > 0 ? $userId : null, (int) $row['id']]
+                );
+                $row['unsub_token'] = $token;
+            }
+
+            return $row;
+        }
+
+        $token = self::freshToken();
+        Database::query(
+            'INSERT INTO newsletter_subscribers
+                (email, created_at, status, confirm_token, unsub_token, user_id, source)
+             VALUES (?, NOW(), ?, NULL, ?, ?, ?)',
+            [$email, self::STATUS_ACCOUNT, $token, $userId > 0 ? $userId : null, 'account']
+        );
+        $created = self::findByEmail($email);
+
+        return $created ?: null;
     }
 
     private static function markUnsubscribed(int $id, string $email): void

@@ -22,6 +22,7 @@ $statusLabels = [
     'pending' => ['En attente', 'orange'],
     'confirmed' => ['Confirmé', 'green'],
     'unsubscribed' => ['Désinscrit', 'grey'],
+    'account' => ['Compte', 'navy'],
     'queued' => ['En file', 'navy'],
     'sending' => ['Envoi', 'orange'],
     'sent' => ['Envoyée', 'green'],
@@ -111,7 +112,7 @@ $statusLabels = [
             <div class="admin-users-row admin-nl-row-static">
               <span><?= e((string) ($c['created_at'] ?? '')) ?></span>
               <span><?= e((string) ($c['subject'] ?? '')) ?><br><em><?= (int) ($c['sent_count'] ?? 0) ?> envoyés · <?= (int) ($c['fail_count'] ?? 0) ?> échecs</em></span>
-              <span><?= e(($c['source'] ?? '') === 'weekly' ? 'Hebdo' : 'Manuel') ?></span>
+              <span><?= e((($c['source'] ?? '') === 'weekly' ? 'Hebdo' : 'Manuel') . ((($c['audience'] ?? '') === 'accounts') ? ' · comptes' : '')) ?></span>
               <span><span class="admin-pill" style="<?= e(AdminCatalog::pill($tone)) ?>"><?= e($label) ?></span></span>
             </div>
           <?php endforeach; ?>

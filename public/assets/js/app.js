@@ -3606,6 +3606,27 @@
     document.querySelectorAll('[data-nl-sync]').forEach(function (extra) {
       extra.addEventListener('submit', readDom);
     });
+    document.querySelectorAll('form[data-nl-send]').forEach(function (sendForm) {
+      sendForm.addEventListener('submit', function (event) {
+        var picked = document.querySelector('input[name="audience"]:checked');
+        var audience = picked ? picked.value : 'confirmed';
+        var relaunch = sendForm.getAttribute('data-nl-relaunch') === '1';
+        var confirmed = parseInt(sendForm.getAttribute('data-confirmed') || '0', 10) || 0;
+        var accounts = parseInt(sendForm.getAttribute('data-accounts') || '0', 10) || 0;
+        var already = parseInt(sendForm.getAttribute('data-already') || '0', 10) || 0;
+        var n = audience === 'accounts' ? accounts : confirmed;
+        var who = audience === 'accounts'
+          ? (n + ' compte' + (n > 1 ? 's' : '') + ', y compris sans la case lettre')
+          : (n + ' abonné' + (n > 1 ? 's' : '') + ' confirmé' + (n > 1 ? 's' : ''));
+        var deja = already > 1
+          ? (already + ' personnes ne la recevront pas à nouveau.')
+          : (already === 1 ? '1 personne ne la recevra pas à nouveau.' : 'Personne ne l’a encore reçue.');
+        var msg = relaunch
+          ? ('Enregistrer cette version et l’envoyer seulement à ceux qui ne l’ont pas encore reçue ? ' + deja)
+          : ('Mettre cette lettre en file pour ' + who + ' ?');
+        if (!window.confirm(msg)) event.preventDefault();
+      });
+    });
 
     try {
       paint(blocks[0] ? blocks[0].id : '');

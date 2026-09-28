@@ -7,6 +7,11 @@ $id = (int) ($letter['id'] ?? 0);
 $action = $id ? '/admin/newsletter/lettre/' . $id : '/admin/newsletter/nouvelle';
 $catalog = $catalog ?? ['missions' => [], 'people' => [], 'articles' => []];
 $confirmedCount = (int) ($confirmedCount ?? 0);
+$accountCount = (int) ($accountCount ?? 0);
+$campaign = is_array($campaign ?? null) ? $campaign : null;
+$hasCampaign = $campaign !== null;
+$audience = (string) ($campaign['audience'] ?? 'confirmed');
+$alreadySent = (int) ($campaign['sent_count'] ?? 0);
 $builder = [
     'blocks' => $letter['blocks'] ?? [],
     'catalog' => $catalog,
@@ -53,12 +58,12 @@ $tiles = [
           <input class="input" type="email" name="test_email" value="<?= e(auth_user()['email'] ?? '') ?>" required aria-label="Adresse de test">
           <button class="btn-navy" type="submit">Tester</button>
         </form>
-        <form method="post" action="<?= e(url('/admin/newsletter/lettre/' . $id . '/envoyer')) ?>" data-nl-sync onsubmit="return confirm('Mettre cette lettre en file d’envoi pour <?= (int) $confirmedCount ?> abonné<?= $confirmedCount > 1 ? 's' : '' ?> ?');">
+        <form id="nl-send" method="post" action="<?= e(url('/admin/newsletter/lettre/' . $id . '/envoyer')) ?>" data-nl-sync data-nl-send<?= $hasCampaign ? ' data-nl-relaunch="1"' : '' ?> data-confirmed="<?= $confirmedCount ?>" data-accounts="<?= $accountCount ?>" data-already="<?= $alreadySent ?>">
           <?= csrf_field() ?>
           <input type="hidden" name="subject" value="<?= e((string) ($letter['subject'] ?? '')) ?>">
           <input type="hidden" name="preheader" value="<?= e((string) ($letter['preheader'] ?? '')) ?>">
           <input type="hidden" name="blocks" value="">
-          <button class="btn-navy" type="submit">Envoyer</button>
+          <button class="btn-navy" type="submit"><?= $hasCampaign ? 'Relancer' : 'Envoyer' ?></button>
         </form>
       <?php endif; ?>
     </div>
@@ -99,6 +104,31 @@ $tiles = [
           <p class="field-help">Titre affiché dans la boîte de réception du destinataire.</p>
           <label class="field" for="nl-preheader">Aperçu sous le sujet <span class="admin-nl-optional">(facultatif)</span></label>
           <input class="input" id="nl-preheader" name="preheader" maxlength="180" value="<?= e((string) ($letter['preheader'] ?? '')) ?>" placeholder="Une ligne visible sous le sujet, chez le destinataire" autocomplete="off">
+          <?php if ($id): ?>
+            <fieldset class="admin-nl-audience">
+              <legend>Destinataires</legend>
+              <label>
+                <input type="radio" name="audience" value="confirmed" form="nl-send"<?= $audience !== 'accounts' ? ' checked' : '' ?>>
+                <span>Abonnés confirmés <em><?= $confirmedCount ?></em></span>
+              </label>
+              <label>
+                <input type="radio" name="audience" value="accounts" form="nl-send"<?= $audience === 'accounts' ? ' checked' : '' ?>>
+                <span>Tous les comptes, même sans la case lettre <em><?= $accountCount ?></em></span>
+              </label>
+              <p class="field-help"><?php
+                if ($hasCampaign) {
+                    $received = $alreadySent > 1
+                        ? $alreadySent . ' personnes l’ont déjà reçue : elles ne la recevront pas à nouveau.'
+                        : ($alreadySent === 1
+                            ? '1 personne l’a déjà reçue : elle ne la recevra pas à nouveau.'
+                            : 'Personne ne l’a encore reçue.');
+                    echo 'Relancer enregistre le texte modifié et n’écrit qu’à ceux qui n’ont pas encore reçu cette campagne. ' . $received . ' Les désinscrits restent exclus.';
+                } else {
+                    echo 'Les désinscrits ne sont pas inclus, même dans « tous les comptes ». Cet envoi ne coche pas la case lettre à leur place.';
+                }
+              ?></p>
+            </fieldset>
+          <?php endif; ?>
         </div>
 
         <div class="admin-nl-mail" data-nl-mail>
