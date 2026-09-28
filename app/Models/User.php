@@ -71,11 +71,12 @@ final class User
         $password = (string) ($data['password'] ?? '');
         $hash = $password !== '' ? password_hash($password, PASSWORD_DEFAULT) : null;
 
+        $email = strtolower((string) $data['email']);
         Database::query(
-            'INSERT INTO users (email, password, first_name, last_name, role, seeks_services, offers_services, status, google_id, facebook_id, avatar_url, created_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())',
+            'INSERT INTO users (email, password, first_name, last_name, role, seeks_services, offers_services, status, google_id, facebook_id, avatar_url, notify_newsletter, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, NOW())',
             [
-                strtolower($data['email']),
+                $email,
                 $hash,
                 $data['first_name'],
                 $data['last_name'],
@@ -89,6 +90,10 @@ final class User
             ]
         );
         $id = (int) Database::lastId();
+        try {
+            Newsletter::subscribe($email, 'account', $id, true);
+        } catch (\Throwable) {
+        }
         self::maybeGrantFounder($id);
         if ($offers) {
             self::ensureProfile($id);
