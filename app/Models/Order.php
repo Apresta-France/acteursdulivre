@@ -25,7 +25,7 @@ final class Order
      * @param array{buyer_id: int, seller_id: int, amount?: int, service_id?: ?int, mission_id?: ?int, brief?: ?string, package_name?: ?string, options?: list<array<string, mixed>>} $data
      * @return array<string, mixed>
      */
-    public static function create(array $data): array
+    public static function create(array $data, bool $notifySeller = true): array
     {
         $buyerId = (int) ($data['buyer_id'] ?? 0);
         $sellerId = (int) ($data['seller_id'] ?? 0);
@@ -86,20 +86,22 @@ final class Order
             throw new \RuntimeException('La commande n\'a pas pu être créée.');
         }
 
-        Notification::create(
-            $sellerId,
-            'Nouvelle commande ' . $order['num'],
-            'Un porteur de projet a ouvert « ' . $order['title'] . ' ». Envoyez le devis pour lancer les jalons.',
-            '/espace/suivi/' . (int) $order['id'],
-            'order_created',
-            'order',
-            (int) $order['id']
-        );
-        Mailer::notify(User::find($sellerId), 'transactional', 'nouvelle-commande', [
-            'numero' => (string) $order['num'],
-            'titre' => (string) $order['title'],
-            'lien' => url('/espace/suivi/' . (int) $order['id']),
-        ]);
+        if ($notifySeller) {
+            Notification::create(
+                $sellerId,
+                'Nouvelle commande ' . $order['num'],
+                'Un porteur de projet a ouvert « ' . $order['title'] . ' ». Envoyez le devis pour lancer les jalons.',
+                '/espace/suivi/' . (int) $order['id'],
+                'order_created',
+                'order',
+                (int) $order['id']
+            );
+            Mailer::notify(User::find($sellerId), 'transactional', 'nouvelle-commande', [
+                'numero' => (string) $order['num'],
+                'titre' => (string) $order['title'],
+                'lien' => url('/espace/suivi/' . (int) $order['id']),
+            ]);
+        }
 
         return $order;
     }

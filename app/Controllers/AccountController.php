@@ -6,6 +6,7 @@ namespace Adl\Controllers;
 
 use Adl\Core\Auth;
 use Adl\Core\BotGuard;
+use Adl\Core\Database;
 use Adl\Core\Request;
 use Adl\Core\View;
 use Adl\Data\Catalog;
@@ -1840,12 +1841,30 @@ final class AccountController
             not_found('Cette conversation est introuvable.');
         }
         Conversation::markRead((int) $id, (int) $user['id']);
+        $quoteStart = self::quoteStartContext($thread, $user);
+        $quoteWait = null;
+        if (!$quoteStart && (int) ($thread['order_id'] ?? 0) < 1) {
+            $otherId = (int) ($thread['other']['id'] ?? 0);
+            $asOther = $thread;
+            $asOther['other'] = ['id' => (int) $user['id']];
+            if ($otherId > 0 && Conversation::sellerCanStartQuote($asOther, $otherId)) {
+                $quoteWait = (string) ($thread['other']['name'] ?? 'Le prestataire');
+            }
+        }
+        $quoteOld = [];
+        if ($quoteStart && is_array($_SESSION['_old'] ?? null) && array_key_exists('amount', $_SESSION['_old'])) {
+            $quoteOld = $_SESSION['_old'];
+            unset($_SESSION['_old']);
+        }
         View::page('messagerie', [
             'title' => (string) ($thread['other']['name'] ?? 'Messagerie'),
             'threads' => Conversation::forUser((int) $user['id']),
             'thread' => $thread,
             'messages' => Conversation::messages((int) $id),
             'quoteHref' => self::quoteManageHref($thread, (int) $user['id']),
+            'quoteStart' => $quoteStart,
+            'quoteWait' => $quoteWait,
+            'quoteOld' => $quoteOld,
             'alreadyReported' => Conversation::hasOpenReport((int) $id, (int) $user['id']),
             'saved' => flash('saved'),
             'error' => flash('error'),
@@ -1915,6 +1934,101 @@ final class AccountController
             flash('error', user_error_message($e));
         }
         redirect('/espace/messages/' . (int) $id);
+    }
+
+    public function messageQuote(Request $request, string $id): void
+    {
+        $user = Auth::requireUser();
+        $thread = Conversation::findForUser((int) $id, (int) $user['id']);
+        if (!$thread) {
+            not_found('Cette conversation est introuvable.');
+        }
+        $back = '/espace/messages/' . (int) $thread['id'];
+        try {
+            if (!Conversation::sellerCanStartQuote($thread, (int) $user['id'])) {
+                throw new \RuntimeException('Vous ne pouvez pas créer de devis dans cette conversation.');
+            }
+            Invoice::assertCanOffer((int) $user['id']);
+            $buyerId = (int) ($thread['other']['id'] ?? 0);
+            $buyer = User::find($buyerId);
+            if (!$buyer || ($buyer['status'] ?? '') !== 'active' || !empty($buyer['deleted_at'])) {
+                throw new \RuntimeException('Ce correspondant n’est plus joignable.');
+            }
+
+            $amount = self::money($request->string('amount'));
+            if ($amount === null || $amount < 1) {
+                throw new \RuntimeException('Indiquez le montant du devis.');
+            }
+            $deposit = self::money($request->string('deposit_amount')) ?? 0;
+            if ($deposit > $amount) {
+                throw new \RuntimeException('L’acompte ne peut pas dépasser le montant du devis.');
+            }
+            $delay = trim($request->string('delay'));
+            if (mb_strlen($delay) > 80) {
+                throw new \RuntimeException('Le délai est trop long (80 caractères maximum).');
+            }
+            $note = trim($request->string('note'));
+            if (mb_strlen($note) > 4000) {
+                throw new \RuntimeException('Les précisions sont trop longues.');
+            }
+
+            $links = self::quoteLinks($thread, (int) $user['id']);
+            $title = $links['title'];
+            if ($title === '') {
+                $title = trim($request->string('title'));
+                if ($title === '') {
+                    throw new \RuntimeException('Indiquez l’intitulé de la mission.');
+                }
+                if (mb_strlen($title) > 80) {
+                    throw new \RuntimeException('L’intitulé est trop long (80 caractères maximum).');
+                }
+            }
+
+            $sellerId = (int) $user['id'];
+            $created = Database::transaction(static function () use ($thread, $buyerId, $sellerId, $amount, $deposit, $delay, $note, $title, $links, $request): array {
+                $payload = [
+                    'buyer_id' => $buyerId,
+                    'seller_id' => $sellerId,
+                    'service_id' => $links['service_id'],
+                    'mission_id' => $links['mission_id'],
+                    'amount' => $amount,
+                    'deposit_amount' => $deposit,
+                    'brief' => $note !== '' ? $note : null,
+                    'package_name' => $links['title'] === '' ? $title : null,
+                ];
+                if ($links['service'] !== null) {
+                    $payload = array_merge($payload, Service::startupSnapshot($links['service'], $amount));
+                    $payload['deposit_amount'] = $deposit;
+                }
+                $order = Order::create($payload, false);
+                Conversation::attachOrder((int) $thread['id'], (int) $order['id']);
+                $file = self::storeMilestoneFile($request, (int) $order['id'], 'quote');
+                OrderMilestone::complete((int) $order['id'], $sellerId, 'quote', [
+                    'amount' => $amount,
+                    'deposit_amount' => $deposit,
+                    'delay' => $delay !== '' ? $delay : null,
+                    'note' => $note !== '' ? $note : null,
+                    'file_name' => $file['name'] ?? null,
+                    'file_path' => $file['path'] ?? null,
+                ]);
+
+                return ['order' => Order::find((int) $order['id']) ?? $order, 'file' => $file];
+            });
+            $order = $created['order'];
+            self::pingJalonThread((int) $order['id'], $sellerId, 'quote', $created['file']);
+            flash('saved', 'Devis envoyé. La commande est ouverte : le porteur de projet peut maintenant l’accepter.');
+            redirect('/espace/suivi/' . (int) $order['id']);
+        } catch (\Throwable $e) {
+            flash('error', user_error_message($e));
+            $_SESSION['_old'] = [
+                'title' => $request->string('title'),
+                'amount' => $request->string('amount'),
+                'deposit_amount' => $request->string('deposit_amount'),
+                'delay' => $request->string('delay'),
+                'note' => $request->string('note'),
+            ];
+            redirect($back);
+        }
     }
 
     public function messageFile(Request $request, string $id, string $mid): void
@@ -3114,6 +3228,95 @@ final class AccountController
         return [
             'name' => (string) ($stored['name'] ?? $file['name'] ?? 'Document'),
             'path' => (string) ($stored['path'] ?? ''),
+        ];
+    }
+
+    /**
+     * @param array<string, mixed> $thread
+     * @param array<string, mixed> $user
+     * @return array{buyerName: string, title: string, titleLocked: bool, startupOn: bool, startupKind: string, startupValue: int, depositLabel: string, depositHelp: string}|null
+     */
+    private static function quoteStartContext(array $thread, array $user): ?array
+    {
+        if (!Conversation::sellerCanStartQuote($thread, (int) ($user['id'] ?? 0))) {
+            return null;
+        }
+        $links = self::quoteLinks($thread, (int) $user['id']);
+        $service = $links['service'];
+        $startupOn = $service !== null && !empty($service['startup_enabled']);
+        $title = $links['title'];
+        $locked = $title !== '';
+        if (!$locked) {
+            $subject = trim((string) ($thread['subject'] ?? ''));
+            if ($subject !== '' && !in_array($subject, ['Conversation', 'Message', 'Demande de devis'], true)) {
+                $title = mb_substr($subject, 0, 80);
+            }
+        }
+
+        return [
+            'buyerName' => (string) ($thread['other']['name'] ?? 'le porteur de projet'),
+            'title' => $title,
+            'titleLocked' => $locked,
+            'startupOn' => $startupOn,
+            'startupKind' => $startupOn ? (string) ($service['startup_kind'] ?? 'amount') : '',
+            'startupValue' => $startupOn ? (int) ($service['startup_value'] ?? 0) : 0,
+            'depositLabel' => $startupOn ? 'Accompagnement de démarrage (€)' : 'Acompte (€)',
+            'depositHelp' => $startupOn
+                ? 'Prérempli depuis votre prestation. Vous pouvez l’ajuster.'
+                : 'Souvent 30 %. Laissez vide s’il n’y a pas d’acompte.',
+        ];
+    }
+
+    /**
+     * @param array<string, mixed> $thread
+     * @return array{service_id: ?int, mission_id: ?int, title: string, service: ?array<string, mixed>}
+     */
+    private static function quoteLinks(array $thread, int $sellerId): array
+    {
+        $service = null;
+        $serviceId = (int) ($thread['service_id'] ?? 0);
+        if ($serviceId > 0) {
+            try {
+                $service = Service::find($serviceId);
+            } catch (\Throwable) {
+                $service = null;
+            }
+            if (!$service || (int) ($service['user_id'] ?? 0) !== $sellerId) {
+                $service = null;
+                $serviceId = 0;
+            }
+        }
+
+        $missionTitle = '';
+        $missionId = (int) ($thread['mission_id'] ?? 0);
+        $buyerId = (int) ($thread['other']['id'] ?? 0);
+        if ($missionId > 0 && $service === null) {
+            try {
+                $mission = Mission::find($missionId);
+            } catch (\Throwable) {
+                $mission = null;
+            }
+            if ($mission && (int) ($mission['user_id'] ?? 0) === $buyerId) {
+                $missionTitle = trim((string) ($mission['title'] ?? ''));
+            } else {
+                $missionId = 0;
+            }
+        } elseif ($service !== null) {
+            $missionId = 0;
+        }
+
+        $title = '';
+        if ($service !== null) {
+            $title = trim((string) ($service['title'] ?? ''));
+        } elseif ($missionTitle !== '') {
+            $title = $missionTitle;
+        }
+
+        return [
+            'service_id' => $serviceId > 0 ? $serviceId : null,
+            'mission_id' => $missionId > 0 ? $missionId : null,
+            'title' => $title,
+            'service' => $service,
         ];
     }
 

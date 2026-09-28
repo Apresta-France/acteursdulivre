@@ -3,6 +3,9 @@ $threads = $threads ?? [];
 $thread = $thread ?? null;
 $messages = $messages ?? [];
 $quoteHref = trim((string) ($quoteHref ?? ''));
+$quoteStart = is_array($quoteStart ?? null) ? $quoteStart : null;
+$quoteWait = trim((string) ($quoteWait ?? ''));
+$quoteOld = is_array($quoteOld ?? null) ? $quoteOld : [];
 $alreadyReported = !empty($alreadyReported);
 ?>
 <div class="espace-page">
@@ -66,6 +69,7 @@ $alreadyReported = !empty($alreadyReported);
                 <em><?= e((string) ($thread['subject'] ?? '')) ?></em>
               </div>
             </div>
+            <div class="inbox-thread-actions">
             <?php if ($alreadyReported): ?>
               <p class="inbox-report-done">Signalement envoyé</p>
             <?php else: ?>
@@ -86,7 +90,81 @@ $alreadyReported = !empty($alreadyReported);
                 </form>
               </details>
             <?php endif; ?>
+            </div>
           </div>
+          <?php if ($quoteWait !== ''): ?>
+            <p class="inbox-quote-wait"><?= e($quoteWait) ?> peut envoyer un devis depuis cette conversation. La commande s’ouvre alors, et vous pourrez accepter ce devis dans le suivi.</p>
+          <?php endif; ?>
+          <?php if ($quoteStart): ?>
+            <?php
+              $quoteTitle = trim((string) ($quoteOld['title'] ?? $quoteStart['title'] ?? ''));
+              $quoteAmount = trim((string) ($quoteOld['amount'] ?? ''));
+              $quoteDeposit = trim((string) ($quoteOld['deposit_amount'] ?? ''));
+              $quoteDelay = trim((string) ($quoteOld['delay'] ?? ''));
+              $quoteNote = (string) ($quoteOld['note'] ?? '');
+              $quoteBuyer = (string) ($quoteStart['buyerName'] ?? 'le porteur de projet');
+            ?>
+            <section class="inbox-quote" id="creer-devis">
+              <h2>Créer un devis</h2>
+              <p class="jalon-lead"><?= e($quoteBuyer) ?> pourra accepter ce devis dans le suivi. Cela ouvre la commande : le règlement se fait entre vous, hors de la plateforme.</p>
+              <form class="jalon-form" method="post" action="<?= e(url('/espace/messages/' . (int) $thread['id'] . '/devis')) ?>" enctype="multipart/form-data">
+                <?= csrf_field() ?>
+                <?php if (!empty($quoteStart['titleLocked'])): ?>
+                  <p class="jalon-amount">Mission : <strong><?= e((string) $quoteStart['title']) ?></strong></p>
+                <?php else: ?>
+                  <div>
+                    <label class="field" for="inbox-quote-title">Intitulé</label>
+                    <input class="input" id="inbox-quote-title" name="title" required maxlength="80" value="<?= e($quoteTitle) ?>" placeholder="Correction du roman, 300 pages">
+                  </div>
+                <?php endif; ?>
+                <div class="jalon-fields">
+                  <div>
+                    <label class="field" for="jalon-amount">Montant du devis (€)</label>
+                    <input class="input" id="jalon-amount" name="amount" inputmode="decimal" required value="<?= e($quoteAmount) ?>" placeholder="780">
+                  </div>
+                  <div>
+                    <label class="field" for="jalon-deposit"><?= e((string) ($quoteStart['depositLabel'] ?? 'Acompte (€)')) ?></label>
+                    <input class="input" id="jalon-deposit" name="deposit_amount" inputmode="decimal"
+                           value="<?= e($quoteDeposit) ?>"
+                           placeholder="0 si aucun"
+                           <?php if (!empty($quoteStart['startupOn'])): ?>
+                           data-startup-kind="<?= e((string) ($quoteStart['startupKind'] ?? 'amount')) ?>"
+                           data-startup-value="<?= (int) ($quoteStart['startupValue'] ?? 0) ?>"
+                           <?php endif; ?>>
+                    <p class="field-help"><?= e((string) ($quoteStart['depositHelp'] ?? '')) ?></p>
+                  </div>
+                </div>
+                <div>
+                  <label class="field" for="inbox-quote-delay">Délai</label>
+                  <input class="input" id="inbox-quote-delay" name="delay" maxlength="80" value="<?= e($quoteDelay) ?>" placeholder="3 semaines">
+                </div>
+                <div>
+                  <label class="field" for="inbox-quote-note">Précisions (périmètre, formats, allers-retours)</label>
+                  <textarea class="textarea" id="inbox-quote-note" name="note" rows="5" maxlength="4000" placeholder="Ce qui est inclus, ce qui ne l’est pas…"><?= e($quoteNote) ?></textarea>
+                </div>
+                <div>
+                  <span class="field" id="inbox-quote-doc-label">Devis PDF (facultatif)</span>
+                  <?php
+                    $filePickId = 'inbox-quote-doc';
+                    $filePickName = 'document';
+                    $filePickAccept = '.pdf,.doc,.docx,.odt,image/jpeg,image/png,image/webp';
+                    $filePickButton = 'Choisir un devis';
+                    $filePickDrop = true;
+                    $filePickAttrs = 'aria-labelledby="inbox-quote-doc-label"';
+                    require ADL_ROOT . '/app/Views/partials/file-pick.php';
+                  ?>
+                </div>
+                <div class="jalon-recap" data-quote-recap>
+                  <div class="jalon-recap-row"><span>Mission</span><strong data-quote-recap-amount>—</strong></div>
+                  <div class="jalon-recap-row"><span><?= !empty($quoteStart['startupOn']) ? 'Accompagnement' : 'Acompte' ?></span><strong data-quote-recap-deposit>—</strong></div>
+                  <div class="jalon-recap-row"><span>Solde</span><strong data-quote-recap-balance>—</strong></div>
+                </div>
+                <div class="jalon-actions">
+                  <button class="btn-orange" type="submit">Envoyer le devis</button>
+                </div>
+              </form>
+            </section>
+          <?php endif; ?>
           <?php
             $inboxUserId = (int) (\Adl\Core\Auth::id() ?? 0);
             $inboxLastId = 0;

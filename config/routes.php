@@ -168,6 +168,7 @@ return static function (Router $router): void {
     $router->get('/espace/messages/{id}', [AccountController::class, 'messageShow']);
     $router->get('/espace/messages/{id}/sync', [AccountController::class, 'messageSync']);
     $router->post('/espace/messages/{id}', [AccountController::class, 'messageSend']);
+    $router->post('/espace/messages/{id}/devis', [AccountController::class, 'messageQuote']);
     $router->post('/espace/messages/{id}/signaler', [AccountController::class, 'messageReport']);
     $router->get('/espace/messages/{id}/fichier/{mid}', [AccountController::class, 'messageFile']);
     $router->get('/espace/notifications', [AccountController::class, 'notifications']);

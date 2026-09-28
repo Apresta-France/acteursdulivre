@@ -94,13 +94,14 @@ final class Conversation
             $subject = trim((string) ($context['subject'] ?? ''));
             try {
                 Database::query(
-                    'INSERT INTO conversations (subject, order_id, mission_id, service_id, created_at, updated_at)
-                     VALUES (?, ?, ?, ?, NOW(), NOW())',
+                    'INSERT INTO conversations (subject, order_id, mission_id, service_id, started_by, created_at, updated_at)
+                     VALUES (?, ?, ?, ?, ?, NOW(), NOW())',
                     [
                         $subject !== '' ? $subject : null,
                         $context['order_id'] ?? null,
                         $context['mission_id'] ?? null,
                         $context['service_id'] ?? null,
+                        $fromId,
                     ]
                 );
             } catch (\PDOException $e) {
@@ -119,6 +120,55 @@ final class Conversation
             $row = Database::fetch('SELECT * FROM conversations WHERE id = ?', [$id]);
             return self::hydrateForUser($row ?? ['id' => $id], $fromId);
         });
+    }
+
+    public static function attachOrder(int $conversationId, int $orderId): void
+    {
+        if ($conversationId < 1 || $orderId < 1) {
+            throw new RuntimeException('Cette conversation est introuvable.');
+        }
+        $updated = Database::query(
+            'UPDATE conversations SET order_id = ?, updated_at = NOW() WHERE id = ? AND order_id IS NULL',
+            [$orderId, $conversationId]
+        );
+        if ($updated->rowCount() < 1) {
+            throw new RuntimeException('Un devis est déjà lié à cette conversation.');
+        }
+    }
+
+    /**
+     * Le prestataire peut ouvrir la commande en envoyant un devis
+     * lorsque la conversation n’est pas encore rattachée à une commande.
+     *
+     * @param array<string, mixed> $thread
+     */
+    public static function sellerCanStartQuote(array $thread, int $userId): bool
+    {
+        if ($userId < 1 || (int) ($thread['order_id'] ?? 0) > 0) {
+            return false;
+        }
+        $otherId = (int) ($thread['other']['id'] ?? 0);
+        if ($otherId < 1 || $otherId === $userId) {
+            return false;
+        }
+        $me = User::find($userId);
+        if (!User::offersServices($me)) {
+            return false;
+        }
+
+        $initiator = (int) ($thread['started_by'] ?? 0);
+        if ($initiator < 1) {
+            $first = Database::fetch(
+                'SELECT user_id FROM messages WHERE conversation_id = ? ORDER BY id ASC LIMIT 1',
+                [(int) ($thread['id'] ?? 0)]
+            );
+            $initiator = (int) ($first['user_id'] ?? 0);
+        }
+        if ($initiator === $userId && User::offersServices(User::find($otherId))) {
+            return false;
+        }
+
+        return true;
     }
 
     /**
