@@ -1278,9 +1278,6 @@ final class Catalog
         $pool = [];
         foreach ($items as $item) {
             $item = self::decorate($item);
-            if ($cat !== '' && !self::itemHasTrade($item, [$cat])) {
-                continue;
-            }
             $score = self::score($q, $item);
             if ($q !== '' && $score <= 0) {
                 continue;
@@ -1299,7 +1296,29 @@ final class Catalog
             }));
         }
 
-        $facets = self::facetOptions($pool, $type);
+        // `?cat=` (landings, pages métier) est le même filtre que la case Métier.
+        // Tant qu’aucune autre case n’est cochée, on l’affiche comme sélectionnée.
+        // Les autres métiers restent dans la liste, pour pouvoir le remplacer.
+        $resolvedCat = $cat !== '' ? (self::resolveTrade($cat) ?? $cat) : '';
+        $tradeLock = '';
+        if ($resolvedCat !== '' && ($filters['metiers'] === [] || $filters['metiers'] === [$resolvedCat])) {
+            $tradeLock = $resolvedCat;
+            if ($filters['metiers'] === []) {
+                $filters['metiers'] = [$resolvedCat];
+            }
+        }
+        $facetPool = $pool;
+        if ($tradeLock !== '') {
+            $facetPool = array_values(array_filter(
+                $pool,
+                static fn (array $item): bool => self::itemHasTrade($item, [$tradeLock])
+            ));
+            $cat = $tradeLock;
+        }
+        $facets = self::facetOptions($facetPool, $type);
+        if ($tradeLock !== '') {
+            $facets['metier'] = self::tradeFacetOptions($pool);
+        }
         $scored = [];
         foreach ($pool as $item) {
             if (!self::matchesFacets($item, $filters)) {
@@ -2540,6 +2559,19 @@ final class Catalog
 
     /**
      * @param list<array<string, mixed>> $pool
+     * @return list<array{v: string, l: string, n: int}>
+     */
+    private static function tradeFacetOptions(array $pool): array
+    {
+        $metiers = [];
+        foreach (self::trades() as $trade) {
+            $metiers[] = ['v' => $trade, 'l' => $trade, 'n' => self::countWhere($pool, static fn (array $i): bool => self::itemHasTrade($i, [$trade]))];
+        }
+        return $metiers;
+    }
+
+    /**
+     * @param list<array<string, mixed>> $pool
      * @return array<string, list<array{v: string, l: string, n: int}>>
      */
     private static function facetOptions(array $pool, string $type): array
@@ -2552,10 +2584,7 @@ final class Catalog
             $kinds[] = ['v' => $value, 'l' => $label, 'n' => self::countWhere($pool, static fn (array $i): bool => ($i['kind'] ?? '') === $value)];
         }
 
-        $metiers = [];
-        foreach (self::trades() as $trade) {
-            $metiers[] = ['v' => $trade, 'l' => $trade, 'n' => self::countWhere($pool, static fn (array $i): bool => self::itemHasTrade($i, [$trade]))];
-        }
+        $metiers = self::tradeFacetOptions($pool);
 
         $specs = [];
         foreach (self::specialties() as $spec) {

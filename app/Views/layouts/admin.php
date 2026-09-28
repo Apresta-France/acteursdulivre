@@ -67,6 +67,6 @@
       </main>
     </div>
   </div>
-  <script src="<?= e(asset('js/app.js')) ?>?v=m111"></script>
+  <script src="<?= e(asset('js/app.js')) ?>?v=m112"></script>
 </body>
 </html>

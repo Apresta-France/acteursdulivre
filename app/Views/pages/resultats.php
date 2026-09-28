@@ -80,7 +80,7 @@ if ($searchCity !== '') {
       <form class="search-filters" data-search-filters>
         <input type="hidden" name="q" value="<?= e($q) ?>" data-search-q>
         <?php if ($cat !== ''): ?>
-          <input type="hidden" name="cat" value="<?= e($cat) ?>">
+          <input type="hidden" value="<?= e($cat) ?>" data-search-cat>
         <?php endif; ?>
         <div class="sf-group">
           <div class="sf-group-label">Ville</div>

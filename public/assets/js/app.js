@@ -1262,8 +1262,17 @@
       var forcedType = searchPage.getAttribute('data-type') || '';
       var q = (data.get('q') || '').toString().trim();
       if (q) params.set('q', q);
-      var cat = (data.get('cat') || '').toString().trim();
-      if (!cat) {
+      var catHolder = filters.querySelector('[data-search-cat]');
+      var cat = catHolder ? (catHolder.value || '').trim() : '';
+      var metiers = [];
+      data.getAll('metier[]').forEach(function (value) {
+        value = (value || '').toString().trim();
+        if (value) metiers.push(value);
+      });
+      var hasMetierControls = filters.querySelector('input[name="metier[]"]') !== null;
+      if (hasMetierControls) {
+        if (!(cat && metiers.length === 1 && metiers[0] === cat)) cat = '';
+      } else if (!cat) {
         try { cat = (new URLSearchParams(window.location.search).get('cat') || '').trim(); } catch (e) {}
       }
       if (cat) params.set('cat', cat);
