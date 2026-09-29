@@ -10,9 +10,13 @@ $trades = is_array($s['trades'] ?? null) ? $s['trades'] : [];
 $facts = is_array($s['facts'] ?? null) ? $s['facts'] : [];
 $open = !empty($s['open']);
 $host = trim((string) ($s['host'] ?? ''));
-$cta = $open
-    ? ($host !== '' ? 'Voir sur ' . $host : 'Voir le site')
-    : 'Annonce terminée';
+$url = trim((string) ($s['external_url'] ?? ''));
+$cta = trim((string) ($s['cta'] ?? ''));
+if (!$open) {
+    $cta = trim((string) ($s['outcome'] ?? '')) ?: 'Annonce terminée';
+} elseif ($cta === '') {
+    $cta = $host !== '' ? 'Voir sur ' . $host : 'Voir le site';
+}
 ?>
 <div class="mk-page co-page sub-page">
   <section class="forum-hero forum-hero-compact">
@@ -51,9 +55,9 @@ $cta = $open
             </span>
           </div>
           <div>
-            <?php if ($body !== []): ?>
-              <p><?= e((string) $body[0]) ?></p>
-            <?php endif; ?>
+            <?php foreach ($body as $paragraph): ?>
+              <p><?= e((string) $paragraph) ?></p>
+            <?php endforeach; ?>
           </div>
         </div>
         <?php if ($trades !== []): ?>
@@ -76,11 +80,13 @@ $cta = $open
             <p class="sub-order-host"><?= e($host) ?></p>
           <?php endif; ?>
           <p class="sub-order-meta"><?= $open ? 'Jusqu’au ' . e((string) ($s['closes_label'] ?? '')) : 'Close le ' . e((string) ($s['closes_label'] ?? '')) ?></p>
-          <?php if ($open): ?>
-            <span class="btn-orange sub-cta-example"><?= e($cta) ?></span>
-            <p class="sub-cta-note">Exemple de lien. Il quittera acteursdulivre.fr.</p>
+          <?php if ($open && $url !== ''): ?>
+            <a class="btn-orange sub-cta" href="<?= e($url) ?>" target="_blank" rel="noopener noreferrer"><?= e($cta) ?></a>
+            <p class="sub-cta-note">Le lien ouvre <?= e($host !== '' ? $host : 'un site extérieur') ?>.</p>
+          <?php elseif ($open): ?>
+            <span class="btn-ghost sub-cta">Lien à venir</span>
           <?php else: ?>
-            <span class="btn-ghost sub-cta-example"><?= e($cta) ?></span>
+            <span class="btn-ghost sub-cta"><?= e($cta) ?></span>
           <?php endif; ?>
         </div>
 

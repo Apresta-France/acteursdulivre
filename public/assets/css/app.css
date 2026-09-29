@@ -6044,6 +6044,11 @@ img.profile-avatar,
 .admin-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 14px; }
 .admin-actions form { margin: 0; }
 .admin-quote { font-size: 14px; color: #4A5A6B; line-height: 1.55; margin: 8px 0 0; }
+.admin-form input[type="color"].input {
+  height: 48px;
+  padding: 6px 8px;
+  cursor: pointer;
+}
 .admin-form {
   max-width: 720px;
   display: flex;
@@ -11973,10 +11978,10 @@ a.co-event:hover { border-color: var(--navy); color: inherit; }
 }
 .sub-order-sum { margin: 12px 0 0; color: var(--navy); }
 .sub-order-meta { margin: 4px 0 0; font-size: 13px; color: #66768A; }
-.sub-cta-example {
+.sub-cta {
   width: 100%;
   margin-top: 16px;
-  pointer-events: none;
+  box-sizing: border-box;
 }
 .sub-cta-note { margin: 10px 0 0; font-size: 13px; }
 .sub-facts { margin: 0; }

@@ -258,6 +258,12 @@ return static function (Router $router): void {
     $router->get('/admin/journal/{id}', [AdminController::class, 'articleEdit']);
     $router->post('/admin/journal/{id}', [AdminController::class, 'articleSave']);
     $router->post('/admin/journal/{id}/supprimer', [AdminController::class, 'articleDelete']);
+    $router->get('/admin/souscriptions', [AdminController::class, 'souscriptionsAdmin']);
+    $router->get('/admin/souscriptions/nouvelle', [AdminController::class, 'souscriptionEdit']);
+    $router->post('/admin/souscriptions/nouvelle', [AdminController::class, 'souscriptionSave']);
+    $router->get('/admin/souscriptions/{id}', [AdminController::class, 'souscriptionEdit']);
+    $router->post('/admin/souscriptions/{id}', [AdminController::class, 'souscriptionSave']);
+    $router->post('/admin/souscriptions/{id}/supprimer', [AdminController::class, 'souscriptionDelete']);
     $router->get('/admin/reglages', [AdminController::class, 'reglages']);
     $router->post('/admin/reglages', [AdminController::class, 'reglagesSave']);
     $router->get('/admin/listes', [AdminController::class, 'listes']);

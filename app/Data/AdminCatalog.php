@@ -33,7 +33,7 @@ final class AdminCatalog
         $user = Auth::user();
         $data = array_merge(self::shared($user, $screen, $extra['query'] ?? ''), self::content(), self::liveOverlay(), $extra);
         $data['screen'] = $screen;
-        $flags = ['dash', 'verif', 'moderation', 'users', 'catalogue', 'missions', 'finances', 'litiges', 'contact', 'avis', 'preouverture', 'cms', 'reglages', 'stats'];
+        $flags = ['dash', 'verif', 'moderation', 'users', 'catalogue', 'missions', 'finances', 'litiges', 'contact', 'avis', 'preouverture', 'cms', 'livres', 'reglages', 'stats'];
         foreach ($flags as $id) {
             $data['is' . ucfirst($id)] = $id === $screen;
         }
@@ -63,6 +63,7 @@ final class AdminCatalog
             ['finances', 'Commandes & finances', $badges['finances'], '', '/admin/finances'],
             ['preouverture', 'Pré-ouverture', '', 'Plateforme', '/admin/pre-ouverture'],
             ['cms', 'Journal & pages', '', '', '/admin/journal'],
+            ['livres', 'Souscriptions', '', '', '/admin/souscriptions'],
             ['landings', 'Landings pub', '', '', '/admin/landings'],
             ['reglages', 'Réglages', '', '', '/admin/reglages'],
             ['listes', 'Métiers & spécialités', '', '', '/admin/listes'],
@@ -143,6 +144,7 @@ final class AdminCatalog
             'finances' => 'Commandes & finances',
             'preouverture' => 'Pré-ouverture',
             'cms' => 'Journal & pages',
+            'livres' => 'Souscriptions de livres',
             'landings' => 'Landings pub',
             'reglages' => 'Réglages',
             'listes' => 'Métiers & spécialités',

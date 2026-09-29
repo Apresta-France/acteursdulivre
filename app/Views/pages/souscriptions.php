@@ -88,7 +88,11 @@ $featCover = is_array($featured['cover'] ?? null) ? $featured['cover'] : [];
     <?php endif; ?>
 
     <?php if ($items === [] && $featured === null): ?>
-      <p class="mk-empty">Aucun livre dans cette sélection. <a href="<?= e(url('/souscriptions')) ?>">Voir les annonces ouvertes</a></p>
+      <?php if ((int) ($counts['open'] ?? 0) === 0 && (int) ($counts['closed'] ?? 0) === 0): ?>
+        <p class="mk-empty">Aucune annonce pour le moment.</p>
+      <?php else: ?>
+        <p class="mk-empty">Aucun livre dans cette sélection. <a href="<?= e(url('/souscriptions')) ?>">Voir les annonces ouvertes</a></p>
+      <?php endif; ?>
     <?php elseif ($items !== []): ?>
       <div class="sub-grid">
         <?php foreach ($items as $item): ?>

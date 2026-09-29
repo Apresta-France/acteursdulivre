@@ -47,6 +47,7 @@ use Adl\Models\Review;
 use Adl\Models\ReviewRequest;
 use Adl\Models\Service;
 use Adl\Models\Setting;
+use Adl\Models\Souscription;
 use Adl\Models\Taxonomy;
 use Adl\Models\User;
 use Throwable;
@@ -1117,6 +1118,81 @@ final class AdminController
         Article::delete((int) $id);
         flash('saved', 'Article supprimé.');
         redirect('/admin/journal');
+    }
+
+    public function souscriptionsAdmin(Request $request): void
+    {
+        $rows = Souscription::adminList();
+        $open = 0;
+        $draft = 0;
+        foreach ($rows as $row) {
+            if (($row['status'] ?? '') === 'open' && ($row['status_label'] ?? '') === 'Ouverte') {
+                $open++;
+            }
+            if (($row['status'] ?? '') === 'draft') {
+                $draft++;
+            }
+        }
+        $this->page('livres', 'admin/souscriptions', [
+            'rows' => $rows,
+            'counts' => ['open' => $open, 'draft' => $draft],
+        ]);
+    }
+
+    public function souscriptionEdit(Request $request, string $id = 'nouvelle'): void
+    {
+        Auth::requireAdmin();
+        $item = $id === 'nouvelle' ? Souscription::blank() : Souscription::find((int) $id);
+        if (!$item) {
+            flash('error', 'Annonce introuvable.');
+            redirect('/admin/souscriptions');
+        }
+        $this->page('livres', 'admin/souscription', [
+            'title' => $item['id'] ? (string) $item['title'] : 'Nouvelle annonce',
+            'item' => $item,
+        ]);
+    }
+
+    public function souscriptionSave(Request $request, string $id = 'nouvelle'): void
+    {
+        Auth::requireAdmin();
+        try {
+            $savedId = Souscription::save($id === 'nouvelle' ? null : (int) $id, [
+                'title' => $request->string('title'),
+                'slug' => $request->string('slug'),
+                'genre' => $request->string('genre'),
+                'kind' => $request->string('kind'),
+                'status' => $request->string('status'),
+                'featured' => $request->bool('featured'),
+                'bearer' => $request->string('bearer'),
+                'bearer_role' => $request->string('bearer_role'),
+                'pitch' => $request->string('pitch'),
+                'body' => $request->input('body', ''),
+                'trades' => $request->input('trades', ''),
+                'facts' => $request->input('facts', ''),
+                'cover_ink' => $request->string('cover_ink'),
+                'cover_paper' => $request->string('cover_paper'),
+                'cover_rule' => $request->string('cover_rule'),
+                'closes' => $request->string('closes'),
+                'host' => $request->string('host'),
+                'external_url' => $request->string('external_url'),
+                'cta' => $request->string('cta'),
+                'outcome' => $request->string('outcome'),
+            ]);
+            flash('saved', 'Annonce enregistrée.');
+            redirect('/admin/souscriptions/' . $savedId);
+        } catch (Throwable $e) {
+            flash('error', $e->getMessage());
+            redirect($id === 'nouvelle' ? '/admin/souscriptions/nouvelle' : '/admin/souscriptions/' . (int) $id);
+        }
+    }
+
+    public function souscriptionDelete(Request $request, string $id): void
+    {
+        Auth::requireAdmin();
+        Souscription::delete((int) $id);
+        flash('saved', 'Annonce supprimée.');
+        redirect('/admin/souscriptions');
     }
 
     public function reglages(Request $request): void
