@@ -772,10 +772,13 @@ final class Seo
             'wordCount' => max(1, $words),
             'keywords' => self::articleKeywords($article),
             'author' => !empty($article['author_name'])
-                ? [
+                ? array_filter([
                     '@type' => 'Person',
                     'name' => (string) $article['author_name'],
-                ]
+                    'url' => !empty($article['author_href'])
+                        ? Share::absolute((string) $article['author_href'])
+                        : null,
+                ])
                 : [
                     '@type' => 'Organization',
                     'name' => self::BRAND,

@@ -63,7 +63,13 @@ $articleUser = auth_user();
         <div class="article-byline">
           <div>
             <?php if (!empty($article['author_name'])): ?>
-              <strong itemprop="author" itemscope itemtype="https://schema.org/Person"><span itemprop="name"><?= e((string) $article['author_name']) ?></span></strong>
+              <strong itemprop="author" itemscope itemtype="https://schema.org/Person">
+                <?php if (!empty($article['author_href'])): ?>
+                  <a itemprop="url" href="<?= e(url((string) $article['author_href'])) ?>"><span itemprop="name"><?= e((string) $article['author_name']) ?></span></a>
+                <?php else: ?>
+                  <span itemprop="name"><?= e((string) $article['author_name']) ?></span>
+                <?php endif; ?>
+              </strong>
               <span>Tribune d’un membre d’Acteurs du Livre</span>
             <?php else: ?>
               <strong itemprop="author" itemscope itemtype="https://schema.org/Organization"><span itemprop="name">Rédaction Acteurs du Livre</span></strong>

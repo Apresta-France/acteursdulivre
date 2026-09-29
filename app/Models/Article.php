@@ -618,13 +618,67 @@ final class Article
         $row['status_label'] = $row['status'];
         $row['can_edit'] = in_array($submissionStatus, [self::STATUS_DRAFT, self::STATUS_REJECTED], true);
         $row['author_name'] = '';
+        $row['author_href'] = '';
         if (!empty($row['author_id'])) {
             $author = User::find((int) $row['author_id']);
             $row['author_name'] = $author ? User::displayName($author) : '';
+            $row['author_href'] = $author ? self::publicAuthorHref($author) : '';
         }
         $row['when'] = $row['published_at'] ? format_deadline(substr((string) $row['published_at'], 0, 10)) : '';
         $row['live'] = true;
         return $row;
+    }
+
+    /**
+     * Page publique du membre : vitrine, sinon fiche auteur, sinon maison d’édition.
+     *
+     * @param array<string, mixed> $author
+     */
+    private static function publicAuthorHref(array $author): string
+    {
+        $userId = (int) ($author['id'] ?? 0);
+        if ($userId < 1) {
+            return '';
+        }
+
+        try {
+            if (User::isPublicOfferer($author)) {
+                $profile = Database::fetch('SELECT slug FROM profiles WHERE user_id = ?', [$userId]);
+                $slug = trim((string) ($profile['slug'] ?? ''));
+                if ($slug !== '') {
+                    return '/prestataires/' . $slug;
+                }
+            }
+        } catch (\Throwable) {
+        }
+
+        try {
+            if (($author['status'] ?? '') === 'active') {
+                $page = Database::fetch(
+                    'SELECT slug FROM author_pages WHERE user_id = ? AND enabled = 1 AND slug != ""',
+                    [$userId]
+                );
+                $slug = trim((string) ($page['slug'] ?? ''));
+                if ($slug !== '') {
+                    return '/auteurs/' . $slug;
+                }
+            }
+        } catch (\Throwable) {
+        }
+
+        try {
+            $publisher = Database::fetch(
+                'SELECT slug FROM publishers WHERE owner_user_id = ? AND status = "published" AND slug != "" ORDER BY id ASC LIMIT 1',
+                [$userId]
+            );
+            $slug = trim((string) ($publisher['slug'] ?? ''));
+            if ($slug !== '') {
+                return '/maisons-edition/' . $slug;
+            }
+        } catch (\Throwable) {
+        }
+
+        return '';
     }
 
     public static function statusLabel(string $status): string

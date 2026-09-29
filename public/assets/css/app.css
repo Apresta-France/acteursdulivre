@@ -4684,6 +4684,15 @@ img.journal-card-media { width: 100%; object-fit: cover; display: block; }
   border-bottom: 1px solid #EEF1F5;
 }
 .article-byline strong { display: block; font-size: 15px; color: #14202C; }
+.article-byline strong span { font-size: 15px; font-weight: 700; color: #14202C; }
+.article-byline strong a {
+  display: inline-block;
+  color: var(--orange);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.article-byline strong a:hover { color: var(--navy); }
+.article-byline strong a span { display: inline; color: inherit; font-size: inherit; }
 .article-byline span { display: block; font-size: 13px; color: #8496A8; }
 .article-cover { margin: 8px 0 28px; }
 .article-cover img {
