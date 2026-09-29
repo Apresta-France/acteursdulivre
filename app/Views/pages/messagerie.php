@@ -105,10 +105,11 @@ $alreadyReported = !empty($alreadyReported);
               $quoteBuyer = (string) ($quoteStart['buyerName'] ?? 'le porteur de projet');
             ?>
             <section class="inbox-quote" id="creer-devis">
-              <h2>Créer un devis</h2>
-              <p class="jalon-lead"><?= e($quoteBuyer) ?> pourra accepter ce devis dans le suivi. Cela ouvre la commande : le règlement se fait entre vous, hors de la plateforme.</p>
               <form class="jalon-form" method="post" action="<?= e(url('/espace/messages/' . (int) $thread['id'] . '/devis')) ?>" enctype="multipart/form-data">
                 <?= csrf_field() ?>
+                <div class="inbox-quote-fields">
+                <h2>Créer un devis</h2>
+                <p class="jalon-lead"><?= e($quoteBuyer) ?> pourra accepter ce devis dans le suivi. Cela ouvre la commande : le règlement se fait entre vous, hors de la plateforme.</p>
                 <?php if (!empty($quoteStart['titleLocked'])): ?>
                   <p class="jalon-amount">Mission : <strong><?= e((string) $quoteStart['title']) ?></strong></p>
                 <?php else: ?>
@@ -158,6 +159,7 @@ $alreadyReported = !empty($alreadyReported);
                   <div class="jalon-recap-row"><span>Mission</span><strong data-quote-recap-amount>—</strong></div>
                   <div class="jalon-recap-row"><span><?= !empty($quoteStart['startupOn']) ? 'Accompagnement' : 'Acompte' ?></span><strong data-quote-recap-deposit>—</strong></div>
                   <div class="jalon-recap-row"><span>Solde</span><strong data-quote-recap-balance>—</strong></div>
+                </div>
                 </div>
                 <div class="jalon-actions">
                   <button class="btn-orange" type="submit">Envoyer le devis</button>

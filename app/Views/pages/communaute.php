@@ -6,13 +6,14 @@ $publishers = $publishers ?? [];
 $publisherCount = (int) ($publisherCount ?? 0);
 $agenda = $agenda ?? [];
 $salonCount = (int) ($salonCount ?? count($agenda));
+$souscriptions = $souscriptions ?? [];
 ?>
 <div class="mk-page co-page">
   <section class="forum-hero co-hero">
     <div class="forum-hero-copy">
       <div class="forum-kicker">Communauté</div>
       <h1>Se retrouver hors des missions.</h1>
-      <p class="forum-lead">Le forum, l’annuaire des maisons d’édition, l’agenda des salons et les outils métier : quatre portes pour parler métier, trouver un éditeur, préparer un stand, ou cadrer un volume.</p>
+      <p class="forum-lead">Le forum, l’annuaire, l’agenda, les outils — et les livres que des membres lancent ailleurs.</p>
     </div>
     <div class="forum-hero-actions">
       <div class="forum-hero-stats">
@@ -60,6 +61,23 @@ $salonCount = (int) ($salonCount ?? count($agenda));
       </a>
     </div>
   </section>
+
+  <?php if ($souscriptions !== []): ?>
+    <section class="mk-block">
+      <div class="mk-head">
+        <div>
+          <h2>Livres en cours</h2>
+          <p>Campagnes ouvertes ailleurs.</p>
+        </div>
+        <a href="<?= e(url('/souscriptions')) ?>">Toutes les souscriptions →</a>
+      </div>
+      <div class="sub-rows">
+        <?php foreach ($souscriptions as $item): ?>
+          <?php $row = true; require ADL_ROOT . '/app/Views/partials/souscription-card.php'; ?>
+        <?php endforeach; ?>
+      </div>
+    </section>
+  <?php endif; ?>
 
   <section class="mk-block mk-wash-cool">
     <div class="co-split">

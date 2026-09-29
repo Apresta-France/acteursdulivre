@@ -1,6 +1,6 @@
 <?php
 $headerUnreadForum = (int) ($unreadForum ?? 0);
-$headerCommunauteOn = !empty($isCommunaute) || !empty($isForum) || !empty($isEspaceForum) || !empty($isMaisons) || !empty($isMaison) || !empty($isSalons) || !empty($isSalon);
+$headerCommunauteOn = !empty($isCommunaute) || !empty($isForum) || !empty($isEspaceForum) || !empty($isMaisons) || !empty($isMaison) || !empty($isSalons) || !empty($isSalon) || !empty($isSouscriptions);
 $headerForumHref = !empty($logged) && $headerUnreadForum > 0 ? '/espace/forum?onglet=suivis' : '/forum';
 ?>
 <div class="header-drop<?= $headerCommunauteOn ? ' is-current' : '' ?>" data-header-drop>
@@ -20,6 +20,10 @@ $headerForumHref = !empty($logged) && $headerUnreadForum > 0 ? '/espace/forum?on
       <a href="<?= e(url('/salons')) ?>"<?= !empty($isSalons) || !empty($isSalon) ? ' class="is-active"' : '' ?>>
         <strong>Agenda</strong>
         <span>Salons du livre</span>
+      </a>
+      <a href="<?= e(url('/souscriptions')) ?>"<?= !empty($isSouscriptions) ? ' class="is-active"' : '' ?>>
+        <strong>Souscriptions</strong>
+        <span>Annoncés ailleurs</span>
       </a>
     </div>
   </div>

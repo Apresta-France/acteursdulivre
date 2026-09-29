@@ -68,6 +68,16 @@ final class Seo
                 'description' => 'Forum, annuaire des maisons d\'édition, agenda des salons et outils métier : se retrouver hors des missions.',
                 'path' => '/communaute',
             ],
+            'souscriptions' => [
+                'title' => 'Souscriptions — livres annoncés par la communauté',
+                'description' => 'Souscriptions, préventes et ventes menées ailleurs par des membres, rendues visibles le temps qu\'elles sont ouvertes.',
+                'path' => '/souscriptions',
+            ],
+            'souscription' => [
+                'title' => 'Souscription',
+                'description' => 'Fiche d\'un livre en souscription, en prévente ou en vente directe.',
+                'path' => '/souscriptions',
+            ],
             'outils' => [
                 'title' => 'Outils du livre',
                 'description' => 'Compteur de signes, convertisseur de feuillets, calculateur de dos et validateur ISBN. Gratuits, sans compte, sans envoyer le manuscrit.',

@@ -17,6 +17,7 @@ use Adl\Data\Seo;
 use Adl\Data\Share;
 use Adl\Data\Sitemap;
 use Adl\Data\Isbn;
+use Adl\Data\Souscriptions;
 use Adl\Data\Spine;
 use Adl\Data\Tools;
 use Adl\Models\Analytics;
@@ -221,7 +222,7 @@ final class PageController
             'install', 'journal', 'mentions-legales', 'metiers', 'missions',
             'mot-de-passe', 'newsletter', 'prestataires', 'prestations', 'public',
             'questions', 'recherche', 'regles-ia', 'signaler', 'tarifs', 'forum',
-            'communaute', 'salons', 'outils', 'maisons-edition',
+            'communaute', 'salons', 'outils', 'maisons-edition', 'souscriptions',
         ];
         if (in_array($slug, $reserved, true)) {
             not_found();
@@ -795,6 +796,56 @@ final class PageController
             'publisherCount' => $publisherCount,
             'agenda' => self::communityAgendaPreview(),
             'salonCount' => self::salonCount(),
+            'souscriptions' => Souscriptions::preview(3),
+        ]);
+    }
+
+    public function souscriptions(Request $request): void
+    {
+        $type = $request->string('type');
+        if (!in_array($type, ['souscription', 'prevente', 'vente', 'terminees'], true)) {
+            $type = '';
+        }
+        $listing = Souscriptions::listing($type);
+        $meta = Seo::forScreen('souscriptions');
+        $meta['robots'] = 'noindex, follow';
+
+        View::page('souscriptions', [
+            'title' => 'Souscriptions — livres annoncés par la communauté',
+            'meta' => $meta,
+            'items' => $listing['items'],
+            'featured' => $listing['featured'],
+            'counts' => $listing['counts'],
+            'type' => $type,
+        ]);
+    }
+
+    public function souscription(Request $request, string $slug): void
+    {
+        $item = Souscriptions::find($slug);
+        if ($item === null) {
+            not_found('Cette souscription n\'existe pas.');
+        }
+
+        $title = (string) $item['title'];
+        $meta = Seo::forScreen('souscription', [
+            'title' => $title,
+            'description' => (string) $item['pitch'],
+            'path' => (string) $item['href'],
+            'breadcrumbs' => [
+                ['name' => Seo::BRAND, 'url' => '/'],
+                ['name' => 'Communauté', 'url' => '/communaute'],
+                ['name' => 'Souscriptions', 'url' => '/souscriptions'],
+                ['name' => $title, 'url' => (string) $item['href']],
+            ],
+        ]);
+        $meta['robots'] = 'noindex, follow';
+
+        View::page('souscription', [
+            'title' => $title,
+            'meta' => $meta,
+            'item' => $item,
+            'others' => Souscriptions::others($slug),
         ]);
     }
 

@@ -74,6 +74,7 @@ final class Prototype
             'communaute' => 'isCommunaute',
             'outils' => 'isOutils', 'outil-volume' => 'isOutils', 'outil-dos' => 'isOutils', 'outil-isbn' => 'isOutils',
             'salons' => 'isSalons', 'salon' => 'isSalon', 'salon-ajouter' => 'isSalons',
+            'souscriptions' => 'isSouscriptions', 'souscription' => 'isSouscriptions',
             'maisons-edition' => 'isMaisons', 'maisons-edition-pays' => 'isMaisons', 'maison-edition' => 'isMaison',
             'maison-edition-revendiquer' => 'isMaison', 'maison-edition-ajouter' => 'isMaisons', 'espace-maison' => 'isEspaceMaison',
         ];
@@ -143,6 +144,7 @@ final class Prototype
                 ['label' => 'La communauté', 'href' => '/communaute'],
                 ['label' => 'Outils du livre', 'href' => '/outils'],
                 ['label' => 'Agenda des salons', 'href' => '/salons'],
+                ['label' => 'Souscriptions', 'href' => '/souscriptions'],
                 ['label' => 'Maisons d\'édition', 'href' => '/maisons-edition'],
                 ['label' => 'À propos', 'href' => '/a-propos'],
                 ['label' => 'Le forum', 'href' => '/forum'],
