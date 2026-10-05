@@ -4046,6 +4046,50 @@
     window.AdlStats.action(el.getAttribute('data-stat') || '');
   });
 
+  function landingClickLabel(el) {
+    var aria = (el.getAttribute('aria-label') || '').replace(/\s+/g, ' ').trim();
+    if (aria) return aria.slice(0, 80);
+    var heading = el.querySelector('.search-card-title, h2, h3, strong');
+    var text = heading ? heading.textContent : el.textContent;
+    return (text || '').replace(/\s+/g, ' ').trim().slice(0, 80);
+  }
+
+  function landingClickTarget(el) {
+    if (el.hasAttribute('data-video-open')) return '#video';
+    var href = el.getAttribute('href') || '';
+    if (!href) return '';
+    if (href.charAt(0) === '#') return href.length > 1 && href.length < 42 ? href : '';
+    try {
+      var parsed = new URL(href, window.location.origin);
+      if (parsed.origin !== window.location.origin) return '#externe';
+      return (parsed.pathname || '/').slice(0, 160);
+    } catch (err) {
+      return '';
+    }
+  }
+
+  document.addEventListener('click', function (event) {
+    if (!statsEndpoint || !event.target.closest) return;
+    var zone = event.target.closest('.lp-page, .lp-sticky');
+    if (!zone) return;
+    var el = event.target.closest('a, button');
+    if (!el || !zone.contains(el) || el.hasAttribute('data-video-close')) return;
+    var target = landingClickTarget(el);
+    var label = landingClickLabel(el);
+    if (!target && !label) return;
+    var body = new URLSearchParams();
+    body.set('lp', '1');
+    body.set('t', target);
+    body.set('l', label);
+    try {
+      if (navigator.sendBeacon) {
+        navigator.sendBeacon(statsEndpoint, body);
+        return;
+      }
+    } catch (e) {}
+    fetch(statsEndpoint, { method: 'POST', body: body, credentials: 'same-origin', keepalive: true }).catch(function () {});
+  });
+
   var liveBox = document.querySelector('[data-stats-live]');
   if (liveBox) {
     var liveUrl = liveBox.getAttribute('data-live-url');

@@ -253,6 +253,7 @@ return static function (Router $router): void {
     $router->get('/admin/pre-ouverture', [AdminController::class, 'preOuverture']);
     $router->get('/admin/journal', [AdminController::class, 'journal']);
     $router->get('/admin/landings', [AdminController::class, 'landings']);
+    $router->get('/admin/landings/{slug}/statistiques', [AdminController::class, 'landingStatistiques']);
     $router->get('/admin/journal/nouveau', [AdminController::class, 'articleEdit']);
     $router->post('/admin/journal/nouveau', [AdminController::class, 'articleSave']);
     $router->get('/admin/journal/{id}', [AdminController::class, 'articleEdit']);

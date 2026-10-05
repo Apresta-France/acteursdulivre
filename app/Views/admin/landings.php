@@ -12,7 +12,7 @@ $groups = [
   <div class="admin-page-head">
     <div>
       <h1>Landings pub</h1>
-      <p class="admin-lead">Une URL par besoin, à coller dans Google Ads, Meta ou LinkedIn. Copiez le lien nu ou le lien avec UTM. Les visites et inscriptions des 7 derniers jours viennent des statistiques internes.</p>
+      <p class="admin-lead">Une URL par besoin, à coller dans Google Ads, Meta ou LinkedIn. Copiez le lien nu ou le lien avec UTM. Les visites et inscriptions des 7 derniers jours viennent des statistiques internes. Le bouton Statistiques ouvre, pour cette landing, les interactions et les dix actions suivantes, sans identité.</p>
     </div>
     <?php if ($hubUrl !== ''): ?>
       <a class="admin-ghost" href="<?= e($hubUrl) ?>" target="_blank" rel="noopener">Sommaire public</a>
@@ -69,6 +69,7 @@ $groups = [
               <td><?= format_int((int) $row['views7']) ?></td>
               <td><?= format_int((int) $row['signups7']) ?></td>
               <td class="admin-actions">
+                <a class="admin-ghost" href="<?= e(url('/admin/landings/' . rawurlencode((string) $row['slug']) . '/statistiques')) ?>">Statistiques</a>
                 <button type="button" class="admin-ghost" data-copy="<?= e((string) $row['url']) ?>">Copier l’URL</button>
                 <button
                   type="button"

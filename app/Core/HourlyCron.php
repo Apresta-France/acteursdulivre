@@ -105,6 +105,7 @@ final class HourlyCron
                 $stats['stats_pruned_uniques'] = $pruned['pruned_uniques'];
                 $stats['stats_pruned_live'] = $pruned['pruned_live'];
                 $stats['stats_pruned_daily'] = $pruned['pruned_daily'];
+                $stats['stats_pruned_landing'] = $pruned['pruned_landing'] ?? 0;
             } catch (Throwable $e) {
                 $errors[] = 'analytics: ' . $e->getMessage();
             }

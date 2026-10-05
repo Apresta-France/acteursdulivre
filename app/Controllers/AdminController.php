@@ -1061,6 +1061,29 @@ final class AdminController
         ]);
     }
 
+    public function landingStatistiques(Request $request, string $slug): void
+    {
+        $landing = Landings::find($slug);
+        if ($landing === null) {
+            not_found('Cette landing est introuvable.');
+        }
+        $path = Landings::path($slug);
+        $this->page('landings', 'admin/landing-statistiques', array_merge(
+            Analytics::landingJourneyReport($slug, $request),
+            [
+                'title' => 'Statistiques · ' . (string) $landing['need'],
+                'landing' => [
+                    'slug' => $slug,
+                    'need' => (string) $landing['need'],
+                    'kicker' => (string) $landing['kicker'],
+                    'audience_label' => (string) ($landing['audience_label'] ?? ''),
+                    'path' => $path,
+                    'url' => Share::absolute($path),
+                ],
+            ]
+        ));
+    }
+
     public function articleEdit(Request $request, string $id = 'nouveau'): void
     {
         Auth::requireAdmin();

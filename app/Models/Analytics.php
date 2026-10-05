@@ -16,6 +16,7 @@ final class Analytics
     public const LIVE_WINDOW = 5;
     public const RATE_MAX = 36;
     public const RETENTION_MONTHS = 24;
+    public const LP_MAX_STEPS = 10;
 
     private const BOT_UA = 'bot|crawl|spider|slurp|preview|wget|curl|python-requests|httpie|monitoring|uptime|headless|lighthouse|pagespeed|facebookexternalhit|pingdom|gtmetrix|semrush|ahrefs|mj12|dotbot|petalbot|bytespider|gptbot|chatgpt|claudebot|anthropic|perplexity|applebot|bingbot|yandex|duckduckbot|ia_archiver';
 
@@ -143,6 +144,7 @@ final class Analytics
             } elseif ($unique) {
                 self::bump('ref', 'direct');
             }
+            self::traceAfterHit($classified);
             self::flush();
         } catch (Throwable) {
         }
@@ -185,6 +187,7 @@ final class Analytics
                 return;
             }
             self::bump('action', $name, '', true);
+            self::traceStep('action', $name, self::actionLabel($name));
             self::flush();
         } catch (Throwable) {
         }
@@ -216,6 +219,10 @@ final class Analytics
     {
         try {
             if (!self::shouldCollect() || !self::sameOrigin()) {
+                return;
+            }
+            if ($request->string('lp') === '1') {
+                self::collectLandingClick($request);
                 return;
             }
             $action = $request->string('a');
@@ -264,6 +271,12 @@ final class Analytics
             'pruned_uniques' => $count('DELETE FROM stats_uniques WHERE day < ?', [$uniqueCut]),
             'pruned_live' => $count('DELETE FROM stats_live WHERE seen_at < ?', [$liveCut]),
             'pruned_daily' => $count('DELETE FROM stats_daily WHERE day < ?', [$dailyCut]),
+            'pruned_landing' => $count(
+                'DELETE e FROM stats_landing_events e
+                 INNER JOIN stats_landing_visits v ON v.id = e.visit
+                 WHERE v.started_at < ?',
+                [$dailyCut]
+            ) + $count('DELETE FROM stats_landing_visits WHERE started_at < ?', [$dailyCut]),
         ];
     }
 
@@ -1901,6 +1914,1093 @@ final class Analytics
         } catch (Throwable) {
             return [];
         }
+    }
+
+    /** @return array<string, mixed> */
+    public static function landingJourneyReport(string $slug, Request $request): array
+    {
+        $slug = trim($slug);
+        $period = self::resolveLandingPeriod($request);
+        $compare = $request->string('compare', '1') !== '0';
+        $tranche = self::landingTranche($request, $period);
+        $page = max(1, (int) ($request->int('p', 1) ?? 1));
+        $base = '/admin/landings/' . $slug . '/statistiques';
+        $hourSlice = $tranche !== null || ($period['grain'] ?? '') === 'minute';
+        [$fromAt, $toAt] = self::landingBounds($period, $tranche, false);
+        [$prevFromAt, $prevToAt] = self::landingBounds($period, $tranche, true);
+
+        $ready = true;
+        $current = ['arrivals' => 0, 'interacted' => 0, 'steps' => 0];
+        $previous = $current;
+        $series = [];
+        $interactions = [];
+        $nextPages = [];
+        $nextActions = [];
+        $firstSteps = [];
+        $paths = [];
+        $devices = [];
+        $sources = [];
+        $journeyPack = ['rows' => [], 'total' => 0, 'pages' => 1, 'page' => 1, 'per_page' => 20];
+        try {
+            $current = self::landingVisitStats($slug, $fromAt, $toAt);
+            $previous = $compare ? self::landingVisitStats($slug, $prevFromAt, $prevToAt) : $previous;
+            $series = self::landingSeries($slug, $period, $compare, $tranche, $base);
+            $arrivals = (int) $current['arrivals'];
+            $interactions = self::landingBars(self::landingEventRank($slug, $fromAt, $toAt, 'click', 8), $arrivals);
+            $nextPages = self::landingBars(self::landingEventRank($slug, $fromAt, $toAt, 'page', 8), $arrivals);
+            $nextActions = self::landingBars(self::landingEventRank($slug, $fromAt, $toAt, 'action', 8), $arrivals);
+            $firstSteps = self::landingBars(self::landingEventRank($slug, $fromAt, $toAt, '', 8, true), $arrivals);
+            $paths = self::landingBars(self::landingPaths($slug, $fromAt, $toAt), $arrivals);
+            $devices = self::landingBars(self::landingFacet($slug, $fromAt, $toAt, 'device'), $arrivals);
+            $sources = self::landingBars(self::landingFacet($slug, $fromAt, $toAt, 'source'), $arrivals);
+            $journeyPack = self::landingJourneys($slug, $fromAt, $toAt, $page);
+        } catch (Throwable) {
+            $ready = false;
+        }
+
+        $views = 0;
+        $viewsPrev = 0;
+        $signups = 0;
+        $signupsPrev = 0;
+        if (!$hourSlice) {
+            try {
+                $views = (int) (self::hitsByKind('landing', [$slug], (string) $period['from'], (string) $period['to'])[$slug] ?? 0);
+                $viewsPrev = $compare
+                    ? (int) (self::hitsByKind('landing', [$slug], (string) $period['prev_from'], (string) $period['prev_to'])[$slug] ?? 0)
+                    : 0;
+                $signups = (int) (self::hitsByKind('landing_signup', [$slug], (string) $period['from'], (string) $period['to'])[$slug] ?? 0);
+                $signupsPrev = $compare
+                    ? (int) (self::hitsByKind('landing_signup', [$slug], (string) $period['prev_from'], (string) $period['prev_to'])[$slug] ?? 0)
+                    : 0;
+            } catch (Throwable) {
+            }
+        } elseif ($ready) {
+            try {
+                $signups = self::landingSignupEvents($slug, $fromAt, $toAt);
+                $signupsPrev = $compare ? self::landingSignupEvents($slug, $prevFromAt, $prevToAt) : 0;
+            } catch (Throwable) {
+            }
+        }
+
+        $arrivals = (int) $current['arrivals'];
+        $interacted = (int) $current['interacted'];
+        $arrivalsPrev = (int) $previous['arrivals'];
+        $interactedPrev = (int) $previous['interacted'];
+        $rate = $arrivals > 0 ? (int) round(100 * $interacted / $arrivals) : null;
+        $kpis = [];
+        if (!$hourSlice) {
+            $kpis[] = [
+                'k' => 'Pages vues',
+                'v' => format_int($views),
+                'n' => $views,
+                'note' => 'Affichages, rechargements compris.',
+                'delta' => $compare ? self::delta($views, $viewsPrev) : null,
+            ];
+        } else {
+            $idle = max(0, $arrivals - $interacted);
+            $idlePrev = max(0, $arrivalsPrev - $interactedPrev);
+            $kpis[] = [
+                'k' => 'Sans suite',
+                'v' => format_int($idle),
+                'n' => $idle,
+                'note' => 'Arrivées sans clic, page ni action.',
+                'delta' => $compare ? self::delta($idle, $idlePrev) : null,
+            ];
+        }
+        $kpis[] = [
+            'k' => 'Arrivées',
+            'v' => format_int($arrivals),
+            'n' => $arrivals,
+            'note' => 'Une visite suivie. Un rechargement ne compte pas deux fois.',
+            'delta' => $compare ? self::delta($arrivals, $arrivalsPrev) : null,
+        ];
+        $kpis[] = [
+            'k' => 'Avec interaction',
+            'v' => format_int($interacted),
+            'n' => $interacted,
+            'note' => $rate === null ? 'Aucune arrivée sur cette période.' : ($rate . ' % des arrivées'),
+            'delta' => $compare ? self::delta($interacted, $interactedPrev) : null,
+        ];
+        $kpis[] = [
+            'k' => 'Inscriptions',
+            'v' => format_int($signups),
+            'n' => $signups,
+            'note' => $hourSlice ? 'Vues dans les parcours de cette tranche.' : 'Comptes créés après cette landing.',
+            'delta' => $compare ? self::delta($signups, $signupsPrev) : null,
+        ];
+
+        $pageNow = (int) $journeyPack['page'];
+        $pages = (int) $journeyPack['pages'];
+        $total = (int) $journeyPack['total'];
+        $fromRow = $total === 0 ? 0 : (($pageNow - 1) * (int) $journeyPack['per_page']) + 1;
+        $toRow = $total === 0 ? 0 : $fromRow + count($journeyPack['rows']) - 1;
+
+        return [
+            'ready' => $ready,
+            'period' => $period,
+            'compare' => $compare,
+            'periods' => self::landingPeriodChips($period, $compare, $base),
+            'tranche' => $tranche,
+            'base' => $base,
+            'day_href' => self::landingPageHref($period, $compare, null, 1, $base),
+            'grain' => (string) ($period['grain'] ?? 'day'),
+            'grain_label' => self::landingGrainLabel((string) ($period['grain'] ?? 'day')),
+            'zoom_hint' => self::landingZoomHint((string) ($period['grain'] ?? 'day')),
+            'filter_label' => $tranche === null ? '' : ($tranche . ' h – ' . ($tranche + 1) . ' h'),
+            'kpis' => $kpis,
+            'series' => $series,
+            'interactions' => $interactions,
+            'pages_next' => $nextPages,
+            'actions_next' => $nextActions,
+            'first_steps' => $firstSteps,
+            'paths' => $paths,
+            'devices' => $devices,
+            'sources' => $sources,
+            'journeys' => $journeyPack['rows'],
+            'pager' => [
+                'page' => $pageNow,
+                'pages' => $pages,
+                'total' => $total,
+                'from' => $fromRow,
+                'to' => $toRow,
+                'prev' => $pageNow > 1 ? self::landingPageHref($period, $compare, $tranche, $pageNow - 1, $base) : '',
+                'next' => $pageNow < $pages ? self::landingPageHref($period, $compare, $tranche, $pageNow + 1, $base) : '',
+            ],
+            'views_n' => $views,
+            'arrivals_n' => $arrivals,
+        ];
+    }
+
+    private static function collectLandingClick(Request $request): void
+    {
+        $trace = self::landingTrace();
+        if ($trace === null) {
+            return;
+        }
+        $page = '/besoin/' . (string) $trace['slug'];
+        if (!self::touchLive(self::visitorId(), $page)) {
+            return;
+        }
+        self::traceClick($request->string('t'), $request->string('l'));
+    }
+
+    /** @param array{page: string, path: string, entity: ?array{0: string, 1: string}} $classified */
+    private static function traceAfterHit(array $classified): void
+    {
+        try {
+            $entity = $classified['entity'] ?? null;
+            if (is_array($entity) && ($entity[0] ?? '') === 'landing') {
+                $slug = (string) ($entity[1] ?? '');
+                if ($slug !== '' && \Adl\Data\Landings::find($slug) !== null) {
+                    self::openLandingVisit($slug);
+                    return;
+                }
+            }
+            if (self::landingTrace() === null) {
+                return;
+            }
+            if (($classified['page'] ?? '') === 'espace') {
+                $path = self::anonymousSpacePath(self::requestPath());
+                self::traceStep('page', $path, self::spaceLabel($path));
+                return;
+            }
+            $path = (string) ($classified['path'] ?? '');
+            if ($path === '' || str_starts_with($path, '/erreur/')) {
+                return;
+            }
+            $trace = self::landingTrace();
+            if ($trace !== null && $path === '/besoin/' . (string) $trace['slug']) {
+                return;
+            }
+            self::traceStep('page', $path, self::pathLabel($path));
+        } catch (Throwable) {
+        }
+    }
+
+    private static function openLandingVisit(string $slug): void
+    {
+        try {
+            if (session_status() !== PHP_SESSION_ACTIVE) {
+                return;
+            }
+            $slug = mb_substr(trim($slug), 0, 80);
+            if ($slug === '') {
+                return;
+            }
+            $current = self::landingTrace();
+            if ($current !== null && (string) $current['slug'] === $slug) {
+                return;
+            }
+            if ($current !== null) {
+                self::traceStep('page', '/besoin/' . $slug, self::pathLabel('/besoin/' . $slug));
+            }
+            $now = self::now()->format('Y-m-d H:i:s');
+            for ($try = 0; $try < 2; $try++) {
+                $id = bin2hex(random_bytes(8));
+                try {
+                    Database::query(
+                        'INSERT INTO stats_landing_visits (id, landing, started_at, device, source, steps, interacted)
+                         VALUES (?, ?, ?, ?, ?, 0, 0)',
+                        [$id, $slug, $now, self::device(), self::landingSource()]
+                    );
+                    $_SESSION['_lp_trace'] = [
+                        'id' => $id,
+                        'slug' => $slug,
+                        'n' => 0,
+                        'until' => time() + 43200,
+                        'last' => '',
+                    ];
+                    return;
+                } catch (Throwable) {
+                }
+            }
+        } catch (Throwable) {
+        }
+    }
+
+    private static function traceClick(string $target, string $label): void
+    {
+        try {
+            $target = self::sanitizeClickTarget($target);
+            $label = self::scrubLabel($label);
+            if ($target === '#video' && $label === '') {
+                $label = 'Vidéo de présentation';
+            }
+            if ($label === '' && str_starts_with($target, '/')) {
+                $label = self::scrubLabel(self::pathLabel($target));
+            }
+            if ($label === '' && str_starts_with($target, '#') && $target !== '#externe') {
+                $label = 'Section ' . substr($target, 1);
+            }
+            if ($label === '') {
+                return;
+            }
+            self::traceStep('click', $target !== '' ? $target : '#page', $label);
+        } catch (Throwable) {
+        }
+    }
+
+    private static function traceStep(string $kind, string $target, string $label): void
+    {
+        try {
+            if (session_status() !== PHP_SESSION_ACTIVE) {
+                return;
+            }
+            $trace = self::landingTrace();
+            if ($trace === null) {
+                return;
+            }
+            $n = (int) ($trace['n'] ?? 0);
+            if ($n >= self::LP_MAX_STEPS) {
+                return;
+            }
+            if (!in_array($kind, ['page', 'action', 'click'], true)) {
+                return;
+            }
+            $target = mb_substr(trim($target), 0, 160);
+            $label = self::scrubLabel($label);
+            if ($label === '') {
+                return;
+            }
+            $sig = $kind . '|' . $target . '|' . $label;
+            if ((string) ($trace['last'] ?? '') === $sig) {
+                return;
+            }
+            $seq = $n + 1;
+            $id = (string) $trace['id'];
+            Database::query(
+                'INSERT INTO stats_landing_events (visit, seq, at, kind, label, target) VALUES (?, ?, ?, ?, ?, ?)',
+                [$id, $seq, self::now()->format('Y-m-d H:i:s'), $kind, $label, $target]
+            );
+            $updated = Database::query(
+                'UPDATE stats_landing_visits SET steps = ?, interacted = 1 WHERE id = ?',
+                [$seq, $id]
+            );
+            if ($updated->rowCount() === 0) {
+                Database::query('DELETE FROM stats_landing_events WHERE visit = ? AND seq = ?', [$id, $seq]);
+                unset($_SESSION['_lp_trace']);
+                return;
+            }
+            $_SESSION['_lp_trace']['n'] = $seq;
+            $_SESSION['_lp_trace']['last'] = $sig;
+        } catch (Throwable) {
+        }
+    }
+
+    /** @return array{id: string, slug: string, n: int, until: int, last: string}|null */
+    private static function landingTrace(): ?array
+    {
+        if (session_status() !== PHP_SESSION_ACTIVE) {
+            return null;
+        }
+        $row = $_SESSION['_lp_trace'] ?? null;
+        if (!is_array($row)) {
+            return null;
+        }
+        $id = (string) ($row['id'] ?? '');
+        $slug = (string) ($row['slug'] ?? '');
+        $until = (int) ($row['until'] ?? 0);
+        if (!preg_match('/^[a-f0-9]{16}$/', $id) || $slug === '' || $until < time()) {
+            unset($_SESSION['_lp_trace']);
+            return null;
+        }
+        return [
+            'id' => $id,
+            'slug' => $slug,
+            'n' => (int) ($row['n'] ?? 0),
+            'until' => $until,
+            'last' => (string) ($row['last'] ?? ''),
+        ];
+    }
+
+    private static function landingSource(): string
+    {
+        $source = '';
+        if (session_status() === PHP_SESSION_ACTIVE && is_array($_SESSION['_utm'] ?? null)) {
+            $source = strtolower(trim((string) ($_SESSION['_utm']['source'] ?? '')));
+        }
+        $source = preg_replace('/[^a-z0-9._-]/', '', $source) ?? '';
+        if ($source !== '') {
+            return mb_substr($source, 0, 40);
+        }
+        $ref = self::referrerHost();
+        if ($ref !== '') {
+            $ref = preg_replace('/^www\./', '', $ref) ?? $ref;
+            return mb_substr($ref, 0, 40);
+        }
+        return 'direct';
+    }
+
+    private static function sanitizeClickTarget(string $raw): string
+    {
+        $raw = trim($raw);
+        if ($raw === '#video' || $raw === '#externe') {
+            return $raw;
+        }
+        if (str_starts_with($raw, '#')) {
+            $anchor = substr($raw, 1);
+            if (preg_match('/^[a-z0-9_-]{1,40}$/i', $anchor)) {
+                return '#' . strtolower($anchor);
+            }
+            return '';
+        }
+        if (preg_match('#^https?://#i', $raw)) {
+            return '#externe';
+        }
+        if (!str_starts_with($raw, '/')) {
+            return '';
+        }
+        $path = parse_url($raw, PHP_URL_PATH);
+        if (!is_string($path) || $path === '' || str_contains($path, '..')) {
+            return '';
+        }
+        if ($path !== '/' && str_ends_with($path, '/')) {
+            $path = rtrim($path, '/');
+        }
+        return mb_substr($path, 0, 160);
+    }
+
+    private static function scrubLabel(string $label): string
+    {
+        $label = trim(strip_tags($label));
+        $label = preg_replace('/\s+/u', ' ', $label) ?? '';
+        $label = preg_replace('/[A-Z0-9._%+\-]+@[A-Z0-9.\-]+\.[A-Z]{2,}/iu', '', $label) ?? '';
+        $label = preg_replace('/\b(?:\+?\d[\d .\-]{7,}\d)\b/u', '', $label) ?? '';
+        $label = trim(preg_replace('/\s+/u', ' ', $label) ?? '');
+        if ($label === '' || str_contains($label, '@') || str_contains($label, '?') || preg_match('/https?:\/\//i', $label)) {
+            return '';
+        }
+        return mb_substr($label, 0, 120);
+    }
+
+    private static function anonymousSpacePath(string $path): string
+    {
+        $parts = explode('/', trim($path, '/'));
+        $section = strtolower((string) ($parts[1] ?? ''));
+        $action = strtolower((string) ($parts[2] ?? ''));
+        if (!preg_match('/^[a-z0-9-]{1,40}$/', $section)) {
+            return '/espace';
+        }
+        $kept = '/espace/' . $section;
+        if (in_array($action, ['creer', 'nouvelle', 'nouveau', 'modifier', 'apercu'], true)) {
+            $kept .= '/' . $action;
+        }
+        return $kept;
+    }
+
+    private static function spaceLabel(string $path): string
+    {
+        $parts = explode('/', trim($path, '/'));
+        $section = (string) ($parts[1] ?? '');
+        $action = (string) ($parts[2] ?? '');
+        $map = [
+            'bienvenue' => 'Bienvenue',
+            'tribune' => 'Tribune',
+            'publier' => 'Publier une recherche',
+            'commande' => 'Commande',
+            'suivi' => 'Suivi de mission',
+            'commandes' => 'Commandes',
+            'missions' => 'Recherches publiées',
+            'candidatures' => 'Candidatures',
+            'statistiques' => 'Statistiques du compte',
+            'prestations' => 'Prestations',
+            'messages' => 'Messagerie',
+            'notifications' => 'Notifications',
+            'favoris' => 'Favoris',
+            'forum' => 'Forum',
+            'avis' => 'Avis',
+            'vitrine' => 'Vitrine',
+            'auteur' => 'Page auteur',
+            'maison-edition' => 'Maison d’édition',
+            'parametres' => 'Paramètres',
+            'facturation' => 'Facturation',
+        ];
+        if ($section === '') {
+            return 'Espace membre';
+        }
+        $base = $map[$section] ?? 'Espace membre';
+        $actions = [
+            'creer' => 'création',
+            'nouvelle' => 'création',
+            'nouveau' => 'création',
+            'modifier' => 'modification',
+            'apercu' => 'aperçu',
+        ];
+        if (isset($actions[$action])) {
+            return $base . ' · ' . $actions[$action];
+        }
+        return $base;
+    }
+
+    /** @return array{0: string, 1: string} */
+    private static function landingBounds(array $period, ?int $tranche, bool $previous): array
+    {
+        if ($tranche !== null && ($period['grain'] ?? '') === 'hour') {
+            $day = $previous ? (string) $period['prev_from'] : (string) $period['from'];
+            $h = sprintf('%02d', $tranche);
+            return [$day . ' ' . $h . ':00:00', $day . ' ' . $h . ':59:59'];
+        }
+        if ($previous) {
+            return [(string) $period['prev_from_at'], (string) $period['prev_to_at']];
+        }
+        return [(string) $period['from_at'], (string) $period['to_at']];
+    }
+
+    /** @return array<string, int> */
+    private static function landingVisitStats(string $slug, string $from, string $to): array
+    {
+        $row = Database::fetch(
+            'SELECT COUNT(*) AS arrivals,
+                    COALESCE(SUM(interacted), 0) AS interacted,
+                    COALESCE(SUM(steps), 0) AS steps
+             FROM stats_landing_visits
+             WHERE landing = ? AND started_at >= ? AND started_at <= ?',
+            [$slug, $from, $to]
+        ) ?? [];
+        return [
+            'arrivals' => (int) ($row['arrivals'] ?? 0),
+            'interacted' => (int) ($row['interacted'] ?? 0),
+            'steps' => (int) ($row['steps'] ?? 0),
+        ];
+    }
+
+    private static function landingSignupEvents(string $slug, string $from, string $to): int
+    {
+        return (int) (Database::fetch(
+            'SELECT COUNT(DISTINCT e.visit) AS n
+             FROM stats_landing_events e
+             INNER JOIN stats_landing_visits v ON v.id = e.visit
+             WHERE v.landing = ? AND v.started_at >= ? AND v.started_at <= ?
+               AND e.kind = \'action\' AND e.target = \'inscription\'',
+            [$slug, $from, $to]
+        )['n'] ?? 0);
+    }
+
+    /** @return list<array<string, mixed>> */
+    private static function landingSeries(string $slug, array $period, bool $compare, ?int $tranche, string $base): array
+    {
+        $grain = (string) ($period['grain'] ?? 'day');
+        if ($grain === 'minute') {
+            return self::landingMinuteSeries($slug, $period, $compare);
+        }
+        if ($grain === 'hour') {
+            return self::landingHourSeries($slug, $period, $compare, $tranche, $base);
+        }
+        return self::landingCalendarSeries($slug, $period, $compare, $base);
+    }
+
+    /** @return list<array<string, mixed>> */
+    private static function landingMinuteSeries(string $slug, array $period, bool $compare): array
+    {
+        $current = self::landingMinuteBuckets($slug, (string) $period['from_at'], (string) $period['to_at']);
+        $previous = $compare
+            ? self::landingMinuteBuckets($slug, (string) $period['prev_from_at'], (string) $period['prev_to_at'])
+            : [];
+        $out = [];
+        foreach ($current as $i => $bucket) {
+            $out[] = [
+                'label' => (string) $bucket['label'],
+                'current' => (int) $bucket['n'],
+                'previous' => (int) ($previous[$i]['n'] ?? 0),
+                'href' => '',
+                'on' => false,
+            ];
+        }
+        return $out;
+    }
+
+    /** @return list<array{label: string, n: int}> */
+    private static function landingMinuteBuckets(string $slug, string $fromAt, string $toAt): array
+    {
+        $tz = self::tz();
+        $from = DateTimeImmutable::createFromFormat('Y-m-d H:i:s', $fromAt, $tz) ?: self::now()->modify('-59 minutes');
+        $to = DateTimeImmutable::createFromFormat('Y-m-d H:i:s', $toAt, $tz) ?: self::now();
+        $minute = (int) $from->format('i');
+        $from = $from->setTime((int) $from->format('H'), $minute - ($minute % 5), 0);
+        $rows = Database::fetchAll(
+            'SELECT DATE_FORMAT(started_at, \'%Y-%m-%d %H:%i\') AS t, COUNT(*) AS n
+             FROM stats_landing_visits
+             WHERE landing = ? AND started_at >= ? AND started_at <= ?
+             GROUP BY DATE_FORMAT(started_at, \'%Y-%m-%d %H:%i\')',
+            [$slug, $from->format('Y-m-d H:i:s'), $toAt]
+        );
+        $map = [];
+        foreach ($rows as $row) {
+            $dt = DateTimeImmutable::createFromFormat('Y-m-d H:i', (string) $row['t'], $tz);
+            if (!$dt instanceof DateTimeImmutable) {
+                continue;
+            }
+            $m = (int) $dt->format('i');
+            $bucket = $dt->setTime((int) $dt->format('H'), $m - ($m % 5), 0)->format('Y-m-d H:i');
+            $map[$bucket] = ($map[$bucket] ?? 0) + (int) $row['n'];
+        }
+        $out = [];
+        $cursor = $from;
+        while ($cursor <= $to) {
+            $out[] = [
+                'label' => $cursor->format('H:i'),
+                'n' => (int) ($map[$cursor->format('Y-m-d H:i')] ?? 0),
+            ];
+            $cursor = $cursor->modify('+5 minutes');
+        }
+        return $out;
+    }
+
+    /** @return list<array<string, mixed>> */
+    private static function landingHourSeries(string $slug, array $period, bool $compare, ?int $tranche, string $base): array
+    {
+        $current = self::landingCountsByHour($slug, (string) $period['from_at'], (string) $period['to_at']);
+        $previous = $compare
+            ? self::landingCountsByHour($slug, (string) $period['prev_from_at'], (string) $period['prev_to_at'])
+            : [];
+        $out = [];
+        for ($h = 0; $h < 24; $h++) {
+            $out[] = [
+                'label' => $h . ' h',
+                'current' => (int) ($current[$h] ?? 0),
+                'previous' => (int) ($previous[$h] ?? 0),
+                'href' => self::periodQuery([
+                    'periode' => (string) $period['id'],
+                    'compare' => $compare ? '1' : '0',
+                    'jours' => (int) ($period['jours'] ?? 21),
+                    'du' => (string) ($period['du'] ?? ''),
+                    'au' => (string) ($period['au'] ?? ''),
+                    'tranche' => (string) $h,
+                ], [], $base),
+                'on' => $tranche === $h,
+            ];
+        }
+        return $out;
+    }
+
+    /** @return array<int, int> */
+    private static function landingCountsByHour(string $slug, string $from, string $to): array
+    {
+        $rows = Database::fetchAll(
+            'SELECT HOUR(started_at) AS h, COUNT(*) AS n
+             FROM stats_landing_visits
+             WHERE landing = ? AND started_at >= ? AND started_at <= ?
+             GROUP BY HOUR(started_at)',
+            [$slug, $from, $to]
+        );
+        $map = [];
+        foreach ($rows as $row) {
+            $map[(int) $row['h']] = (int) $row['n'];
+        }
+        return $map;
+    }
+
+    /** @return list<array<string, mixed>> */
+    private static function landingCalendarSeries(string $slug, array $period, bool $compare, string $base): array
+    {
+        $current = self::landingCountsByDay($slug, (string) $period['from_at'], (string) $period['to_at']);
+        $previous = $compare
+            ? self::landingCountsByDay($slug, (string) $period['prev_from_at'], (string) $period['prev_to_at'])
+            : [];
+        $start = self::parseDay((string) $period['from']) ?? self::now();
+        $end = self::parseDay((string) $period['to']) ?? $start;
+        $prevStart = self::parseDay((string) $period['prev_from']) ?? $start;
+        $points = [];
+        $cursor = $start;
+        $i = 0;
+        while ($cursor <= $end) {
+            $prevKey = $prevStart->modify('+' . $i . ' days')->format('Y-m-d');
+            $points[] = [
+                'day' => $cursor,
+                'current' => (int) ($current[$cursor->format('Y-m-d')] ?? 0),
+                'previous' => (int) ($previous[$prevKey] ?? 0),
+            ];
+            $cursor = $cursor->modify('+1 day');
+            $i++;
+        }
+        $grain = (string) ($period['grain'] ?? 'day');
+        if ($grain === 'day') {
+            $out = [];
+            foreach ($points as $point) {
+                /** @var DateTimeImmutable $day */
+                $day = $point['day'];
+                $iso = $day->format('Y-m-d');
+                $out[] = [
+                    'label' => (int) $day->format('j') . '/' . $day->format('n'),
+                    'current' => $point['current'],
+                    'previous' => $point['previous'],
+                    'href' => self::periodQuery([
+                        'periode' => 'perso',
+                        'du' => $iso,
+                        'au' => $iso,
+                        'compare' => $compare ? '1' : '0',
+                    ], [], $base),
+                    'on' => false,
+                ];
+            }
+            return $out;
+        }
+
+        $groups = [];
+        foreach ($points as $point) {
+            /** @var DateTimeImmutable $day */
+            $day = $point['day'];
+            if ($grain === 'month') {
+                $key = $day->format('Y-m');
+                $label = self::monthAbbr((int) $day->format('n')) . ' ' . $day->format('Y');
+            } else {
+                $key = $day->format('o') . '-W' . $day->format('W');
+                $label = 'S' . $day->format('W');
+            }
+            if (!isset($groups[$key])) {
+                $groups[$key] = [
+                    'label' => $label,
+                    'current' => 0,
+                    'previous' => 0,
+                    'from' => $day,
+                    'to' => $day,
+                ];
+            }
+            $groups[$key]['current'] += $point['current'];
+            $groups[$key]['previous'] += $point['previous'];
+            $groups[$key]['to'] = $day;
+        }
+        $out = [];
+        foreach ($groups as $group) {
+            /** @var DateTimeImmutable $from */
+            $from = $group['from'];
+            /** @var DateTimeImmutable $to */
+            $to = $group['to'];
+            $out[] = [
+                'label' => (string) $group['label'],
+                'current' => (int) $group['current'],
+                'previous' => (int) $group['previous'],
+                'href' => self::periodQuery([
+                    'periode' => 'perso',
+                    'du' => $from->format('Y-m-d'),
+                    'au' => $to->format('Y-m-d'),
+                    'compare' => $compare ? '1' : '0',
+                ], [], $base),
+                'on' => false,
+            ];
+        }
+        return $out;
+    }
+
+    /** @return array<string, int> */
+    private static function landingCountsByDay(string $slug, string $from, string $to): array
+    {
+        $rows = Database::fetchAll(
+            'SELECT DATE(started_at) AS d, COUNT(*) AS n
+             FROM stats_landing_visits
+             WHERE landing = ? AND started_at >= ? AND started_at <= ?
+             GROUP BY DATE(started_at)',
+            [$slug, $from, $to]
+        );
+        $map = [];
+        foreach ($rows as $row) {
+            $map[substr((string) $row['d'], 0, 10)] = (int) $row['n'];
+        }
+        return $map;
+    }
+
+    /** @return list<array<string, mixed>> */
+    private static function landingEventRank(string $slug, string $from, string $to, string $kind, int $limit, bool $firstOnly = false): array
+    {
+        $sql = 'SELECT e.kind, e.label, e.target, COUNT(*) AS n
+                FROM stats_landing_visits v
+                INNER JOIN stats_landing_events e ON e.visit = v.id
+                WHERE v.landing = ? AND v.started_at >= ? AND v.started_at <= ?';
+        $params = [$slug, $from, $to];
+        if ($kind !== '') {
+            $sql .= ' AND e.kind = ?';
+            $params[] = $kind;
+        }
+        if ($firstOnly) {
+            $sql .= ' AND e.seq = 1';
+        }
+        $sql .= ' GROUP BY e.kind, e.label, e.target ORDER BY n DESC LIMIT ' . max(1, min(20, $limit));
+        $rows = Database::fetchAll($sql, $params);
+        $out = [];
+        foreach ($rows as $row) {
+            $target = (string) $row['target'];
+            $href = (str_starts_with($target, '/') && !str_starts_with($target, '/espace') && !str_starts_with($target, '/admin'))
+                ? $target
+                : '';
+            $label = (string) $row['label'];
+            if ($kind === '') {
+                $label = self::landingKindLabel((string) $row['kind']) . ' · ' . $label;
+            }
+            $out[] = [
+                'label' => $label,
+                'n' => (int) $row['n'],
+                'href' => $href,
+                'sub' => $href,
+            ];
+        }
+        return $out;
+    }
+
+    /** @return list<array<string, mixed>> */
+    private static function landingPaths(string $slug, string $from, string $to): array
+    {
+        $rows = Database::fetchAll(
+            'SELECT path, COUNT(*) AS n FROM (
+                SELECT GROUP_CONCAT(
+                    CONCAT(
+                        CASE e.kind WHEN \'click\' THEN \'Clic\' WHEN \'action\' THEN \'Action\' ELSE \'Page\' END,
+                        \' · \',
+                        LEFT(e.label, 72)
+                    )
+                    ORDER BY e.seq SEPARATOR \' → \'
+                ) AS path
+                FROM stats_landing_visits v
+                INNER JOIN stats_landing_events e ON e.visit = v.id
+                WHERE v.landing = ? AND v.started_at >= ? AND v.started_at <= ?
+                GROUP BY e.visit
+            ) t
+            WHERE path IS NOT NULL AND path != \'\'
+            GROUP BY path
+            ORDER BY n DESC
+            LIMIT 8',
+            [$slug, $from, $to]
+        );
+        $out = [];
+        foreach ($rows as $row) {
+            $out[] = [
+                'label' => (string) $row['path'],
+                'n' => (int) $row['n'],
+                'href' => '',
+                'sub' => '',
+            ];
+        }
+        return $out;
+    }
+
+    /** @return list<array<string, mixed>> */
+    private static function landingFacet(string $slug, string $from, string $to, string $column): array
+    {
+        if (!in_array($column, ['device', 'source'], true)) {
+            return [];
+        }
+        $rows = Database::fetchAll(
+            "SELECT {$column} AS dim, COUNT(*) AS n
+             FROM stats_landing_visits
+             WHERE landing = ? AND started_at >= ? AND started_at <= ?
+             GROUP BY {$column}
+             ORDER BY n DESC
+             LIMIT 6",
+            [$slug, $from, $to]
+        );
+        $out = [];
+        foreach ($rows as $row) {
+            $dim = (string) $row['dim'];
+            $out[] = [
+                'label' => $column === 'device' ? self::landingDeviceLabel($dim) : self::landingSourceLabel($dim),
+                'n' => (int) $row['n'],
+                'href' => '',
+                'sub' => '',
+            ];
+        }
+        return $out;
+    }
+
+    /**
+     * @param list<array<string, mixed>> $rows
+     * @return list<array<string, mixed>>
+     */
+    private static function landingBars(array $rows, int $arrivals): array
+    {
+        $max = 1;
+        foreach ($rows as $row) {
+            $max = max($max, (int) ($row['n'] ?? 0));
+        }
+        $out = [];
+        foreach ($rows as $row) {
+            $n = (int) ($row['n'] ?? 0);
+            $out[] = [
+                'label' => (string) ($row['label'] ?? ''),
+                'n' => $n,
+                'v' => format_int($n),
+                'pct' => (int) round(100 * $n / $max),
+                'share' => $arrivals > 0 ? (int) round(100 * $n / $arrivals) : 0,
+                'href' => (string) ($row['href'] ?? ''),
+                'sub' => (string) ($row['sub'] ?? ''),
+            ];
+        }
+        return $out;
+    }
+
+    /** @return array{rows: list<array<string, mixed>>, total: int, pages: int, page: int, per_page: int} */
+    private static function landingJourneys(string $slug, string $from, string $to, int $page): array
+    {
+        $perPage = 20;
+        $total = (int) (Database::fetch(
+            'SELECT COUNT(*) AS n FROM stats_landing_visits
+             WHERE landing = ? AND started_at >= ? AND started_at <= ?',
+            [$slug, $from, $to]
+        )['n'] ?? 0);
+        $pages = max(1, (int) ceil($total / $perPage));
+        $page = min(max(1, $page), $pages);
+        $offset = ($page - 1) * $perPage;
+        $rows = $total === 0 ? [] : Database::fetchAll(
+            'SELECT id, started_at, device, source, steps
+             FROM stats_landing_visits
+             WHERE landing = ? AND started_at >= ? AND started_at <= ?
+             ORDER BY started_at DESC
+             LIMIT ' . $perPage . ' OFFSET ' . $offset,
+            [$slug, $from, $to]
+        );
+        $ids = [];
+        foreach ($rows as $row) {
+            $ids[] = (string) $row['id'];
+        }
+        $events = [];
+        if ($ids !== []) {
+            $placeholders = implode(',', array_fill(0, count($ids), '?'));
+            $eventRows = Database::fetchAll(
+                "SELECT visit, seq, at, kind, label, target
+                 FROM stats_landing_events
+                 WHERE visit IN ({$placeholders})
+                 ORDER BY seq ASC",
+                $ids
+            );
+            foreach ($eventRows as $event) {
+                $events[(string) $event['visit']][] = $event;
+            }
+        }
+        $journeys = [];
+        foreach ($rows as $row) {
+            $id = (string) $row['id'];
+            $steps = [];
+            foreach ($events[$id] ?? [] as $event) {
+                $target = (string) $event['target'];
+                $href = (str_starts_with($target, '/') && !str_starts_with($target, '/espace') && !str_starts_with($target, '/admin'))
+                    ? $target
+                    : '';
+                $at = (string) $event['at'];
+                $steps[] = [
+                    'kind' => self::landingKindLabel((string) $event['kind']),
+                    'label' => (string) $event['label'],
+                    'time' => strlen($at) >= 16 ? substr($at, 11, 5) : '',
+                    'href' => $href,
+                ];
+            }
+            $n = (int) $row['steps'];
+            $journeys[] = [
+                'when' => self::landingWhen((string) $row['started_at']),
+                'device' => self::landingDeviceLabel((string) $row['device']),
+                'source' => self::landingSourceLabel((string) $row['source']),
+                'steps_n' => $n,
+                'capped' => $n >= self::LP_MAX_STEPS,
+                'idle' => $steps === [],
+                'events' => $steps,
+            ];
+        }
+        return [
+            'rows' => $journeys,
+            'total' => $total,
+            'pages' => $pages,
+            'page' => $page,
+            'per_page' => $perPage,
+        ];
+    }
+
+    /** @return list<array{id: string, label: string, href: string, on: bool}> */
+    private static function landingPeriodChips(array $period, bool $compare, string $base): array
+    {
+        $labels = [
+            'heure' => 'Cette heure',
+            'jour' => 'Aujourd’hui',
+            'hier' => 'Hier',
+            '7j' => '7 jours',
+            'semaine' => 'Cette semaine',
+            'mois' => 'Ce mois',
+            '90j' => '3 mois',
+            '12m' => '12 mois',
+        ];
+        $keep = [
+            'compare' => $compare ? '1' : '0',
+            'jours' => (int) ($period['jours'] ?? 21),
+        ];
+        $out = [];
+        foreach ($labels as $id => $label) {
+            $out[] = [
+                'id' => $id,
+                'label' => $label,
+                'on' => ($period['id'] ?? '') === $id,
+                'href' => self::periodQuery($keep, ['periode' => $id], $base),
+            ];
+        }
+        return $out;
+    }
+
+    private static function landingPageHref(array $period, bool $compare, ?int $tranche, int $page, string $base): string
+    {
+        return self::periodQuery([
+            'periode' => (string) $period['id'],
+            'compare' => $compare ? '1' : '0',
+            'jours' => (int) ($period['jours'] ?? 21),
+            'du' => (string) ($period['du'] ?? ''),
+            'au' => (string) ($period['au'] ?? ''),
+            'tranche' => $tranche === null ? null : (string) $tranche,
+            'p' => $page > 1 ? (string) $page : null,
+        ], [], $base);
+    }
+
+    private static function landingTranche(Request $request, array $period): ?int
+    {
+        if (($period['grain'] ?? '') !== 'hour') {
+            return null;
+        }
+        $raw = $request->string('tranche');
+        if ($raw === '' || !preg_match('/^\d{1,2}$/', $raw)) {
+            return null;
+        }
+        $hour = (int) $raw;
+        return ($hour >= 0 && $hour <= 23) ? $hour : null;
+    }
+
+    /** @return array<string, mixed> */
+    private static function resolveLandingPeriod(Request $request): array
+    {
+        $jours = max(1, min(366, (int) ($request->int('jours', 21) ?? 21)));
+        if ($request->string('periode') === 'heure') {
+            $now = self::now();
+            $from = $now->modify('-59 minutes');
+            $prevTo = $from->modify('-1 minute');
+            $prevFrom = $prevTo->modify('-59 minutes');
+            return [
+                'id' => 'heure',
+                'label' => 'Cette heure',
+                'from' => $from->format('Y-m-d'),
+                'to' => $now->format('Y-m-d'),
+                'from_at' => $from->format('Y-m-d H:i:00'),
+                'to_at' => $now->format('Y-m-d H:i:59'),
+                'prev_from' => $prevFrom->format('Y-m-d'),
+                'prev_to' => $prevTo->format('Y-m-d'),
+                'prev_from_at' => $prevFrom->format('Y-m-d H:i:00'),
+                'prev_to_at' => $prevTo->format('Y-m-d H:i:59'),
+                'days' => 1,
+                'jours' => $jours,
+                'du' => '',
+                'au' => '',
+                'hourly' => true,
+                'grain' => 'minute',
+                'range_label' => $from->format('H:i') . ' → ' . $now->format('H:i'),
+                'prev_label' => $prevFrom->format('H:i') . ' → ' . $prevTo->format('H:i'),
+            ];
+        }
+        $period = self::resolvePeriod($request, '7j');
+        $days = (int) $period['days'];
+        $period['from_at'] = $period['from'] . ' 00:00:00';
+        $period['to_at'] = $period['to'] . ' 23:59:59';
+        $period['prev_from_at'] = $period['prev_from'] . ' 00:00:00';
+        $period['prev_to_at'] = $period['prev_to'] . ' 23:59:59';
+        $period['grain'] = !empty($period['hourly']) ? 'hour' : ($days > 180 ? 'month' : ($days > 62 ? 'week' : 'day'));
+        return $period;
+    }
+
+    private static function landingGrainLabel(string $grain): string
+    {
+        return match ($grain) {
+            'minute' => 'Cette heure, par tranches de 5 minutes',
+            'hour' => 'Heure par heure',
+            'week' => 'Semaine par semaine',
+            'month' => 'Mois par mois',
+            default => 'Jour par jour',
+        };
+    }
+
+    private static function landingZoomHint(string $grain): string
+    {
+        return match ($grain) {
+            'hour' => 'Cliquez une heure pour n’afficher que les parcours de cette tranche.',
+            'day' => 'Cliquez un jour pour afficher ses 24 heures.',
+            'week' => 'Cliquez une semaine pour l’ouvrir au jour le jour.',
+            'month' => 'Cliquez un mois pour l’ouvrir au jour le jour.',
+            default => '',
+        };
+    }
+
+    private static function landingKindLabel(string $kind): string
+    {
+        return match ($kind) {
+            'click' => 'Clic',
+            'action' => 'Action',
+            default => 'Page',
+        };
+    }
+
+    private static function landingDeviceLabel(string $device): string
+    {
+        return match ($device) {
+            'mobile' => 'Mobile',
+            'tablette' => 'Tablette',
+            default => 'Ordinateur',
+        };
+    }
+
+    private static function landingSourceLabel(string $source): string
+    {
+        return match ($source) {
+            '', 'direct' => 'Accès direct',
+            'google' => 'Google',
+            'meta', 'facebook', 'instagram' => 'Meta',
+            'bing' => 'Bing',
+            'linkedin' => 'LinkedIn',
+            default => $source,
+        };
+    }
+
+    private static function landingWhen(string $at): string
+    {
+        $dt = DateTimeImmutable::createFromFormat('Y-m-d H:i:s', $at, self::tz());
+        if (!$dt instanceof DateTimeImmutable) {
+            return $at;
+        }
+        return (int) $dt->format('j') . ' ' . self::monthAbbr((int) $dt->format('n')) . ' · ' . $dt->format('H:i');
+    }
+
+    private static function monthAbbr(int $month): string
+    {
+        $months = [1 => 'janv.', 2 => 'févr.', 3 => 'mars', 4 => 'avr.', 5 => 'mai', 6 => 'juin', 7 => 'juil.', 8 => 'août', 9 => 'sept.', 10 => 'oct.', 11 => 'nov.', 12 => 'déc.'];
+        return $months[$month] ?? '';
     }
 
     private static function today(): string
