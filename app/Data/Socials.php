@@ -8,6 +8,7 @@ final class Socials
 {
     public const FACEBOOK = 'https://www.facebook.com/acteursdulivre/';
     public const INSTAGRAM = 'https://www.instagram.com/acteursdulivre.fr/';
+    public const LINKEDIN = 'https://www.linkedin.com/showcase/acteurs-du-livre/';
 
     /**
      * Comptes officiels (suivre), distincts des boutons de partage d'une page.
@@ -29,6 +30,12 @@ final class Socials
                 'label' => 'Nous suivre sur Instagram',
                 'href' => self::INSTAGRAM,
             ],
+            [
+                'id' => 'linkedin',
+                'short' => 'IN',
+                'label' => 'Nous suivre sur LinkedIn',
+                'href' => self::LINKEDIN,
+            ],
         ];
     }
 
@@ -39,6 +46,7 @@ final class Socials
             'https://editions-tesseract.fr/',
             self::FACEBOOK,
             self::INSTAGRAM,
+            self::LINKEDIN,
         ];
     }
 }

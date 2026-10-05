@@ -1269,6 +1269,7 @@ Les pages locales (exemple : [correctrice à Paris]({$home}correctrice/paris)) r
 - [presse@acteursdulivre.fr](mailto:presse@acteursdulivre.fr)
 - [Facebook](https://www.facebook.com/acteursdulivre/)
 - [Instagram](https://www.instagram.com/acteursdulivre.fr/)
+- [LinkedIn](https://www.linkedin.com/showcase/acteurs-du-livre/)
 MD;
     }
 

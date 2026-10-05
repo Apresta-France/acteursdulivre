@@ -417,6 +417,7 @@ final class Prototype
                 ['k' => 'Presse', 'v' => 'contact@editions-tesseract.fr', 'href' => 'mailto:contact@editions-tesseract.fr'],
                 ['k' => 'Facebook', 'v' => 'acteursdulivre', 'href' => Socials::FACEBOOK],
                 ['k' => 'Instagram', 'v' => '@acteursdulivre.fr', 'href' => Socials::INSTAGRAM],
+                ['k' => 'LinkedIn', 'v' => 'Acteurs du Livre', 'href' => Socials::LINKEDIN],
                 ['k' => 'Adresse', 'v' => '486 rue Sadi Carnot, Sainghin-en-Weppes'],
             ],
             'legalNav' => self::sideNav(['Mentions légales', 'CGU', 'CGV', 'Confidentialité', 'Cookies'], 0),

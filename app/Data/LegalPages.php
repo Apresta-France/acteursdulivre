@@ -98,7 +98,7 @@ final class LegalPages
             [
                 'title' => 'Contact',
                 'blocks' => [
-                    ['html' => '<ul><li>Contact général : <a href="mailto:guillaume@editions-tesseract.fr">guillaume@editions-tesseract.fr</a></li><li>Litiges et médiation : <a href="mailto:mediation@acteursdulivre.fr">mediation@acteursdulivre.fr</a></li><li>Presse : <a href="mailto:presse@acteursdulivre.fr">presse@acteursdulivre.fr</a></li><li>Facebook : <a href="' . e(Socials::FACEBOOK) . '" target="_blank" rel="noopener noreferrer">facebook.com/acteursdulivre</a></li><li>Instagram : <a href="' . e(Socials::INSTAGRAM) . '" target="_blank" rel="noopener noreferrer">instagram.com/acteursdulivre.fr</a></li><li>Formulaire : <a href="' . e(url('/contact')) . '">page Contact</a></li></ul>'],
+                    ['html' => '<ul><li>Contact général : <a href="mailto:guillaume@editions-tesseract.fr">guillaume@editions-tesseract.fr</a></li><li>Litiges et médiation : <a href="mailto:mediation@acteursdulivre.fr">mediation@acteursdulivre.fr</a></li><li>Presse : <a href="mailto:presse@acteursdulivre.fr">presse@acteursdulivre.fr</a></li><li>Facebook : <a href="' . e(Socials::FACEBOOK) . '" target="_blank" rel="noopener noreferrer">facebook.com/acteursdulivre</a></li><li>Instagram : <a href="' . e(Socials::INSTAGRAM) . '" target="_blank" rel="noopener noreferrer">instagram.com/acteursdulivre.fr</a></li><li>LinkedIn : <a href="' . e(Socials::LINKEDIN) . '" target="_blank" rel="noopener noreferrer">linkedin.com/showcase/acteurs-du-livre</a></li><li>Formulaire : <a href="' . e(url('/contact')) . '">page Contact</a></li></ul>'],
                 ],
             ],
             [
