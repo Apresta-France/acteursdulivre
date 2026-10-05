@@ -1945,17 +1945,33 @@ final class Analytics
             $current = self::landingVisitStats($slug, $fromAt, $toAt);
             $previous = $compare ? self::landingVisitStats($slug, $prevFromAt, $prevToAt) : $previous;
             $series = self::landingSeries($slug, $period, $compare, $tranche, $base);
-            $arrivals = (int) $current['arrivals'];
-            $interactions = self::landingBars(self::landingEventRank($slug, $fromAt, $toAt, 'click', 8), $arrivals);
-            $nextPages = self::landingBars(self::landingEventRank($slug, $fromAt, $toAt, 'page', 8), $arrivals);
-            $nextActions = self::landingBars(self::landingEventRank($slug, $fromAt, $toAt, 'action', 8), $arrivals);
-            $firstSteps = self::landingBars(self::landingEventRank($slug, $fromAt, $toAt, '', 8, true), $arrivals);
-            $paths = self::landingBars(self::landingPaths($slug, $fromAt, $toAt), $arrivals);
-            $devices = self::landingBars(self::landingFacet($slug, $fromAt, $toAt, 'device'), $arrivals);
-            $sources = self::landingBars(self::landingFacet($slug, $fromAt, $toAt, 'source'), $arrivals);
-            $journeyPack = self::landingJourneys($slug, $fromAt, $toAt, $page);
-        } catch (Throwable) {
-            $ready = false;
+        } catch (Throwable $e) {
+            if (self::landingTableMissing($e)) {
+                $ready = false;
+            }
+        }
+        if ($ready) {
+            $arrivalsNow = (int) $current['arrivals'];
+            try {
+                $interactions = self::landingBars(self::landingEventRank($slug, $fromAt, $toAt, 'click', 8), $arrivalsNow);
+                $nextPages = self::landingBars(self::landingEventRank($slug, $fromAt, $toAt, 'page', 8), $arrivalsNow);
+                $nextActions = self::landingBars(self::landingEventRank($slug, $fromAt, $toAt, 'action', 8), $arrivalsNow);
+                $firstSteps = self::landingBars(self::landingEventRank($slug, $fromAt, $toAt, '', 8, true), $arrivalsNow);
+                $paths = self::landingBars(self::landingPaths($slug, $fromAt, $toAt), $arrivalsNow);
+                $devices = self::landingBars(self::landingFacet($slug, $fromAt, $toAt, 'device'), $arrivalsNow);
+                $sources = self::landingBars(self::landingFacet($slug, $fromAt, $toAt, 'source'), $arrivalsNow);
+            } catch (Throwable $e) {
+                if (self::landingTableMissing($e)) {
+                    $ready = false;
+                }
+            }
+            try {
+                $journeyPack = self::landingJourneys($slug, $fromAt, $toAt, $page);
+            } catch (Throwable $e) {
+                if (self::landingTableMissing($e)) {
+                    $ready = false;
+                }
+            }
         }
 
         $views = 0;
@@ -1999,12 +2015,18 @@ final class Analytics
         } else {
             $idle = max(0, $arrivals - $interacted);
             $idlePrev = max(0, $arrivalsPrev - $interactedPrev);
+            $idleDelta = $compare ? self::delta($idle, $idlePrev) : null;
+            if (is_array($idleDelta) && $idleDelta['tone'] === 'up') {
+                $idleDelta['tone'] = 'down';
+            } elseif (is_array($idleDelta) && $idleDelta['tone'] === 'down') {
+                $idleDelta['tone'] = 'up';
+            }
             $kpis[] = [
                 'k' => 'Sans suite',
                 'v' => format_int($idle),
                 'n' => $idle,
                 'note' => 'Arrivées sans clic, page ni action.',
-                'delta' => $compare ? self::delta($idle, $idlePrev) : null,
+                'delta' => $idleDelta,
             ];
         }
         $kpis[] = [
@@ -2025,7 +2047,7 @@ final class Analytics
             'k' => 'Inscriptions',
             'v' => format_int($signups),
             'n' => $signups,
-            'note' => $hourSlice ? 'Vues dans les parcours de cette tranche.' : 'Comptes créés après cette landing.',
+            'note' => $hourSlice ? 'Inscriptions datées dans cette tranche.' : 'Comptes créés après cette landing.',
             'delta' => $compare ? self::delta($signups, $signupsPrev) : null,
         ];
 
@@ -2078,6 +2100,10 @@ final class Analytics
             return;
         }
         $page = '/besoin/' . (string) $trace['slug'];
+        $here = self::sanitizeClickTarget($request->string('p'));
+        if ($here !== '' && $here !== $page) {
+            return;
+        }
         if (!self::touchLive(self::visitorId(), $page)) {
             return;
         }
@@ -2202,8 +2228,12 @@ final class Analytics
             if ($label === '') {
                 return;
             }
+            $last = (string) ($trace['last'] ?? '');
+            if (self::landingSameNavigation($kind, $target, $last)) {
+                return;
+            }
             $sig = $kind . '|' . $target . '|' . $label;
-            if ((string) ($trace['last'] ?? '') === $sig) {
+            if ($last === $sig) {
                 return;
             }
             $seq = $n + 1;
@@ -2225,6 +2255,28 @@ final class Analytics
             $_SESSION['_lp_trace']['last'] = $sig;
         } catch (Throwable) {
         }
+    }
+
+    private static function landingSameNavigation(string $kind, string $target, string $last): bool
+    {
+        if (!str_starts_with($target, '/')) {
+            return false;
+        }
+        $click = 'click|' . $target . '|';
+        $page = 'page|' . $target . '|';
+        if ($kind === 'page' && str_starts_with($last, $click)) {
+            return true;
+        }
+        return $kind === 'click' && str_starts_with($last, $page);
+    }
+
+    private static function landingTableMissing(Throwable $e): bool
+    {
+        if ($e->getCode() === '42S02') {
+            return true;
+        }
+        $message = $e->getMessage();
+        return str_contains($message, 'stats_landing_') && str_contains($message, 'exist');
     }
 
     /** @return array{id: string, slug: string, n: int, until: int, last: string}|null */
@@ -2307,7 +2359,7 @@ final class Analytics
         $label = preg_replace('/[A-Z0-9._%+\-]+@[A-Z0-9.\-]+\.[A-Z]{2,}/iu', '', $label) ?? '';
         $label = preg_replace('/\b(?:\+?\d[\d .\-]{7,}\d)\b/u', '', $label) ?? '';
         $label = trim(preg_replace('/\s+/u', ' ', $label) ?? '');
-        if ($label === '' || str_contains($label, '@') || str_contains($label, '?') || preg_match('/https?:\/\//i', $label)) {
+        if ($label === '' || str_contains($label, '@') || preg_match('/https?:\/\//i', $label)) {
             return '';
         }
         return mb_substr($label, 0, 120);
@@ -2410,7 +2462,7 @@ final class Analytics
             'SELECT COUNT(DISTINCT e.visit) AS n
              FROM stats_landing_events e
              INNER JOIN stats_landing_visits v ON v.id = e.visit
-             WHERE v.landing = ? AND v.started_at >= ? AND v.started_at <= ?
+             WHERE v.landing = ? AND e.at >= ? AND e.at <= ?
                AND e.kind = \'action\' AND e.target = \'inscription\'',
             [$slug, $from, $to]
         )['n'] ?? 0);
@@ -2456,13 +2508,13 @@ final class Analytics
         $from = DateTimeImmutable::createFromFormat('Y-m-d H:i:s', $fromAt, $tz) ?: self::now()->modify('-59 minutes');
         $to = DateTimeImmutable::createFromFormat('Y-m-d H:i:s', $toAt, $tz) ?: self::now();
         $minute = (int) $from->format('i');
-        $from = $from->setTime((int) $from->format('H'), $minute - ($minute % 5), 0);
+        $bucketStart = $from->setTime((int) $from->format('H'), $minute - ($minute % 5), 0);
         $rows = Database::fetchAll(
             'SELECT DATE_FORMAT(started_at, \'%Y-%m-%d %H:%i\') AS t, COUNT(*) AS n
              FROM stats_landing_visits
              WHERE landing = ? AND started_at >= ? AND started_at <= ?
              GROUP BY DATE_FORMAT(started_at, \'%Y-%m-%d %H:%i\')',
-            [$slug, $from->format('Y-m-d H:i:s'), $toAt]
+            [$slug, $fromAt, $toAt]
         );
         $map = [];
         foreach ($rows as $row) {
@@ -2475,8 +2527,12 @@ final class Analytics
             $map[$bucket] = ($map[$bucket] ?? 0) + (int) $row['n'];
         }
         $out = [];
-        $cursor = $from;
+        $cursor = $bucketStart;
         while ($cursor <= $to) {
+            if ($cursor->modify('+5 minutes') <= $from) {
+                $cursor = $cursor->modify('+5 minutes');
+                continue;
+            }
             $out[] = [
                 'label' => $cursor->format('H:i'),
                 'n' => (int) ($map[$cursor->format('Y-m-d H:i')] ?? 0),
@@ -2642,12 +2698,14 @@ final class Analytics
     /** @return list<array<string, mixed>> */
     private static function landingEventRank(string $slug, string $from, string $to, string $kind, int $limit, bool $firstOnly = false): array
     {
-        $sql = 'SELECT e.kind, e.label, e.target, COUNT(*) AS n
+        $sql = 'SELECT e.kind, e.label, e.target, COUNT(DISTINCT e.visit) AS n
                 FROM stats_landing_visits v
                 INNER JOIN stats_landing_events e ON e.visit = v.id
                 WHERE v.landing = ? AND v.started_at >= ? AND v.started_at <= ?';
         $params = [$slug, $from, $to];
-        if ($kind !== '') {
+        if ($kind === 'page') {
+            $sql .= " AND (e.kind = 'page' OR (e.kind = 'click' AND e.target LIKE '/%'))";
+        } elseif ($kind !== '') {
             $sql .= ' AND e.kind = ?';
             $params[] = $kind;
         }
@@ -2679,6 +2737,10 @@ final class Analytics
     /** @return list<array<string, mixed>> */
     private static function landingPaths(string $slug, string $from, string $to): array
     {
+        try {
+            Database::pdo()->exec('SET SESSION group_concat_max_len = 8192');
+        } catch (Throwable) {
+        }
         $rows = Database::fetchAll(
             'SELECT path, COUNT(*) AS n FROM (
                 SELECT GROUP_CONCAT(
@@ -2723,16 +2785,22 @@ final class Analytics
              FROM stats_landing_visits
              WHERE landing = ? AND started_at >= ? AND started_at <= ?
              GROUP BY {$column}
-             ORDER BY n DESC
-             LIMIT 6",
+             ORDER BY n DESC",
             [$slug, $from, $to]
         );
-        $out = [];
+        $merged = [];
         foreach ($rows as $row) {
             $dim = (string) $row['dim'];
+            $label = $column === 'device' ? self::landingDeviceLabel($dim) : self::landingSourceLabel($dim);
+            $merged[$label] = ($merged[$label] ?? 0) + (int) $row['n'];
+        }
+        arsort($merged);
+        $merged = array_slice($merged, 0, 6, true);
+        $out = [];
+        foreach ($merged as $label => $n) {
             $out[] = [
-                'label' => $column === 'device' ? self::landingDeviceLabel($dim) : self::landingSourceLabel($dim),
-                'n' => (int) $row['n'],
+                'label' => (string) $label,
+                'n' => $n,
                 'href' => '',
                 'sub' => '',
             ];
@@ -2782,7 +2850,7 @@ final class Analytics
             'SELECT id, started_at, device, source, steps
              FROM stats_landing_visits
              WHERE landing = ? AND started_at >= ? AND started_at <= ?
-             ORDER BY started_at DESC
+             ORDER BY started_at DESC, id DESC
              LIMIT ' . $perPage . ' OFFSET ' . $offset,
             [$slug, $from, $to]
         );

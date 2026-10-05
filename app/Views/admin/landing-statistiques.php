@@ -77,6 +77,9 @@ $rankTable = static function (array $rows, string $empty): void {
       <?php endforeach; ?>
     </div>
     <input type="hidden" name="periode" value="<?= e((string) ($period['id'] ?? '7j')) ?>">
+    <?php if ($tranche !== null): ?>
+      <input type="hidden" name="tranche" value="<?= (int) $tranche ?>">
+    <?php endif; ?>
     <div class="stats-toolbar-row">
       <label class="stats-xdays">
         <span>X derniers jours</span>
@@ -90,8 +93,8 @@ $rankTable = static function (array $rows, string $empty): void {
       </label>
     </div>
     <div class="stats-toolbar-row">
-      <label>Du <input class="input" type="date" name="du" value="<?= e((string) ($period['du'] ?? '')) ?>"></label>
-      <label>Au <input class="input" type="date" name="au" value="<?= e((string) ($period['au'] ?? '')) ?>"></label>
+      <label>Du <input class="input" type="date" name="du" value="<?= e((string) ($period['du'] ?? '')) ?>" onkeydown="if (event.key === 'Enter') this.form.periode.value = 'perso'"></label>
+      <label>Au <input class="input" type="date" name="au" value="<?= e((string) ($period['au'] ?? '')) ?>" onkeydown="if (event.key === 'Enter') this.form.periode.value = 'perso'"></label>
       <button class="admin-ghost" type="submit" onclick="this.form.periode.value='perso'">Période personnalisée</button>
     </div>
   </form>

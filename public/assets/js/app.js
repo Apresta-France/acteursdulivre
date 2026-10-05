@@ -4079,6 +4079,7 @@
     if (!target && !label) return;
     var body = new URLSearchParams();
     body.set('lp', '1');
+    body.set('p', window.location.pathname || '');
     body.set('t', target);
     body.set('l', label);
     try {
@@ -4088,7 +4089,7 @@
       }
     } catch (e) {}
     fetch(statsEndpoint, { method: 'POST', body: body, credentials: 'same-origin', keepalive: true }).catch(function () {});
-  });
+  }, true);
 
   var liveBox = document.querySelector('[data-stats-live]');
   if (liveBox) {
