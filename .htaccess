@@ -41,6 +41,9 @@ RewriteRule ^public/uploads/missions(/|$) - [F,L]
 # Scripts et dépendances hors front public
 RewriteRule ^(bin|vendor|tests|node_modules)(/|$) - [F,L]
 
+# Safari demande ces icônes à la racine, même si la page en indique une autre.
+RewriteRule ^apple-touch-icon(?:-[0-9]+x[0-9]+)?(?:-precomposed)?\.png$ public/assets/img/apple-touch-icon.png [L]
+
 # Fichiers et dossiers existants (assets, etc.)
 RewriteCond %{REQUEST_FILENAME} -f [OR]
 RewriteCond %{REQUEST_FILENAME} -d
