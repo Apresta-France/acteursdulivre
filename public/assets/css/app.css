@@ -5786,6 +5786,11 @@ img.profile-avatar,
   color: #8496A8;
   margin-top: 6px;
 }
+.admin-errors-wrap .admin-envois-head,
+.admin-errors-wrap .admin-envois-row {
+  grid-template-columns: 92px minmax(220px, 1.6fr) 72px 150px 110px;
+}
+.admin-envois-wrap > div.admin-envois-row { cursor: default; }
 .admin-envoi-meta {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -5871,6 +5876,8 @@ img.profile-avatar,
   .admin-envois-wrap { overflow-x: auto; }
   .admin-envois-head,
   .admin-envois-row { min-width: 720px; }
+  .admin-errors-wrap .admin-envois-head,
+  .admin-errors-wrap .admin-envois-row { min-width: 760px; }
   .admin-envois-search { max-width: none; }
 }
 

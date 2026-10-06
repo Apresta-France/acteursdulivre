@@ -298,6 +298,10 @@ return static function (Router $router): void {
     $router->post('/admin/emails/{id}', [AdminController::class, 'emailSave']);
     $router->get('/admin/migrations', [AdminController::class, 'migrations']);
     $router->post('/admin/migrations', [AdminController::class, 'migrationsApply']);
+    $router->get('/admin/erreurs', [AdminController::class, 'erreurs']);
+    $router->get('/admin/erreurs/detail', [AdminController::class, 'erreurShow']);
+    $router->post('/admin/erreurs/vu', [AdminController::class, 'erreurVu']);
+    $router->post('/admin/erreurs/effacer', [AdminController::class, 'erreurEffacer']);
     $router->get('/admin/envois', [AdminController::class, 'envois']);
     $router->get('/admin/envois/{id}', [AdminController::class, 'envoiShow']);
     $router->get('/admin/contact', [AdminController::class, 'contactInbox']);

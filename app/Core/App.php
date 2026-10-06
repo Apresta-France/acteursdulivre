@@ -8,6 +8,10 @@ final class App
 {
     public static function run(): void
     {
+        register_shutdown_function(static function (): void {
+            \Adl\Models\HttpError::capture();
+        });
+
         $request = new Request();
         $path = $request->path();
 
@@ -31,6 +35,7 @@ final class App
             }
             if (!Csrf::check($request->string('_token'))) {
                 http_response_code(419);
+                \Adl\Models\HttpError::note('Session expirée');
                 View::render('errors/419', [
                     'title' => 'Session expirée',
                     'meta' => [
@@ -45,7 +50,37 @@ final class App
         $router = new Router();
         $routes = require ADL_ROOT . '/config/routes.php';
         $routes($router);
-        $router->dispatch($request);
+        try {
+            $router->dispatch($request);
+        } catch (\Throwable $e) {
+            self::fail($e);
+        }
+    }
+
+    private static function fail(\Throwable $e): void
+    {
+        try {
+            error_log('ADL ' . $e::class . ': ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
+        } catch (\Throwable) {
+        }
+        \Adl\Models\HttpError::note($e->getMessage());
+        if (!headers_sent()) {
+            http_response_code(500);
+        }
+        try {
+            View::render('errors/500', [
+                'title' => 'Erreur',
+                'meta' => [
+                    'title' => 'Erreur — acteursdulivre.fr',
+                    'robots' => \Adl\Data\Seo::ROBOTS_NONE,
+                ],
+            ]);
+        } catch (\Throwable) {
+            if (!headers_sent()) {
+                header('Content-Type: text/html; charset=utf-8');
+            }
+            echo '<!DOCTYPE html><meta charset="utf-8"><title>Erreur</title><p>Une erreur est survenue. Réessayez dans un instant.</p>';
+        }
     }
 
     private static function skipsAutoMigrate(string $path): bool

@@ -60,6 +60,7 @@ final class Router
         }
 
         http_response_code(404);
+        \Adl\Models\HttpError::note('Aucune page à cette adresse');
         View::render('errors/404', [
             'title' => 'Page introuvable',
             'meta' => [

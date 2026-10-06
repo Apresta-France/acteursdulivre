@@ -85,6 +85,12 @@ final class CronController
     /** @param array<string, mixed> $payload */
     private function json(int $status, array $payload): void
     {
+        if ($status >= 400 && $status <= 599) {
+            $error = $payload['error'] ?? '';
+            if (is_string($error) && $error !== '') {
+                \Adl\Models\HttpError::note($error);
+            }
+        }
         header('Content-Type: application/json; charset=utf-8');
         header('Cache-Control: no-store');
         http_response_code($status);

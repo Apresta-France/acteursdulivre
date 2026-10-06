@@ -28,6 +28,7 @@ use Adl\Models\Conversation;
 use Adl\Models\EmailLog;
 use Adl\Models\EmailTemplate;
 use Adl\Models\ForumCategory;
+use Adl\Models\HttpError;
 use Adl\Models\ForumTopic;
 use Adl\Models\Invoice;
 use Adl\Models\Mission;
@@ -1947,6 +1948,132 @@ final class AdminController
             flash('error', $detail !== '' ? $detail : 'Échec de la migration.');
         }
         redirect('/admin/migrations');
+    }
+
+    public function erreurs(Request $request): void
+    {
+        $query = $request->string('q', '');
+        $filtre = $this->filtre($request, array_keys(HttpError::FILTERS), 'suivi');
+        $page = max(1, (int) ($request->int('page', 1) ?? 1));
+        $stats = ['open' => 0, 'hits404' => 0, 'hitsOther' => 0];
+        $found = ['items' => [], 'total' => 0, 'page' => 1, 'pages' => 1, 'per_page' => HttpError::PER_PAGE];
+        $ready = HttpError::ready();
+        $loadError = null;
+        if ($ready) {
+            try {
+                HttpError::prune();
+                $found = HttpError::search($query, $filtre, $page);
+                $stats = HttpError::stats();
+            } catch (Throwable $e) {
+                $loadError = user_error_message($e);
+            }
+        }
+
+        $n = (int) $found['total'];
+        if (!$ready) {
+            $subtitle = 'Le journal des erreurs n’est pas encore en place.';
+        } elseif ($filtre === 'suivi') {
+            $subtitle = $n > 1 ? format_int($n) . ' adresses à suivre' : ($n === 1 ? '1 adresse à suivre' : 'Aucune adresse en attente.');
+        } else {
+            $subtitle = format_int($n) . ' ' . ($n > 1 ? 'adresses' : 'adresse');
+        }
+        if ($query !== '' && $ready) {
+            $subtitle .= ' pour « ' . $query . ' »';
+        }
+
+        $extra = [
+            'erreursQuery' => $query,
+            'filtre' => $filtre,
+            'groups' => $found['items'],
+            'pager' => $found,
+            'ready' => $ready,
+            'stats' => $stats,
+            'erreursFilters' => $this->filterLinks('/admin/erreurs', HttpError::FILTERS, $filtre, $query !== '' ? ['q' => $query] : []),
+            'erreursSubtitle' => $subtitle,
+        ];
+        if ($loadError !== null) {
+            $extra['error'] = $loadError;
+        }
+        $this->page('erreurs', 'admin/erreurs', $extra);
+    }
+
+    public function erreurShow(Request $request): void
+    {
+        $status = (int) ($request->int('code') ?? 0);
+        $path = $request->string('chemin');
+        $back = $this->erreursBack($request);
+        try {
+            $group = HttpError::findGroup($status, $path);
+            $hits = $group ? HttpError::occurrences($status, $path) : [];
+        } catch (Throwable) {
+            $group = null;
+            $hits = [];
+        }
+        if (!$group) {
+            flash('error', 'Cette erreur est introuvable.');
+            redirect($back);
+        }
+
+        $this->page('erreurs', 'admin/erreur', [
+            'title' => (string) ($group['path'] ?? 'Erreur'),
+            'group' => $group,
+            'hits' => $hits,
+            'back' => $back,
+        ]);
+    }
+
+    public function erreurVu(Request $request): void
+    {
+        $admin = Auth::requireAdmin();
+        $back = $this->erreursBack($request);
+        try {
+            if ($request->string('tout') === '1') {
+                HttpError::acknowledgeOpen((int) $admin['id']);
+                flash('saved', 'Les adresses en attente sont marquées comme vues.');
+                redirect($back);
+            }
+            $status = (int) ($request->int('code') ?? 0);
+            $path = $request->string('chemin');
+            if ($status < 400 || $status > 599 || $path === '') {
+                flash('error', 'Adresse introuvable.');
+                redirect($back);
+            }
+            HttpError::acknowledge($status, $path, (int) $admin['id']);
+            flash('saved', 'Adresse marquée comme vue.');
+            redirect(HttpError::detailUrl($status, $path, $back));
+        } catch (Throwable $e) {
+            flash('error', user_error_message($e));
+            redirect($back);
+        }
+    }
+
+    public function erreurEffacer(Request $request): void
+    {
+        Auth::requireAdmin();
+        $back = $this->erreursBack($request);
+        $status = (int) ($request->int('code') ?? 0);
+        $path = $request->string('chemin');
+        if ($status < 400 || $status > 599 || $path === '') {
+            flash('error', 'Adresse introuvable.');
+            redirect($back);
+        }
+        try {
+            HttpError::forget($status, $path);
+            flash('saved', 'Adresse retirée du journal.');
+        } catch (Throwable $e) {
+            flash('error', user_error_message($e));
+        }
+        redirect($back);
+    }
+
+    private function erreursBack(Request $request): string
+    {
+        $back = safe_internal_path($request->string('retour')) ?? '/admin/erreurs';
+        if (!str_starts_with($back, '/admin/erreurs')) {
+            return '/admin/erreurs';
+        }
+
+        return $back;
     }
 
     private static function reportCount(): int

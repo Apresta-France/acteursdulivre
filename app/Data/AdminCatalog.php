@@ -9,6 +9,7 @@ use Adl\Core\Migrator;
 use Adl\Models\Article;
 use Adl\Models\Commission;
 use Adl\Models\ContactMessage;
+use Adl\Models\HttpError;
 use Adl\Models\Invoice;
 use Adl\Models\Mission;
 use Adl\Models\Order;
@@ -73,6 +74,7 @@ final class AdminCatalog
             ['sso', 'Connexion Google / Facebook', '', '', '/admin/sso'],
             ['emails', 'Modèles d\'e-mails', '', '', '/admin/emails'],
             ['envois', 'E-mails envoyés', '', '', '/admin/envois'],
+            ['erreurs', 'Erreurs', $badges['erreurs'], '', '/admin/erreurs'],
             ['migrations', 'Migrations', $badges['migrations'], '', '/admin/migrations'],
         ];
         $nav = [];
@@ -114,6 +116,7 @@ final class AdminCatalog
             'livres' => self::badgeCount(static fn (): int => Souscription::countPending()),
             'finances' => self::badgeCount(static fn (): int => Invoice::countOverdue()),
             'migrations' => self::badgeCount(static fn (): int => Migrator::pendingCount()),
+            'erreurs' => self::badgeCount(static fn (): int => HttpError::countOpen()),
         ];
     }
 
@@ -156,6 +159,7 @@ final class AdminCatalog
             'emails' => 'Modèles d\'e-mails',
             'envois' => 'E-mails envoyés',
             'migrations' => 'Migrations',
+            'erreurs' => 'Erreurs',
         ];
     }
 

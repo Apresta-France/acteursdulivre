@@ -587,6 +587,12 @@ function article_image_url(string $path): string
 
 function json_response(array $payload, int $code = 200): never
 {
+    if ($code >= 400 && $code <= 599) {
+        $error = $payload['error'] ?? '';
+        if (is_string($error) && $error !== '') {
+            \Adl\Models\HttpError::note($error);
+        }
+    }
     http_response_code($code);
     header('Content-Type: application/json; charset=utf-8');
     $flags = JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES;
@@ -601,6 +607,9 @@ function json_response(array $payload, int $code = 200): never
 function not_found(string $message = ''): never
 {
     http_response_code(404);
+    if ($message !== '') {
+        \Adl\Models\HttpError::note($message);
+    }
     \Adl\Core\View::render('errors/404', [
         'title' => 'Page introuvable',
         'message' => $message !== '' ? $message : 'Le lien est peut-être ancien, ou la page a été retirée.',

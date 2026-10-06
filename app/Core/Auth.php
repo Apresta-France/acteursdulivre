@@ -236,6 +236,7 @@ final class Auth
         $user = self::requireUser();
         if (($user['role'] ?? '') !== 'admin') {
             http_response_code(403);
+            \Adl\Models\HttpError::note('Accès refusé');
             View::render('errors/403', ['title' => 'Accès refusé']);
             exit;
         }

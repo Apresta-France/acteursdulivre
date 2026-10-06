@@ -700,6 +700,7 @@ final class PublisherController
     private function tooMany(): never
     {
         http_response_code(429);
+        \Adl\Models\HttpError::note('Trop de consultations');
         header('Retry-After: ' . Publisher::VISITOR_VIEW_WINDOW);
         View::render('errors/429', [
             'title' => 'Trop de consultations',
