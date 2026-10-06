@@ -17,6 +17,11 @@ $builder = [
     'catalog' => $catalog,
     'uploadUrl' => url('/admin/newsletter/image'),
     'token' => Csrf::token(),
+    'socialIcons' => [
+        'facebook' => \Adl\Data\Socials::iconUrl('facebook', true),
+        'instagram' => \Adl\Data\Socials::iconUrl('instagram', true),
+        'linkedin' => \Adl\Data\Socials::iconUrl('linkedin', true),
+    ],
 ];
 $jsonFlags = JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS;
 if (defined('JSON_INVALID_UTF8_SUBSTITUTE')) {
@@ -134,7 +139,10 @@ $tiles = [
         <div class="admin-nl-mail" data-nl-mail>
           <div class="admin-nl-mail-brand">Acteurs du Livre</div>
           <div class="admin-nl-mail-body" data-nl-canvas></div>
-          <div class="admin-nl-mail-foot">acteursdulivre.fr — Se désinscrire de la lettre</div>
+          <div class="admin-nl-mail-foot">
+            <?php require ADL_ROOT . '/app/Views/emails/socials.php'; ?>
+            <div>acteursdulivre.fr — Se désinscrire de la lettre</div>
+          </div>
         </div>
       </div>
 

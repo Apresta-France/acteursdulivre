@@ -217,7 +217,7 @@ $statusLabels = [
       <?php if (!empty($preview['empty'])): ?>
         <p class="field-help">Aucun bloc pour l’instant : la lettre partirait presque vide.</p>
       <?php endif; ?>
-      <div class="admin-nl-preview-body"><?= $preview['html'] ?? '' ?></div>
+      <div class="admin-nl-preview-body"><?= $preview['html'] ?? '' ?><?php require ADL_ROOT . '/app/Views/emails/socials.php'; ?></div>
     </section>
   <?php endif; ?>
   <?php endif; ?>

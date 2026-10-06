@@ -48,6 +48,15 @@ $link = 'color:#6B7280;text-decoration:underline;';
                   Ceci est un e-mail de service envoyé par Acteurs du Livre.
                 <?php endif; ?>
               </p>
+              <?php
+                $contentHtml = (string) ($content ?? '');
+                $contentHasSocials = stripos($contentHtml, 'facebook.com') !== false
+                    && stripos($contentHtml, 'instagram.com') !== false
+                    && stripos($contentHtml, 'linkedin.com') !== false;
+              ?>
+              <?php if ($isNewsletter && !$contentHasSocials): ?>
+                <?php require __DIR__ . '/socials.php'; ?>
+              <?php endif; ?>
               <p style="margin:0 0 16px;">
                 <a href="<?= e($helpUrl) ?>" style="<?= $link ?>">Aide</a>
                 &nbsp;·&nbsp;

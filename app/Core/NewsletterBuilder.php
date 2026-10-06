@@ -204,8 +204,18 @@ final class NewsletterBuilder
             $html .= '<div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;">'
                 . e($preheader) . '</div>';
         }
-        foreach ($blocks as $block) {
-            $html .= self::renderBlock($block);
+        $count = count($blocks);
+        for ($i = 0; $i < $count; $i++) {
+            if (self::isSocialButton($blocks[$i])) {
+                $group = [$blocks[$i]];
+                while ($i + 1 < $count && self::isSocialButton($blocks[$i + 1])) {
+                    $i++;
+                    $group[] = $blocks[$i];
+                }
+                $html .= count($group) > 1 ? self::renderSocialRow($group) : self::renderBlock($group[0]);
+                continue;
+            }
+            $html .= self::renderBlock($blocks[$i]);
         }
         return $html;
     }
@@ -264,6 +274,51 @@ final class NewsletterBuilder
     }
 
     /** @param array<string, mixed> $block */
+    private static function isSocialButton(array $block): bool
+    {
+        if (($block['type'] ?? '') !== 'button') {
+            return false;
+        }
+        $href = strtolower((string) ($block['href'] ?? ''));
+
+        return str_contains($href, 'facebook.com')
+            || str_contains($href, 'instagram.com')
+            || str_contains($href, 'linkedin.com');
+    }
+
+    /**
+     * Boutons Facebook, Instagram et LinkedIn sur une seule rangée.
+     *
+     * @param list<array<string, mixed>> $blocks
+     */
+    private static function renderSocialRow(array $blocks): string
+    {
+        $html = '<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;margin:18px 0;"><tr>';
+        foreach ($blocks as $block) {
+            $href = (string) ($block['href'] ?? '');
+            $label = (string) ($block['label'] ?? 'En savoir plus');
+            if ($href === '') {
+                continue;
+            }
+            $html .= '<td style="padding:0 8px 0 0;vertical-align:middle;">'
+                . '<a href="' . e($href) . '" style="display:inline-block;background:#D85D3F;color:#fff;text-decoration:none;font-weight:600;padding:11px 18px;border-radius:10px;">'
+                . self::buttonFace($href, $label, true) . '</a></td>';
+        }
+
+        return $html . '</tr></table>';
+    }
+
+    private static function buttonFace(string $href, string $label, bool $onDark): string
+    {
+        $id = \Adl\Data\Socials::idFromHref($href);
+        if ($id === '') {
+            return e($label);
+        }
+
+        return \Adl\Data\Socials::iconLabel($id, $label, $onDark, 15);
+    }
+
+    /** @param array<string, mixed> $block */
     private static function renderButton(array $block): string
     {
         $href = (string) ($block['href'] ?? '');
@@ -274,7 +329,7 @@ final class NewsletterBuilder
         $align = ($block['align'] ?? 'left') === 'center' ? 'center' : 'left';
         return '<p style="margin:18px 0;text-align:' . $align . ';">'
             . '<a href="' . e($href) . '" style="display:inline-block;background:#D85D3F;color:#fff;text-decoration:none;font-weight:600;padding:11px 18px;border-radius:10px;">'
-            . e($label) . '</a></p>';
+            . self::buttonFace($href, $label, true) . '</a></p>';
     }
 
     /** @param array<string, mixed> $block */

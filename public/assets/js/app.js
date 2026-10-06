@@ -2764,16 +2764,168 @@
     return inner;
   }
 
+  function wordStyleFlags(style) {
+    style = String(style || '').toLowerCase().replace(/\s+/g, '');
+    function has(prop, value) {
+      return new RegExp('(?:^|;)' + prop + ':' + value + '(?:!important)?(?:;|$)').test(style);
+    }
+    return {
+      bold: has('font-weight', '(?:bold|[6-9]00)') || has('mso-bidi-font-weight', 'bold') || has('mso-ansi-font-weight', 'bold'),
+      italic: has('font-style', '(?:italic|oblique)') || has('mso-bidi-font-style', 'italic'),
+      underline: /(?:^|;)text-decoration:[^;]*underline/.test(style) || /(?:^|;)text-underline:(?!none)/.test(style)
+    };
+  }
+
+  function safeWordSelector(selector) {
+    selector = String(selector || '').replace(/\s+/g, '');
+    if (/^[a-zA-Z][a-zA-Z0-9]*(\.[a-zA-Z_][\w-]*)$/.test(selector)) return selector;
+    if (/^\.[a-zA-Z_][\w-]*$/.test(selector)) return selector;
+    if (/^[a-zA-Z][a-zA-Z0-9]*$/.test(selector)) return selector;
+    return '';
+  }
+
+  function markWordStylesheet(doc) {
+    var css = '';
+    Array.prototype.forEach.call(doc.querySelectorAll('style'), function (node) {
+      css += '\n' + (node.textContent || '');
+    });
+    css = css.replace(/\/\*[\s\S]*?\*\//g, '');
+    var re = /([^{}@]+)\{([^{}]*)\}/g;
+    var match;
+    while ((match = re.exec(css))) {
+      var flags = wordStyleFlags(match[2]);
+      if (!flags.bold && !flags.italic && !flags.underline) continue;
+      match[1].split(',').forEach(function (part) {
+        var sel = safeWordSelector(part);
+        if (!sel) return;
+        try {
+          doc.querySelectorAll(sel).forEach(function (el) {
+            if (flags.bold) el.setAttribute('data-w-bold', '1');
+            if (flags.italic) el.setAttribute('data-w-italic', '1');
+            if (flags.underline) el.setAttribute('data-w-u', '1');
+          });
+        } catch (err) {}
+      });
+    }
+  }
+
+  function wrapElementContents(el, tag) {
+    if (!el.firstChild) return;
+    var wrap = el.ownerDocument.createElement(tag);
+    while (el.firstChild) wrap.appendChild(el.firstChild);
+    el.appendChild(wrap);
+  }
+
+  function renameElement(el, tag) {
+    if ((el.tagName || '').toLowerCase() === tag) return el;
+    var next = el.ownerDocument.createElement(tag);
+    while (el.firstChild) next.appendChild(el.firstChild);
+    if (el.parentNode) el.parentNode.replaceChild(next, el);
+    return next;
+  }
+
+  function wordHeadingTag(el) {
+    var tag = (el.tagName || '').toLowerCase();
+    var cls = String(el.getAttribute('class') || '');
+    if (/MsoHeading3/i.test(cls)) return 'h4';
+    if (/MsoHeading2/i.test(cls)) return 'h3';
+    if (/MsoHeading1|MsoTitle|MsoSubtitle/i.test(cls) || tag === 'h1') return 'h2';
+    return '';
+  }
+
+  var WORD_INLINE_HOST = {
+    span: true, font: true, p: true, li: true, a: true, td: true, th: true,
+    h1: true, h2: true, h3: true, h4: true, h5: true, h6: true,
+    b: true, strong: true, i: true, em: true, u: true
+  };
+
+  function applyWordInline(el) {
+    var flags = wordStyleFlags(el.getAttribute('style') || '');
+    if (el.getAttribute('data-w-bold') === '1') flags.bold = true;
+    if (el.getAttribute('data-w-italic') === '1') flags.italic = true;
+    if (el.getAttribute('data-w-u') === '1') flags.underline = true;
+    var tag = (el.tagName || '').toLowerCase();
+    if (tag === 'b' || tag === 'strong') flags.bold = false;
+    if (tag === 'i' || tag === 'em') flags.italic = false;
+    if (tag === 'u') flags.underline = false;
+    if (flags.underline) wrapElementContents(el, 'u');
+    if (flags.italic) wrapElementContents(el, 'em');
+    if (flags.bold) wrapElementContents(el, 'strong');
+  }
+
+  function isWordListItem(el) {
+    if ((el.tagName || '').toLowerCase() !== 'p') return false;
+    var cls = el.getAttribute('class') || '';
+    var style = el.getAttribute('style') || '';
+    return /MsoList/i.test(cls) || /mso-list\s*:/i.test(style);
+  }
+
+  function wordListTag(el) {
+    var marker = '';
+    Array.prototype.forEach.call(el.querySelectorAll('span'), function (span) {
+      if (/mso-list\s*:\s*Ignore/i.test(span.getAttribute('style') || '')) marker += span.textContent || '';
+    });
+    marker = marker.replace(/\u00a0/g, ' ').trim();
+    if (/^(?:\d+|[ivxlcdm]+)[.)]/i.test(marker)) return 'ol';
+    return 'ul';
+  }
+
+  function stripWordListMarker(el) {
+    Array.prototype.forEach.call(el.querySelectorAll('span'), function (span) {
+      if (/mso-list\s*:\s*Ignore/i.test(span.getAttribute('style') || '')) span.remove();
+    });
+  }
+
+  function groupWordLists(root) {
+    var parents = [root].concat(Array.prototype.slice.call(root.querySelectorAll('div, td, th')));
+    parents.forEach(function (parent) {
+      var kids = Array.prototype.slice.call(parent.children);
+      var i = 0;
+      while (i < kids.length) {
+        if (!isWordListItem(kids[i]) || kids[i].parentNode !== parent) {
+          i += 1;
+          continue;
+        }
+        var listTag = wordListTag(kids[i]);
+        var ul = parent.ownerDocument.createElement(listTag);
+        parent.insertBefore(ul, kids[i]);
+        while (i < kids.length && isWordListItem(kids[i]) && kids[i].parentNode === parent && wordListTag(kids[i]) === listTag) {
+          stripWordListMarker(kids[i]);
+          var li = parent.ownerDocument.createElement('li');
+          while (kids[i].firstChild) li.appendChild(kids[i].firstChild);
+          ul.appendChild(li);
+          kids[i].remove();
+          i += 1;
+        }
+      }
+    });
+  }
+
+  function prepareEditorHtml(html) {
+    var doc = new DOMParser().parseFromString(String(html || ''), 'text/html');
+    markWordStylesheet(doc);
+    Array.prototype.slice.call(doc.body.querySelectorAll('*')).reverse().forEach(function (el) {
+      if (!el.parentNode) return;
+      if (!WORD_INLINE_HOST[(el.tagName || '').toLowerCase()]) return;
+      applyWordInline(el);
+    });
+    groupWordLists(doc.body);
+    Array.prototype.slice.call(doc.body.querySelectorAll('*')).reverse().forEach(function (el) {
+      if (!el.parentNode) return;
+      var heading = wordHeadingTag(el);
+      if (heading) renameElement(el, heading);
+    });
+    return doc.body;
+  }
+
   function sanitizeEditorHtml(html) {
     if (!html) return '';
-    var doc;
+    var root;
     try {
-      doc = new DOMParser().parseFromString('<div id="adl-rt">' + html + '</div>', 'text/html');
+      root = prepareEditorHtml(html);
     } catch (err) {
       return '';
     }
-    var root = doc.getElementById('adl-rt');
-    if (!root) return '';
     var out = '';
     Array.prototype.forEach.call(root.childNodes, function (child) {
       out += serializeEditorNode(child);
@@ -3182,7 +3334,8 @@
           '</div>';
       } else if (type === 'button') {
         body = '<div class="admin-nl-vbtn" data-align="' + escape(block.align || 'left') + '">' +
-          '<div class="admin-nl-vbtn-cta" contenteditable="true" data-f="label" data-ph="En savoir plus">' + escape(block.label || '') + '</div></div>';
+          '<div class="admin-nl-vbtn-cta">' + socialIconHtml(block.href) +
+          '<span contenteditable="true" data-f="label" data-ph="En savoir plus">' + escape(block.label || '') + '</span></div></div>';
       } else if (type === 'divider') {
         body = '<hr class="admin-nl-vdiv">';
       } else if (type === 'spacer') {
@@ -3309,15 +3462,61 @@
       renderInspector();
     }
 
+    function socialId(href) {
+      href = String(href || '').toLowerCase();
+      if (href.indexOf('facebook.com') !== -1) return 'facebook';
+      if (href.indexOf('instagram.com') !== -1) return 'instagram';
+      if (href.indexOf('linkedin.com') !== -1) return 'linkedin';
+      return '';
+    }
+
+    function isSocialHref(href) {
+      return socialId(href) !== '';
+    }
+
+    function socialIconHtml(href) {
+      var id = socialId(href);
+      var src = id && data.socialIcons ? data.socialIcons[id] : '';
+      if (!src) return '';
+      return '<img class="admin-nl-vbtn-ico" src="' + escape(src) + '" alt="" width="16" height="16">';
+    }
+
+    function syncButtonIcon(id) {
+      var block = findBlock(id);
+      var cta = canvas.querySelector('[data-nl-id="' + id + '"] .admin-nl-vbtn-cta');
+      if (!block || !cta) return;
+      var existing = cta.querySelector('.admin-nl-vbtn-ico');
+      if (existing) existing.remove();
+      var html = socialIconHtml(block.href);
+      if (html) cta.insertAdjacentHTML('afterbegin', html);
+    }
+
     function paint(keepId) {
       if (keepId) selectedId = keepId;
       if (!blocks.length) {
         canvas.innerHTML = '<p class="admin-nl-empty">Cliquez un bloc à gauche, ou le + entre deux éléments, pour composer la lettre.</p>' + slotHtml(0);
       } else {
         var html = slotHtml(0);
-        blocks.forEach(function (block, i) {
-          html += blockHtml(block) + slotHtml(i + 1);
-        });
+        var i = 0;
+        while (i < blocks.length) {
+          if (blocks[i].type === 'button' && isSocialHref(blocks[i].href)) {
+            var run = [];
+            while (i < blocks.length && blocks[i].type === 'button' && isSocialHref(blocks[i].href)) {
+              run.push(blocks[i]);
+              i += 1;
+            }
+            if (run.length > 1) {
+              html += '<div class="admin-nl-social-row">';
+              run.forEach(function (block) { html += blockHtml(block); });
+              html += '</div>' + slotHtml(i);
+            } else {
+              html += blockHtml(run[0]) + slotHtml(i);
+            }
+          } else {
+            html += blockHtml(blocks[i]) + slotHtml(i + 1);
+            i += 1;
+          }
+        }
         canvas.innerHTML = html;
         canvas.querySelectorAll('[data-wysiwyg]').forEach(function (wrap) {
           try { initWysiwyg(wrap); } catch (err) {}
@@ -3585,6 +3784,7 @@
           if (box) box.setAttribute('data-src', value);
         } else {
           block[key] = value;
+          if (key === 'href' && block.type === 'button') syncButtonIcon(selectedId);
         }
         persist();
       });

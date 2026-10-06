@@ -58,6 +58,9 @@ final class RichText
             'ol' => [],
             'li' => [],
             'blockquote' => [],
+            'h2' => ['id'],
+            'h3' => ['id'],
+            'h4' => ['id'],
             'a' => ['href', 'title', 'rel', 'target'],
         ],
         self::PROFILE_RECOMMENDATION => [
