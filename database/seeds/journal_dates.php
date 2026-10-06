@@ -43,4 +43,5 @@ return [
     'partager-fiche-kit-vitrine' => '2026-09-07 10:00:00',
     'autoedition-guide-complet' => '2026-09-07 17:30:00',
     'fiche-prestataire-oeuvres-creations-tribune-forum' => '2026-09-14 10:00:00',
+    'acteurs-du-livre-ouvre-ses-portes' => '2026-10-06 08:00:00',
 ];

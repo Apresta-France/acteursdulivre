@@ -5,21 +5,27 @@ declare(strict_types=1);
 namespace Adl\Models;
 
 use Adl\Core\Database;
+use Adl\Core\Mailer;
+use Adl\Data\Share;
 use Throwable;
 
 final class Souscription
 {
     public const KINDS = [
-        'souscription' => 'Souscription',
+        'souscription' => 'En création',
         'prevente' => 'Prévente',
-        'vente' => 'Vente',
+        'vente' => 'En vente',
+        'sponsorise' => 'Sponsorisé',
     ];
 
     public const STATUSES = [
+        'pending' => 'Proposée',
         'draft' => 'Brouillon',
         'open' => 'Ouverte',
         'closed' => 'Clôturée',
     ];
+
+    public const DAILY_LIMIT = 3;
 
     /** @return list<array<string, mixed>> */
     public static function publicItems(): array
@@ -27,7 +33,7 @@ final class Souscription
         try {
             $rows = Database::fetchAll(
                 'SELECT * FROM souscriptions
-                 WHERE status <> "draft"
+                 WHERE status IN ("open", "closed")
                  ORDER BY featured DESC, closes_on IS NULL, closes_on ASC, id ASC'
             );
         } catch (Throwable) {
@@ -42,7 +48,7 @@ final class Souscription
     {
         $rows = Database::fetchAll(
             'SELECT * FROM souscriptions
-             ORDER BY FIELD(status, "open", "draft", "closed"), featured DESC, closes_on IS NULL, closes_on ASC, title ASC'
+             ORDER BY FIELD(status, "pending", "open", "draft", "closed"), featured DESC, closes_on IS NULL, closes_on ASC, title ASC'
         );
         $today = date('Y-m-d');
         $items = [];
@@ -95,7 +101,11 @@ final class Souscription
             'cover_ink' => '#15212f',
             'cover_paper' => '#f4efe6',
             'cover_rule' => '#eb963b',
+            'cover_image' => '',
             'closes' => '',
+            'proposer_name' => '',
+            'proposer_email' => '',
+            'proposer_note' => '',
             'host' => '',
             'external_url' => '',
             'cta' => '',
@@ -127,7 +137,8 @@ final class Souscription
         if ($closes !== '' && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $closes)) {
             throw new \InvalidArgumentException('La date de clôture n’est pas valide.');
         }
-        if ($closes === '' && $status !== 'draft') {
+        $dateOptional = in_array($status, ['draft', 'pending'], true) || ($status === 'open' && $kind === 'sponsorise');
+        if ($closes === '' && !$dateOptional) {
             throw new \InvalidArgumentException('Indiquez la date de clôture pour une annonce visible.');
         }
 
@@ -139,6 +150,21 @@ final class Souscription
             ) !== null
         );
         $featured = !empty($data['featured']) ? 1 : 0;
+        $coverImage = self::coverPath((string) ($current['cover_image'] ?? ''));
+        if (!empty($data['remove_cover'])) {
+            self::forgetCover($coverImage);
+            $coverImage = '';
+        }
+        $upload = $data['cover_file'] ?? null;
+        if (is_array($upload)) {
+            $stored = store_upload($upload, 'souscriptions', ['jpg', 'jpeg', 'png', 'webp'], 4 * 1024 * 1024);
+            if (is_string($stored) && $stored !== '') {
+                if ($coverImage !== '' && $coverImage !== $stored) {
+                    self::forgetCover($coverImage);
+                }
+                $coverImage = $stored;
+            }
+        }
         $payload = [
             $title,
             $slug,
@@ -155,6 +181,7 @@ final class Souscription
             self::hex((string) ($data['cover_ink'] ?? ''), '#15212f'),
             self::hex((string) ($data['cover_paper'] ?? ''), '#f4efe6'),
             self::hex((string) ($data['cover_rule'] ?? ''), '#eb963b'),
+            $coverImage,
             $closes !== '' ? $closes : null,
             self::limited(trim((string) ($data['host'] ?? '')), 190, 'La plateforme'),
             self::externalUrl(trim((string) ($data['external_url'] ?? ''))),
@@ -162,8 +189,8 @@ final class Souscription
             self::limited(trim((string) ($data['outcome'] ?? '')), 190, 'La mention de clôture'),
         ];
 
-        return (int) Database::transaction(static function () use ($id, $current, $featured, $payload): int {
-            if ($featured === 1) {
+        return (int) Database::transaction(static function () use ($id, $current, $featured, $status, $payload): int {
+            if ($featured === 1 && $status === 'open') {
                 Database::query('UPDATE souscriptions SET featured = 0 WHERE id != ?', [$id ?? 0]);
             }
             if ($current) {
@@ -171,7 +198,7 @@ final class Souscription
                     'UPDATE souscriptions SET
                         title = ?, slug = ?, genre = ?, kind = ?, status = ?, featured = ?,
                         bearer = ?, bearer_role = ?, pitch = ?, body = ?, trades_json = ?, facts_json = ?,
-                        cover_ink = ?, cover_paper = ?, cover_rule = ?, closes_on = ?,
+                        cover_ink = ?, cover_paper = ?, cover_rule = ?, cover_image = ?, closes_on = ?,
                         host = ?, external_url = ?, cta = ?, outcome = ?, updated_at = NOW()
                      WHERE id = ?',
                     [...$payload, $id]
@@ -183,9 +210,9 @@ final class Souscription
                 'INSERT INTO souscriptions (
                     title, slug, genre, kind, status, featured,
                     bearer, bearer_role, pitch, body, trades_json, facts_json,
-                    cover_ink, cover_paper, cover_rule, closes_on,
+                    cover_ink, cover_paper, cover_rule, cover_image, closes_on,
                     host, external_url, cta, outcome, created_at
-                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())',
+                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())',
                 $payload
             );
 
@@ -195,7 +222,133 @@ final class Souscription
 
     public static function delete(int $id): void
     {
+        $row = Database::fetch('SELECT cover_image FROM souscriptions WHERE id = ?', [$id]);
         Database::query('DELETE FROM souscriptions WHERE id = ?', [$id]);
+        if ($row) {
+            self::forgetCover((string) ($row['cover_image'] ?? ''));
+        }
+    }
+
+    public static function countPending(): int
+    {
+        return (int) (Database::fetch('SELECT COUNT(*) AS n FROM souscriptions WHERE status = "pending"')['n'] ?? 0);
+    }
+
+    /**
+     * Proposition publique : invisible tant que l’équipe ne l’ouvre pas.
+     *
+     * @param array<string, mixed> $data
+     */
+    public static function propose(array $data, ?array $user = null): int
+    {
+        $kind = (string) ($data['kind'] ?? '');
+        if (!isset(self::KINDS[$kind])) {
+            throw new \InvalidArgumentException('Choisissez ce que vous annoncez : création, prévente, vente ou sponsoring.');
+        }
+        $title = self::limited(trim((string) ($data['title'] ?? '')), 190, 'Le titre');
+        if ($title === '') {
+            throw new \InvalidArgumentException('Le titre est obligatoire.');
+        }
+        $bearer = self::limited(trim((string) ($data['bearer'] ?? '')), 190, 'Le porteur');
+        if ($bearer === '') {
+            throw new \InvalidArgumentException('Indiquez qui porte le livre.');
+        }
+        $pitch = self::limited(trim((string) ($data['pitch'] ?? '')), 600, 'Le chapô');
+        if (mb_strlen($pitch) < 40) {
+            throw new \InvalidArgumentException('Le chapô doit faire au moins 40 caractères.');
+        }
+        $host = self::limited(trim((string) ($data['host'] ?? '')), 190, 'La plateforme');
+        if ($host === '') {
+            throw new \InvalidArgumentException('Indiquez où la campagne est ouverte.');
+        }
+        $url = self::externalUrl(trim((string) ($data['external_url'] ?? '')));
+        if ($url === '') {
+            throw new \InvalidArgumentException('Le lien vers la campagne est obligatoire.');
+        }
+        $closes = trim((string) ($data['closes'] ?? ''));
+        if ($closes !== '' && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $closes)) {
+            throw new \InvalidArgumentException('La date de clôture n’est pas valide.');
+        }
+        if ($kind !== 'sponsorise' && $closes === '') {
+            throw new \InvalidArgumentException('Indiquez la date de clôture.');
+        }
+        if ($closes !== '' && $closes < date('Y-m-d')) {
+            throw new \InvalidArgumentException('Cette campagne est déjà close.');
+        }
+        $name = self::limited(trim((string) ($data['contact_name'] ?? '')), 190, 'Votre nom');
+        if ($name === '') {
+            throw new \InvalidArgumentException('Votre nom est obligatoire.');
+        }
+        $email = strtolower(trim((string) ($data['contact_email'] ?? '')));
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL) || mb_strlen($email) > 190) {
+            throw new \InvalidArgumentException('L’adresse e-mail n’est pas valide.');
+        }
+        $note = self::body(self::asText($data['note'] ?? ''));
+        self::assertDailyLimit($email);
+        $listed = Database::fetch(
+            'SELECT status FROM souscriptions WHERE external_url = ? AND status IN ("pending", "open") LIMIT 1',
+            [$url]
+        );
+        if ($listed) {
+            $message = ($listed['status'] ?? '') === 'open'
+                ? 'Ce livre figure déjà dans les annonces.'
+                : 'Une proposition avec ce lien est déjà en cours d’examen.';
+            throw new \RuntimeException($message);
+        }
+
+        $slug = unique_slug(
+            $title,
+            static fn (string $candidate): bool => Database::fetch(
+                'SELECT id FROM souscriptions WHERE slug = ?',
+                [$candidate]
+            ) !== null
+        );
+        $role = self::limited(trim((string) ($data['bearer_role'] ?? '')), 120, 'Le rôle du porteur');
+        $genre = self::limited(trim((string) ($data['genre'] ?? '')), 120, 'Le genre');
+        $cta = match ($kind) {
+            'prevente' => 'Réserver',
+            'vente' => 'Voir la vente',
+            'sponsorise' => 'Voir le livre',
+            default => 'Soutenir la souscription',
+        };
+
+        Database::query(
+            'INSERT INTO souscriptions (
+                title, slug, genre, kind, status, featured,
+                bearer, bearer_role, pitch, closes_on, host, external_url, cta,
+                proposer_name, proposer_email, proposer_note, created_at
+             ) VALUES (?, ?, ?, ?, "pending", 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())',
+            [
+                $title,
+                $slug,
+                $genre,
+                $kind,
+                $bearer,
+                $role,
+                $pitch,
+                $closes !== '' ? $closes : null,
+                $host,
+                $url,
+                $cta,
+                $name,
+                $email,
+                $note,
+            ]
+        );
+        $id = (int) Database::lastId();
+        try {
+            self::notifyProposal($id, [
+                'title' => $title,
+                'kind' => $kind,
+                'host' => $host,
+                'contact_name' => $name,
+                'contact_email' => $email,
+                'note' => (string) $note,
+            ], $user);
+        } catch (Throwable) {
+        }
+
+        return $id;
     }
 
     /** @param array<string, mixed> $row */
@@ -209,7 +362,7 @@ final class Souscription
             'title' => (string) ($row['title'] ?? ''),
             'genre' => (string) ($row['genre'] ?? ''),
             'kind' => $kind,
-            'kind_label' => self::KINDS[$kind] ?? 'Souscription',
+            'kind_label' => self::KINDS[$kind] ?? 'En création',
             'status' => (string) ($row['status'] ?? 'draft'),
             'featured' => (int) ($row['featured'] ?? 0) === 1,
             'bearer' => (string) ($row['bearer'] ?? ''),
@@ -223,6 +376,10 @@ final class Souscription
                 'paper' => (string) ($row['cover_paper'] ?? '#f4efe6'),
                 'rule' => (string) ($row['cover_rule'] ?? '#eb963b'),
             ],
+            'cover_image' => self::coverPath((string) ($row['cover_image'] ?? '')),
+            'proposer_name' => (string) ($row['proposer_name'] ?? ''),
+            'proposer_email' => (string) ($row['proposer_email'] ?? ''),
+            'proposer_note' => (string) ($row['proposer_note'] ?? ''),
             'closes' => $row['closes_on'] ? (string) $row['closes_on'] : '',
             'host' => (string) ($row['host'] ?? ''),
             'external_url' => (string) ($row['external_url'] ?? ''),
@@ -237,6 +394,9 @@ final class Souscription
     private static function adminStatus(array $item, string $today): array
     {
         $status = (string) ($item['status'] ?? 'draft');
+        if ($status === 'pending') {
+            return ['Proposée', 'orange'];
+        }
         if ($status === 'draft') {
             return ['Brouillon', 'grey'];
         }
@@ -378,5 +538,97 @@ final class Souscription
         }
 
         return implode("\n", $lines);
+    }
+
+    private static function coverPath(string $path): string
+    {
+        $path = str_replace(['\\', "\0"], '/', trim($path));
+        if ($path === '' || str_contains($path, '..') || !str_starts_with($path, 'souscriptions/')) {
+            return '';
+        }
+
+        return $path;
+    }
+
+    private static function forgetCover(string $path): void
+    {
+        $path = self::coverPath($path);
+        if ($path === '') {
+            return;
+        }
+        $file = ADL_ROOT . '/public/uploads/' . $path;
+        if (is_file($file)) {
+            unlink($file);
+        }
+    }
+
+    private static function assertDailyLimit(string $email): void
+    {
+        $row = Database::fetch(
+            'SELECT COUNT(*) AS n FROM souscriptions
+             WHERE proposer_email = ? AND created_at > DATE_SUB(NOW(), INTERVAL 1 DAY)',
+            [$email]
+        );
+        if ((int) ($row['n'] ?? 0) >= self::DAILY_LIMIT) {
+            throw new \RuntimeException('Vous avez déjà proposé plusieurs livres aujourd’hui. Réessayez demain.');
+        }
+    }
+
+    /**
+     * @param array{title: string, kind: string, host: string, contact_name: string, contact_email: string, note: string} $fields
+     */
+    private static function notifyProposal(int $id, array $fields, ?array $user): void
+    {
+        $who = $user ? User::displayName($user) : $fields['contact_name'];
+        $link = '/admin/souscriptions/' . $id;
+        $prenom = $user
+            ? trim((string) ($user['first_name'] ?? ''))
+            : trim(explode(' ', $fields['contact_name'])[0] ?? $fields['contact_name']);
+        $adminVars = [
+            'demandeur' => $who,
+            'email' => $fields['contact_email'],
+            'livre' => $fields['title'],
+            'type' => self::KINDS[$fields['kind']] ?? 'En création',
+            'plateforme' => $fields['host'],
+            'message' => $fields['note'] !== '' ? $fields['note'] : 'Aucun message complémentaire.',
+            'lien_admin' => Share::absolute($link),
+        ];
+        try {
+            $admins = User::activeAdmins();
+        } catch (Throwable) {
+            $admins = [];
+        }
+        foreach ($admins as $admin) {
+            $adminId = (int) ($admin['id'] ?? 0);
+            if ($adminId < 1) {
+                continue;
+            }
+            try {
+                Notification::upsertUnread(
+                    $adminId,
+                    'Un livre a été proposé',
+                    $who . ' propose d’annoncer « ' . $fields['title'] . ' ».',
+                    $link,
+                    'souscription_proposal',
+                    'souscription',
+                    $id
+                );
+            } catch (Throwable) {
+            }
+            try {
+                Mailer::notify($admin, 'transactional', 'souscription-proposition-admin', $adminVars);
+            } catch (Throwable) {
+            }
+        }
+
+        $receipt = [
+            'prenom' => $prenom !== '' ? $prenom : $fields['contact_name'],
+            'livre' => $fields['title'],
+            'lien' => Share::absolute('/souscriptions'),
+        ];
+        try {
+            Mailer::sendTemplate('souscription-proposition-recue', $fields['contact_email'], $receipt);
+        } catch (Throwable) {
+        }
     }
 }

@@ -108,10 +108,10 @@
       <?php endif; ?>
       <?php if ($landingChrome): ?>
       <div class="preopen">
-        <span class="preopen-badge">Pré-ouverture</span>
-        <span class="preopen-text">La plateforme accueille dès maintenant les <strong>auteurs et les professionnels du livre</strong> — ouverture aux clients en octobre 2026. Sans IA générative sur les missions, jamais.</span>
-        <span class="preopen-short">Ouvert aux pros — clients en octobre 2026.</span>
-        <a href="<?= e(url('/inscription')) ?>">Réserver ma place</a>
+        <span class="preopen-badge">Ouvert</span>
+        <span class="preopen-text">La plateforme est désormais ouverte aux <strong>auteurs, aux maisons d’édition et aux professionnels du livre</strong>. Sans IA générative sur les missions, jamais.</span>
+        <span class="preopen-short">La plateforme est ouverte.</span>
+        <a href="<?= e(url('/journal/acteurs-du-livre-ouvre-ses-portes')) ?>">Lire l’annonce</a>
       </div>
       <div class="topbar">
         <span class="topbar-stats"><?= e((string) ($topbarStats ?? 'Commission 8 % · devis gratuits')) ?></span>

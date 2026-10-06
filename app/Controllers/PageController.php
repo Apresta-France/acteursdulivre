@@ -36,6 +36,7 @@ use Adl\Models\Profile;
 use Adl\Models\Publisher;
 use Adl\Models\Salon;
 use Adl\Models\SalonProposal;
+use Adl\Models\Souscription;
 use Adl\Models\ReviewRequest;
 use Adl\Models\Report;
 use Adl\Models\Service;
@@ -803,15 +804,17 @@ final class PageController
     public function souscriptions(Request $request): void
     {
         $type = $request->string('type');
-        if (!in_array($type, ['souscription', 'prevente', 'vente', 'terminees'], true)) {
+        if ($type === 'prevente') {
+            $type = 'vente';
+        }
+        if (!in_array($type, ['souscription', 'vente', 'sponsorise', 'terminees'], true)) {
             $type = '';
         }
         $listing = Souscriptions::listing($type);
         $meta = Seo::forScreen('souscriptions');
-        $meta['robots'] = 'noindex, follow';
 
         View::page('souscriptions', [
-            'title' => 'Souscriptions — livres annoncés par la communauté',
+            'title' => 'Souscriptions — livres en création, en vente ou sponsorisés',
             'meta' => $meta,
             'items' => $listing['items'],
             'featured' => $listing['featured'],
@@ -839,7 +842,9 @@ final class PageController
                 ['name' => $title, 'url' => (string) $item['href']],
             ],
         ]);
-        $meta['robots'] = 'noindex, follow';
+        if (empty($item['open'])) {
+            $meta['robots'] = 'noindex, follow';
+        }
 
         View::page('souscription', [
             'title' => $title,
@@ -847,6 +852,65 @@ final class PageController
             'item' => $item,
             'others' => Souscriptions::others($slug),
         ]);
+    }
+
+    public function souscriptionProposeForm(Request $request): void
+    {
+        $user = Auth::user();
+        View::page('souscription-proposer', [
+            'title' => 'Proposer un livre',
+            'meta' => Seo::forScreen('souscription-proposer'),
+            'sent' => (bool) flash('souscription_proposed'),
+            'error' => flash('error'),
+            'suggestedEmail' => $user['email'] ?? '',
+            'suggestedName' => $user ? trim((string) (($user['first_name'] ?? '') . ' ' . ($user['last_name'] ?? ''))) : '',
+        ]);
+        unset($_SESSION['_old']);
+    }
+
+    public function souscriptionPropose(Request $request): void
+    {
+        $old = [
+            'title' => $request->string('title'),
+            'kind' => $request->string('kind'),
+            'genre' => $request->string('genre'),
+            'bearer' => $request->string('bearer'),
+            'bearer_role' => $request->string('bearer_role'),
+            'pitch' => $request->string('pitch'),
+            'host' => $request->string('host'),
+            'closes' => $request->string('closes'),
+            'external_url' => $request->string('external_url'),
+            'contact_name' => $request->string('contact_name'),
+            'contact_email' => $request->string('contact_email'),
+            'note' => $request->string('note'),
+        ];
+        $guard = BotGuard::consume('souscription-add', $request);
+        if ($guard === BotGuard::HONEYPOT) {
+            flash('souscription_proposed', true);
+            redirect('/souscriptions/proposer');
+        }
+        if ($guard !== BotGuard::OK) {
+            flash('error', BotGuard::RETRY_MESSAGE);
+            $_SESSION['_old'] = $old;
+            redirect('/souscriptions/proposer');
+        }
+        if (rate_limited('souscription-add-ip', client_ip_hash(), 8, 3600)) {
+            flash('error', BotGuard::TOO_MANY_MESSAGE);
+            $_SESSION['_old'] = $old;
+            redirect('/souscriptions/proposer');
+        }
+        try {
+            Souscription::propose($old, Auth::user());
+            unset($_SESSION['_old']);
+            Analytics::action('souscription_proposal');
+            flash('souscription_proposed', true);
+            redirect('/souscriptions/proposer');
+        } catch (\Throwable $e) {
+            $_SESSION['_old'] = $old;
+            $message = $e instanceof \InvalidArgumentException ? $e->getMessage() : user_error_message($e);
+            flash('error', $message);
+            redirect('/souscriptions/proposer');
+        }
     }
 
     public function outils(Request $request): void

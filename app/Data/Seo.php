@@ -22,6 +22,7 @@ final class Seo
         'recommandation', 'auteur', 'auteur-oeuvres', 'auteur-oeuvre', 'tribune', 'tribune-edit',
         'connexion', 'ecrire', 'inscription-sso', 'espace-maison', 'maison-edition-revendiquer', 'maison-edition-ajouter',
         'salon-ajouter',
+        'souscription-proposer',
     ];
 
     /** @return array<string, array{title: string, description: string, path: string}> */
@@ -69,14 +70,19 @@ final class Seo
                 'path' => '/communaute',
             ],
             'souscriptions' => [
-                'title' => 'Souscriptions — livres annoncés par la communauté',
-                'description' => 'Souscriptions, préventes et ventes menées ailleurs par des membres, rendues visibles le temps qu\'elles sont ouvertes.',
+                'title' => 'Souscriptions — livres en création, en vente ou sponsorisés',
+                'description' => 'Un livre en cours de fabrication, en vente ou sponsorisé, déjà lancé ailleurs. On le montre le temps que la campagne est ouverte.',
                 'path' => '/souscriptions',
             ],
             'souscription' => [
                 'title' => 'Souscription',
-                'description' => 'Fiche d\'un livre en souscription, en prévente ou en vente directe.',
+                'description' => 'Fiche d\'un livre en création, en prévente, en vente ou sponsorisé.',
                 'path' => '/souscriptions',
+            ],
+            'souscription-proposer' => [
+                'title' => 'Proposer un livre',
+                'description' => 'Proposez une souscription, une vente ou une annonce sponsorisée déjà ouverte ailleurs. L\'équipe vérifie la fiche avant publication.',
+                'path' => '/souscriptions/proposer',
             ],
             'outils' => [
                 'title' => 'Outils du livre',
@@ -155,7 +161,7 @@ final class Seo
             ],
             'inscription' => [
                 'title' => 'Créer un compte professionnel',
-                'description' => 'Inscrivez-vous sur acteursdulivre.fr : auteurs et professionnels du livre. Ouverture aux clients en octobre 2026. Sans IA générative.',
+                'description' => 'Inscrivez-vous sur acteursdulivre.fr : auteurs, maisons d’édition et professionnels du livre. La plateforme est ouverte. Sans IA générative.',
                 'path' => '/inscription',
             ],
             'besoin' => [
@@ -565,7 +571,7 @@ final class Seo
             ],
             [
                 'q' => 'Comment la plateforme va-t-elle trouver des clients ?',
-                'a' => "Nous ne vendons pas un forfait de clients et nous ne promettons pas un volume. Une place de marché tient si les deux côtés sont là : des prestataires visibles, et des porteurs de projet qui ont un besoin concret.\n\nAujourd'hui la plateforme est en pré-ouverture : les auteurs et les professionnels du livre s'inscrivent déjà ; l'ouverture aux clients est prévue en octobre 2026. Les auteurs déjà présents sont souvent les premiers à commander — une correction, une couverture, une impression.\n\nPour que ces besoins vous trouvent, la plateforme s'appuie sur ce qui est public et indexable : un annuaire par métier, des prestations à prix affiché, des appels d'offres, des pages métier, un journal sur la fabrication du livre, une newsletter qui relaie les recherches ouvertes et les nouveaux profils, et les réseaux sociaux.\n\nNous ne poussons aucun profil contre rémunération publicitaire : le classement dépend des avis et des délais tenus. Une vitrine précise reçoit plus de demandes qu'une fiche vide ; vous pouvez aussi candidater aux recherches publiées. La plateforme met en relation. Elle ne garantit pas un carnet de commandes.",
+                'a' => "Nous ne vendons pas un forfait de clients et nous ne promettons pas un volume. Une place de marché tient si les deux côtés sont là : des prestataires visibles, et des porteurs de projet qui ont un besoin concret.\n\nLa plateforme est ouverte : auteurs, maisons d'édition et professionnels du livre peuvent s'inscrire, chercher un prestataire, commander une prestation ou publier une recherche.\n\nPour que ces besoins vous trouvent, la plateforme s'appuie sur ce qui est public et indexable : un annuaire par métier, des prestations à prix affiché, des appels d'offres, des pages métier, un journal sur la fabrication du livre, une newsletter qui relaie les recherches ouvertes et les nouveaux profils, et les réseaux sociaux.\n\nNous ne poussons aucun profil contre rémunération publicitaire : le classement dépend des avis et des délais tenus. Une vitrine précise reçoit plus de demandes qu'une fiche vide ; vous pouvez aussi candidater aux recherches publiées. La plateforme met en relation. Elle ne garantit pas un carnet de commandes.",
             ],
             [
                 'q' => 'Comment ça marche, concrètement ?',
@@ -577,7 +583,7 @@ final class Seo
             ],
             [
                 'q' => 'Qui peut s\'inscrire aujourd\'hui ?',
-                'a' => 'Les auteurs et les professionnels du livre. Un même compte peut chercher des prestataires et proposer des services. L\'ouverture aux clients est prévue en octobre 2026. Il n\'y a pas de liste d\'attente séparée : les comptes inscrits sont les vrais comptes.',
+                'a' => 'Les auteurs, les maisons d\'édition, les collectifs et les professionnels du livre. Un même compte peut chercher des prestataires et proposer des services. Il n\'y a pas de liste d\'attente : les comptes inscrits sont les vrais comptes.',
             ],
             [
                 'q' => 'Comment apparaître et recevoir des demandes ?',
@@ -1234,7 +1240,7 @@ acteursdulivre.fr met en relation des porteurs de projet (auteurs, éditeurs, co
 - Première mission réalisée offerte ; ensuite 8 % de commission hors taxes (hors TVA), ou 6 % pour les 100 premiers inscrits et dès 12 missions réalisées, facturés au prestataire lorsque le client confirme et note.
 - Le prix de la mission se règle hors plateforme, entre client et prestataire. La plateforme suit les jalons et n'encaisse rien.
 - Moratoire IA générative pour les prestations livrées aux acteurs du livre : ni texte, ni illustration, ni voix. Les manuscrits ne servent pas à entraîner un modèle. La fabrication de la plateforme elle-même n'est pas couverte par ce moratoire ; le détail est public.
-- Pré-ouverture : inscriptions ouvertes aux auteurs et professionnels. Ouverture clients annoncée pour octobre 2026.
+- Ouverte depuis le 6 octobre 2026 aux auteurs, aux maisons d'édition et aux professionnels du livre.
 - Langue : français. Devise : EUR.
 
 ## Pages utiles
@@ -1257,6 +1263,7 @@ acteursdulivre.fr met en relation des porteurs de projet (auteurs, éditeurs, co
 - [Forum]({$home}forum) : discussions métier (tarifs, contrats, fabrication)
 - [Par besoin]({$home}besoin) : pages d'entrée par besoin (correction, couverture, impression…), utilisées aussi pour les campagnes
 - [Journal]({$home}journal) : articles sur les métiers, tarifs, contrats et diffusion
+- [Ouverture]({$home}journal/acteurs-du-livre-ouvre-ses-portes) : la plateforme est ouverte depuis le 6 octobre 2026
 - [Autoédition : le guide complet]({$home}journal/autoedition-guide-complet) : publier son livre en France (budget, ISBN, dépôt légal, fabrication, librairie)
 - [Contact]({$home}contact) : écrire à l'équipe
 - [Mentions légales]({$home}mentions-legales) : informations légales

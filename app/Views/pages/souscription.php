@@ -1,10 +1,6 @@
 <?php
 $s = $item ?? [];
 $others = $others ?? [];
-$cover = is_array($s['cover'] ?? null) ? $s['cover'] : [];
-$ink = (string) ($cover['ink'] ?? '#15212f');
-$paper = (string) ($cover['paper'] ?? '#f4efe6');
-$rule = (string) ($cover['rule'] ?? '#eb963b');
 $body = is_array($s['body'] ?? null) ? $s['body'] : [];
 $trades = is_array($s['trades'] ?? null) ? $s['trades'] : [];
 $facts = is_array($s['facts'] ?? null) ? $s['facts'] : [];
@@ -46,14 +42,7 @@ if (!$open) {
     <div class="sub-fiche">
       <div class="sub-fiche-main">
         <div class="sub-fiche-top">
-          <div class="sub-cover sub-cover-lg" style="--sub-ink: <?= e($ink) ?>; --sub-paper: <?= e($paper) ?>; --sub-rule: <?= e($rule) ?>" aria-hidden="true">
-            <span class="sub-cover-spine"></span>
-            <span class="sub-cover-face">
-              <span><?= e((string) ($s['genre'] ?? '')) ?></span>
-              <strong><?= e((string) ($s['title'] ?? '')) ?></strong>
-              <em><?= e((string) ($s['bearer'] ?? '')) ?></em>
-            </span>
-          </div>
+          <?php $item = $s; $large = true; require ADL_ROOT . '/app/Views/partials/souscription-cover.php'; $large = false; ?>
           <div>
             <?php foreach ($body as $paragraph): ?>
               <p><?= e((string) $paragraph) ?></p>
@@ -79,10 +68,12 @@ if (!$open) {
           <?php if ($host !== ''): ?>
             <p class="sub-order-host"><?= e($host) ?></p>
           <?php endif; ?>
-          <p class="sub-order-meta"><?= $open ? 'Jusqu’au ' . e((string) ($s['closes_label'] ?? '')) : 'Close le ' . e((string) ($s['closes_label'] ?? '')) ?></p>
+          <?php if (trim((string) ($s['closes_label'] ?? '')) !== ''): ?>
+            <p class="sub-order-meta"><?= $open ? 'Jusqu’au ' . e((string) $s['closes_label']) : 'Close le ' . e((string) $s['closes_label']) ?></p>
+          <?php endif; ?>
           <?php if ($open && $url !== ''): ?>
             <a class="btn-orange sub-cta" href="<?= e($url) ?>" target="_blank" rel="noopener noreferrer"><?= e($cta) ?></a>
-            <p class="sub-cta-note">Le lien ouvre <?= e($host !== '' ? $host : 'un site extérieur') ?>.</p>
+            <p class="sub-cta-note"><?= ($s['kind'] ?? '') === 'sponsorise' ? 'Annonce sponsorisée. ' : '' ?>Le lien ouvre <?= e($host !== '' ? $host : 'un site extérieur') ?>.</p>
           <?php elseif ($open): ?>
             <span class="btn-ghost sub-cta">Lien à venir</span>
           <?php else: ?>

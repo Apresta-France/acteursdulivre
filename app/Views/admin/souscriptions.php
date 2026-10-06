@@ -6,7 +6,7 @@ $counts = $counts ?? ['all' => 0, 'open' => 0, 'draft' => 0];
   <div class="admin-page-head">
     <div>
       <h1>Souscriptions de livres</h1>
-      <p class="admin-lead" style="margin-bottom: 0;">Annonces affichées dans la communauté. Une souscription, une prévente ou une vente déjà ouverte ailleurs : on la montre, on ne l’héberge pas.</p>
+      <p class="admin-lead" style="margin-bottom: 0;">Un livre en création, en vente ou sponsorisé, déjà lancé ailleurs. On le montre, on ne l’héberge pas. Cochez « en avant » pour le placer en tête de page.</p>
     </div>
     <a class="btn-navy" href="<?= e(url('/admin/souscriptions/nouvelle')) ?>">Nouvelle annonce</a>
   </div>

@@ -16,6 +16,7 @@ use Adl\Models\Profile;
 use Adl\Models\PublisherClaim;
 use Adl\Models\Report;
 use Adl\Models\SalonProposal;
+use Adl\Models\Souscription;
 use Adl\Models\Service;
 use Adl\Models\Setting;
 use Adl\Models\User;
@@ -63,7 +64,7 @@ final class AdminCatalog
             ['finances', 'Commandes & finances', $badges['finances'], '', '/admin/finances'],
             ['preouverture', 'Pré-ouverture', '', 'Plateforme', '/admin/pre-ouverture'],
             ['cms', 'Journal & pages', '', '', '/admin/journal'],
-            ['livres', 'Souscriptions', '', '', '/admin/souscriptions'],
+            ['livres', 'Souscriptions', $badges['livres'], '', '/admin/souscriptions'],
             ['landings', 'Landings pub', '', '', '/admin/landings'],
             ['reglages', 'Réglages', '', '', '/admin/reglages'],
             ['listes', 'Métiers & spécialités', '', '', '/admin/listes'],
@@ -93,7 +94,7 @@ final class AdminCatalog
             'adminName' => $user ? User::displayName($user) : 'Administration',
             'adminInitials' => $user ? User::initials($user) : 'AD',
             'adminRole' => ($user['role'] ?? '') === 'admin' ? 'Administration · accès complet' : 'Modération',
-            'adminCountdown' => 'Pré-ouverture · ouverture clients en octobre 2026',
+            'adminCountdown' => 'Plateforme ouverte aux clients',
         ];
     }
 
@@ -110,6 +111,7 @@ final class AdminCatalog
             'avis' => self::badgeCount(static fn (): int => Report::countOpenForType('review')),
             'maisons' => self::badgeCount(static fn (): int => PublisherClaim::countPending()),
             'salons' => self::badgeCount(static fn (): int => SalonProposal::countPending()),
+            'livres' => self::badgeCount(static fn (): int => Souscription::countPending()),
             'finances' => self::badgeCount(static fn (): int => Invoice::countOverdue()),
             'migrations' => self::badgeCount(static fn (): int => Migrator::pendingCount()),
         ];
@@ -248,7 +250,7 @@ final class AdminCatalog
             'catalogueSubtitle' => 'Aucune prestation.',
             'missionsSubtitle' => 'Aucun appel d\'offres.',
             'financesSubtitle' => 'Montants TTC',
-            'preouvertureSubtitle' => 'Ouverture aux clients prévue en octobre 2026.',
+            'preouvertureSubtitle' => 'Plateforme ouverte aux clients depuis le 6 octobre 2026.',
             'cmsSubtitle' => 'Aucun article.',
             'emptyChart' => 'Pas encore d\'historique d\'inscriptions à afficher.',
             'emptyActivite' => 'Aucune activité récente.',
@@ -545,7 +547,7 @@ final class AdminCatalog
                     : self::qty($openMissions, 'mission ouverte', 'missions ouvertes')
                     . (count($missions) !== $openMissions ? ' · ' . self::qty(count($missions), 'au total', 'au total') : ''),
                 'financesSubtitle' => self::monthLabel($now) . ' · montants TTC',
-                'preouvertureSubtitle' => 'Ouverture aux clients prévue en octobre 2026.',
+                'preouvertureSubtitle' => 'Plateforme ouverte aux clients depuis le 6 octobre 2026.',
                 'cmsSubtitle' => ($publishedN + $draftN) === 0 ? 'Aucun article.' : $cmsSubtitle,
                 'emptyUsers' => $userRows === [] ? 'Aucun utilisateur pour le moment.' : '',
                 'emptyCatalogue' => $catalogue === [] ? 'Aucune prestation enregistrée.' : '',

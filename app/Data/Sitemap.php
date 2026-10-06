@@ -125,6 +125,15 @@ final class Sitemap
         }
 
         foreach (self::rows(
+            'SELECT slug, COALESCE(updated_at, created_at) AS lastmod
+             FROM souscriptions
+             WHERE status = "open" AND slug != ""
+               AND (closes_on IS NULL OR closes_on >= CURDATE())'
+        ) as $row) {
+            self::push($urls, $seen, '/souscriptions/' . $row['slug'], $row['lastmod'] ?? null, '0.5');
+        }
+
+        foreach (self::rows(
             'SELECT slug, published_at AS lastmod
              FROM articles
              WHERE published_at IS NOT NULL AND published_at <= NOW()
@@ -206,6 +215,7 @@ final class Sitemap
             ['path' => '/outils/dos', 'priority' => '0.7'],
             ['path' => '/outils/isbn', 'priority' => '0.7'],
             ['path' => '/salons', 'priority' => '0.7'],
+            ['path' => '/souscriptions', 'priority' => '0.6'],
             ['path' => '/besoin', 'priority' => '0.7'],
             ['path' => '/comment-ca-marche', 'priority' => '0.7'],
             ['path' => '/tarifs', 'priority' => '0.7'],

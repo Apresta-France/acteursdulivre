@@ -27,9 +27,17 @@ final class Souscriptions
         $closed = array_values(array_filter($all, static fn (array $item): bool => empty($item['open'])));
 
         $pool = match ($type) {
-            'souscription', 'prevente', 'vente' => array_values(array_filter(
+            'souscription' => array_values(array_filter(
                 $open,
-                static fn (array $item): bool => ($item['kind'] ?? '') === $type
+                static fn (array $item): bool => ($item['kind'] ?? '') === 'souscription'
+            )),
+            'vente' => array_values(array_filter(
+                $open,
+                static fn (array $item): bool => in_array($item['kind'] ?? '', ['prevente', 'vente'], true)
+            )),
+            'sponsorise' => array_values(array_filter(
+                $open,
+                static fn (array $item): bool => ($item['kind'] ?? '') === 'sponsorise'
             )),
             'terminees' => $closed,
             default => $open,
@@ -54,8 +62,8 @@ final class Souscriptions
             'counts' => [
                 'open' => count($open),
                 'souscription' => count(array_filter($open, static fn (array $item): bool => $item['kind'] === 'souscription')),
-                'prevente' => count(array_filter($open, static fn (array $item): bool => $item['kind'] === 'prevente')),
-                'vente' => count(array_filter($open, static fn (array $item): bool => $item['kind'] === 'vente')),
+                'vente' => count(array_filter($open, static fn (array $item): bool => in_array($item['kind'], ['prevente', 'vente'], true))),
+                'sponsorise' => count(array_filter($open, static fn (array $item): bool => $item['kind'] === 'sponsorise')),
                 'closed' => count($closed),
             ],
         ];
@@ -112,12 +120,17 @@ final class Souscriptions
         $item['href'] = '/souscriptions/' . $item['slug'];
         $host = trim((string) ($item['host'] ?? ''));
         $closes = trim((string) ($item['closes'] ?? ''));
+        $sponsoredOpen = ($item['kind'] ?? '') === 'sponsorise' && ($item['status'] ?? '') === 'open';
         if ($closes === '') {
-            $item['open'] = false;
-            $item['days_left'] = -1;
-            $item['when'] = 'ClÃ´turÃ©e';
+            $item['open'] = $sponsoredOpen;
+            $item['days_left'] = $sponsoredOpen ? 9999 : -1;
+            $item['when'] = $sponsoredOpen ? 'En cours' : 'Clôturée';
             $item['closes_label'] = '';
-            $item['where_line'] = $host === '' ? 'Annonce close' : 'Ã‰tait sur ' . $host;
+            if ($host === '') {
+                $item['where_line'] = $sponsoredOpen ? 'Annonce sponsorisée' : 'Annonce close';
+            } else {
+                $item['where_line'] = $sponsoredOpen ? 'Sur ' . $host : 'Était sur ' . $host;
+            }
 
             return $item;
         }
@@ -134,8 +147,8 @@ final class Souscriptions
         $item['when'] = self::whenLabel($open, $daysLeft);
         $item['closes_label'] = $closesLabel;
         $item['where_line'] = $host === ''
-            ? ($open ? 'Jusquâ€™au ' . $closesLabel : 'Close le ' . $closesLabel)
-            : ($open ? 'Sur ' . $host . ' Â· jusquâ€™au ' . $closesLabel : 'Ã‰tait sur ' . $host);
+            ? ($open ? 'Jusqu’au ' . $closesLabel : 'Close le ' . $closesLabel)
+            : ($open ? 'Sur ' . $host . ' · jusqu’au ' . $closesLabel : 'Était sur ' . $host);
 
         return $item;
     }
@@ -143,13 +156,13 @@ final class Souscriptions
     private static function whenLabel(bool $open, int $daysLeft): string
     {
         if (!$open) {
-            return 'ClÃ´turÃ©e';
+            return 'Clôturée';
         }
         if ($daysLeft === 0) {
             return 'Dernier jour';
         }
         if ($daysLeft === 1) {
-            return 'Plus quâ€™un jour';
+            return 'Plus qu’un jour';
         }
 
         return 'Plus que ' . $daysLeft . ' jours';
@@ -158,8 +171,8 @@ final class Souscriptions
     private static function frenchDate(\DateTimeImmutable $date): string
     {
         $months = [
-            1 => 'janv.', 2 => 'fÃ©vr.', 3 => 'mars', 4 => 'avr.', 5 => 'mai', 6 => 'juin',
-            7 => 'juil.', 8 => 'aoÃ»t', 9 => 'sept.', 10 => 'oct.', 11 => 'nov.', 12 => 'dÃ©c.',
+            1 => 'janv.', 2 => 'févr.', 3 => 'mars', 4 => 'avr.', 5 => 'mai', 6 => 'juin',
+            7 => 'juil.', 8 => 'août', 9 => 'sept.', 10 => 'oct.', 11 => 'nov.', 12 => 'déc.',
         ];
 
         return (int) $date->format('j') . ' ' . $months[(int) $date->format('n')] . ' ' . $date->format('Y');

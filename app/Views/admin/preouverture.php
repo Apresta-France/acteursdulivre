@@ -4,7 +4,7 @@ $couverture = $couverture ?? [];
 ?>
 <div class="admin-page">
   <h1>Pré-ouverture</h1>
-  <p class="admin-lead">Ouverture aux clients prévue en octobre 2026. Les inscriptions prestataires sont déjà ouvertes. Il n’y a pas de liste d’attente séparée : les comptes inscrits sont les vrais chiffres.</p>
+  <p class="admin-lead">La plateforme est ouverte aux clients depuis le 6 octobre 2026. Il n’y a pas de liste d’attente séparée : les comptes inscrits sont les vrais chiffres.</p>
 
   <div class="admin-kpi-row">
     <?php foreach ($kpis as $k): ?>

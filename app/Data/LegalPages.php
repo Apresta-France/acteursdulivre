@@ -107,7 +107,7 @@ final class LegalPages
                     ['p' => 'acteursdulivre.fr est une place de marché des métiers du livre. Elle met en relation des porteurs de projet (auteurs, éditeurs, collectifs, institutions) et des prestataires (correcteurs, bêta-lecteurs, illustrateurs, traducteurs, maquettistes, imprimeurs, attachés de presse, libraires, narrateurs, agents, coachs littéraires, notamment).'],
                     ['p' => 'EDITIONS TESSERACT n\'est ni l\'éditeur des ouvrages des utilisateurs, ni l\'employeur, ni l\'agent des prestataires. Les accords de prestation sont conclus entre le porteur de projet et le prestataire, notamment par l\'acceptation du devis dans le suivi. La Plateforme intervient au titre de l\'intermédiation, de l\'outillage (vitrine, missions, messagerie, suivi à jalons, facturation de la commission) et, le cas échéant, de la médiation. Elle ne génère pas de contrat type ni d\'accord de confidentialité.'],
                     ['p' => 'La Plateforme n\'encaisse pas le prix des missions. Le Client et le Prestataire se règlent directement, hors de la Plateforme. EDITIONS TESSERACT suit les jalons déclarés par les parties, puis facture sa commission au Prestataire — calculée sur le montant hors taxes (hors TVA) de la mission — lorsque le Client confirme et note.'],
-                    ['p' => 'La Plateforme est actuellement en pré-ouverture : les professionnels du livre peuvent créer un compte. L\'ouverture aux clients est annoncée pour octobre 2026.'],
+                    ['p' => 'Depuis le 6 octobre 2026, la Plateforme est ouverte aux porteurs de projet (auteurs, maisons d\'édition, collectifs) et aux professionnels du livre. Un même compte peut chercher des prestataires et proposer des services.'],
                 ],
             ],
             [
@@ -158,10 +158,10 @@ final class LegalPages
                 ],
             ],
             [
-                'title' => '4. Pré-ouverture',
+                'title' => '4. Ouverture',
                 'blocks' => [
-                    ['p' => 'Tant que la bannière « Pré-ouverture » est affichée, l\'inscription est ouverte aux auteurs et professionnels du livre. L\'ouverture aux clients est prévue en octobre 2026.'],
-                    ['p' => 'Les présentes CGU s\'appliquent dès l\'inscription. Le suivi à jalons et la facturation de commission s\'appliquent dès qu\'une commande est ouverte, y compris pendant la pré-ouverture.'],
+                    ['p' => 'Depuis le 6 octobre 2026, la Plateforme est ouverte aux porteurs de projet et aux professionnels du livre. L\'inscription est libre : un même compte peut chercher des prestataires et proposer des services.'],
+                    ['p' => 'Les présentes CGU s\'appliquent dès l\'inscription. Le suivi à jalons et la facturation de commission s\'appliquent dès qu\'une commande est ouverte.'],
                 ],
             ],
             [

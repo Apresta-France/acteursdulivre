@@ -23,7 +23,7 @@ $headerForumHref = !empty($logged) && $headerUnreadForum > 0 ? '/espace/forum?on
       </a>
       <a href="<?= e(url('/souscriptions')) ?>"<?= !empty($isSouscriptions) ? ' class="is-active"' : '' ?>>
         <strong>Souscriptions</strong>
-        <span>Annoncés ailleurs</span>
+        <span>Création, vente, sponsoring</span>
       </a>
     </div>
   </div>

@@ -56,6 +56,8 @@ return static function (Router $router): void {
     $router->post('/missions/{slug}/candidater', [AccountController::class, 'applicationCreate']);
     $router->get('/communaute', [PageController::class, 'communaute']);
     $router->get('/souscriptions', [PageController::class, 'souscriptions']);
+    $router->get('/souscriptions/proposer', [PageController::class, 'souscriptionProposeForm']);
+    $router->post('/souscriptions/proposer', [PageController::class, 'souscriptionPropose']);
     $router->get('/souscriptions/{slug}', [PageController::class, 'souscription']);
     $router->get('/outils', [PageController::class, 'outils']);
     $router->get('/outils/{slug}', [PageController::class, 'outil']);

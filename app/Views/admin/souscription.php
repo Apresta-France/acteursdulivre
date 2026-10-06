@@ -23,7 +23,7 @@ $val = static fn (string $key, string $default = ''): string => (string) ($s[$ke
   <?php if (!empty($saved)): ?><div class="flash flash-ok"><?= e(is_string($saved) ? $saved : 'Enregistré.') ?></div><?php endif; ?>
   <?php if (!empty($error)): ?><div class="flash flash-error"><?= e((string) $error) ?></div><?php endif; ?>
 
-  <form class="admin-form" method="post" action="<?= e(url($action)) ?>">
+  <form class="admin-form" method="post" action="<?= e(url($action)) ?>" enctype="multipart/form-data">
     <?= csrf_field() ?>
 
     <h2 class="admin-section-title">Le livre</h2>
@@ -57,13 +57,21 @@ $val = static fn (string $key, string $default = ''): string => (string) ($s[$ke
             <option value="<?= e($key) ?>"<?= $key === $val('status', 'draft') ? ' selected' : '' ?>><?= e($label) ?></option>
           <?php endforeach; ?>
         </select>
-        <p class="field-help">Le brouillon reste invisible. Une annonce ouverte dont la date est passée apparaît dans Terminées.</p>
+        <p class="field-help">Le brouillon et une proposition restent invisibles. Une annonce ouverte dont la date est passée apparaît dans Terminées. Un sponsoring peut rester ouvert sans date de fin.</p>
       </div>
     </div>
+    <p class="field-help">En création : une souscription. Prévente et En vente : le livre se vend déjà. Sponsorisé : la fiche publique le signale.</p>
     <label class="admin-tax-check">
       <input type="checkbox" name="featured" value="1"<?= !empty($s['featured']) ? ' checked' : '' ?>>
-      Mettre en avant en haut de la liste
+      Mettre ce livre en avant en haut de la page
     </label>
+    <p class="field-help">Un seul livre ouvert à la fois. La case ne prend effet que si le statut est Ouverte.</p>
+    <?php if ($val('proposer_email') !== ''): ?>
+      <p class="admin-lead">
+        Proposée par <?= e($val('proposer_name')) ?> · <a href="mailto:<?= e($val('proposer_email')) ?>"><?= e($val('proposer_email')) ?></a>
+        <?php if ($val('proposer_note') !== ''): ?><br><?= e($val('proposer_note')) ?><?php endif; ?>
+      </p>
+    <?php endif; ?>
 
     <h2 class="admin-section-title">Qui le porte</h2>
     <div class="form-grid-2">
@@ -126,6 +134,18 @@ $val = static fn (string $key, string $default = ''): string => (string) ($s[$ke
     </div>
 
     <h2 class="admin-section-title">Couverture</h2>
+    <?php if ($val('cover_image') !== ''): ?>
+      <p><img src="<?= e(uploaded($val('cover_image'))) ?>" alt="" style="width: 88px; aspect-ratio: 2 / 3; object-fit: cover; border-radius: 4px;"></p>
+      <label class="admin-tax-check">
+        <input type="checkbox" name="remove_cover" value="1">
+        Retirer la couverture et revenir au dos typographique
+      </label>
+    <?php endif; ?>
+    <div>
+      <label class="field" for="cover">Image de couverture</label>
+      <input class="input" id="cover" name="cover" type="file" accept="image/jpeg,image/png,image/webp">
+      <p class="field-help">JPG, PNG ou WebP, 4 Mo maximum. Sans image, le dos coloré ci-dessous est affiché.</p>
+    </div>
     <div class="form-grid-3">
       <div>
         <label class="field" for="cover_ink">Dos</label>

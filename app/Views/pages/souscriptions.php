@@ -1,16 +1,15 @@
 <?php
 $items = $items ?? [];
 $featured = is_array($featured ?? null) ? $featured : null;
-$counts = $counts ?? ['open' => 0, 'souscription' => 0, 'prevente' => 0, 'vente' => 0, 'closed' => 0];
+$counts = $counts ?? ['open' => 0, 'souscription' => 0, 'vente' => 0, 'sponsorise' => 0, 'closed' => 0];
 $type = (string) ($type ?? '');
 $filters = [
     '' => ['Ouvertes', (int) ($counts['open'] ?? 0)],
-    'souscription' => ['Souscriptions', (int) ($counts['souscription'] ?? 0)],
-    'prevente' => ['Préventes', (int) ($counts['prevente'] ?? 0)],
-    'vente' => ['Ventes', (int) ($counts['vente'] ?? 0)],
+    'souscription' => ['En création', (int) ($counts['souscription'] ?? 0)],
+    'vente' => ['En vente', (int) ($counts['vente'] ?? 0)],
+    'sponsorise' => ['Sponsorisés', (int) ($counts['sponsorise'] ?? 0)],
     'terminees' => ['Terminées', (int) ($counts['closed'] ?? 0)],
 ];
-$featCover = is_array($featured['cover'] ?? null) ? $featured['cover'] : [];
 ?>
 <div class="mk-page co-page sub-page">
   <section class="forum-hero co-hero">
@@ -24,21 +23,22 @@ $featCover = is_array($featured['cover'] ?? null) ? $featured['cover'] : [];
       </nav>
       <div class="forum-kicker">Communauté</div>
       <h1>Livres en cours, ailleurs.</h1>
-      <p class="forum-lead">Des campagnes déjà ouvertes ailleurs. On les montre, on ne les héberge pas.</p>
+      <p class="forum-lead">Un livre en création, en vente ou sponsorisé. La campagne reste sur son site : ici, on la montre le temps qu’elle est ouverte.</p>
     </div>
     <div class="forum-hero-actions">
+      <a class="btn-orange forum-hero-cta" href="<?= e(url('/souscriptions/proposer')) ?>">Proposer un livre</a>
       <div class="forum-hero-stats">
         <span class="forum-stat">
-          <strong><?= e(format_int((int) ($counts['open'] ?? 0))) ?></strong>
-          <span>ouvertes</span>
-        </span>
-        <span class="forum-stat">
           <strong><?= e(format_int((int) ($counts['souscription'] ?? 0))) ?></strong>
-          <span>souscriptions</span>
+          <span>en création</span>
         </span>
         <span class="forum-stat">
-          <strong><?= e(format_int((int) ($counts['prevente'] ?? 0) + (int) ($counts['vente'] ?? 0))) ?></strong>
-          <span>préventes et ventes</span>
+          <strong><?= e(format_int((int) ($counts['vente'] ?? 0))) ?></strong>
+          <span>en vente</span>
+        </span>
+        <span class="forum-stat">
+          <strong><?= e(format_int((int) ($counts['sponsorise'] ?? 0))) ?></strong>
+          <span>sponsorisés</span>
         </span>
       </div>
     </div>
@@ -59,37 +59,12 @@ $featCover = is_array($featured['cover'] ?? null) ? $featured['cover'] : [];
     </div>
 
     <?php if ($featured !== null): ?>
-      <?php
-        $ink = (string) ($featCover['ink'] ?? '#15212f');
-        $paper = (string) ($featCover['paper'] ?? '#f4efe6');
-        $rule = (string) ($featCover['rule'] ?? '#eb963b');
-      ?>
-      <a class="sub-feature" href="<?= e(url((string) $featured['href'])) ?>">
-        <span class="sub-cover sub-cover-lg" style="--sub-ink: <?= e($ink) ?>; --sub-paper: <?= e($paper) ?>; --sub-rule: <?= e($rule) ?>" aria-hidden="true">
-          <span class="sub-cover-spine"></span>
-          <span class="sub-cover-face">
-            <span><?= e((string) $featured['genre']) ?></span>
-            <strong><?= e((string) $featured['title']) ?></strong>
-            <em><?= e((string) $featured['bearer']) ?></em>
-          </span>
-        </span>
-        <span class="sub-feature-body">
-          <span class="sub-card-line">
-            <span class="mk-tag"><?= e((string) $featured['kind_label']) ?></span>
-            <span class="sub-when"><?= e((string) $featured['when']) ?></span>
-          </span>
-          <h2><?= e((string) $featured['title']) ?></h2>
-          <p><?= e((string) $featured['pitch']) ?></p>
-          <span class="sub-feature-who"><?= e((string) $featured['bearer']) ?> · <?= e((string) $featured['bearer_role']) ?></span>
-          <span class="sub-where"><?= e((string) ($featured['where_line'] ?? '')) ?></span>
-          <span class="sub-feature-cta">Voir la fiche →</span>
-        </span>
-      </a>
+      <?php require ADL_ROOT . '/app/Views/partials/souscription-feature.php'; ?>
     <?php endif; ?>
 
     <?php if ($items === [] && $featured === null): ?>
       <?php if ((int) ($counts['open'] ?? 0) === 0 && (int) ($counts['closed'] ?? 0) === 0): ?>
-        <p class="mk-empty">Aucune annonce pour le moment.</p>
+        <p class="mk-empty">Aucune annonce pour le moment. <a href="<?= e(url('/souscriptions/proposer')) ?>">Proposer un livre</a></p>
       <?php else: ?>
         <p class="mk-empty">Aucun livre dans cette sélection. <a href="<?= e(url('/souscriptions')) ?>">Voir les annonces ouvertes</a></p>
       <?php endif; ?>
@@ -100,5 +75,21 @@ $featCover = is_array($featured['cover'] ?? null) ? $featured['cover'] : [];
         <?php endforeach; ?>
       </div>
     <?php endif; ?>
+
+    <div class="sub-how">
+      <div>
+        <h2>Trois façons d’être ici</h2>
+        <div class="sub-steps">
+          <p><strong>En création</strong> Une souscription déjà ouverte ailleurs, le temps de fabriquer le livre.</p>
+          <p><strong>En vente</strong> Une prévente ou une vente directe, chez l’auteur, l’atelier ou la maison.</p>
+          <p><strong>Sponsorisé</strong> Une mise en avant assumée. La fiche le dit, le lien quitte le site.</p>
+        </div>
+      </div>
+      <aside class="sub-propose">
+        <h3>Proposer un livre</h3>
+        <p>La campagne est déjà ouverte ailleurs. Décrivez-la : l’équipe publie la fiche après vérification. Le paiement reste sur le site qui l’héberge.</p>
+        <a class="btn-navy" href="<?= e(url('/souscriptions/proposer')) ?>">Proposer un livre</a>
+      </aside>
+    </div>
   </section>
 </div>

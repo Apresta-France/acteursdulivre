@@ -11778,6 +11778,21 @@ a.co-event:hover { border-color: var(--navy); color: inherit; }
   padding: 22px;
   margin-bottom: 18px;
 }
+.sub-spotlight-kicker {
+  display: block;
+  margin-bottom: 8px;
+  font-family: var(--display);
+  font-size: 12px;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--orange);
+}
+.sub-sponsor-note {
+  display: block;
+  margin-top: 8px;
+  font-size: 13px;
+  color: #C97418;
+}
 .sub-feature h2 { font-size: 32px; margin: 8px 0 10px; }
 .sub-feature p { margin: 0 0 12px; max-width: 46em; }
 .sub-feature-who,
@@ -11881,6 +11896,20 @@ a.co-event:hover { border-color: var(--navy); color: inherit; }
   flex-shrink: 0;
 }
 .sub-cover-lg { width: 200px; }
+.sub-cover.sub-cover-photo {
+  display: block;
+  position: relative;
+  padding: 0;
+  background: #e8ecf1;
+}
+.sub-cover.sub-cover-photo img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
 .sub-cover-spine { width: 16px; background: var(--sub-ink, #15212f); flex-shrink: 0; }
 .sub-cover-face {
   flex: 1;
@@ -11927,7 +11956,9 @@ a.co-event:hover { border-color: var(--navy); color: inherit; }
   grid-template-columns: minmax(0, 1fr) 280px;
   gap: 36px;
   align-items: start;
+  margin-top: 36px;
 }
+.sub-steps p { margin: 0; color: #4A5A6B; }
 .sub-steps {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));

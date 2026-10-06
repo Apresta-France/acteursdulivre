@@ -62,20 +62,33 @@ $souscriptions = $souscriptions ?? [];
     </div>
   </section>
 
-  <?php if ($souscriptions !== []): ?>
+  <?php
+    $spotlight = null;
+    $souscriptionRest = $souscriptions;
+    if ($souscriptions !== [] && !empty($souscriptions[0]['featured'])) {
+        $spotlight = $souscriptions[0];
+        $souscriptionRest = array_slice($souscriptions, 1);
+    }
+  ?>
+  <?php if ($spotlight !== null || $souscriptionRest !== []): ?>
     <section class="mk-block">
       <div class="mk-head">
         <div>
-          <h2>Livres en cours</h2>
-          <p>Campagnes ouvertes ailleurs.</p>
+          <h2><?= $spotlight !== null ? 'Le livre mis en avant' : 'Livres en cours' ?></h2>
+          <p>En création, en vente ou sponsorisé — la campagne reste ailleurs.</p>
         </div>
         <a href="<?= e(url('/souscriptions')) ?>">Toutes les souscriptions →</a>
       </div>
-      <div class="sub-rows">
-        <?php foreach ($souscriptions as $item): ?>
-          <?php $row = true; require ADL_ROOT . '/app/Views/partials/souscription-card.php'; ?>
-        <?php endforeach; ?>
-      </div>
+      <?php if ($spotlight !== null): ?>
+        <?php $featured = $spotlight; require ADL_ROOT . '/app/Views/partials/souscription-feature.php'; ?>
+      <?php endif; ?>
+      <?php if ($souscriptionRest !== []): ?>
+        <div class="sub-rows">
+          <?php foreach ($souscriptionRest as $item): ?>
+            <?php $row = true; require ADL_ROOT . '/app/Views/partials/souscription-card.php'; ?>
+          <?php endforeach; ?>
+        </div>
+      <?php endif; ?>
     </section>
   <?php endif; ?>
 

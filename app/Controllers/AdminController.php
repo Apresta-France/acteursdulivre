@@ -1196,6 +1196,8 @@ final class AdminController
                 'cover_ink' => $request->string('cover_ink'),
                 'cover_paper' => $request->string('cover_paper'),
                 'cover_rule' => $request->string('cover_rule'),
+                'cover_file' => $request->file('cover'),
+                'remove_cover' => $request->bool('remove_cover'),
                 'closes' => $request->string('closes'),
                 'host' => $request->string('host'),
                 'external_url' => $request->string('external_url'),

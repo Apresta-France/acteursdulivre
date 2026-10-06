@@ -1100,7 +1100,7 @@ final class Landings
                 'faq' => [
                     ['q' => 'Qui paie la commission ?', 'a' => 'Vous, prestataire, après la première mission offerte. Le client n’a pas de frais de plateforme. La commission se calcule sur le hors-taxe, dernier jalon, payable sous 15 jours.'],
                     ['q' => 'Comment arrivent les clients ?', 'a' => 'Annuaire, prestations, recherches, journal, newsletter, et des pages par besoin pour les campagnes. Nous ne vendons pas un volume de commandes. Les deux côtés de la place de marché se construisent.'],
-                    ['q' => 'Quand ouvre-t-on aux clients ?', 'a' => 'Les auteurs et professionnels s’inscrivent déjà. L’ouverture aux clients est annoncée pour octobre 2026. Les auteurs déjà présents sont souvent les premiers à commander.'],
+                    ['q' => 'La plateforme est-elle ouverte ?', 'a' => 'Oui, depuis le 6 octobre 2026. Auteurs, maisons d’édition et professionnels créent un compte, cherchent un prestataire ou proposent leurs services.'],
                 ],
                 'journal' => '',
                 'cta_primary' => 'Créer ma vitrine',
