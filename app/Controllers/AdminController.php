@@ -325,6 +325,30 @@ final class AdminController
         redirect($back !== '' ? $back : '/admin/moderation');
     }
 
+    public function echanges(Request $request): void
+    {
+        $query = $request->string('q', '');
+        $filtre = $this->filtre($request, array_keys(Conversation::ADMIN_FILTERS), 'tous');
+        $page = max(1, (int) ($request->int('page', 1) ?? 1));
+        $found = Conversation::searchForAdmin($query, $filtre, $page);
+        $snap = Conversation::adminSnapshot();
+        $n = $found['total'];
+        $subtitle = format_int($n) . ' ' . ($n > 1 ? 'discussions' : 'discussion');
+        if ($query !== '') {
+            $subtitle .= ' pour « ' . $query . ' »';
+        }
+
+        $this->page('echanges', 'admin/echanges', [
+            'echangesQuery' => $query,
+            'filtre' => $filtre,
+            'threads' => $found['items'],
+            'pager' => $found,
+            'snapshot' => $snap,
+            'echangesFilters' => $this->filterLinks('/admin/echanges', Conversation::ADMIN_FILTERS, $filtre, $query !== '' ? ['q' => $query] : []),
+            'echangesSubtitle' => $subtitle,
+        ]);
+    }
+
     public function conversationShow(Request $request, string $id): void
     {
         Auth::requireAdmin();
@@ -332,7 +356,7 @@ final class AdminController
         if (!$thread) {
             not_found('Cette conversation est introuvable.');
         }
-        $this->page('moderation', 'admin/conversation', [
+        $this->page('echanges', 'admin/conversation', [
             'title' => (string) ($thread['subject'] ?? 'Conversation'),
             'thread' => $thread,
             'messages' => $thread['messages'] ?? [],

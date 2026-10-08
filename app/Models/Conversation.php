@@ -387,6 +387,149 @@ final class Conversation
         return Report::create($reporterId, 'conversation', $conversationId, $reason, $body);
     }
 
+    public const ADMIN_PER_PAGE = 30;
+
+    /** @var array<string, string> */
+    public const ADMIN_FILTERS = [
+        'tous' => 'Toutes',
+        'recent' => '7 derniers jours',
+        'fichiers' => 'Pièces jointes',
+        'signalees' => 'Signalées',
+        'commandes' => 'Avec commande',
+        'libres' => 'Sans commande',
+    ];
+
+    /** @var array{threads: int, recent: int, files: int, reports: int}|null */
+    private static ?array $adminSnapshot = null;
+
+    /**
+     * Volume global, indépendant du filtre de la liste.
+     *
+     * @return array{threads: int, recent: int, files: int, reports: int}
+     */
+    public static function adminSnapshot(): array
+    {
+        if (self::$adminSnapshot !== null) {
+            return self::$adminSnapshot;
+        }
+
+        $threads = Database::fetch('SELECT COUNT(*) AS n FROM conversations');
+        $recent = Database::fetch(
+            'SELECT COUNT(DISTINCT conversation_id) AS n
+             FROM messages
+             WHERE created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)'
+        );
+        $files = Database::fetch(
+            'SELECT COUNT(DISTINCT conversation_id) AS n
+             FROM messages
+             WHERE attachment_path IS NOT NULL AND attachment_path <> \'\''
+        );
+
+        return self::$adminSnapshot = [
+            'threads' => (int) ($threads['n'] ?? 0),
+            'recent' => (int) ($recent['n'] ?? 0),
+            'files' => (int) ($files['n'] ?? 0),
+            'reports' => Report::countOpenForType('conversation'),
+        ];
+    }
+
+    /**
+     * @return array{items: list<array<string, mixed>>, total: int, page: int, pages: int, per_page: int}
+     */
+    public static function searchForAdmin(string $q, string $filtre = 'tous', int $page = 1, int $perPage = self::ADMIN_PER_PAGE): array
+    {
+        $perPage = max(1, min(100, $perPage));
+        if (!isset(self::ADMIN_FILTERS[$filtre])) {
+            $filtre = 'tous';
+        }
+
+        [$from, $params] = self::adminListQuery($q, $filtre);
+        $count = Database::fetch('SELECT COUNT(*) AS n ' . $from, $params);
+        $total = (int) ($count['n'] ?? 0);
+        $pages = max(1, (int) ceil($total / $perPage));
+        $page = max(1, min($page, $pages));
+        $offset = ($page - 1) * $perPage;
+
+        $rows = $total === 0
+            ? []
+            : Database::fetchAll(
+                'SELECT c.id, c.subject, c.order_id, c.mission_id, c.service_id, c.created_at,
+                        o.number AS order_number,
+                        mi.title AS mission_title,
+                        sv.title AS service_title,
+                        COALESCE(stats.message_count, 0) AS message_count,
+                        COALESCE(stats.file_count, 0) AS file_count,
+                        lastm.created_at AS last_at,
+                        lastm.body AS last_body,
+                        lastm.attachment_name AS last_attachment,
+                        lastu.first_name AS last_first_name,
+                        lastu.last_name AS last_last_name,
+                        COALESCE(rep.open_reports, 0) AS open_reports
+                 ' . $from . '
+                 ORDER BY COALESCE(lastm.created_at, c.updated_at, c.created_at) DESC, c.id DESC
+                 LIMIT ' . $perPage . ' OFFSET ' . $offset,
+                $params
+            );
+
+        $people = self::adminParticipants(array_map(static fn (array $row): int => (int) $row['id'], $rows));
+        $items = [];
+        foreach ($rows as $row) {
+            $id = (int) $row['id'];
+            $preview = self::excerpt((string) ($row['last_body'] ?? ''));
+            if ($preview === '' && trim((string) ($row['last_attachment'] ?? '')) !== '') {
+                $preview = 'Pièce jointe : ' . trim((string) $row['last_attachment']);
+            }
+            $lastWho = trim(User::displayName([
+                'first_name' => (string) ($row['last_first_name'] ?? ''),
+                'last_name' => (string) ($row['last_last_name'] ?? ''),
+            ]));
+            if ($preview === '') {
+                $lastWho = '';
+            }
+            if ($preview === '') {
+                $preview = 'Aucun message.';
+            }
+
+            $items[] = [
+                'id' => $id,
+                'subject' => trim((string) ($row['subject'] ?? '')) !== '' ? trim((string) $row['subject']) : 'Conversation',
+                'context' => self::adminListContext($row),
+                'preview' => $preview,
+                'last_who' => $lastWho,
+                'last_at' => (string) ($row['last_at'] ?? $row['created_at'] ?? ''),
+                'message_count' => (int) $row['message_count'],
+                'file_count' => (int) $row['file_count'],
+                'open_reports' => (int) $row['open_reports'],
+                'people' => $people[$id] ?? [],
+                'href' => '/admin/conversations/' . $id,
+            ];
+        }
+
+        return [
+            'items' => $items,
+            'total' => $total,
+            'page' => $page,
+            'pages' => $pages,
+            'per_page' => $perPage,
+        ];
+    }
+
+    public static function adminListUrl(string $q = '', string $filtre = 'tous', int $page = 1): string
+    {
+        $query = [];
+        if ($q !== '') {
+            $query['q'] = $q;
+        }
+        if ($filtre !== '' && $filtre !== 'tous' && isset(self::ADMIN_FILTERS[$filtre])) {
+            $query['filtre'] = $filtre;
+        }
+        if ($page > 1) {
+            $query['page'] = $page;
+        }
+
+        return '/admin/echanges' . ($query === [] ? '' : '?' . http_build_query($query));
+    }
+
     /** @return array<string, mixed>|null */
     public static function findForAdmin(int $id): ?array
     {
@@ -397,7 +540,7 @@ final class Conversation
 
         $presented = self::present($row);
         $participants = Database::fetchAll(
-            'SELECT u.id, u.first_name, u.last_name, u.email, u.avatar_url
+            'SELECT u.id, u.first_name, u.last_name, u.email, u.role, u.offers_services, u.seeks_services, u.avatar_url
              FROM conversation_participants p
              JOIN users u ON u.id = p.user_id
              WHERE p.conversation_id = ?
@@ -409,6 +552,7 @@ final class Conversation
                 'id' => (int) $user['id'],
                 'name' => User::displayName($user),
                 'email' => (string) ($user['email'] ?? ''),
+                'role_label' => self::accountKind($user),
                 'initials' => User::initials($user),
                 'avatar_url' => $user['avatar_url'] ?? '',
                 'href' => '/admin/utilisateurs/' . (int) $user['id'],
@@ -453,6 +597,149 @@ final class Conversation
             'name' => $name,
             'mime' => $mimes[$ext][0] ?? 'application/octet-stream',
         ];
+    }
+
+    /**
+     * @return array{0: string, 1: list<mixed>}
+     */
+    private static function adminListQuery(string $q, string $filtre): array
+    {
+        $sql = 'FROM conversations c
+                LEFT JOIN orders o ON o.id = c.order_id
+                LEFT JOIN missions mi ON mi.id = c.mission_id
+                LEFT JOIN services sv ON sv.id = c.service_id
+                LEFT JOIN (
+                    SELECT conversation_id,
+                           COUNT(*) AS message_count,
+                           SUM(CASE WHEN attachment_path IS NOT NULL AND attachment_path <> \'\' THEN 1 ELSE 0 END) AS file_count,
+                           MAX(id) AS last_id
+                    FROM messages
+                    GROUP BY conversation_id
+                ) stats ON stats.conversation_id = c.id
+                LEFT JOIN messages lastm ON lastm.id = stats.last_id
+                LEFT JOIN users lastu ON lastu.id = lastm.user_id
+                LEFT JOIN (
+                    SELECT target_id, COUNT(*) AS open_reports
+                    FROM reports
+                    WHERE target_type = \'conversation\' AND status = \'open\'
+                    GROUP BY target_id
+                ) rep ON rep.target_id = c.id
+                WHERE 1=1';
+        $params = [];
+
+        $q = trim($q);
+        if ($q !== '') {
+            $like = '%' . $q . '%';
+            $sql .= ' AND (
+                c.subject LIKE ?
+                OR o.number LIKE ?
+                OR mi.title LIKE ?
+                OR sv.title LIKE ?
+                OR EXISTS (
+                    SELECT 1
+                    FROM conversation_participants sp
+                    JOIN users su ON su.id = sp.user_id
+                    WHERE sp.conversation_id = c.id
+                      AND (
+                        su.email LIKE ?
+                        OR su.first_name LIKE ?
+                        OR su.last_name LIKE ?
+                        OR CONCAT(su.first_name, \' \', su.last_name) LIKE ?
+                      )
+                )
+                OR EXISTS (
+                    SELECT 1 FROM messages sm
+                    WHERE sm.conversation_id = c.id AND sm.body LIKE ?
+                )
+            )';
+            $params = array_merge($params, array_fill(0, 9, $like));
+        }
+
+        if ($filtre === 'recent') {
+            $sql .= ' AND lastm.created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)';
+        } elseif ($filtre === 'fichiers') {
+            $sql .= ' AND COALESCE(stats.file_count, 0) > 0';
+        } elseif ($filtre === 'signalees') {
+            $sql .= ' AND COALESCE(rep.open_reports, 0) > 0';
+        } elseif ($filtre === 'commandes') {
+            $sql .= ' AND c.order_id IS NOT NULL';
+        } elseif ($filtre === 'libres') {
+            $sql .= ' AND c.order_id IS NULL';
+        }
+
+        return [$sql, $params];
+    }
+
+    /**
+     * @param list<int> $ids
+     * @return array<int, list<array{name: string, role_label: string, email: string}>>
+     */
+    private static function adminParticipants(array $ids): array
+    {
+        $ids = array_values(array_filter($ids, static fn (int $id): bool => $id > 0));
+        if ($ids === []) {
+            return [];
+        }
+
+        $placeholders = implode(', ', array_fill(0, count($ids), '?'));
+        $rows = Database::fetchAll(
+            'SELECT p.conversation_id, u.first_name, u.last_name, u.email, u.role, u.offers_services, u.seeks_services
+             FROM conversation_participants p
+             JOIN users u ON u.id = p.user_id
+             WHERE p.conversation_id IN (' . $placeholders . ')
+             ORDER BY p.conversation_id, u.offers_services DESC, u.id',
+            $ids
+        );
+
+        $grouped = [];
+        foreach ($rows as $row) {
+            $grouped[(int) $row['conversation_id']][] = [
+                'name' => User::displayName($row),
+                'role_label' => self::accountKind($row),
+                'email' => (string) ($row['email'] ?? ''),
+            ];
+        }
+
+        return $grouped;
+    }
+
+    /** @param array<string, mixed> $row */
+    private static function adminListContext(array $row): string
+    {
+        if ((int) ($row['order_id'] ?? 0) > 0) {
+            $number = trim((string) ($row['order_number'] ?? ''));
+            return 'Commande ' . ($number !== '' ? $number : '#' . (int) $row['order_id']);
+        }
+        if ((int) ($row['mission_id'] ?? 0) > 0) {
+            $title = trim((string) ($row['mission_title'] ?? ''));
+            return $title !== '' ? $title : 'Appel d’offres';
+        }
+        if ((int) ($row['service_id'] ?? 0) > 0) {
+            $title = trim((string) ($row['service_title'] ?? ''));
+            return $title !== '' ? $title : 'Prestation';
+        }
+
+        return 'Échange libre';
+    }
+
+    /** @param array<string, mixed> $user */
+    private static function accountKind(array $user): string
+    {
+        if (($user['role'] ?? '') === 'admin') {
+            return 'Administrateur';
+        }
+
+        return User::usageLabel($user);
+    }
+
+    private static function excerpt(string $text, int $len = 140): string
+    {
+        $text = trim(preg_replace('/\s+/u', ' ', $text) ?? '');
+        if ($text === '' || mb_strlen($text) <= $len) {
+            return $text;
+        }
+
+        return rtrim(mb_substr($text, 0, $len - 1)) . '…';
     }
 
     /**

@@ -9,6 +9,7 @@ use Adl\Core\Migrator;
 use Adl\Models\Article;
 use Adl\Models\Commission;
 use Adl\Models\ContactMessage;
+use Adl\Models\Conversation;
 use Adl\Models\HttpError;
 use Adl\Models\Invoice;
 use Adl\Models\Mission;
@@ -35,7 +36,7 @@ final class AdminCatalog
         $user = Auth::user();
         $data = array_merge(self::shared($user, $screen, $extra['query'] ?? ''), self::content(), self::liveOverlay(), $extra);
         $data['screen'] = $screen;
-        $flags = ['dash', 'verif', 'moderation', 'users', 'catalogue', 'missions', 'finances', 'litiges', 'contact', 'avis', 'preouverture', 'cms', 'livres', 'reglages', 'stats'];
+        $flags = ['dash', 'verif', 'moderation', 'echanges', 'users', 'catalogue', 'missions', 'finances', 'litiges', 'contact', 'avis', 'preouverture', 'cms', 'livres', 'reglages', 'stats'];
         foreach ($flags as $id) {
             $data['is' . ucfirst($id)] = $id === $screen;
         }
@@ -53,6 +54,7 @@ final class AdminCatalog
             ['dash', 'Tableau de bord', '', 'Pilotage', '/admin'],
             ['verif', 'Vérifications', $badges['verif'], '', '/admin/verifications'],
             ['moderation', 'Modération', $badges['moderation'], '', '/admin/moderation'],
+            ['echanges', 'Échanges', $badges['echanges'], '', '/admin/echanges'],
             ['litiges', 'Litiges', $badges['litiges'], '', '/admin/litiges'],
             ['contact', 'Messages', $badges['contact'], '', '/admin/contact'],
             ['avis', 'Avis', $badges['avis'], '', '/admin/avis'],
@@ -108,6 +110,7 @@ final class AdminCatalog
             'moderation' => self::badgeCount(
                 static fn (): int => Report::countOpen() + Article::countPendingSubmissions()
             ),
+            'echanges' => self::badgeCount(static fn (): int => Conversation::adminSnapshot()['reports']),
             'litiges' => self::badgeCount(static fn (): int => Order::countByStatus('dispute')),
             'contact' => self::badgeCount(static fn (): int => ContactMessage::countOpen()),
             'avis' => self::badgeCount(static fn (): int => Report::countOpenForType('review')),
@@ -118,6 +121,15 @@ final class AdminCatalog
             'migrations' => self::badgeCount(static fn (): int => Migrator::pendingCount()),
             'erreurs' => self::badgeCount(static fn (): int => HttpError::countOpen()),
         ];
+    }
+
+    private static function recentExchangeCount(): int
+    {
+        try {
+            return Conversation::adminSnapshot()['recent'];
+        } catch (Throwable) {
+            return 0;
+        }
     }
 
     private static function badgeCount(callable $count): string
@@ -137,6 +149,7 @@ final class AdminCatalog
             'dash' => 'Tableau de bord',
             'verif' => 'Vérifications',
             'moderation' => 'Modération',
+            'echanges' => 'Échanges',
             'litiges' => 'Litiges',
             'contact' => 'Messages',
             'avis' => 'Avis',
@@ -315,12 +328,15 @@ final class AdminCatalog
     /** @return list<array<string, mixed>> */
     private static function queueFiles(int $openMissions): array
     {
+        $recentExchanges = self::recentExchangeCount();
+
         return [
             ['label' => 'Profils à vérifier', 'note' => 'justificatif d\'activité et engagement IA', 'n' => 0, 'age' => '—', 'sla' => 'Aucun dossier', 'slaStyle' => self::pill('grey'), 'href' => '/admin/verifications'],
             ['label' => 'Contenus signalés', 'note' => 'modération éditoriale', 'n' => 0, 'age' => '—', 'sla' => 'Aucun signalement', 'slaStyle' => self::pill('grey'), 'href' => '/admin/moderation'],
             ['label' => 'Missions ouvertes', 'note' => 'appels d\'offres publics', 'n' => $openMissions, 'age' => '—', 'sla' => $openMissions > 0 ? 'En ligne' : 'Aucune mission', 'slaStyle' => self::pill($openMissions > 0 ? 'green' : 'grey'), 'href' => '/admin/missions'],
             ['label' => 'Litiges ouverts', 'note' => 'médiation', 'n' => 0, 'age' => '—', 'sla' => 'Aucun litige', 'slaStyle' => self::pill('grey'), 'href' => '/admin/litiges'],
             ['label' => 'Messages de contact', 'note' => 'formulaire du site', 'n' => 0, 'age' => '—', 'sla' => 'Aucun message', 'slaStyle' => self::pill('grey'), 'href' => '/admin/contact'],
+            ['label' => 'Échanges entre comptes', 'note' => 'discussions des 7 derniers jours', 'n' => $recentExchanges, 'age' => '—', 'sla' => $recentExchanges > 0 ? 'À parcourir' : 'Aucun message récent', 'slaStyle' => self::pill($recentExchanges > 0 ? 'orange' : 'grey'), 'href' => '/admin/echanges?filtre=recent'],
             ['label' => 'Avis contestés', 'note' => 'contestation par le prestataire', 'n' => 0, 'age' => '—', 'sla' => 'Aucun avis', 'slaStyle' => self::pill('grey'), 'href' => '/admin/avis'],
         ];
     }

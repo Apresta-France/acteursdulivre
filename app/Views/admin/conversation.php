@@ -4,11 +4,34 @@ $messages = $messages ?? [];
 $participants = $thread['participants'] ?? [];
 $context = $thread['context'] ?? [];
 $reports = $thread['reports'] ?? [];
+$messageCount = count($messages);
+$fileCount = 0;
+$lastAt = '';
+foreach ($messages as $message) {
+    if (!empty($message['has_file'])) {
+        $fileCount++;
+    }
+    $lastAt = (string) ($message['created_at'] ?? $lastAt);
+}
+$startedAt = (string) ($thread['created_at'] ?? '');
+$fmt = static function (?string $dt): string {
+    if ($dt === null || $dt === '') {
+        return '—';
+    }
+    $ts = strtotime($dt);
+    return $ts === false ? $dt : date('d/m/Y à H:i', $ts);
+};
 ?>
 <div class="admin-page">
-  <p class="admin-back"><a href="<?= e(url('/admin/moderation')) ?>">← Modération</a></p>
+  <p class="admin-back"><a href="<?= e(url('/admin/echanges')) ?>">← Échanges</a></p>
   <h1><?= e((string) ($thread['subject'] ?? 'Conversation')) ?></h1>
-  <p class="admin-lead">Lecture des échanges signalés. Les pièces jointes restent privées : elles ne sont servies qu’ici.</p>
+  <p class="admin-lead">Lecture intégrale de la discussion. Les pièces jointes restent privées : elles ne sont servies qu’ici.</p>
+  <p class="admin-echanges-meta">
+    <?= e(format_int($messageCount)) ?> message<?= $messageCount > 1 ? 's' : '' ?>
+    · ouverte le <?= e($fmt($startedAt)) ?>
+    · dernier message le <?= e($fmt($lastAt !== '' ? $lastAt : $startedAt)) ?>
+    <?php if ($fileCount > 0): ?> · <?= e(format_int($fileCount)) ?> pièce<?= $fileCount > 1 ? 's' : '' ?> jointe<?= $fileCount > 1 ? 's' : '' ?><?php endif; ?>
+  </p>
 
   <?php if (!empty($saved)): ?><div class="flash flash-ok"><?= e(is_string($saved) ? $saved : 'Enregistré.') ?></div><?php endif; ?>
   <?php if (!empty($error)): ?><div class="flash flash-error"><?= e((string) $error) ?></div><?php endif; ?>
@@ -25,7 +48,7 @@ $reports = $thread['reports'] ?? [];
             <?= avatar_html($p, 28) ?>
             <span>
               <a href="<?= e(url((string) $p['href'])) ?>"><?= e((string) $p['name']) ?></a>
-              <em><?= e((string) $p['email']) ?></em>
+              <em><?= e((string) ($p['role_label'] ?? '')) ?><?= !empty($p['role_label']) && !empty($p['email']) ? ' · ' : '' ?><?= e((string) $p['email']) ?></em>
             </span>
           </li>
         <?php endforeach; ?>
@@ -64,7 +87,7 @@ $reports = $thread['reports'] ?? [];
     </div>
   </div>
 
-  <div class="admin-thread">
+  <div class="admin-thread is-full">
     <div class="inbox-messages">
       <?php if ($messages === []): ?>
         <p class="admin-muted">Aucun message dans cette conversation.</p>

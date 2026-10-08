@@ -223,6 +223,7 @@ return static function (Router $router): void {
     $router->get('/admin/moderation', [AdminController::class, 'moderation']);
     $router->post('/admin/moderation/{type}/{id}', [AdminController::class, 'moderationSave']);
     $router->post('/admin/signalements/{id}', [AdminController::class, 'reportSave']);
+    $router->get('/admin/echanges', [AdminController::class, 'echanges']);
     $router->get('/admin/conversations/{id}', [AdminController::class, 'conversationShow']);
     $router->get('/admin/conversations/{id}/fichier/{mid}', [AdminController::class, 'conversationFile']);
     $router->get('/admin/litiges', [AdminController::class, 'litiges']);

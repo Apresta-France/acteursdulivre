@@ -5816,6 +5816,54 @@ img.profile-avatar,
 .admin-contact-wrap .admin-contact-row {
   grid-template-columns: 150px minmax(180px, 0.9fr) minmax(220px, 1.6fr) 120px;
 }
+.admin-echanges-wrap .admin-envois-head,
+.admin-echanges-wrap .admin-envois-row {
+  grid-template-columns: 168px minmax(180px, 0.9fr) minmax(240px, 1.6fr) 118px;
+}
+.admin-echanges-wrap .admin-envois-row.is-flagged {
+  box-shadow: inset 3px 0 0 var(--orange);
+  background: #FFFCFA;
+}
+.admin-echanges-wrap .admin-envois-row.is-flagged:hover { background: #FDF6F2; }
+.admin-echanges-ago,
+.admin-echanges-context,
+.admin-echanges-extra,
+.admin-echanges-count-label {
+  display: block;
+  font-size: 12px;
+  color: #8496A8;
+  margin-top: 4px;
+}
+.admin-echanges-person {
+  display: block;
+  font-size: 14px;
+  color: #14202C;
+}
+.admin-echanges-person + .admin-echanges-person { margin-top: 8px; }
+.admin-echanges-person em {
+  display: block;
+  font-style: normal;
+  font-size: 12px;
+  color: #8496A8;
+  margin-top: 1px;
+}
+.admin-echanges-count {
+  display: block;
+  font-family: var(--display);
+  font-size: 20px;
+  color: #14202C;
+  line-height: 1;
+}
+.admin-echanges-wrap .admin-pill { display: inline-block; margin-top: 8px; }
+.admin-echanges-meta {
+  margin: -8px 0 22px;
+  font-size: 14px;
+  color: #4A5A6B;
+}
+a.me-admin-kpi { display: block; text-decoration: none; color: inherit; }
+a.me-admin-kpi:hover,
+a.me-admin-kpi.is-on { border-color: #022746; }
+.admin-thread.is-full .inbox-messages { max-height: none; overflow: visible; }
 .admin-contact-row.is-open {
   box-shadow: inset 3px 0 0 var(--orange);
   background: #FFFCFA;
@@ -5841,6 +5889,8 @@ img.profile-avatar,
 @media (max-width: 800px) {
   .admin-contact-wrap .admin-contact-head,
   .admin-contact-wrap .admin-contact-row { min-width: 720px; }
+  .admin-echanges-wrap .admin-envois-head,
+  .admin-echanges-wrap .admin-envois-row { min-width: 760px; }
 }
 .admin-pager {
   display: flex;
