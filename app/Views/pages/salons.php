@@ -75,8 +75,8 @@ foreach ($salons as $event) {
         <span aria-hidden="true"> · </span>
         <span>Agenda des salons</span>
       </nav>
-      <h1>Agenda des salons du livre</h1>
-      <p class="profile-hero-sub">Salons du livre, festivals et foires en France et en Europe, de septembre 2026 à septembre 2027. Dates à reconfirmer sur le site de chaque manifestation.</p>
+      <h1>Salons du livre 2026 et 2027</h1>
+      <p class="profile-hero-sub">Agenda des salons du livre, festivals et foires en France et en Europe : dates, villes et lieux, de septembre 2026 à septembre 2027. Dates à reconfirmer sur le site de chaque manifestation.</p>
     </div>
     <div class="profile-hero-actions">
       <a class="btn-orange" href="<?= e(url('/salons/ajouter')) ?>">Ajouter un salon</a>
@@ -222,6 +222,17 @@ foreach ($salons as $event) {
         $pagerLabel = 'Pagination des salons';
         require ADL_ROOT . '/app/Views/partials/search-pager.php';
       ?>
+
+      <?php if (!empty($salonIndex)): ?>
+        <details class="me-geo">
+          <summary>Tous les salons à venir (<?= count($salonIndex) ?>)</summary>
+          <div class="me-geo-links">
+            <?php foreach ($salonIndex as $item): ?>
+              <a href="<?= e(url((string) $item['href'])) ?>"><?= e((string) $item['name']) ?></a>
+            <?php endforeach; ?>
+          </div>
+        </details>
+      <?php endif; ?>
 
       <aside class="salon-cta">
         <div>

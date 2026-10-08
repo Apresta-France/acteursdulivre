@@ -528,6 +528,36 @@ final class Article
     }
 
     /**
+     * Tous les articles publiés, liés depuis la première page du journal.
+     *
+     * @return list<array{title: string, href: string, cat: string}>
+     */
+    public static function publishedLinks(): array
+    {
+        $rows = Database::fetchAll(
+            'SELECT title, slug, category FROM articles
+             WHERE published_at IS NOT NULL AND published_at <= NOW()
+               AND slug IS NOT NULL AND slug != ""
+             ORDER BY published_at DESC'
+        );
+        $out = [];
+        foreach ($rows as $row) {
+            $slug = trim((string) ($row['slug'] ?? ''));
+            $title = trim((string) ($row['title'] ?? ''));
+            if ($slug === '' || $title === '') {
+                continue;
+            }
+            $out[] = [
+                'title' => $title,
+                'href' => '/journal/' . $slug,
+                'cat' => (string) ($row['category'] ?? ''),
+            ];
+        }
+
+        return $out;
+    }
+
+    /**
      * @return list<array{href: string, title: string, subtitle: string, kind_label: string, meta: string}>
      */
     public static function suggestPublished(string $q, string $category = '', int $limit = 8): array

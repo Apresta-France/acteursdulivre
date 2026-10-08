@@ -99,6 +99,32 @@ final class Landings
         return self::PREFIX . '/' . ltrim($slug, '/');
     }
 
+    /**
+     * Première page besoin d'un métier, pour la lier depuis la page métier déjà explorée.
+     *
+     * @return array{href: string, label: string}|null
+     */
+    public static function primaryForTrade(string $trade): ?array
+    {
+        foreach (self::definitions() as $row) {
+            if (($row['audience'] ?? 'client') === 'prestataire') {
+                continue;
+            }
+            if (($row['trade'] ?? '') !== $trade) {
+                continue;
+            }
+            $slug = (string) ($row['slug'] ?? '');
+            $label = trim((string) ($row['need'] ?? ''));
+            if ($slug === '' || $label === '') {
+                return null;
+            }
+
+            return ['href' => self::path($slug), 'label' => $label];
+        }
+
+        return null;
+    }
+
     public static function hubPath(): string
     {
         return self::PREFIX;
@@ -331,9 +357,9 @@ final class Landings
      */
     public static function sitemapUrls(): array
     {
-        $urls = [['loc' => self::hubPath(), 'priority' => '0.7']];
+        $urls = [['loc' => self::hubPath(), 'priority' => '0.8']];
         foreach (self::all() as $row) {
-            $urls[] = ['loc' => self::path((string) $row['slug']), 'priority' => '0.7'];
+            $urls[] = ['loc' => self::path((string) $row['slug']), 'priority' => '0.8'];
         }
         return $urls;
     }

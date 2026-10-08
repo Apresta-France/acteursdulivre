@@ -57,7 +57,7 @@ $contactHref = $p['href'] . '/contact';
   <div class="profile-hero me-hero">
     <div class="me-hero-logo">
       <?php if ($p['logo_src'] !== ''): ?>
-        <img src="<?= e($p['logo_src']) ?>" alt="Logo <?= e($p['name']) ?>" width="104" height="104">
+        <img src="<?= e(img_fit((string) $p['logo_src'], 104)) ?>" alt="Logo <?= e($p['name']) ?>" width="104" height="104" decoding="async">
       <?php else: ?>
         <span class="me-mono" aria-hidden="true"><?= e($p['initials']) ?></span>
       <?php endif; ?>
@@ -226,7 +226,7 @@ $contactHref = $p['href'] . '/contact';
               <a class="me-mini" href="<?= e(url((string) $r['href'])) ?>">
                 <div class="me-card-logo">
                   <?php if ($r['logo_src'] !== ''): ?>
-                    <img src="<?= e($r['logo_src']) ?>" alt="" width="44" height="44" loading="lazy">
+                    <img src="<?= e(img_fit((string) $r['logo_src'], 44)) ?>" alt="" width="44" height="44" loading="lazy" decoding="async">
                   <?php else: ?>
                     <span class="me-mono" aria-hidden="true"><?= e($r['initials']) ?></span>
                   <?php endif; ?>

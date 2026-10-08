@@ -152,7 +152,7 @@ $query = (string) ($query ?? '');
         <?php foreach ($homeFeatured as $s): ?>
           <a class="mk-card" href="<?= e(url((string) $s['href'])) ?>">
             <?= !empty($s['has_image'])
-              ? '<img class="mk-card-media" src="' . e((string) $s['img']) . '" alt="' . e((string) ($s['title'] ?? '')) . '" width="400" height="168" loading="lazy" decoding="async">'
+              ? '<img class="mk-card-media" src="' . e(img_fit((string) $s['img'], 400)) . '" alt="' . e((string) ($s['title'] ?? '')) . '" width="400" height="168" loading="lazy" decoding="async">'
               : service_cover_html((string) ($s['cat'] ?? ''), 'mk-card-cover') ?>
             <div class="mk-card-body">
               <div class="mk-card-by"><?= avatar_html($s, 26) ?><span><?= e((string) ($s['by'] ?? '')) ?></span></div>
@@ -181,7 +181,7 @@ $query = (string) ($query ?? '');
         <?php foreach ($homeEntry as $s): ?>
           <a class="mk-card" href="<?= e(url((string) $s['href'])) ?>">
             <?= !empty($s['has_image'])
-              ? '<img class="mk-card-media" src="' . e((string) $s['img']) . '" alt="' . e((string) ($s['title'] ?? '')) . '" width="400" height="168" loading="lazy" decoding="async">'
+              ? '<img class="mk-card-media" src="' . e(img_fit((string) $s['img'], 400)) . '" alt="' . e((string) ($s['title'] ?? '')) . '" width="400" height="168" loading="lazy" decoding="async">'
               : service_cover_html((string) ($s['cat'] ?? ''), 'mk-card-cover') ?>
             <div class="mk-card-body">
               <div class="mk-card-by"><?= avatar_html($s, 26) ?><span><?= e((string) ($s['by'] ?? '')) ?></span></div>
@@ -336,7 +336,7 @@ $query = (string) ($query ?? '');
         <?php foreach ($journal as $a): ?>
           <a class="mk-journal" href="<?= e(url((string) $a['href'])) ?>">
             <?php if (!empty($a['img'])): ?>
-              <img class="mk-card-media" src="<?= e((string) $a['img']) ?>" alt="<?= e((string) ($a['image_alt'] ?? $a['title'] ?? '')) ?>" width="400" height="168" loading="lazy" decoding="async">
+              <img class="mk-card-media" src="<?= e(img_fit((string) $a['img'], 400)) ?>" alt="<?= e((string) ($a['image_alt'] ?? $a['title'] ?? '')) ?>" width="400" height="168" loading="lazy" decoding="async">
             <?php endif; ?>
             <div class="mk-kicker"><?= e((string) ($a['cat'] ?? '')) ?> · <?= e((string) ($a['read'] ?? '')) ?></div>
             <strong><?= e((string) $a['title']) ?></strong>

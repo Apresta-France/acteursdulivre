@@ -13,6 +13,8 @@
 !/storage/uploads/.gitkeep
 /public/uploads/*
 !/public/uploads/.gitkeep
+/public/cache/*
+!/public/cache/.htaccess
 /storage/mail/*
 !/storage/mail/.gitkeep
 /storage/rate/*

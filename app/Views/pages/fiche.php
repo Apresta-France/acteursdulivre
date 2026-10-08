@@ -65,14 +65,14 @@ if ($hasSeveralPackages && count($packageDelays) > 1) {
         $portfolioUrl = trim((string) ($service['portfolio_url'] ?? ''));
       ?>
       <?php if ($gallery !== []): ?>
-        <a class="service-cover-hero" href="<?= e((string) $gallery[0]) ?>" style="background-image:url('<?= e((string) $gallery[0]) ?>')"
+        <a class="service-cover-hero" href="<?= e((string) $gallery[0]) ?>" style="background-image:url('<?= e(img_fit((string) $gallery[0], 800)) ?>')"
            data-zoom data-zoom-title="<?= e((string) $service['title']) ?>"
            aria-haspopup="dialog" aria-controls="portfolio-zoom"
            aria-label="<?= e('Agrandir le visuel de la prestation') ?>"></a>
         <?php if (count($gallery) > 1): ?>
           <div class="service-fiche-gallery">
             <?php foreach (array_slice($gallery, 1) as $i => $src): ?>
-              <a class="service-fiche-gallery-item" href="<?= e((string) $src) ?>" style="background-image:url('<?= e((string) $src) ?>')"
+              <a class="service-fiche-gallery-item" href="<?= e((string) $src) ?>" style="background-image:url('<?= e(img_fit((string) $src, 240)) ?>')"
                  data-zoom data-zoom-title="<?= e((string) $service['title']) ?>"
                  aria-haspopup="dialog" aria-controls="portfolio-zoom"
                  aria-label="<?= e('Agrandir le visuel ' . (string) ($i + 2)) ?>"></a>

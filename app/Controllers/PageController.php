@@ -193,6 +193,7 @@ final class PageController
             'tradeCities' => Catalog::citiesForTrade($trade),
             'cityPage' => null,
             'heroImg' => photo(abs(crc32($canonicalSlug)) % 6),
+            'tradeLanding' => Landings::primaryForTrade($trade),
             'meta' => Seo::build(
                 $geo['h1'],
                 $geo['description'],
@@ -1073,15 +1074,28 @@ final class PageController
         if ($filters['q'] !== '' || $found['page'] > 1) {
             $meta['robots'] = 'noindex, follow';
         }
+        $salonIndex = [];
+        $unfiltered = $filters['q'] === ''
+            && $filters['category'] === ''
+            && $filters['region'] === ''
+            && $filters['country'] === ''
+            && $page === 1;
+        if ($unfiltered) {
+            try {
+                $salonIndex = Salon::indexLinks();
+            } catch (\Throwable) {
+            }
+        }
 
         View::page('salons', [
-            'title' => 'Agenda des salons du livre',
+            'title' => 'Salons du livre 2026 et 2027',
             'meta' => $meta,
             'salons' => $found['items'],
             'pager' => $found,
             'filters' => $filters,
             'facets' => $facets,
             'query' => $filters['q'],
+            'salonIndex' => $salonIndex,
         ]);
     }
 
@@ -1096,22 +1110,15 @@ final class PageController
             not_found('Ce salon n\'est pas dans l\'agenda.');
         }
 
-        $desc = trim((string) ($salon['description'] ?? ''));
+        $salonSeo = Seo::salonMeta($salon);
         $meta = Seo::build(
-            (string) $salon['name'],
-            $desc !== '' ? Seo::clip($desc, 160) : ((string) ($salon['when'] ?? '') . ' · ' . (string) ($salon['place'] ?? '')),
-            (string) $salon['href']
+            $salonSeo['title'],
+            $salonSeo['description'],
+            (string) $salon['href'],
+            'website',
+            null,
+            ['json_ld' => $salonSeo['json_ld']]
         );
-        $meta['json_ld'] = [
-            Seo::organization(),
-            Seo::website(),
-            Seo::breadcrumb([
-                ['name' => Seo::BRAND, 'url' => '/'],
-                ['name' => 'Communauté', 'url' => '/communaute'],
-                ['name' => 'Agenda des salons', 'url' => '/salons'],
-                ['name' => (string) $salon['name'], 'url' => (string) $salon['href']],
-            ]),
-        ];
 
         $upcoming = [];
         try {
@@ -1296,6 +1303,13 @@ final class PageController
         if ($q !== '' || $found['page'] > 1) {
             $meta['robots'] = 'noindex, follow';
         }
+        $journalIndex = [];
+        if (!$filtered && $found['page'] === 1) {
+            try {
+                $journalIndex = Article::publishedLinks();
+            } catch (\Throwable) {
+            }
+        }
 
         View::page('journal', [
             'title' => $metaExtra['title'] ?? 'Le journal des métiers du livre',
@@ -1307,6 +1321,7 @@ final class PageController
             'journalCategories' => $categories,
             'journalHasContent' => $hasJournal,
             'journalFiltered' => $filtered,
+            'journalIndex' => $journalIndex,
             'pager' => [
                 'page' => $found['page'],
                 'pages' => $found['pages'],

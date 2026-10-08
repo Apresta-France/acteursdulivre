@@ -70,6 +70,40 @@ final class Salon
         return array_map([self::class, 'hydrate'], $rows);
     }
 
+    /**
+     * Liens de toutes les manifestations à venir, pour la page agenda indexable.
+     *
+     * @return list<array{name: string, href: string, city: string}>
+     */
+    public static function indexLinks(): array
+    {
+        $rows = Database::fetchAll(
+            'SELECT name, slug, city, starts_on FROM salons
+             WHERE slug != ""
+               AND (starts_on IS NULL OR starts_on >= CURDATE() OR (ends_on IS NOT NULL AND ends_on >= CURDATE()))
+             ORDER BY (starts_on IS NULL) ASC, starts_on ASC, name ASC'
+        );
+        $out = [];
+        foreach ($rows as $row) {
+            $slug = trim((string) ($row['slug'] ?? ''));
+            $name = trim((string) ($row['name'] ?? ''));
+            if ($slug === '' || $name === '' || in_array($slug, self::RESERVED_SLUGS, true)) {
+                continue;
+            }
+            $year = substr((string) ($row['starts_on'] ?? ''), 0, 4);
+            if ($year !== '' && !str_contains($name, $year)) {
+                $name .= ' (' . $year . ')';
+            }
+            $out[] = [
+                'name' => $name,
+                'href' => '/salons/' . $slug,
+                'city' => trim((string) ($row['city'] ?? '')),
+            ];
+        }
+
+        return $out;
+    }
+
     /** @return list<string> */
     public static function categoryLabels(): array
     {
@@ -330,7 +364,10 @@ final class Salon
         $offset = ($page - 1) * self::PER_PAGE;
         $rows = Database::fetchAll(
             'SELECT * FROM salons WHERE ' . $where . '
-             ORDER BY (starts_on IS NULL) ASC, starts_on ASC, name ASC
+             ORDER BY (starts_on IS NOT NULL AND starts_on < CURDATE() AND (ends_on IS NULL OR ends_on < CURDATE())) ASC,
+                      (starts_on IS NULL) ASC,
+                      starts_on ASC,
+                      name ASC
              LIMIT ' . self::PER_PAGE . ' OFFSET ' . $offset,
             $params
         );

@@ -31,6 +31,10 @@ if (is_file($envFile)) {
     Env::load($envFile);
 }
 
+if (\Adl\Core\ImageFit::wants($uri)) {
+    \Adl\Core\ImageFit::respond($uri);
+}
+
 date_default_timezone_set(Env::get('APP_TIMEZONE', 'Europe/Paris'));
 
 $method = strtoupper((string) ($_SERVER['REQUEST_METHOD'] ?? 'GET'));

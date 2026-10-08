@@ -82,9 +82,10 @@
   <link rel="preload" as="image" href="<?= e((string) ($homeImg1 ?? photo_asset('hero-write'))) ?>" type="image/webp">
   <?php endif; ?>
   <?php if (!empty($isArticle) && !empty($article['img'])): ?>
-  <link rel="preload" as="image" href="<?= e((string) $article['img']) ?>">
+  <link rel="preload" as="image" href="<?= e(img_fit((string) $article['img'], 1200)) ?>">
   <?php endif; ?>
-  <link rel="stylesheet" href="<?= e(asset('css/app.css')) ?>?v=m271">
+  <link rel="stylesheet" href="<?= e(asset('css/app.css')) ?>?v=m272">
+  <script src="<?= e(asset('js/app.js')) ?>?v=m118" defer></script>
   <link rel="icon" href="<?= e(asset('img/favicon.ico')) ?>?v=3" sizes="any">
   <link rel="icon" type="image/png" href="<?= e(asset('img/favicon-32x32.png')) ?>?v=3" sizes="32x32">
   <link rel="apple-touch-icon" href="<?= e(asset('img/apple-touch-icon.png')) ?>?v=3">
@@ -103,7 +104,7 @@
     <div class="site-canvas">
       <?php if (!empty($isLanding)): ?>
       <div class="lp-brand">
-        <img src="<?= e(asset('img/logo.png')) ?>?v=4" alt="acteursdulivre.fr — place de marché des métiers du livre" width="212" height="58" decoding="async">
+        <img src="<?= e(asset('img/logo.webp')) ?>?v=6" alt="acteursdulivre.fr — place de marché des métiers du livre" width="212" height="58" decoding="async">
       </div>
       <?php endif; ?>
       <?php if ($landingChrome): ?>
@@ -150,8 +151,8 @@
       <header class="site-header">
         <a href="<?= e(url('/')) ?>" class="brand" aria-label="acteursdulivre.fr — accueil">
           <picture>
-            <source media="(max-width: 480px)" srcset="<?= e(asset('img/logo-mark.png')) ?>?v=1">
-            <img src="<?= e(asset('img/logo.png')) ?>?v=4" alt="acteursdulivre.fr — place de marché des métiers du livre" width="212" height="58" decoding="async">
+            <source media="(max-width: 480px)" srcset="<?= e(asset('img/logo-mark.webp')) ?>?v=6">
+            <img src="<?= e(asset('img/logo.webp')) ?>?v=6" alt="acteursdulivre.fr — place de marché des métiers du livre" width="212" height="58" decoding="async">
           </picture>
         </a>
         <form class="search" role="search" action="<?= e(url($headerSearchAction)) ?>" method="get"<?= $headerSearchLocal ? '' : ' data-live-search data-api="' . e(url('/api/recherche')) . '"' ?> autocomplete="off" toolname="search_directory" tooldescription="<?= e($headerSearchLabel) ?>.">
@@ -331,7 +332,7 @@
           <div>
             <div class="footer-logo">
               <a href="<?= e(url('/')) ?>" aria-label="acteursdulivre.fr — accueil">
-                <img src="<?= e(asset('img/logo-inv.png')) ?>?v=5" alt="" width="154" height="42" loading="lazy" decoding="async">
+                <img src="<?= e(asset('img/logo-inv.webp')) ?>?v=6" alt="" width="154" height="42" loading="lazy" decoding="async">
               </a>
             </div>
             <p>La place de marché des métiers du livre. Dix-huit métiers, de l'écriture au coaching.</p>
@@ -404,6 +405,5 @@
       <?php endif; ?>
     </div>
   <?php endif; ?>
-  <script src="<?= e(asset('js/app.js')) ?>?v=m117"></script>
 </body>
 </html>

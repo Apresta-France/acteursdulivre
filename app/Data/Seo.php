@@ -35,7 +35,7 @@ final class Seo
                 'path' => '/',
             ],
             'comment' => [
-                'title' => 'Comment ça marche',
+                'title' => 'Comment trouver un prestataire du livre',
                 'description' => 'Cherchez un profil, commandez une prestation ou publiez un appel d\'offres. Suivi à jalons, règlement hors plateforme. Première mission offerte, puis 8 % hors taxes au prestataire.',
                 'path' => '/comment-ca-marche',
             ],
@@ -95,18 +95,18 @@ final class Seo
                 'path' => '/outils/volume',
             ],
             'outil-dos' => [
-                'title' => 'Calculateur de dos et couverture',
-                'description' => 'Largeur de dos, fonds perdus et taille du PDF couverture : format, pagination, grammage et volume du papier. L’imprimeur confirme les cotes.',
+                'title' => 'Calcul du dos d\'un livre (carré collé)',
+                'description' => 'Calculez le dos d\'un livre broché, dos carré collé : pagination, grammage et volume du papier. Largeur de dos, fonds perdus et taille du PDF couverture.',
                 'path' => '/outils/dos',
             ],
             'outil-isbn' => [
-                'title' => 'Validateur ISBN et EAN',
-                'description' => 'Vérifiez la clé d’un ISBN-10 ou ISBN-13, voyez la structure, convertissez les deux formes et affichez le code-barres EAN. Sans attribution, sans compte.',
+                'title' => 'Vérifier un ISBN et un code-barres EAN',
+                'description' => 'Contrôlez la clé d\'un ISBN-10 ou ISBN-13 et le code-barres EAN. Pour obtenir un ISBN en France, c\'est l\'AFNIL qui l\'attribue : cet outil ne délivre pas de numéro.',
                 'path' => '/outils/isbn',
             ],
             'salons' => [
-                'title' => 'Agenda des salons du livre — France et Europe',
-                'description' => 'Salons du livre, festivals et foires en France et en Europe, de septembre 2026 à septembre 2027. Dates, villes et catégories.',
+                'title' => 'Salons du livre 2026 et 2027',
+                'description' => 'Agenda des salons du livre, festivals et foires en France et en Europe : dates, villes et lieux, de septembre 2026 à septembre 2027.',
                 'path' => '/salons',
             ],
             'salon-ajouter' => [
@@ -187,8 +187,8 @@ final class Seo
                 'lead' => 'Trouvez un auteur ou un prête-plume pour un roman, un essai ou un récit. Prestations cadrées ou appel d\'offres, sans IA générative.',
             ],
             'Correction' => [
-                'h1' => 'Correction et relecture de manuscrit',
-                'lead' => 'Trouvez un correcteur pour une passe orthotypographique, une préparation de copie ou une relecture sur épreuves. Prix affichés ou devis, travail humain uniquement.',
+                'h1' => 'Correction de livre et relecture de manuscrit',
+                'lead' => 'Trouvez un correcteur pour la correction d\'un livre ou d\'un manuscrit : passe orthotypographique, préparation de copie ou relecture sur épreuves. Prix affichés ou devis, travail humain uniquement.',
             ],
             'Bêta-lecture' => [
                 'h1' => 'Bêta-lecture et rapport de lecture',
@@ -211,8 +211,8 @@ final class Seo
                 'lead' => 'Accompagnement éditorial : ligne, calendrier, assistant d\'édition. La plateforme met en relation, elle n\'édite pas les ouvrages.',
             ],
             'Impression' => [
-                'h1' => 'Impression et fabrication de livres',
-                'lead' => 'Imprimeurs et fabricants pour tirage court ou offset : format, papier, façonnage et suivi de production. Devis comparables, sans abonnement.',
+                'h1' => 'Imprimeur offset et fabrication de livres',
+                'lead' => 'Imprimeur offset ou numérique pour un auteur ou un éditeur : tirage court, format, papier, façonnage. Devis comparables, sans abonnement.',
             ],
             'Presse & com' => [
                 'h1' => 'Presse, promotion et community du livre',
@@ -223,8 +223,8 @@ final class Seo
                 'lead' => 'Diffusion, dépôt, e-commerce et événements en librairie. Mettez-vous d\'accord sur la zone, le titre et le calendrier.',
             ],
             'Audio' => [
-                'h1' => 'Narration et livre audio',
-                'lead' => 'Narration et prise de son pour livre audio : ton, durée, public. Voix humaine uniquement — pas de synthèse, pas de production phonographique.',
+                'h1' => 'Narrateur de livre audio',
+                'lead' => 'Trouvez un narrateur pour un livre audio : ton, durée, public. Voix humaine uniquement — pas de synthèse, pas de production phonographique.',
             ],
             'Agent littéraire' => [
                 'h1' => 'Agents littéraires',
@@ -235,8 +235,8 @@ final class Seo
                 'lead' => 'Trouvez un coach d\'écriture, un mentorat ou un atelier pour un roman, un essai ou un récit. Séances cadrées ou appel d\'offres, sans IA générative.',
             ],
             'Iconographie' => [
-                'h1' => 'Iconographie et droits d\'images',
-                'lead' => 'Iconographes pour rechercher, légender et négocier les visuels d\'un ouvrage. Sources, droits et usages précisés dès le brief.',
+                'h1' => 'Iconographe : recherche d\'images et droits',
+                'lead' => 'Trouvez un iconographe pour rechercher, légender et négocier les visuels d\'un ouvrage. Sources, droits et usages précisés dès le brief.',
             ],
             'Lecture éditoriale' => [
                 'h1' => 'Lecture éditoriale et comité de lecture',
@@ -1278,6 +1278,147 @@ Les pages locales (exemple : [correctrice à Paris]({$home}correctrice/paris)) r
 - [Instagram](https://www.instagram.com/acteursdulivre.fr/)
 - [LinkedIn](https://www.linkedin.com/showcase/acteurs-du-livre/)
 MD;
+    }
+
+    /**
+     * Titre, extrait et données structurées d'une fiche salon.
+     * Le titre met l'année devant : les recherches portent sur « salon … 2026 ».
+     *
+     * @param array<string, mixed> $salon
+     * @return array{title: string, description: string, json_ld: list<array<string, mixed>>}
+     */
+    public static function salonMeta(array $salon): array
+    {
+        $name = trim((string) ($salon['name'] ?? 'Salon du livre'));
+        $city = trim((string) ($salon['city'] ?? ''));
+        $start = trim((string) ($salon['starts_on'] ?? $salon['iso'] ?? ''));
+        $year = preg_match('/^\d{4}/', $start) === 1 ? substr($start, 0, 4) : '';
+        $title = $name;
+        if ($year !== '' && !str_contains($name, $year)) {
+            $title = $year . ' — ' . $name;
+        }
+        if ($city !== '' && !str_contains(mb_strtolower($title), mb_strtolower($city))) {
+            $title .= ' à ' . $city;
+        }
+
+        $confirmed = !empty($salon['confirmed']) || !empty($salon['dates_confirmed']);
+        $when = trim((string) ($salon['when'] ?? $salon['when_dates'] ?? ''));
+        $place = trim((string) ($salon['place'] ?? ''));
+        $kind = trim((string) ($salon['kind'] ?? $salon['category'] ?? ''));
+        $own = trim((string) ($salon['description'] ?? ''));
+        $bits = array_values(array_filter(
+            [
+                $confirmed ? $when : '',
+                $place !== '' ? $place : $city,
+                $kind !== '' ? $kind : 'Salon du livre',
+                $own,
+                $confirmed ? '' : 'Dates à confirmer sur le site de l\'organisateur',
+            ],
+            static fn (string $bit): bool => $bit !== ''
+        ));
+        $description = self::clip(implode(' · ', $bits), 160);
+        $href = (string) ($salon['href'] ?? '/salons');
+        $jsonLd = [
+            self::organization(),
+            self::website(),
+            self::breadcrumb([
+                ['name' => self::BRAND, 'url' => '/'],
+                ['name' => 'Communauté', 'url' => '/communaute'],
+                ['name' => 'Salons du livre', 'url' => '/salons'],
+                ['name' => $name, 'url' => $href],
+            ]),
+        ];
+        $event = self::salonEvent($salon, $description);
+        if ($event !== null) {
+            $jsonLd[] = $event;
+        }
+
+        return [
+            'title' => $title,
+            'description' => $description,
+            'json_ld' => $jsonLd,
+        ];
+    }
+
+    /**
+     * @param array<string, mixed> $salon
+     * @return array<string, mixed>|null
+     */
+    private static function salonEvent(array $salon, string $description): ?array
+    {
+        $confirmed = !empty($salon['confirmed']) || !empty($salon['dates_confirmed']);
+        $start = trim((string) ($salon['starts_on'] ?? $salon['iso'] ?? ''));
+        if (!$confirmed || preg_match('/^\d{4}-\d{2}-\d{2}/', $start) !== 1) {
+            return null;
+        }
+        $href = Share::absolute((string) ($salon['href'] ?? '/salons'));
+        $city = trim((string) ($salon['city'] ?? ''));
+        $venue = trim((string) ($salon['venue'] ?? ''));
+        $placeName = $venue !== '' ? $venue : ($city !== '' ? $city : trim((string) ($salon['name'] ?? 'Salon')));
+        $address = ['@type' => 'PostalAddress'];
+        if ($city !== '') {
+            $address['addressLocality'] = $city;
+        }
+        $region = trim((string) ($salon['region'] ?? ''));
+        if ($region !== '') {
+            $address['addressRegion'] = $region;
+        }
+        $code = self::countryCode(trim((string) ($salon['country'] ?? '')));
+        if ($code !== '') {
+            $address['addressCountry'] = $code;
+        }
+        $event = [
+            '@type' => 'Event',
+            '@id' => $href . '#event',
+            'name' => trim((string) ($salon['name'] ?? 'Salon du livre')),
+            'description' => $description,
+            'startDate' => substr($start, 0, 10),
+            'eventAttendanceMode' => 'https://schema.org/OfflineEventAttendanceMode',
+            'eventStatus' => 'https://schema.org/EventScheduled',
+            'url' => $href,
+            'inLanguage' => 'fr',
+            'location' => [
+                '@type' => 'Place',
+                'name' => $placeName,
+                'address' => $address,
+            ],
+        ];
+        $end = trim((string) ($salon['ends_on'] ?? ''));
+        if (preg_match('/^\d{4}-\d{2}-\d{2}/', $end) === 1) {
+            $event['endDate'] = substr($end, 0, 10);
+        }
+        $organizer = trim((string) ($salon['organizer'] ?? ''));
+        if ($organizer !== '') {
+            $event['organizer'] = ['@type' => 'Organization', 'name' => $organizer];
+        }
+
+        return $event;
+    }
+
+    private static function countryCode(string $country): string
+    {
+        $n = search_norm($country);
+        return match ($n) {
+            'france' => 'FR',
+            'belgique' => 'BE',
+            'suisse' => 'CH',
+            'allemagne' => 'DE',
+            'espagne' => 'ES',
+            'italie' => 'IT',
+            'portugal' => 'PT',
+            'royaume-uni' => 'GB',
+            'pays-bas' => 'NL',
+            'luxembourg' => 'LU',
+            'autriche' => 'AT',
+            'canada' => 'CA',
+            'irlande' => 'IE',
+            'pologne' => 'PL',
+            'suede' => 'SE',
+            'danemark' => 'DK',
+            'norvege' => 'NO',
+            'finlande' => 'FI',
+            default => '',
+        };
     }
 
     public static function clip(string $text, int $max = 160): string

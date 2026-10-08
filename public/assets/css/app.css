@@ -10272,6 +10272,8 @@ a.me-chip.is-on:hover { color: #fff; border-color: var(--navy); }
 
 .me-geo, .me-about { margin-top: 40px; padding-top: 28px; border-top: 1px solid var(--line); }
 .me-geo h2, .me-about h2, .me-related h2 { font-family: var(--display); font-size: 21px; font-weight: 700; color: var(--navy); margin: 0 0 14px; }
+.me-geo > summary { font-family: var(--display); font-size: 21px; font-weight: 700; color: var(--navy); cursor: pointer; margin: 0 0 14px; }
+.me-geo[open] > summary { margin-bottom: 14px; }
 .me-geo-links { display: flex; flex-wrap: wrap; gap: 8px; }
 .me-geo-links a {
   display: inline-flex;

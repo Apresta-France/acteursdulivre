@@ -112,7 +112,7 @@ if ($pages > 1) {
     <?php if ($hero): ?>
       <a class="journal-hero" href="<?= e(url((string) $hero['href'])) ?>">
         <?php if (!empty($hero['img'])): ?>
-          <img class="journal-hero-media" src="<?= e((string) $hero['img']) ?>" alt="<?= e((string) ($hero['image_alt'] ?? $hero['title'] ?? '')) ?>" width="720" height="260" decoding="async">
+          <img class="journal-hero-media" src="<?= e(img_fit((string) $hero['img'], 720)) ?>" alt="<?= e((string) ($hero['image_alt'] ?? $hero['title'] ?? '')) ?>" width="720" height="260" decoding="async">
         <?php endif; ?>
         <div class="journal-hero-body">
           <div class="journal-kicker"><?= e((string) $hero['cat']) ?> · <?= e((string) $hero['read']) ?> de lecture</div>
@@ -127,7 +127,7 @@ if ($pages > 1) {
         <?php foreach ($rest as $a): ?>
           <a class="journal-card" href="<?= e(url((string) $a['href'])) ?>">
             <?php if (!empty($a['img'])): ?>
-              <img class="journal-card-media" src="<?= e((string) $a['img']) ?>" alt="<?= e((string) ($a['image_alt'] ?? $a['title'] ?? '')) ?>" width="400" height="170" loading="lazy" decoding="async">
+              <img class="journal-card-media" src="<?= e(img_fit((string) $a['img'], 400)) ?>" alt="<?= e((string) ($a['image_alt'] ?? $a['title'] ?? '')) ?>" width="400" height="170" loading="lazy" decoding="async">
             <?php endif; ?>
             <div class="journal-kicker"><?= e((string) $a['cat']) ?> · <?= e((string) $a['read']) ?></div>
             <strong><?= e((string) $a['title']) ?></strong>
@@ -159,6 +159,17 @@ if ($pages > 1) {
           <span class="is-off" aria-disabled="true">Suivant</span>
         <?php endif; ?>
       </nav>
+    <?php endif; ?>
+
+    <?php if (!empty($journalIndex) && !$journalFiltered && $page === 1): ?>
+      <section class="me-geo">
+        <h2>Tous les articles</h2>
+        <div class="me-geo-links">
+          <?php foreach ($journalIndex as $item): ?>
+            <a href="<?= e(url((string) $item['href'])) ?>"><?= e((string) $item['title']) ?></a>
+          <?php endforeach; ?>
+        </div>
+      </section>
     <?php endif; ?>
   <?php endif; ?>
 </div>

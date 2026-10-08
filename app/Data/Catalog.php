@@ -1423,13 +1423,23 @@ final class Catalog
     /** @return list<array<string, mixed>> */
     public static function providers(): array
     {
+        static $cache = null;
+        if ($cache !== null) {
+            return $cache;
+        }
+
         $out = [];
         try {
-            foreach (Profile::searchPublished() as $profile) {
+            $profiles = Profile::searchPublished();
+            $reviewStats = Review::statsForUsers(array_map(
+                static fn (array $profile): int => (int) ($profile['user_id'] ?? 0),
+                $profiles
+            ));
+            foreach ($profiles as $profile) {
                 $name = Profile::displayName($profile);
                 $trades = $profile['trades'] ?: [];
                 $cat = (string) ($trades[0] ?? 'Prestataire');
-                $reviews = Review::statsForUser((int) $profile['user_id']);
+                $reviews = $reviewStats[(int) ($profile['user_id'] ?? 0)] ?? ['avg' => '', 'count' => 0];
                 $location = $profile['location_label'] ?? Profile::locationLabel($profile);
                 $out[] = [
                     'kind' => 'prestataires',
@@ -1444,7 +1454,7 @@ final class Catalog
                     'hourly_rate' => (string) ($profile['hourly_rate'] ?? ''),
                     'thumb' => '',
                     'initials' => Profile::initials($profile),
-                    'avatar_src' => user_avatar_src($profile),
+                    'avatar_src' => img_fit(user_avatar_src($profile), 40),
                     'excerpt' => (string) ($profile['presentation'] ?? ''),
                     'city' => (string) ($profile['city'] ?? ''),
                     'city_slug' => (string) ($profile['city_slug'] ?? ''),
@@ -1464,7 +1474,9 @@ final class Catalog
         } catch (\Throwable) {
         }
 
-        return $out;
+        $cache = $out;
+
+        return $cache;
     }
 
     /** @return list<array<string, mixed>> */
@@ -1541,7 +1553,7 @@ final class Catalog
                     'cat' => $cat !== '' ? $cat : 'Prestataire',
                     'meta' => implode(' · ', array_slice($tags, 0, 4)),
                     'initials' => Profile::initials($profile),
-                    'avatar_src' => user_avatar_src($profile),
+                    'avatar_src' => img_fit(user_avatar_src($profile), 36),
                     'availability_label' => Profile::statusLabel($profile),
                     'is_busy' => ($profile['availability_status'] ?? '') === Profile::STATUS_BUSY,
                 ];
@@ -2034,6 +2046,29 @@ final class Catalog
     }
 
     /**
+     * Profils allégés pour les puces de l'accueil : pas de note, pas de texte long.
+     *
+     * @return list<array<string, mixed>>
+     */
+    private static function homeQuickProfiles(): array
+    {
+        $items = [];
+        try {
+            foreach (Profile::searchPublished() as $profile) {
+                $trades = $profile['trades'] ?: [];
+                $items[] = [
+                    'cat' => (string) ($trades[0] ?? ''),
+                    'trades' => $trades,
+                    'genres' => $profile['genres'] ?? [],
+                ];
+            }
+        } catch (\Throwable) {
+        }
+
+        return $items;
+    }
+
+    /**
      * Suggestions d'accueil : requêtes qui correspondent au catalogue en ligne.
      *
      * @return list<string>
@@ -2060,7 +2095,7 @@ final class Catalog
             }
         };
 
-        $items = array_merge(self::services(), self::providers(), self::missions());
+        $items = array_merge(self::services(), self::homeQuickProfiles(), self::missions());
         if ($items === []) {
             return [];
         }

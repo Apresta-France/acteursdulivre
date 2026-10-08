@@ -947,7 +947,7 @@
     var src = item.avatar_src || '';
     var initials = String(item.initials || item.title || 'AD').slice(0, 2).toUpperCase();
     if (src) {
-      return '<img class="avatar avatar-photo search-card-avatar" src="' + escapeHtml(src) + '" alt="" width="' + size + '" height="' + size + '">';
+      return '<img class="avatar avatar-photo search-card-avatar" src="' + escapeHtml(src) + '" alt="" width="' + size + '" height="' + size + '" loading="lazy" decoding="async">';
     }
     var bg = ((initials.charCodeAt(0) || 65) * 7) % 2 === 0 ? '#15212f' : '#D85D3F';
     return '<span class="avatar search-card-avatar" style="width:' + size + 'px;height:' + size + 'px;min-width:' + size + 'px;border-radius:50%;background:' + bg + ';color:#FFF;display:flex;align-items:center;justify-content:center;font-family:\'Space Grotesk\',monospace;font-size:13px;">' + escapeHtml(initials) + '</span>';

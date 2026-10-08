@@ -282,7 +282,7 @@ foreach (Publisher::SORTS as $key => $label) {
                   <a class="me-row<?= !empty($p['is_claimed']) ? ' is-claimed' : '' ?>" href="<?= e(url((string) $p['href'])) ?>">
                     <div class="me-card-logo">
                       <?php if ($p['logo_src'] !== ''): ?>
-                        <img src="<?= e($p['logo_src']) ?>" alt="" width="48" height="48" loading="lazy" decoding="async">
+                        <img src="<?= e(img_fit((string) $p['logo_src'], 48)) ?>" alt="" width="48" height="48" loading="lazy" decoding="async">
                       <?php else: ?>
                         <span class="me-mono" aria-hidden="true"><?= e($p['initials']) ?></span>
                       <?php endif; ?>
@@ -340,6 +340,17 @@ foreach (Publisher::SORTS as $key => $label) {
             <?php endforeach; ?>
           </div>
         </section>
+      <?php endif; ?>
+
+      <?php if ($scope === 'all' && (int) $pager['page'] === 1 && $active === [] && $sort === 'az' && !empty($directoryLinks)): ?>
+        <details class="me-geo">
+          <summary>Index des maisons d'édition (<?= count($directoryLinks) ?>)</summary>
+          <div class="me-geo-links">
+            <?php foreach ($directoryLinks as $item): ?>
+              <a href="<?= e(url((string) $item['href'])) ?>"><?= e((string) $item['name']) ?></a>
+            <?php endforeach; ?>
+          </div>
+        </details>
       <?php endif; ?>
 
       <?php if ($scope === 'all' && (int) $pager['page'] === 1 && $active === [] && $sort === 'az'): ?>

@@ -149,7 +149,7 @@ $souscriptions = $souscriptions ?? [];
               <a class="co-me-row" href="<?= e(url((string) ($p['href'] ?? '/maisons-edition'))) ?>">
                 <span class="co-me-logo">
                   <?php if (!empty($p['logo_src'])): ?>
-                    <img src="<?= e((string) $p['logo_src']) ?>" alt="" width="44" height="44" loading="lazy" decoding="async">
+                    <img src="<?= e(img_fit((string) $p['logo_src'], 44)) ?>" alt="" width="44" height="44" loading="lazy" decoding="async">
                   <?php else: ?>
                     <span class="me-mono" aria-hidden="true"><?= e((string) ($p['initials'] ?? '')) ?></span>
                   <?php endif; ?>

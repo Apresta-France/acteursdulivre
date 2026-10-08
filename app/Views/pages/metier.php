@@ -241,6 +241,9 @@ if ($cityPage) {
         <p class="mk-kicker">Préparer le brief</p>
         <h2>Bien lancer une mission</h2>
         <p><?= e($briefHint !== '' ? $briefHint : 'Attentes, contraintes, calendrier…') ?></p>
+        <?php if (!empty($tradeLanding['href'])): ?>
+          <p><a href="<?= e(url((string) $tradeLanding['href'])) ?>"><?= e((string) ($tradeLanding['label'] ?? 'Voir le guide')) ?></a></p>
+        <?php endif; ?>
       </div>
       <ul class="metier-tips">
         <?php if (is_array($volumeHint) && ($volumeHint['label'] ?? '') !== ''): ?>

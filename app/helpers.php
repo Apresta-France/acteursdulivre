@@ -321,7 +321,7 @@ function avatar_html(?array $person, int $size = 34, string $class = 'avatar'): 
         $initials = \Adl\Models\User::initials($person ?? []);
     }
     if ($src !== '') {
-        return '<img class="' . e(trim($class . ' avatar-photo')) . '" src="' . e($src) . '" alt="" width="' . $size . '" height="' . $size . '">';
+        return '<img class="' . e(trim($class . ' avatar-photo')) . '" src="' . e(img_fit($src, $size)) . '" alt="" width="' . $size . '" height="' . $size . '" loading="lazy" decoding="async">';
     }
     return '<span class="' . e($class) . '" style="' . e(avatar_style($initials, $size)) . '">' . e($initials) . '</span>';
 }
@@ -423,7 +423,7 @@ function search_card_media(array $item): string
 {
     if (!empty($item['thumb'])) {
         $alt = trim((string) ($item['title'] ?? $item['name'] ?? ''));
-        return '<img class="search-card-media" src="' . e((string) $item['thumb']) . '" alt="' . e($alt) . '" width="400" height="140" loading="lazy" decoding="async">';
+        return '<img class="search-card-media" src="' . e(img_fit((string) $item['thumb'], 400)) . '" alt="' . e($alt) . '" width="400" height="140" loading="lazy" decoding="async">';
     }
     if (($item['kind'] ?? '') === 'prestations') {
         return service_cover_html((string) ($item['cat'] ?? ''), 'search-card-media');
@@ -570,6 +570,12 @@ function unique_slug(string $base, callable $taken): string
 function uploaded(string $path): string
 {
     return url('public/uploads/' . ltrim($path, '/'));
+}
+
+/** Variante WebP à la largeur d'affichage. Les URL externes sont laissées telles quelles. */
+function img_fit(string $url, int $cssWidth): string
+{
+    return \Adl\Core\ImageFit::url($url, $cssWidth);
 }
 
 function article_image_url(string $path): string

@@ -35,8 +35,8 @@ $fmt = static fn (float $n, int $d = 1): string => \Adl\Data\Tools::formatNumber
       <span aria-hidden="true"> · </span>
       <span>Dos et couverture</span>
     </nav>
-    <h1>Calculateur de dos et couverture</h1>
-    <p class="forum-lead">Format, pagination, papier. Vous obtenez la largeur de dos, les fonds perdus et la taille du PDF. L’imprimeur confirme sur la rame réelle.</p>
+    <h1>Calcul du dos d'un livre</h1>
+    <p class="forum-lead">Carré collé, broché ou relié : indiquez le format, la pagination et le papier. Vous obtenez la largeur de dos, les fonds perdus et la taille du PDF. L’imprimeur confirme sur la rame réelle.</p>
   </section>
 
   <div class="tool-layout">

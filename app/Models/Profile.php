@@ -620,6 +620,11 @@ final class Profile
     /** @return list<array<string, mixed>> */
     public static function searchPublished(): array
     {
+        static $cache = null;
+        if ($cache !== null) {
+            return $cache;
+        }
+
         $rows = Database::fetchAll(
             'SELECT p.*, u.first_name, u.last_name, u.avatar_url, u.founder, u.platform_cofounder,
                     u.created_at AS member_since
@@ -627,7 +632,9 @@ final class Profile
              ORDER BY p.updated_at DESC, p.id DESC'
         );
 
-        return array_map([self::class, 'hydrate'], $rows);
+        $cache = array_map([self::class, 'hydrate'], $rows);
+
+        return $cache;
     }
 
     /** Même périmètre que l’annuaire : compte actif, vitrine renseignée, pas de facture échue. */

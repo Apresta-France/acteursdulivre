@@ -113,6 +113,11 @@ final class Service
     /** @return list<array<string, mixed>> */
     public static function published(): array
     {
+        static $cache = null;
+        if ($cache !== null) {
+            return $cache;
+        }
+
         $rows = Database::fetchAll(
             'SELECT ' . self::sellerSelect() . '
              FROM services s
@@ -129,7 +134,9 @@ final class Service
                )
              ORDER BY s.created_at DESC'
         );
-        return array_map([self::class, 'present'], $rows);
+        $cache = self::presentList($rows);
+
+        return $cache;
     }
 
     /** @return list<array<string, mixed>> */
@@ -142,7 +149,7 @@ final class Service
              LEFT JOIN profiles p ON p.user_id = u.id
              ORDER BY s.created_at DESC'
         );
-        return array_map([self::class, 'present'], $rows);
+        return self::presentList($rows);
     }
 
     /** @return list<array<string, mixed>> */
@@ -157,7 +164,62 @@ final class Service
              ORDER BY s.created_at DESC',
             [$userId]
         );
-        return array_map([self::class, 'present'], $rows);
+        return self::presentList($rows);
+    }
+
+    /**
+     * @param list<array<string, mixed>> $rows
+     * @return list<array<string, mixed>>
+     */
+    private static function presentList(array $rows): array
+    {
+        if ($rows === []) {
+            return [];
+        }
+        $ids = [];
+        $userIds = [];
+        foreach ($rows as $row) {
+            $ids[] = (int) ($row['id'] ?? 0);
+            $userIds[] = (int) ($row['user_id'] ?? 0);
+        }
+        $bag = [
+            'reviews' => Review::statsForUsers($userIds),
+            'packages' => self::rowsByService('service_packages', $ids, 'id ASC'),
+            'options' => self::rowsByService('service_options', $ids, 'id ASC'),
+            'images' => self::rowsByService('service_images', $ids, 'sort_order ASC, id ASC'),
+        ];
+
+        return array_map(static fn (array $row): array => self::present($row, $bag), $rows);
+    }
+
+    /**
+     * @param list<int> $ids
+     * @return array<int, list<array<string, mixed>>>
+     */
+    private static function rowsByService(string $table, array $ids, string $order): array
+    {
+        if (!in_array($table, ['service_packages', 'service_options', 'service_images'], true)) {
+            return [];
+        }
+        $ids = array_values(array_unique(array_filter(array_map('intval', $ids))));
+        if ($ids === []) {
+            return [];
+        }
+        $placeholders = implode(',', array_fill(0, count($ids), '?'));
+        try {
+            $rows = Database::fetchAll(
+                'SELECT * FROM ' . $table . ' WHERE service_id IN (' . $placeholders . ') ORDER BY ' . $order,
+                $ids
+            );
+        } catch (\Throwable) {
+            return [];
+        }
+        $grouped = [];
+        foreach ($rows as $row) {
+            $grouped[(int) ($row['service_id'] ?? 0)][] = $row;
+        }
+
+        return $grouped;
     }
 
     private static function sellerSelect(): string
@@ -647,14 +709,47 @@ final class Service
         return $picked;
     }
 
-    /** @param array<string, mixed> $row */
-    private static function present(array $row): array
+    /**
+     * @param array<string, mixed> $row
+     * @param array{
+     *   reviews: array<int, array{avg: string, count: int}>,
+     *   packages: array<int, list<array<string, mixed>>>,
+     *   options: array<int, list<array<string, mixed>>>,
+     *   images: array<int, list<array<string, mixed>>>
+     * }|null $bag
+     */
+    private static function present(array $row, ?array $bag = null): array
     {
-        $reviews = Review::statsForUser((int) $row['user_id']);
-        $packages = Database::fetchAll(
-            'SELECT * FROM service_packages WHERE service_id = ? ORDER BY id ASC',
-            [(int) $row['id']]
-        );
+        $serviceId = (int) ($row['id'] ?? 0);
+        $userId = (int) ($row['user_id'] ?? 0);
+        if ($bag !== null) {
+            $reviews = $bag['reviews'][$userId] ?? ['avg' => '', 'count' => 0];
+            $packages = $bag['packages'][$serviceId] ?? [];
+            $options = $bag['options'][$serviceId] ?? [];
+            $extraImages = $bag['images'][$serviceId] ?? [];
+        } else {
+            $reviews = Review::statsForUser($userId);
+            $packages = Database::fetchAll(
+                'SELECT * FROM service_packages WHERE service_id = ? ORDER BY id ASC',
+                [$serviceId]
+            );
+            $options = [];
+            try {
+                $options = Database::fetchAll(
+                    'SELECT * FROM service_options WHERE service_id = ? ORDER BY id ASC',
+                    [$serviceId]
+                );
+            } catch (\Throwable) {
+            }
+            $extraImages = [];
+            try {
+                $extraImages = Database::fetchAll(
+                    'SELECT image_path FROM service_images WHERE service_id = ? ORDER BY sort_order ASC, id ASC',
+                    [$serviceId]
+                );
+            } catch (\Throwable) {
+            }
+        }
         foreach ($packages as &$package) {
             $package['price_label'] = format_euros_ttc((int) ($package['price'] ?? 0));
         }
@@ -666,14 +761,6 @@ final class Service
             $row['price_from'] = $listedFromPackages;
         }
 
-        $options = [];
-        try {
-            $options = Database::fetchAll(
-                'SELECT * FROM service_options WHERE service_id = ? ORDER BY id ASC',
-                [(int) $row['id']]
-            );
-        } catch (\Throwable) {
-        }
         foreach ($options as &$option) {
             $option['price_label'] = format_euros_ttc((int) ($option['price'] ?? 0));
         }
@@ -695,17 +782,11 @@ final class Service
         if ($imagePath !== '') {
             $imagePaths[] = $imagePath;
         }
-        try {
-            foreach (Database::fetchAll(
-                'SELECT image_path FROM service_images WHERE service_id = ? ORDER BY sort_order ASC, id ASC',
-                [(int) $row['id']]
-            ) as $extra) {
-                $path = trim((string) ($extra['image_path'] ?? ''));
-                if ($path !== '' && !in_array($path, $imagePaths, true)) {
-                    $imagePaths[] = $path;
-                }
+        foreach ($extraImages as $extra) {
+            $path = trim((string) ($extra['image_path'] ?? ''));
+            if ($path !== '' && !in_array($path, $imagePaths, true)) {
+                $imagePaths[] = $path;
             }
-        } catch (\Throwable) {
         }
         $row['image_paths'] = $imagePaths;
         $row['images'] = array_map(static fn (string $path): string => uploaded($path), $imagePaths);
@@ -730,7 +811,7 @@ final class Service
         $row['city_area_slug'] = $cityArea;
         $row['subtitle'] = $row['by'] . ($city !== '' ? ' · ' . $city : '');
         $row['meta'] = trim(($row['delay'] ?? '') . ($reviews['avg'] !== '' ? ' · ★ ' . $reviews['avg'] : ''));
-        $row['thumb'] = $row['has_image'] ? $row['img'] : '';
+        $row['thumb'] = $row['has_image'] ? img_fit((string) $row['img'], 400) : '';
         $row['cover'] = $row['has_image'] ? '' : $row['img'];
         $row['search'] = $row['cat'] . ' ' . $row['specialty'] . ' ' . $row['title'] . ' ' . $row['by'] . ' ' . $city . ' ' . plain_text((string) ($row['excerpt'] ?? ''));
         $row['startup_enabled'] = !empty($row['startup_enabled']);

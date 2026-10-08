@@ -1054,6 +1054,29 @@ final class Publisher
         return $row;
     }
 
+    /**
+     * Toutes les fiches publiées, pour l'index de l'annuaire (page déjà explorée).
+     *
+     * @return list<array{name: string, href: string}>
+     */
+    public static function directoryLinks(): array
+    {
+        $rows = Database::fetchAll(
+            'SELECT name, slug FROM publishers WHERE status = "published" AND slug != "" ORDER BY name ASC'
+        );
+        $out = [];
+        foreach ($rows as $row) {
+            $name = trim((string) ($row['name'] ?? ''));
+            $slug = trim((string) ($row['slug'] ?? ''));
+            if ($name === '' || $slug === '') {
+                continue;
+            }
+            $out[] = ['name' => $name, 'href' => '/maisons-edition/' . $slug];
+        }
+
+        return $out;
+    }
+
     public static function letterKey(string $name): string
     {
         $n = search_norm($name);
@@ -1099,21 +1122,36 @@ final class Publisher
      */
     public static function metaDescription(array $publisher): string
     {
-        $bits = [];
-        $bits[] = $publisher['name'] . ' : maison d\'édition ' . ($publisher['typology_key'] === 'generaliste' ? 'généraliste' : 'spécialisée');
+        $name = trim((string) ($publisher['name'] ?? ''));
+        $note = trim((string) ($publisher['submissions_note'] ?? ''));
+        $desc = trim((string) ($publisher['description'] ?? ''));
+        if ($note !== '' || $desc !== '') {
+            $bits = [];
+            if ($name !== '') {
+                $bits[] = $name . '.';
+            }
+            if ($note !== '') {
+                $bits[] = 'Manuscrits : ' . $note;
+            }
+            if ($desc !== '') {
+                $bits[] = $desc;
+            }
+
+            return \Adl\Data\Seo::clip(implode(' ', $bits), 160);
+        }
+
+        $line = $name . ' : maison d\'édition ' . (($publisher['typology_key'] ?? '') === 'generaliste' ? 'généraliste' : 'spécialisée');
         if (($publisher['location_label'] ?? '') !== '') {
-            $bits[0] .= ' à ' . $publisher['location_label'];
+            $line .= ' à ' . $publisher['location_label'];
         }
         if (($publisher['founded_year'] ?? null) !== null) {
-            $bits[0] .= ', fondée en ' . $publisher['founded_year'];
+            $line .= ', fondée en ' . $publisher['founded_year'];
         }
-        $bits[0] .= '.';
-        if ($publisher['genres'] !== []) {
+        $bits = [$line . '.'];
+        if (($publisher['genres'] ?? []) !== []) {
             $bits[] = 'Genres : ' . implode(', ', array_slice($publisher['genres'], 0, 5)) . '.';
         }
-        if (trim((string) $publisher['description']) !== '') {
-            $bits[] = (string) $publisher['description'];
-        }
+
         return \Adl\Data\Seo::clip(implode(' ', $bits), 160);
     }
 }

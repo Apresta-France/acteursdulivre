@@ -19,7 +19,7 @@ $openTo = $a['open_to_labels'] ?? [];
 $website = trim((string) ($a['website'] ?? ''));
 $wikipedia = trim((string) ($a['wikipedia_url'] ?? ''));
 $hasSide = $website !== '' || $wikipedia !== '' || $links !== [] || $openTo !== [] || !empty($a['profile_href']) || ($a['member_since_label'] ?? '') !== '';
-$heroPhoto = user_avatar_src($a);
+$heroPhoto = img_fit(user_avatar_src($a), 640);
 
 $renderWork = static function (array $w, bool $big): void {
     $images = $w['images'] ?? [];

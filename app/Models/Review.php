@@ -37,6 +37,57 @@ final class Review
         return ['avg' => $avg, 'count' => $count];
     }
 
+    /**
+     * @param list<int> $userIds
+     * @return array<int, array{avg: string, count: int}>
+     */
+    public static function statsForUsers(array $userIds): array
+    {
+        $ids = [];
+        foreach ($userIds as $userId) {
+            $userId = (int) $userId;
+            if ($userId > 0) {
+                $ids[$userId] = $userId;
+            }
+        }
+        $out = [];
+        foreach ($ids as $id) {
+            $out[$id] = ['avg' => '', 'count' => 0];
+        }
+        if ($ids === []) {
+            return $out;
+        }
+
+        $placeholders = implode(',', array_fill(0, count($ids), '?'));
+        $params = array_values($ids);
+        try {
+            $rows = Database::fetchAll(
+                'SELECT target_id, ROUND(AVG(rating), 1) AS avg_rating, COUNT(*) AS n
+                 FROM reviews
+                 WHERE hidden_at IS NULL AND target_id IN (' . $placeholders . ')
+                 GROUP BY target_id',
+                $params
+            );
+        } catch (\Throwable) {
+            $rows = Database::fetchAll(
+                'SELECT target_id, ROUND(AVG(rating), 1) AS avg_rating, COUNT(*) AS n
+                 FROM reviews
+                 WHERE target_id IN (' . $placeholders . ')
+                 GROUP BY target_id',
+                $params
+            );
+        }
+        foreach ($rows as $row) {
+            $count = (int) ($row['n'] ?? 0);
+            $out[(int) $row['target_id']] = [
+                'avg' => $count > 0 ? str_replace('.', ',', (string) $row['avg_rating']) : '',
+                'count' => $count,
+            ];
+        }
+
+        return $out;
+    }
+
     /** @return list<array<string, mixed>> */
     public static function forTarget(int $userId, int $limit = 20): array
     {

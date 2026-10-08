@@ -211,7 +211,7 @@ final class Prototype
             'homeImg1' => $heroImgs[0],
             'homeImg2' => $heroImgs[1],
             'homeImg3' => $heroImgs[2],
-            'homeStats' => Catalog::homeStats(),
+            'homeStats' => [],
             'homeMetiers' => self::homeMetiers(),
             'homeFeatured' => array_map(static function (array $x, int $i): array {
                 $x['img'] = photo($i);
@@ -221,7 +221,11 @@ final class Prototype
                 return $x;
             }, array_slice($services, 0, 3), array_keys(array_slice($services, 0, 3))),
             'homeEntry' => self::homeEntry(),
-            'missionsBandStats' => Catalog::missionsBandStats(),
+            'missionsBandStats' => [
+                ['v' => '0 €', 'k' => 'pour candidater : aucune commission sur la candidature'],
+                ['v' => '1ʳᵉ', 'k' => 'mission offerte au prestataire, sans commission'],
+                ['v' => '8 %', 'k' => 'dès la 2ᵉ mission réalisée, sur le hors-taxe, sans abonnement'],
+            ],
             'homeMissionFilters' => self::chips(['Toutes', 'Correction', 'Illustration', 'Traduction', 'Impression', 'Presse & com'], 0, true),
             'homeMissions' => self::homeMissions(),
             'homeTemoins' => [],
@@ -279,96 +283,112 @@ final class Prototype
             ],
         ];
 
-        return array_merge($base, self::extra(), self::liveOverlay());
+        return array_merge($base, self::extra(), self::liveOverlay($screen));
     }
 
     /** @return array<string, mixed> */
-    private static function liveOverlay(): array
+    private static function liveOverlay(string $screen): array
     {
+        $blank = [
+            'notifications' => [],
+            'mesPrestations' => [],
+            'mesMissions' => [],
+            'mesCandidatures' => [],
+            'favoris' => [],
+            'commandes' => [],
+            'threads' => [],
+            'messages' => [],
+            'demandes' => [],
+            'enCours' => [],
+            'kpis' => [],
+            'operations' => [],
+            'suggestions' => [],
+            'services' => [],
+            'missionsList' => [],
+            'journalAll' => [],
+        ];
         try {
-            $stats = Catalog::homeStats();
-            $homeRails = Catalog::homeServiceRails(3, 3);
-            $featured = $homeRails['featured'];
-            $entry = $homeRails['entry'];
-            $pros = Profile::countPublished();
-            $services = Service::countPublished();
-            $openMissions = Mission::countOpen();
-            $commission = \Adl\Models\Setting::get('commission_percent', '8') ?: '8';
-            $journal = Catalog::journalPreview(3);
-            $homeForum = Catalog::homeForum(3);
-            $journalAll = \Adl\Models\Article::published();
-            foreach ($journalAll as &$article) {
-                $article['go'] = true;
-            }
-            unset($article);
-
-            return [
-                'homeQuick' => Catalog::homeQuick(),
-                'homeStats' => $stats,
-                'homeMetiers' => Catalog::tradeCards(),
-                'homeFeatured' => $featured,
-                'homeEntry' => $entry,
-                'homeMissions' => Catalog::homeMissions(5),
-                'homeTemoins' => Catalog::homeReviews(3),
-                'homeProviders' => Catalog::homeProviders(18),
-                'equipe' => Catalog::equipe(),
-                'missionsBandStats' => Catalog::missionsBandStats(),
-                'journal' => $journal,
-                'homeForum' => $homeForum,
-                'journalAll' => $journalAll,
-                'services' => Catalog::services(),
-                'missionsList' => Catalog::missions(),
-                'notifications' => [],
-                'mesPrestations' => [],
-                'mesMissions' => [],
-                'mesCandidatures' => [],
-                'favoris' => [],
-                'commandes' => [],
-                'threads' => [],
-                'messages' => [],
-                'demandes' => [],
-                'enCours' => [],
-                'kpis' => [],
-                'operations' => [],
-                'suggestions' => Catalog::suggestionsForTrade('Correction'),
-                'openMissionsLabel' => format_int($openMissions) . ' recherche' . ($openMissions > 1 ? 's' : '') . ' ouverte' . ($openMissions > 1 ? 's' : ''),
-                'openMissionsCta' => $openMissions > 0 ? 'Voir les recherches' : 'Voir les appels d\'offres',
-                'inscriptionProof' => [
-                    ['v' => format_int($pros), 'k' => $pros > 1 ? 'professionnels du livre en ligne' : 'professionnel du livre en ligne'],
-                    ['v' => format_int($openMissions), 'k' => 'recherches ouvertes'],
-                    ['v' => $commission . ' %', 'k' => 'dès la 2ᵉ mission, sans abonnement'],
+            $live = match ($screen) {
+                'accueil' => \Adl\Core\FileCache::remember('overlay-home', 90, static fn (): array => self::homeOverlay()),
+                'apropos' => [
+                    'homeStats' => Catalog::homeStats(),
+                    'equipe' => Catalog::equipe(),
                 ],
-                'ways' => [
-                    ['kicker' => 'Annuaire', 'title' => 'Chercher un profil', 'body' => 'Filtrez par métier, spécialité, ville et tarif, puis engagez la discussion.', 'points' => [format_int($pros) . ' profil' . ($pros > 1 ? 's' : ''), 'Avis après mission réelle', 'Messagerie intégrée'], 'cta' => 'Parcourir l\'annuaire', 'href' => '/recherche'],
-                    ['kicker' => 'Prestations', 'title' => 'Acheter une prestation', 'body' => 'Des offres packagées à prix, délai et périmètre affichés. Vous ouvrez un suivi à jalons : le règlement se fait hors plateforme.', 'points' => [format_int($services) . ' prestation' . ($services > 1 ? 's' : ''), 'Options à la carte', 'Devis, jalons et facture'], 'cta' => 'Voir les prestations', 'href' => '/prestations'],
-                    ['kicker' => 'Recherche', 'title' => 'Publier une recherche', 'body' => 'Décrivez le besoin et le budget : les prestataires qualifiés vous envoient leur devis.', 'points' => [format_int($openMissions) . ' recherches ouvertes', 'Gratuit pour tous', '1ʳᵉ mission offerte, puis 8 %'], 'cta' => 'Publier une recherche', 'href' => '/espace/publier'],
-                ],
-            ];
+                'comment' => ['ways' => self::waysOverlay()],
+                'communaute' => ['homeForum' => Catalog::homeForum(3)],
+                default => [],
+            };
         } catch (\Throwable) {
-            return [
-                'homeFeatured' => [],
-                'homeEntry' => [],
-                'homeMissions' => [],
-                'homeProviders' => [],
-                'homeStats' => [],
-                'homeMetiers' => [],
-                'journal' => [],
-                'homeForum' => [],
-                'journalAll' => [],
-                'services' => [],
-                'missionsList' => [],
-                'notifications' => [],
-                'mesPrestations' => [],
-                'mesMissions' => [],
-                'mesCandidatures' => [],
-                'favoris' => [],
-                'commandes' => [],
-                'threads' => [],
-                'messages' => [],
-                'demandes' => [],
-                'enCours' => [],
-            ];
+            $live = [];
         }
+
+        return array_merge($blank, $live);
+    }
+
+    /** @return array<string, mixed> */
+    private static function homeOverlay(): array
+    {
+        $stats = Catalog::homeStats();
+        $homeRails = Catalog::homeServiceRails(3, 3);
+        $counts = self::platformCounts();
+
+        return [
+            'homeQuick' => Catalog::homeQuick(),
+            'homeStats' => $stats,
+            'homeMetiers' => Catalog::tradeCards(),
+            'homeFeatured' => $homeRails['featured'],
+            'homeEntry' => $homeRails['entry'],
+            'homeMissions' => Catalog::homeMissions(5),
+            'homeTemoins' => Catalog::homeReviews(3),
+            'homeProviders' => Catalog::homeProviders(18),
+            'equipe' => Catalog::equipe(),
+            'missionsBandStats' => Catalog::missionsBandStats(),
+            'journal' => Catalog::journalPreview(3),
+            'homeForum' => Catalog::homeForum(3),
+            'openMissionsLabel' => $counts['openLabel'],
+            'openMissionsCta' => $counts['openCta'],
+            'inscriptionProof' => $counts['proof'],
+            'ways' => $counts['ways'],
+        ];
+    }
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    private static function waysOverlay(): array
+    {
+        return self::platformCounts()['ways'];
+    }
+
+    /**
+     * @return array{
+     *   ways: list<array<string, mixed>>,
+     *   proof: list<array{v: string, k: string}>,
+     *   openLabel: string,
+     *   openCta: string
+     * }
+     */
+    private static function platformCounts(): array
+    {
+        $pros = Profile::countPublished();
+        $services = Service::countPublished();
+        $openMissions = Mission::countOpen();
+        $commission = \Adl\Models\Setting::get('commission_percent', '8') ?: '8';
+
+        return [
+            'ways' => [
+                ['kicker' => 'Annuaire', 'title' => 'Chercher un profil', 'body' => 'Filtrez par métier, spécialité, ville et tarif, puis engagez la discussion.', 'points' => [format_int($pros) . ' profil' . ($pros > 1 ? 's' : ''), 'Avis après mission réelle', 'Messagerie intégrée'], 'cta' => 'Parcourir l\'annuaire', 'href' => '/recherche'],
+                ['kicker' => 'Prestations', 'title' => 'Acheter une prestation', 'body' => 'Des offres packagées à prix, délai et périmètre affichés. Vous ouvrez un suivi à jalons : le règlement se fait hors plateforme.', 'points' => [format_int($services) . ' prestation' . ($services > 1 ? 's' : ''), 'Options à la carte', 'Devis, jalons et facture'], 'cta' => 'Voir les prestations', 'href' => '/prestations'],
+                ['kicker' => 'Recherche', 'title' => 'Publier une recherche', 'body' => 'Décrivez le besoin et le budget : les prestataires qualifiés vous envoient leur devis.', 'points' => [format_int($openMissions) . ' recherches ouvertes', 'Gratuit pour tous', '1ʳᵉ mission offerte, puis 8 %'], 'cta' => 'Publier une recherche', 'href' => '/espace/publier'],
+            ],
+            'proof' => [
+                ['v' => format_int($pros), 'k' => $pros > 1 ? 'professionnels du livre en ligne' : 'professionnel du livre en ligne'],
+                ['v' => format_int($openMissions), 'k' => 'recherches ouvertes'],
+                ['v' => $commission . ' %', 'k' => 'dès la 2ᵉ mission, sans abonnement'],
+            ],
+            'openLabel' => format_int($openMissions) . ' recherche' . ($openMissions > 1 ? 's' : '') . ' ouverte' . ($openMissions > 1 ? 's' : ''),
+            'openCta' => $openMissions > 0 ? 'Voir les recherches' : 'Voir les appels d\'offres',
+        ];
     }
 
     private static function extra(): array
@@ -1516,10 +1536,17 @@ final class Prototype
     private static function topbarStats(): string
     {
         try {
-            $pros = User::countOfferers();
-            $commission = \Adl\Models\Setting::get('commission_percent', '8') ?: '8';
-            $label = $pros > 1 ? 'professionnels du livre' : 'professionnel du livre';
-            return '1ʳᵉ mission offerte · puis ' . $commission . ' % · ' . format_int($pros) . ' ' . $label;
+            return (string) \Adl\Core\FileCache::remember('topbar-stats', 120, static function (): string {
+                try {
+                    $pros = User::countOfferers();
+                    $commission = \Adl\Models\Setting::get('commission_percent', '8') ?: '8';
+                    $label = $pros > 1 ? 'professionnels du livre' : 'professionnel du livre';
+
+                    return '1ʳᵉ mission offerte · puis ' . $commission . ' % · ' . format_int($pros) . ' ' . $label;
+                } catch (\Throwable) {
+                    return '1ʳᵉ mission offerte · puis 8 % · sans abonnement';
+                }
+            });
         } catch (\Throwable) {
             return '1ʳᵉ mission offerte · puis 8 % · sans abonnement';
         }

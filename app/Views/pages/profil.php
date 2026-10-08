@@ -50,7 +50,7 @@ if ($hasAvis) {
 if ($showActivity) {
     $profileTabs[] = ['id' => 'activite', 'label' => 'Activité'];
 }
-$heroPhoto = user_avatar_src($p);
+$heroPhoto = img_fit(user_avatar_src($p), 640);
 ?>
 <div class="profile-page">
   <nav class="search-crumb" aria-label="Fil d'Ariane">
@@ -284,7 +284,7 @@ $heroPhoto = user_avatar_src($p);
                   aria-label="<?= e('Agrandir : ' . ($itemTitle !== '' ? $itemTitle : 'exemple')) ?>"
                 >
                   <img
-                    src="<?= e((string) $item['img']) ?>"
+                    src="<?= e(img_fit((string) $item['img'], 480)) ?>"
                     alt="<?= e($itemTitle !== '' ? $itemTitle : 'Exemple') ?>"
                     width="480"
                     height="640"

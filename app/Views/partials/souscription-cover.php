@@ -11,7 +11,7 @@ $title = (string) ($item['title'] ?? '');
 ?>
 <?php if ($photo !== ''): ?>
   <span class="<?= e($coverClass) ?> sub-cover-photo">
-    <img src="<?= e(uploaded($photo)) ?>" alt="<?= e($title !== '' ? 'Couverture de ' . $title : 'Couverture') ?>">
+    <img src="<?= e(img_fit(uploaded($photo), $large ? 480 : 240)) ?>" alt="<?= e($title !== '' ? 'Couverture de ' . $title : 'Couverture') ?>" loading="lazy" decoding="async">
   </span>
 <?php else: ?>
   <span class="<?= e($coverClass) ?>" style="--sub-ink: <?= e($ink) ?>; --sub-paper: <?= e($paper) ?>; --sub-rule: <?= e($rule) ?>" aria-hidden="true">

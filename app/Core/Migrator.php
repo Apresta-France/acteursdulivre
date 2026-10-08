@@ -10,6 +10,12 @@ final class Migrator
 {
     public static function migrate(?PDO $pdo = null): array
     {
+        $token = self::migrationsToken();
+        $stamp = ADL_ROOT . '/storage/cache/migrations.stamp';
+        if (is_file($stamp) && trim((string) file_get_contents($stamp)) === $token) {
+            return [];
+        }
+
         $pdo ??= Database::pdo();
         self::ensureTable($pdo);
 
@@ -33,7 +39,24 @@ final class Migrator
 
         self::forgetRenamed($pdo);
 
+        $dir = dirname($stamp);
+        if (!is_dir($dir) && !mkdir($dir, 0775, true) && !is_dir($dir)) {
+            return $applied;
+        }
+        @file_put_contents($stamp, $token, LOCK_EX);
+
         return $applied;
+    }
+
+    /** Empreinte des fichiers de migration : évite une lecture SQL à chaque page. */
+    private static function migrationsToken(): string
+    {
+        $parts = [];
+        foreach (self::files() as $file) {
+            $parts[] = basename($file) . ':' . (string) filemtime($file);
+        }
+
+        return sha1(implode('|', $parts));
     }
 
     /**

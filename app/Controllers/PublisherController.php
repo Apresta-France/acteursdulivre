@@ -31,7 +31,7 @@ final class PublisherController
         $seo = Seo::catalog()['maisons-edition'];
         $total = $this->safeCount();
         $this->renderListing($request, $filters, [
-            'heading' => 'Maisons d\'édition en France et en Europe',
+            'heading' => 'Annuaire des maisons d\'édition en France et en Europe',
             'heading_count' => $total,
             'lead' => 'Plus de ' . format_int(max(0, (int) floor($total / 50) * 50)) . ' éditeurs recensés dans ' . count(Publisher::countries()) . ' pays : grands groupes, indépendants, micro-structures, généralistes et spécialisés. Cherchez par nom, pays, ville ou genre éditorial ; connectez-vous pour consulter les coordonnées et prendre contact.',
             'title' => $seo['title'],
@@ -83,12 +83,18 @@ final class PublisherController
         $filters = $this->filters($request);
         $filters['country'] = $country['slug'];
         $label = self::countryPhrase($country['name']);
+        $lead = format_int($country['n']) . ' ' . ($country['n'] > 1 ? 'éditeurs recensés' : 'éditeur recensé') . ' ' . $label . ' : littérature, jeunesse, BD, essais, poésie, universitaire… Filtrez par ville, genre ou taille de structure, puis connectez-vous pour joindre la maison.';
+        $description = 'Annuaire des ' . format_int($country['n']) . ' maisons d\'édition ' . $label . ' recensées sur acteursdulivre.fr : ligne éditoriale, genres, taille, ville. Coordonnées réservées aux membres.';
+        if ($country['slug'] === 'royaume-uni') {
+            $lead .= ' Maisons d\'édition anglaises, écossaises, galloises et d\'Irlande du Nord.';
+            $description = 'Annuaire des maisons d\'édition anglaises et britanniques au Royaume-Uni : ligne éditoriale, genres, taille et ville. Coordonnées réservées aux membres.';
+        }
         $this->renderListing($request, $filters, [
             'heading' => 'Maisons d\'édition ' . $label,
             'heading_count' => $country['n'],
-            'lead' => format_int($country['n']) . ' ' . ($country['n'] > 1 ? 'éditeurs recensés' : 'éditeur recensé') . ' ' . $label . ' : littérature, jeunesse, BD, essais, poésie, universitaire… Filtrez par ville, genre ou taille de structure, puis connectez-vous pour joindre la maison.',
+            'lead' => $lead,
             'title' => 'Maisons d\'édition ' . $label . ' : annuaire des éditeurs',
-            'description' => 'Annuaire des ' . format_int($country['n']) . ' maisons d\'édition ' . $label . ' recensées sur acteursdulivre.fr : ligne éditoriale, genres, taille, ville. Coordonnées réservées aux membres.',
+            'description' => $description,
             'path' => $country['href'],
             'crumbs' => [
                 ['name' => 'Communauté', 'url' => '/communaute'],
@@ -115,8 +121,8 @@ final class PublisherController
             'heading' => 'Maisons d\'édition à ' . $city['name'],
             'heading_count' => $city['n'],
             'lead' => format_int($city['n']) . ' ' . ($city['n'] > 1 ? 'éditeurs installés' : 'éditeur installé') . ' à ' . $city['name'] . ' (' . $country['name'] . '). Ligne éditoriale, genres publiés et taille de chaque maison ; les coordonnées sont réservées aux membres connectés.',
-            'title' => 'Maisons d\'édition à ' . $city['name'] . ' (' . $country['name'] . ')',
-            'description' => 'Les ' . format_int($city['n']) . ' maisons d\'édition de ' . $city['name'] . ', ' . $country['name'] . ' : présentation, genres, taille et groupe. Prenez contact avec un compte acteursdulivre.fr.',
+            'title' => 'Maisons d\'édition à ' . $city['name'] . ($country['slug'] === 'france' ? '' : ' (' . $country['name'] . ')'),
+            'description' => 'Annuaire des ' . format_int($city['n']) . ' maisons d\'édition à ' . $city['name'] . ', ' . $country['name'] . ' : présentation, genres, taille et groupe. Prenez contact avec un compte acteursdulivre.fr.',
             'path' => $city['href'],
             'crumbs' => [
                 ['name' => 'Communauté', 'url' => '/communaute'],
@@ -159,7 +165,10 @@ final class PublisherController
         }
 
         $description = Publisher::metaDescription($publisher);
-        $title = $publisher['name'] . ' — maison d\'édition' . ($publisher['location_label'] !== '' ? ' à ' . $publisher['location_label'] : '');
+        $title = $publisher['name'] . ' — '
+            . (trim((string) ($publisher['submissions_note'] ?? '')) !== '' ? 'manuscrits, ' : '')
+            . 'maison d\'édition'
+            . ($publisher['location_label'] !== '' ? ' à ' . $publisher['location_label'] : '');
         $crumbs = [
             ['name' => Seo::BRAND, 'url' => '/'],
             ['name' => 'Communauté', 'url' => '/communaute'],
@@ -564,6 +573,14 @@ final class PublisherController
             ];
         }
 
+        $directoryLinks = [];
+        if (($ctx['scope'] ?? '') === 'all' && $pageNum === 1 && !$isFiltered) {
+            try {
+                $directoryLinks = Publisher::directoryLinks();
+            } catch (\Throwable) {
+            }
+        }
+
         $meta = Seo::build(
             (string) $ctx['title'] . ($pageNum > 1 ? ' — page ' . $pageNum : ''),
             (string) $ctx['description'],
@@ -591,6 +608,7 @@ final class PublisherController
             'typologies' => Publisher::TYPOLOGIES,
             'meta' => $meta,
             'query' => (string) ($filters['q'] ?? ''),
+            'directoryLinks' => $directoryLinks,
             'breadcrumbs' => $ctx['crumbs'],
         ]));
     }

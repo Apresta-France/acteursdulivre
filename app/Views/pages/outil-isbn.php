@@ -29,7 +29,7 @@ $checkOk = $result['check_ok'] ?? null;
       <span aria-hidden="true"> · </span>
       <span>ISBN et EAN</span>
     </nav>
-    <h1>Validateur ISBN et EAN</h1>
+    <h1>Vérifier un ISBN et un code-barres EAN</h1>
     <p class="forum-lead">Collez un ISBN-10 ou ISBN-13. Vous voyez la clé, la structure, la conversion et le code-barres de la 4e. L’AFNIL attribue les numéros ; nous ne faisons que contrôler.</p>
   </section>
 

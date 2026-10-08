@@ -301,8 +301,8 @@ final class Spine
     {
         return [
             [
-                'q' => 'Comment se calcule la largeur de dos ?',
-                'a' => 'Dos (mm) = (nombre de pages / 2) × (grammage × volume du papier / 1 000). Le volume, ou « main », est l’épaisseur relative de la feuille. Un bouffant 80 g à volume 1,8 n’a pas le même dos qu’un offset 80 g à 1,25.',
+                'q' => 'Comment calculer le dos d\'un livre carré collé ?',
+                'a' => 'Pour un broché (dos carré collé), dos (mm) = (nombre de pages / 2) × (grammage × volume du papier / 1 000). Le volume, ou « main », est l’épaisseur relative de la feuille. Un bouffant 80 g à volume 1,8 n’a pas le même dos qu’un offset 80 g à 1,25.',
             ],
             [
                 'q' => 'Pourquoi l’imprimeur a-t-il le dernier mot ?',
