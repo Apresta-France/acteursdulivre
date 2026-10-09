@@ -356,10 +356,12 @@ final class AdminController
         if (!$thread) {
             not_found('Cette conversation est introuvable.');
         }
+        $orderId = (int) ($thread['order_id'] ?? 0);
         $this->page('echanges', 'admin/conversation', [
             'title' => (string) ($thread['subject'] ?? 'Conversation'),
             'thread' => $thread,
             'messages' => $thread['messages'] ?? [],
+            'mails' => EmailLog::forConversation((int) $id, $orderId > 0 ? $orderId : null),
         ]);
     }
 

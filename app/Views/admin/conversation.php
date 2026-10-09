@@ -4,6 +4,7 @@ $messages = $messages ?? [];
 $participants = $thread['participants'] ?? [];
 $context = $thread['context'] ?? [];
 $reports = $thread['reports'] ?? [];
+$mails = $mails ?? [];
 $messageCount = count($messages);
 $fileCount = 0;
 $lastAt = '';
@@ -31,6 +32,7 @@ $fmt = static function (?string $dt): string {
     · ouverte le <?= e($fmt($startedAt)) ?>
     · dernier message le <?= e($fmt($lastAt !== '' ? $lastAt : $startedAt)) ?>
     <?php if ($fileCount > 0): ?> · <?= e(format_int($fileCount)) ?> pièce<?= $fileCount > 1 ? 's' : '' ?> jointe<?= $fileCount > 1 ? 's' : '' ?><?php endif; ?>
+    · <?= e(format_int(count($mails))) ?> e-mail<?= count($mails) > 1 ? 's' : '' ?>
   </p>
 
   <?php if (!empty($saved)): ?><div class="flash flash-ok"><?= e(is_string($saved) ? $saved : 'Enregistré.') ?></div><?php endif; ?>
@@ -85,6 +87,33 @@ $fmt = static function (?string $dt): string {
         </article>
       <?php endforeach; ?>
     </div>
+  </div>
+
+  <div class="admin-user-card" style="margin-bottom: 22px;">
+    <h2>E-mails envoyés</h2>
+    <p class="admin-user-help">Avis de nouveau message, relance sans réponse, et les e-mails du suivi lorsque la discussion est liée à une commande.</p>
+    <?php if ($mails === []): ?>
+      <p class="admin-muted">Aucun e-mail enregistré pour cette discussion.</p>
+    <?php else: ?>
+      <ul class="admin-mail-list">
+        <?php foreach ($mails as $mail): ?>
+          <li>
+            <a class="admin-mail-row" href="<?= e(url((string) ($mail['href'] ?? ''))) ?>">
+              <time datetime="<?= e(datetime_iso((string) ($mail['created_at'] ?? ''))) ?>"><?= e($fmt((string) ($mail['created_at'] ?? ''))) ?></time>
+              <span>
+                <span class="admin-mail-who"><?= e((string) ($mail['recipient'] ?? '')) ?></span>
+                <?php if (!empty($mail['template'])): ?><span class="admin-mail-kind"><?= e((string) $mail['template']) ?></span><?php endif; ?>
+              </span>
+              <span>
+                <span class="admin-mail-subject"><?= e((string) ($mail['subject'] ?? '')) ?></span>
+                <?php if (!empty($mail['error'])): ?><span class="admin-mail-kind"><?= e((string) $mail['error']) ?></span><?php endif; ?>
+              </span>
+              <span class="admin-pill" style="<?= e(\Adl\Data\AdminCatalog::pill((string) ($mail['status_tone'] ?? 'grey'))) ?>"><?= e((string) ($mail['status_label'] ?? '')) ?></span>
+            </a>
+          </li>
+        <?php endforeach; ?>
+      </ul>
+    <?php endif; ?>
   </div>
 
   <div class="admin-thread is-full">

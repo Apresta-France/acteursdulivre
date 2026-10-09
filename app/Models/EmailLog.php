@@ -79,6 +79,57 @@ final class EmailLog
     }
 
     /**
+     * E-mails dont le lien ouvre cette discussion, et ceux du suivi si une commande y est rattachée.
+     *
+     * @return list<array<string, mixed>>
+     */
+    public static function forConversation(int $conversationId, ?int $orderId = null): array
+    {
+        if ($conversationId < 1) {
+            return [];
+        }
+
+        $parts = ['espace/messages/' . $conversationId . '([^0-9]|$)'];
+        if ($orderId !== null && $orderId > 0) {
+            $parts[] = 'espace/suivi/' . $orderId . '([^0-9]|$)';
+        }
+        $pattern = implode('|', $parts);
+
+        try {
+            $rows = Database::fetchAll(
+                'SELECT l.id, l.recipient, l.subject, l.template_slug, l.status, l.error, l.created_at,
+                        t.name AS template_name
+                 FROM email_log l
+                 LEFT JOIN email_templates t ON t.slug = l.template_slug
+                 WHERE l.body_html REGEXP ? OR IFNULL(l.body_text, \'\') REGEXP ?
+                 ORDER BY l.created_at ASC, l.id ASC',
+                [$pattern, $pattern]
+            );
+        } catch (\Throwable) {
+            return [];
+        }
+
+        return array_map(static function (array $row): array {
+            $slug = trim((string) ($row['template_slug'] ?? ''));
+            $name = trim((string) ($row['template_name'] ?? ''));
+            $status = (string) ($row['status'] ?? 'sent');
+
+            return [
+                'id' => (int) $row['id'],
+                'recipient' => (string) ($row['recipient'] ?? ''),
+                'subject' => (string) ($row['subject'] ?? ''),
+                'template' => $name !== '' ? $name : $slug,
+                'status' => $status,
+                'status_label' => self::statusLabel($status),
+                'status_tone' => self::statusTone($status),
+                'error' => trim((string) ($row['error'] ?? '')),
+                'created_at' => (string) ($row['created_at'] ?? ''),
+                'href' => '/admin/envois/' . (int) $row['id'],
+            ];
+        }, $rows);
+    }
+
+    /**
      * @return array{items: list<array<string, mixed>>, total: int, page: int, pages: int, per_page: int}
      */
     public static function search(string $q, string $source = 'tous', int $page = 1, int $perPage = self::PER_PAGE): array
