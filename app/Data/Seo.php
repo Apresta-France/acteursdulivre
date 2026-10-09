@@ -30,8 +30,8 @@ final class Seo
     {
         return [
             'accueil' => [
-                'title' => 'Acteurs du Livre — la place de marché des métiers du livre',
-                'description' => self::DEFAULT_DESC,
+                'title' => 'Trouvez un prestataire pour votre livre — Acteurs du Livre',
+                'description' => 'Trouvez un correcteur, illustrateur, traducteur ou imprimeur. Comparez des prestations à prix affichés, ou publiez un appel d\'offres. Sans IA générative.',
                 'path' => '/',
             ],
             'comment' => [
