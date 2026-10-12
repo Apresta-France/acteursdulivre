@@ -12,6 +12,9 @@ final class Database
 {
     private static ?PDO $pdo = null;
 
+    /** @var list<callable(): void> */
+    private static array $afterCommit = [];
+
     public static function pdo(): PDO
     {
         if (self::$pdo instanceof PDO) {
@@ -90,19 +93,52 @@ final class Database
             $result = $fn();
             if ($started) {
                 $pdo->commit();
+                self::flushAfterCommit();
             }
             return $result;
         } catch (\Throwable $e) {
             if ($started && $pdo->inTransaction()) {
                 $pdo->rollBack();
             }
+            if ($started) {
+                self::$afterCommit = [];
+            }
             throw $e;
         }
+    }
+
+    /**
+     * Effet de bord après validation de la transaction en cours.
+     * Exécuté tout de suite s'il n'y a pas de transaction ouverte.
+     */
+    public static function afterCommit(callable $fn): void
+    {
+        if (!self::pdo()->inTransaction()) {
+            try {
+                $fn();
+            } catch (\Throwable) {
+            }
+            return;
+        }
+        self::$afterCommit[] = $fn;
     }
 
     public static function reset(): void
     {
         self::$pdo = null;
+        self::$afterCommit = [];
+    }
+
+    private static function flushAfterCommit(): void
+    {
+        $pending = self::$afterCommit;
+        self::$afterCommit = [];
+        foreach ($pending as $callback) {
+            try {
+                $callback();
+            } catch (\Throwable) {
+            }
+        }
     }
 
     private static function applyTimezone(PDO $pdo): void

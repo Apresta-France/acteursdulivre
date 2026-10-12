@@ -6,6 +6,7 @@ namespace Adl\Models;
 
 use Adl\Core\Database;
 use Adl\Core\Mailer;
+use Adl\Data\Share;
 
 final class Order
 {
@@ -101,6 +102,13 @@ final class Order
                 'titre' => (string) $order['title'],
                 'lien' => url('/espace/suivi/' . (int) $order['id']),
             ]);
+            $orderId = (int) $order['id'];
+            Database::afterCommit(static function () use ($orderId): void {
+                $fresh = self::find($orderId);
+                if ($fresh) {
+                    self::alertOpsRequest($fresh);
+                }
+            });
         }
 
         return $order;
@@ -841,6 +849,35 @@ final class Order
              WHERE o.id = ?',
             [$id]
         );
+    }
+
+    /** @param array<string, mixed> $order */
+    private static function alertOpsRequest(array $order): void
+    {
+        $buyer = User::find((int) ($order['buyer_id'] ?? 0));
+        $seller = User::find((int) ($order['seller_id'] ?? 0));
+        $amount = (int) ($order['amount'] ?? 0);
+        $onQuote = $amount < 1;
+        $brief = trim((string) ($order['brief'] ?? ''));
+        $briefHtml = '';
+        if ($brief !== '') {
+            $safe = nl2br(htmlspecialchars($brief, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'));
+            $briefHtml = '<p>Message du client :</p><p>' . $safe . '</p>';
+        }
+
+        Mailer::alertOps('alerte-demande-devis', array_merge(
+            Mailer::partyVars($buyer, 'client', 'Client'),
+            Mailer::partyVars($seller, 'prestataire', 'Prestataire'),
+            [
+                'evenement' => $onQuote ? 'Demande de devis' : 'Nouvelle commande',
+                'nature' => $onQuote ? 'demande de devis' : 'commande',
+                'numero' => (string) ($order['num'] ?? ''),
+                'titre' => (string) ($order['title'] ?? ''),
+                'montant' => $onQuote ? 'sur devis' : (string) ($order['amount_label'] ?? ''),
+                'message_html' => $briefHtml,
+                'lien' => Share::absolute((string) ($order['admin_href'] ?? '/admin/finances')),
+            ]
+        ));
     }
 
     /** @param array<string, mixed> $row */

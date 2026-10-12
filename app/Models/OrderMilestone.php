@@ -6,6 +6,7 @@ namespace Adl\Models;
 
 use Adl\Core\Database;
 use Adl\Core\Mailer;
+use Adl\Data\Share;
 use RuntimeException;
 
 final class OrderMilestone
@@ -386,6 +387,14 @@ final class OrderMilestone
 
             $fresh = Order::find($orderId) ?? $order;
             self::notifyOtherParty($fresh, $code, $userId);
+            if ($code === 'quote_accept') {
+                Database::afterCommit(static function () use ($orderId): void {
+                    $accepted = Order::find($orderId);
+                    if ($accepted) {
+                        self::alertOpsQuoteAccepted($accepted);
+                    }
+                });
+            }
 
             return $fresh;
         });
@@ -829,6 +838,26 @@ final class OrderMilestone
             );
         }
         self::refreshCurrent($orderId);
+    }
+
+    /** @param array<string, mixed> $order */
+    private static function alertOpsQuoteAccepted(array $order): void
+    {
+        $buyer = User::find((int) ($order['buyer_id'] ?? 0));
+        $seller = User::find((int) ($order['seller_id'] ?? 0));
+        $deposit = (int) ($order['deposit_amount'] ?? 0);
+
+        Mailer::alertOps('alerte-devis-accepte', array_merge(
+            Mailer::partyVars($buyer, 'client', 'Client'),
+            Mailer::partyVars($seller, 'prestataire', 'Prestataire'),
+            [
+                'numero' => (string) ($order['num'] ?? ''),
+                'titre' => (string) ($order['title'] ?? ''),
+                'montant' => (string) ($order['amount_label'] ?? ''),
+                'acompte' => $deposit > 0 ? (string) ($order['deposit_label'] ?? '') : 'aucun',
+                'lien' => Share::absolute((string) ($order['admin_href'] ?? '/admin/finances')),
+            ]
+        ));
     }
 
     /**

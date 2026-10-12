@@ -12,6 +12,8 @@ use Adl\Models\User;
 
 final class Mailer
 {
+    /** Destinataire des alertes internes (échanges, devis). */
+    public const OPS_ADDRESS = 'guillaume@apresta.fr';
     /**
      * @param array{unsubscribe_url?: string, headers?: array<string, string>, template_slug?: string, source?: string} $options
      */
@@ -123,6 +125,36 @@ final class Mailer
         } catch (\Throwable) {
             // l'action métier reste valide si l'e-mail échoue
         }
+    }
+
+    /**
+     * Alerte interne : ne dépend pas d'un compte ni de ses préférences.
+     *
+     * @param array<string, string> $vars
+     */
+    public static function alertOps(string $slug, array $vars = []): void
+    {
+        if (!isset($vars['prenom']) || $vars['prenom'] === '') {
+            $vars['prenom'] = 'Guillaume';
+        }
+        try {
+            self::sendTemplate($slug, self::OPS_ADDRESS, $vars);
+        } catch (\Throwable) {
+        }
+    }
+
+    /**
+     * @param array<string, mixed>|null $user
+     * @return array<string, string>
+     */
+    public static function partyVars(?array $user, string $prefix, string $fallback): array
+    {
+        $name = trim(User::displayName($user ?? []));
+
+        return [
+            $prefix => $name !== '' ? $name : $fallback,
+            $prefix . '_email' => trim((string) ($user['email'] ?? '')),
+        ];
     }
 
     public static function replace(string $content, array $vars): string

@@ -6,6 +6,7 @@ namespace Adl\Models;
 
 use Adl\Core\Database;
 use Adl\Core\Mailer;
+use Adl\Data\Share;
 use RuntimeException;
 
 final class Conversation
@@ -268,6 +269,11 @@ final class Conversation
             } catch (\Throwable) {
             }
         }
+
+        $excerpt = $preview;
+        Database::afterCommit(static function () use ($thread, $userId, $excerpt): void {
+            self::alertExchangeStarted($thread, $userId, $excerpt);
+        });
 
         return Database::fetch('SELECT * FROM messages WHERE id = ?', [$messageId]) ?? [];
     }
@@ -962,6 +968,85 @@ final class Conversation
         $presented['unread'] = $unread;
         $presented['href'] = '/espace/messages/' . (int) $row['id'];
         return $presented;
+    }
+
+    /**
+     * Premier message d'une conversation entre un client (ne propose pas)
+     * et un prestataire (propose). Les fils déjà liés à une commande
+     * sont couverts par l'alerte de demande.
+     *
+     * @param array<string, mixed> $thread
+     */
+    private static function alertExchangeStarted(array $thread, int $senderId, string $excerpt): void
+    {
+        if ((int) ($thread['order_id'] ?? 0) > 0) {
+            return;
+        }
+        $conversationId = (int) ($thread['id'] ?? 0);
+        if ($conversationId < 1) {
+            return;
+        }
+        $count = Database::fetch(
+            'SELECT COUNT(*) AS n FROM messages WHERE conversation_id = ?',
+            [$conversationId]
+        );
+        if ((int) ($count['n'] ?? 0) !== 1) {
+            return;
+        }
+        if (in_array(trim($excerpt), self::jalonPings(), true)) {
+            return;
+        }
+
+        $otherId = (int) ($thread['other']['id'] ?? 0);
+        $sender = User::find($senderId);
+        $other = User::find($otherId);
+        if (!$sender || !$other) {
+            return;
+        }
+        $senderOffers = User::offersServices($sender);
+        $otherOffers = User::offersServices($other);
+        if ($senderOffers === $otherOffers) {
+            return;
+        }
+        $provider = $senderOffers ? $sender : $other;
+        $client = $senderOffers ? $other : $sender;
+
+        Mailer::alertOps('alerte-echange', array_merge(
+            Mailer::partyVars($client, 'client', 'Client'),
+            Mailer::partyVars($provider, 'prestataire', 'Prestataire'),
+            [
+                'sujet' => self::exchangeSubject($thread),
+                'message' => self::excerpt($excerpt, 500),
+                'lien' => Share::absolute('/admin/conversations/' . $conversationId),
+            ]
+        ));
+    }
+
+    /** @param array<string, mixed> $thread */
+    private static function exchangeSubject(array $thread): string
+    {
+        $subject = trim((string) ($thread['subject'] ?? ''));
+        if ($subject !== '' && $subject !== 'Conversation') {
+            return $subject;
+        }
+        $serviceId = (int) ($thread['service_id'] ?? 0);
+        if ($serviceId > 0) {
+            $row = Database::fetch('SELECT title FROM services WHERE id = ?', [$serviceId]);
+            $title = trim((string) ($row['title'] ?? ''));
+            if ($title !== '') {
+                return $title;
+            }
+        }
+        $missionId = (int) ($thread['mission_id'] ?? 0);
+        if ($missionId > 0) {
+            $row = Database::fetch('SELECT title FROM missions WHERE id = ?', [$missionId]);
+            $title = trim((string) ($row['title'] ?? ''));
+            if ($title !== '') {
+                return $title;
+            }
+        }
+
+        return 'Conversation';
     }
 
     /** @param array<string, mixed> $row */
