@@ -174,6 +174,7 @@ final class Prototype
             'socials' => Socials::profiles(),
             'footerCols' => $footerCols,
             'topbarStats' => self::topbarStats(),
+            'homeTopbarStats' => self::homeTopbarStats(),
             'footerMetiers' => Catalog::footerMetiers(),
             'userInitials' => $initials,
             'userAvatarUrl' => user_avatar_src($user),
@@ -222,9 +223,9 @@ final class Prototype
             }, array_slice($services, 0, 3), array_keys(array_slice($services, 0, 3))),
             'homeEntry' => self::homeEntry(),
             'missionsBandStats' => [
-                ['v' => '0 €', 'k' => 'pour candidater : aucune commission sur la candidature'],
-                ['v' => '1ʳᵉ', 'k' => 'mission offerte au prestataire, sans commission'],
-                ['v' => '8 %', 'k' => 'dès la 2ᵉ mission réalisée, sur le hors-taxe, sans abonnement'],
+                ['v' => '0 €', 'k' => 'pour publier une recherche'],
+                ['v' => '0 €', 'k' => 'pour envoyer un devis'],
+                ['v' => 'Illimité', 'k' => 'candidatures, sans plafond'],
             ],
             'homeMissionFilters' => self::chips(['Toutes', 'Correction', 'Illustration', 'Traduction', 'Impression', 'Presse & com'], 0, true),
             'homeMissions' => self::homeMissions(),
@@ -309,7 +310,7 @@ final class Prototype
         ];
         try {
             $live = match ($screen) {
-                'accueil' => \Adl\Core\FileCache::remember('overlay-home', 90, static fn (): array => self::homeOverlay()),
+                'accueil' => \Adl\Core\FileCache::remember('overlay-home-3', 90, static fn (): array => self::homeOverlay()),
                 'apropos' => [
                     'homeStats' => Catalog::homeStats(),
                     'equipe' => Catalog::equipe(),
@@ -345,6 +346,7 @@ final class Prototype
             'missionsBandStats' => Catalog::missionsBandStats(),
             'journal' => Catalog::journalPreview(3),
             'homeForum' => Catalog::homeForum(3),
+            'garanties' => self::homeGaranties(),
             'openMissionsLabel' => $counts['openLabel'],
             'openMissionsCta' => $counts['openCta'],
             'inscriptionProof' => $counts['proof'],
@@ -675,7 +677,7 @@ final class Prototype
             'aideFaq' => self::aideFaq(),
             'homeFaq' => self::faqItems(array_map(
                 static fn (array $row): array => [$row['q'], $row['a']],
-                Seo::homeFaqs()
+                Seo::accueilFaqs()
             )),
             'commentFaq' => self::faqItems(array_map(
                 static fn (array $row): array => [$row['q'], $row['a']],
@@ -1550,6 +1552,34 @@ final class Prototype
         } catch (\Throwable) {
             return '1ʳᵉ mission offerte · puis 8 % · sans abonnement';
         }
+    }
+
+    private static function homeTopbarStats(): string
+    {
+        try {
+            return (string) \Adl\Core\FileCache::remember('topbar-stats-home', 120, static function (): string {
+                try {
+                    $pros = User::countOfferers();
+                    $label = $pros > 1 ? 'professionnels du livre' : 'professionnel du livre';
+
+                    return format_int($pros) . ' ' . $label;
+                } catch (\Throwable) {
+                    return 'Professionnels du livre';
+                }
+            });
+        } catch (\Throwable) {
+            return 'Professionnels du livre';
+        }
+    }
+
+    /** @return list<array{kicker: string, title: string, body: string}> */
+    private static function homeGaranties(): array
+    {
+        return [
+            ['kicker' => 'Profils', 'title' => 'Vérification à l\'entrée', 'body' => 'Justificatif d\'activité, une référence professionnelle contrôlée et un entretien pour les métiers de fabrication. Les faux profils sont retirés sous 24 h.'],
+            ['kicker' => 'Suivi', 'title' => 'Jalons, pas d\'encaissement', 'body' => 'Client et prestataire se règlent hors plateforme. Le suivi impose les jalons (devis, factures, déclarations, livraison, validation).'],
+            ['kicker' => 'Litiges', 'title' => 'Médiation interne', 'body' => 'Un signalement met les jalons en pause. L\'équipe lit les échanges et propose un accord sur les sommes déjà versées ou encore dues. Recours possible devant la juridiction compétente.'],
+        ];
     }
 
     private static function liveUnreadMessages(?array $user): int

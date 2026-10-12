@@ -331,6 +331,8 @@ final class Service
             return $newId;
         });
 
+        self::forgetGone($slug);
+
         try {
             return self::find($id) ?? ['id' => $id, 'slug' => $slug];
         } catch (\Throwable) {
@@ -446,6 +448,86 @@ final class Service
         foreach (self::imagePaths($service) as $path) {
             self::deleteImageFile($path);
         }
+        self::rememberGone((string) ($service['slug'] ?? ''), $userId);
+    }
+
+    /**
+     * Ancienne adresse d'une prestation retirée : la vitrine, si elle est encore publique.
+     * 302 tant que la fiche existe (brouillon, republication possible) ; 301 si elle a été supprimée.
+     *
+     * @param array<string, mixed>|null $service
+     * @return array{href: string, code: int}|null
+     */
+    public static function retiredTarget(string $slug, ?array $service = null): ?array
+    {
+        $userId = (int) ($service['user_id'] ?? 0);
+        $permanent = false;
+        if ($userId < 1) {
+            $userId = self::goneUserId($slug);
+            $permanent = $userId > 0;
+        }
+        if ($userId < 1) {
+            return null;
+        }
+
+        try {
+            $profile = Profile::findByUser($userId);
+        } catch (\Throwable) {
+            return null;
+        }
+        if (!$profile || !User::isPublicOfferer($profile)) {
+            return null;
+        }
+
+        $href = Profile::publicHref($profile);
+        if (!str_starts_with($href, '/prestataires/')) {
+            return null;
+        }
+
+        return ['href' => $href, 'code' => $permanent ? 301 : 302];
+    }
+
+    public static function rememberGone(string $slug, int $userId): void
+    {
+        $slug = trim($slug);
+        if ($slug === '' || $userId < 1) {
+            return;
+        }
+        try {
+            Database::query(
+                'INSERT INTO service_redirects (slug, user_id) VALUES (?, ?)
+                 ON DUPLICATE KEY UPDATE user_id = VALUES(user_id), created_at = CURRENT_TIMESTAMP',
+                [$slug, $userId]
+            );
+        } catch (\Throwable) {
+        }
+    }
+
+    public static function forgetGone(string $slug): void
+    {
+        $slug = trim($slug);
+        if ($slug === '') {
+            return;
+        }
+        try {
+            Database::query('DELETE FROM service_redirects WHERE slug = ?', [$slug]);
+        } catch (\Throwable) {
+        }
+    }
+
+    private static function goneUserId(string $slug): int
+    {
+        $slug = trim($slug);
+        if ($slug === '') {
+            return 0;
+        }
+        try {
+            $row = Database::fetch('SELECT user_id FROM service_redirects WHERE slug = ?', [$slug]);
+        } catch (\Throwable) {
+            return 0;
+        }
+
+        return (int) ($row['user_id'] ?? 0);
     }
 
     /**

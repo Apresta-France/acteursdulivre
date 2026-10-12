@@ -843,7 +843,8 @@ final class AccountController
             || !User::isPublicOfferer((int) ($service['user_id'] ?? 0))
         ) {
             flash('error', 'Cette prestation n\'est plus disponible.');
-            redirect('/prestations');
+            $retired = Service::retiredTarget((string) ($service['slug'] ?? ''), $service);
+            redirect($retired['href'] ?? '/prestations', $retired['code'] ?? 302);
         }
         if ((int) $service['user_id'] === (int) $user['id']) {
             flash('error', 'Vous ne pouvez pas commander votre propre prestation.');

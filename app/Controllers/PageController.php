@@ -137,8 +137,23 @@ final class PageController
         ]);
     }
 
+    public function legacyRedirect(Request $request): void
+    {
+        $target = match ($request->path()) {
+            '/blog' => '/journal',
+            '/contact-us' => '/contact',
+            default => '/',
+        };
+        redirect($target, 301);
+    }
+
     public function metier(Request $request, string $slug): void
     {
+        $fixed = Catalog::mangledCityCatalogPath($slug);
+        if ($fixed !== null) {
+            redirect($fixed, 301);
+        }
+
         $trade = Catalog::tradeFromSlug($slug);
         if ($trade === null) {
             not_found('Ce métier n\'est pas répertorié.');
@@ -277,6 +292,10 @@ final class PageController
     {
         $found = Landings::find($slug);
         if ($found === null) {
+            $loose = Landings::findPrefixed($slug);
+            if ($loose !== null) {
+                redirect(Landings::path((string) $loose['slug']), 301);
+            }
             not_found('Cette page n\'existe pas.');
         }
         if ($slug !== (string) $found['slug']) {
@@ -294,8 +313,9 @@ final class PageController
         $previewServices = (int) ($presented['preview_services'] ?? 3);
         $previewProviders = (int) ($presented['preview_providers'] ?? 3);
         try {
-            $providers = Catalog::search('', 'prestataires', $trade, $previewProviders);
-            $services = Catalog::search('', 'prestations', $trade, $previewServices);
+            $cast = Catalog::landingPreviews($trade, $previewServices, $previewProviders);
+            $providers = ['results' => $cast['providers'], 'count' => $cast['providerCount']];
+            $services = ['results' => $cast['services'], 'count' => $cast['serviceCount']];
             if ($trade !== '') {
                 $missions = Catalog::search('', 'missions', $trade, $preview);
             } else {
@@ -358,6 +378,10 @@ final class PageController
             && ($service['status'] ?? '') === 'published'
             && User::isPublicOfferer((int) ($service['user_id'] ?? 0));
         if (!$service || (!$public && !$isOwner && !$admin)) {
+            $retired = Service::retiredTarget($slug, $service);
+            if ($retired !== null) {
+                redirect($retired['href'], $retired['code']);
+            }
             not_found('Cette prestation n\'est plus disponible.');
         }
 

@@ -395,7 +395,7 @@ $query = (string) ($query ?? '');
   <section class="mk-faq">
     <div>
       <h2>Questions fréquentes</h2>
-      <p>Commission, clients, règlement : les réponses au même endroit.</p>
+      <p>Mise en relation, devis, règlement : les réponses au même endroit.</p>
       <a href="<?= e(url('/questions')) ?>">Toutes les questions →</a>
     </div>
     <div class="mk-faq-list">

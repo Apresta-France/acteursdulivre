@@ -12,7 +12,6 @@ use Adl\Models\Profile;
 use Adl\Models\Recommendation;
 use Adl\Models\Review;
 use Adl\Models\Service;
-use Adl\Models\Setting;
 use Adl\Models\Taxonomy;
 use Adl\Models\User;
 
@@ -841,6 +840,27 @@ final class Catalog
         return $query === [] ? $hub : $hub . '?' . implode('&', $query);
     }
 
+    /**
+     * /metiers/ecritureu0026ville-menton : un robot a lu « & » comme le texte u0026.
+     * Renvoie l’annuaire filtré correspondant.
+     */
+    public static function mangledCityCatalogPath(string $slug): ?string
+    {
+        if (preg_match('/^([a-z0-9-]+)u0026ville-([a-z0-9-]+)$/i', $slug, $m) !== 1) {
+            return null;
+        }
+        $trade = self::tradeFromSlug($m[1]);
+        if ($trade === null) {
+            return null;
+        }
+        $city = Cities::canonicalArea($m[2]);
+        if ($city === '') {
+            return null;
+        }
+
+        return self::catalogPath('prestataires', $trade, $city);
+    }
+
     public static function typePath(string $type): string
     {
         return match ($type) {
@@ -1360,6 +1380,76 @@ final class Catalog
     }
 
     /**
+     * Aperçu d'une landing : une carte par personne.
+     * La prestation affichée retire le profil du même prestataire.
+     *
+     * @return array{services: list<array<string, mixed>>, providers: list<array<string, mixed>>, serviceCount: int, providerCount: int}
+     */
+    public static function landingPreviews(string $trade, int $serviceLimit, int $providerLimit): array
+    {
+        $serviceLimit = max(0, $serviceLimit);
+        $providerLimit = max(0, $providerLimit);
+        $services = self::search('', 'prestations', $trade, 400);
+        $providers = self::search('', 'prestataires', $trade, 400);
+        $seen = [];
+        $serviceCards = self::onePersonEach($services['results'], $serviceLimit, $seen);
+        $providerCards = self::onePersonEach($providers['results'], $providerLimit, $seen);
+
+        return [
+            'services' => $serviceCards,
+            'providers' => $providerCards,
+            'serviceCount' => (int) $services['count'],
+            'providerCount' => (int) $providers['count'],
+        ];
+    }
+
+    /**
+     * @param list<array<string, mixed>> $items
+     * @param array<string, true> $seen
+     * @return list<array<string, mixed>>
+     */
+    private static function onePersonEach(array $items, int $limit, array &$seen): array
+    {
+        if ($limit < 1) {
+            return [];
+        }
+        $out = [];
+        foreach ($items as $item) {
+            if (!is_array($item)) {
+                continue;
+            }
+            $key = self::personKey($item);
+            if ($key !== '') {
+                if (isset($seen[$key])) {
+                    continue;
+                }
+                $seen[$key] = true;
+            }
+            $out[] = $item;
+            if (count($out) >= $limit) {
+                break;
+            }
+        }
+
+        return $out;
+    }
+
+    /** @param array<string, mixed> $item */
+    private static function personKey(array $item): string
+    {
+        $id = (int) ($item['user_id'] ?? 0);
+        if ($id > 0) {
+            return 'u' . $id;
+        }
+        $href = trim((string) ($item['profile_href'] ?? ''));
+        if ($href === '' && ($item['kind'] ?? '') === 'prestataires') {
+            $href = trim((string) ($item['href'] ?? ''));
+        }
+
+        return $href !== '' ? 'h' . $href : '';
+    }
+
+    /**
      * @param array<string, mixed> $raw
      * @return array{kinds: list<string>, metiers: list<string>, specs: list<string>, delays: list<string>, levels: list<string>, trust: list<string>, bmin: ?int, bmax: ?int, city: string}
      */
@@ -1444,6 +1534,7 @@ final class Catalog
                 $out[] = [
                     'kind' => 'prestataires',
                     'kind_label' => 'Prestataire',
+                    'user_id' => (int) ($profile['user_id'] ?? 0),
                     'title' => $name,
                     'subtitle' => trim((string) ($profile['title'] ?? 'Prestataire') . ($location !== '' ? ' · ' . $location : '')),
                     'href' => Profile::publicHref($profile),
@@ -2292,16 +2383,10 @@ final class Catalog
     /** @return list<array{v: string, k: string}> */
     public static function missionsBandStats(): array
     {
-        try {
-            $commission = Setting::get('commission_percent', '8') ?: '8';
-        } catch (\Throwable) {
-            $commission = '8';
-        }
-
         return [
-            ['v' => '0 €', 'k' => 'pour candidater : aucune commission sur la candidature'],
-            ['v' => '1ʳᵉ', 'k' => 'mission offerte au prestataire, sans commission'],
-            ['v' => $commission . ' %', 'k' => 'dès la 2ᵉ mission réalisée, sur le hors-taxe, sans abonnement'],
+            ['v' => '0 €', 'k' => 'pour publier une recherche'],
+            ['v' => '0 €', 'k' => 'pour envoyer un devis'],
+            ['v' => 'Illimité', 'k' => 'candidatures, sans plafond'],
         ];
     }
 

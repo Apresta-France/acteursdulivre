@@ -34,7 +34,7 @@
     if (!empty($isLanding)) {
         $bodyClass[] = 'is-landing';
     }
-    if ($founderOffer && empty($isLanding)) {
+    if ($founderOffer && empty($isLanding) && empty($isAccueil)) {
         $bodyClass[] = 'has-founder-banner';
     }
     $landingChrome = empty($isLanding);
@@ -115,7 +115,12 @@
         <a href="<?= e(url('/journal/acteurs-du-livre-ouvre-ses-portes')) ?>">Lire l’annonce</a>
       </div>
       <div class="topbar">
-        <span class="topbar-stats"><?= e((string) ($topbarStats ?? 'Commission 8 % · devis gratuits')) ?></span>
+        <?php
+          $topbarLabel = !empty($isAccueil)
+              ? (string) ($homeTopbarStats ?? 'Professionnels du livre')
+              : (string) ($topbarStats ?? '1ʳᵉ mission offerte · puis 8 %');
+        ?>
+        <span class="topbar-stats"><?= e($topbarLabel) ?></span>
         <div class="topbar-links">
           <a href="<?= e(url('/aide')) ?>">Aide</a>
           <span>Français · EUR</span>
@@ -355,6 +360,9 @@
               <div class="footer-col-title"><?= e($c['title']) ?></div>
               <div class="footer-links">
                 <?php foreach ($c['links'] as $l): ?>
+                  <?php if (!empty($isAccueil) && ($l['label'] ?? '') === 'Commission') {
+                      continue;
+                  } ?>
                   <a href="<?= e(url($l['href'])) ?>"><?= e($l['label']) ?></a>
                 <?php endforeach; ?>
               </div>
@@ -389,7 +397,7 @@
       <?php endif; ?>
     </div>
   </div>
-  <?php if ($founderOffer && $landingChrome): ?>
+  <?php if ($founderOffer && $landingChrome && empty($isAccueil)): ?>
     <?php
       $founderLeft = (int) $founderOffer['remaining'];
       $founderLimit = (int) $founderOffer['limit'];

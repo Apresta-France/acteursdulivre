@@ -509,7 +509,8 @@ final class Seo
     public static function faqsFor(string $screen): array
     {
         return match ($screen) {
-            'accueil', 'aide' => self::homeFaqs(),
+            'accueil' => self::accueilFaqs(),
+            'aide' => self::homeFaqs(),
             'comment' => self::commentFaqs(),
             'tarifs' => self::tarifsFaqs(),
             'questions' => self::questionsFaqs(),
@@ -518,6 +519,18 @@ final class Seo
             'outil-isbn' => Isbn::faqs(),
             default => [],
         };
+    }
+
+    /** @return list<array{q: string, a: string}> */
+    public static function accueilFaqs(): array
+    {
+        return [
+            ['q' => 'Comment trouver un prestataire du livre ?', 'a' => 'Vous pouvez parcourir l\'annuaire, commander une prestation à prix affiché, ou publier une recherche pour recevoir des devis.'],
+            ['q' => 'Faut-il un abonnement ?', 'a' => 'Non. Créer un compte, une vitrine, des fiches ou un appel d\'offres est gratuit. Aucun abonnement.'],
+            ['q' => 'L\'IA générative est-elle autorisée ?', 'a' => 'Non, pour les missions entre acteurs du livre : aucun livrable ne peut être produit par une IA générative. Le moratoire ne s\'applique pas à la fabrication de la plateforme. Le détail figure dans les règles IA.'],
+            ['q' => 'Qui facture le client ?', 'a' => 'Le prestataire facture directement son client, hors plateforme. La plateforme n\'encaisse pas le prix de la mission.'],
+            ['q' => 'Comment se passe une mission ?', 'a' => 'Brief, devis accepté dans le suivi (cela vaut accord), jalons de facture et de règlement hors plateforme, livraison, puis validation et notation.'],
+        ];
     }
 
     /** @return list<array{q: string, a: string}> */
