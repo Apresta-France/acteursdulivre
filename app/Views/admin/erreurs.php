@@ -115,7 +115,7 @@ $fmt = static function (?string $dt): string {
       <?php endforeach; ?>
     </div>
 
-    <p class="admin-muted" style="margin-top: 14px;">Les erreurs sont conservées 90 jours. Une adresse marquée comme vue réapparaît si elle est demandée à nouveau.</p>
+    <p class="admin-muted" style="margin-top: 14px;">Les erreurs sont conservées 90 jours. Une adresse marquée comme vue réapparaît si elle est demandée à nouveau. Les sondes récurrentes (WordPress, fichiers .env, meta.json, flux RSS…) ne sont plus enregistrées.</p>
 
     <?php if ($pages > 1): ?>
       <nav class="admin-pager" aria-label="Pagination des erreurs">

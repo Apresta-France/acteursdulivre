@@ -27,7 +27,10 @@ return static function (Router $router): void {
     $router->get('/api/journal', [PageController::class, 'journalApi']);
     $router->get('/api/forum/similaires', [ForumController::class, 'suggestApi']);
     $router->get('/api/forum/recherche', [ForumController::class, 'searchApi']);
+    $router->get('/api/stats', [PageController::class, 'statsCollect']);
     $router->post('/api/stats', [PageController::class, 'statsCollect']);
+    $router->get('/blog', [PageController::class, 'legacyRedirect']);
+    $router->get('/contact-us', [PageController::class, 'legacyRedirect']);
     $router->get('/cron', [CronController::class, 'index']);
     $router->get('/cron/{task}', [CronController::class, 'run']);
     $router->get('/metiers/{slug}/{city}', [PageController::class, 'metierVille']);

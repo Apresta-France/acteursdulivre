@@ -65,8 +65,11 @@ final class HttpError
 
         try {
             $path = self::clipPath(self::requestPath());
-            $hash = sha1($path);
             $method = self::method();
+            if ($method === 'OPTIONS' || ($path === '/' && $method !== 'GET') || self::ignored($path)) {
+                return;
+            }
+            $hash = sha1($path);
             $query = self::cleanQuery((string) ($_SERVER['QUERY_STRING'] ?? ''));
             $referrer = self::cleanReferrer((string) ($_SERVER['HTTP_REFERER'] ?? ''));
             $agent = self::clip((string) ($_SERVER['HTTP_USER_AGENT'] ?? ''), 255);
@@ -300,9 +303,60 @@ final class HttpError
         Database::query('DELETE FROM http_error_acks WHERE status = ? AND path_hash = ?', [$status, $hash]);
     }
 
+    public static function ignored(string $path): bool
+    {
+        $raw = self::clipPath($path);
+        if (str_contains($raw, '€')) {
+            return true;
+        }
+        $path = strtolower($raw);
+        if (str_starts_with($path, '/public/uploads/')) {
+            return false;
+        }
+
+        $patterns = [
+            '#^/meta\.json$#',
+            '#^/(?:ads|humans|security)\.txt$#',
+            '#^/(?:feed|rss|index)(?:\.xml)?$#',
+            '#^/blog(?:/feed|/rss\.xml)?$#',
+            '#^/(?:phpinfo(?:\.php)?|info\.php|xmlrpc\.php|app\.js|index\.js)$#',
+            '#^/rest/api/#',
+            '#^/besoin/null$#',
+            '#^/wp-(?:json|admin|content|includes|login)#',
+            '#^/(?:wordpress|wp|new|old)/wp-#',
+            '#^/_next(?:/|$)#',
+            '#^/_profiler(?:/|$)#',
+            '#^/ipfs/#',
+            '#^/media/system/#',
+            '#^/(?:litellm|bedrock|openai-proxy|anthropic|llm|gpt|claude|foundation-models|inference-profiles|bedrock-runtime|bedrockruntime)(?:/|_|$)#',
+            '#^/(?:proxy|aws|model)(?:/|$)#',
+            '#^/ai(?:/|$)#',
+            '#^/api$#',
+            '#^/api/(?:bedrock|foundation-models|inference|phpinfo|v1/|aws/|ai/)#',
+            '#^/en$#',
+            '#^/n/a$#',
+            '#^/\d+(?:/\d+)?$#',
+            '#u0026#',
+            '#€#',
+            '#acteursdulivre\.fr$#',
+            '#\.html?$#',
+            '#\.map$#',
+            '#(?:^|/)\.env(?:$|/)#',
+            '#(?:^|/)(?:phpinfo|credentials(?:\.(?:json|ini))?|secrets\.json|appsettings(?:\.[a-z]+)?\.json|docker-compose\.yml|dockerfile|aws-exports\.js|sendgrid\.env|config\.(?:js|php|json|ya?ml|env)|env(?:\.js|\.txt)?|auth\.json|settings\.json|database\.sql|runtime-config\.js|env-config\.js|app\.config\.js|litellm(?:_config)?\.(?:ya?ml))(?:$|/)#',
+        ];
+        foreach ($patterns as $pattern) {
+            if (preg_match($pattern, $path) === 1) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     public static function prune(): void
     {
         try {
+            self::purgeIgnored();
             Database::query('DELETE FROM http_errors WHERE updated_at < (NOW() - INTERVAL 90 DAY)');
             $cut = Database::fetch('SELECT id FROM http_errors ORDER BY id DESC LIMIT 1 OFFSET 20000');
             if ($cut) {
@@ -450,6 +504,35 @@ final class HttpError
         }
 
         return [$where, $having, $params];
+    }
+
+    private static function purgeIgnored(): void
+    {
+        $rows = Database::fetchAll(
+            'SELECT status, path_hash, MAX(path) AS path
+             FROM http_errors
+             GROUP BY status, path_hash'
+        );
+        $drop = [];
+        foreach ($rows as $row) {
+            $path = (string) ($row['path'] ?? '');
+            $status = (int) ($row['status'] ?? 0);
+            if (self::ignored($path) || ($path === '/' && in_array($status, [404, 419], true))) {
+                $drop[] = [$status, (string) $row['path_hash']];
+            }
+        }
+        foreach (array_chunk($drop, 40) as $chunk) {
+            $conds = [];
+            $params = [];
+            foreach ($chunk as [$status, $hash]) {
+                $conds[] = '(status = ? AND path_hash = ?)';
+                $params[] = $status;
+                $params[] = $hash;
+            }
+            $where = implode(' OR ', $conds);
+            Database::query('DELETE FROM http_errors WHERE ' . $where, $params);
+            Database::query('DELETE FROM http_error_acks WHERE ' . $where, $params);
+        }
     }
 
     private static function maybePrune(): void

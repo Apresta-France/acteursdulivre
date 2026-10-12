@@ -37,6 +37,20 @@ final class Router
         return '#^' . $regex . '$#';
     }
 
+    public function matches(string $method, string $path): bool
+    {
+        if ($method === 'HEAD') {
+            $method = 'GET';
+        }
+        foreach ($this->routes as [$verb, $regex]) {
+            if ($verb === $method && preg_match($regex, $path) === 1) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     public function dispatch(Request $request): void
     {
         $method = $request->method();

@@ -94,6 +94,30 @@ final class Landings
         return null;
     }
 
+    /** Slug connu collé à un mot (« corriger-un-manuscritRésultats »). */
+    public static function findPrefixed(string $slug): ?array
+    {
+        $slug = trim($slug);
+        $best = null;
+        $bestLen = 0;
+        foreach (self::all() as $row) {
+            $known = (string) ($row['slug'] ?? '');
+            if ($known === '' || strlen($slug) <= strlen($known) || !str_starts_with($slug, $known)) {
+                continue;
+            }
+            $next = substr($slug, strlen($known), 1);
+            if ($next === '-' || $next === '/') {
+                continue;
+            }
+            if (strlen($known) > $bestLen) {
+                $best = $row;
+                $bestLen = strlen($known);
+            }
+        }
+
+        return $best;
+    }
+
     public static function path(string $slug): string
     {
         return self::PREFIX . '/' . ltrim($slug, '/');

@@ -22,11 +22,15 @@ final class App
                 // La page d'erreur de connexion gère le cas DB
             }
         }
+        $router = new Router();
+        $routes = require ADL_ROOT . '/config/routes.php';
+        $routes($router);
+
         $csrfExempt = $path === '/install'
             || str_starts_with($path, '/install')
             || str_starts_with($path, '/newsletter/desinscription/')
             || $path === '/api/stats';
-        if ($request->isPost() && !$csrfExempt) {
+        if ($request->isPost() && !$csrfExempt && $router->matches('POST', $path)) {
             $contentLength = (int) ($_SERVER['CONTENT_LENGTH'] ?? 0);
             if ($contentLength > 0 && $_POST === [] && $_FILES === []) {
                 flash('error', 'L\'envoi est trop lourd. Réduisez les fichiers et réessayez.');
@@ -47,9 +51,6 @@ final class App
             }
         }
 
-        $router = new Router();
-        $routes = require ADL_ROOT . '/config/routes.php';
-        $routes($router);
         try {
             $router->dispatch($request);
         } catch (\Throwable $e) {
