@@ -72,7 +72,7 @@ final class Prototype
             'bienvenue' => 'isBienvenue', 'statistiques' => 'isStatistiques',
             'espace-forum' => 'isEspaceForum',
             'communaute' => 'isCommunaute',
-            'outils' => 'isOutils', 'outil-volume' => 'isOutils', 'outil-dos' => 'isOutils', 'outil-isbn' => 'isOutils',
+            'outils' => 'isOutils', 'outil-volume' => 'isOutils', 'outil-pages' => 'isOutils', 'outil-dos' => 'isOutils', 'outil-isbn' => 'isOutils',
             'salons' => 'isSalons', 'salon' => 'isSalon', 'salon-ajouter' => 'isSalons',
             'souscriptions' => 'isSouscriptions', 'souscription' => 'isSouscriptions', 'souscription-proposer' => 'isSouscriptions',
             'maisons-edition' => 'isMaisons', 'maisons-edition-pays' => 'isMaisons', 'maison-edition' => 'isMaison',

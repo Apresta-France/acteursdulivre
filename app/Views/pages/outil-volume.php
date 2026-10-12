@@ -137,6 +137,7 @@ $hasSimulated = $simulated !== null && (float) $simulated > 0;
         <div class="side-kicker">Méthode</div>
         <p>Feuillet = <strong>1&nbsp;500 signes espaces compris</strong>. Un mot français pèse en moyenne 6 signes (espace comprise) quand on part d’un nombre, pas d’un texte réel.</p>
         <p>Lecture vers 230 mots/min, narration vers 155 mots/min. Une page dactylo correspond ici à un feuillet.</p>
+        <a href="<?= e(url('/outils/pages')) ?>" data-volume-pages data-pages-base="<?= e(url('/outils/pages')) ?>">Estimer les pages →</a>
       </div>
 
       <div class="side-card tool-estimate" data-volume-correction<?= $correction ? '' : ' hidden' ?>>

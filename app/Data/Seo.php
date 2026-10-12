@@ -86,13 +86,18 @@ final class Seo
             ],
             'outils' => [
                 'title' => 'Outils du livre',
-                'description' => 'Compteur de signes, convertisseur de feuillets, calculateur de dos et validateur ISBN. Gratuits, sans compte, sans envoyer le manuscrit.',
+                'description' => 'Compteur de signes, estimation de pagination, calculateur de dos et validateur ISBN. Gratuits, sans compte, sans envoyer le manuscrit.',
                 'path' => '/outils',
             ],
             'outil-volume' => [
                 'title' => 'Compteur de signes et feuillets',
                 'description' => 'Convertissez signes, mots et feuillets de 1 500. Collez un texte : le décompte reste dans votre navigateur. Ordres de grandeur pour correction, traduction et livre audio.',
                 'path' => '/outils/volume',
+            ],
+            'outil-pages' => [
+                'title' => 'Combien de pages pour un manuscrit',
+                'description' => 'Combien de pages fera un manuscrit ? Format, corps et interligne : signes par ligne, pages de texte et arrondi au cahier. La police réelle a le dernier mot.',
+                'path' => '/outils/pages',
             ],
             'outil-dos' => [
                 'title' => 'Calcul du dos d\'un livre (carré collé)',
@@ -515,6 +520,7 @@ final class Seo
             'tarifs' => self::tarifsFaqs(),
             'questions' => self::questionsFaqs(),
             'outil-volume' => Tools::volumeFaqs(),
+            'outil-pages' => Pagination::faqs(),
             'outil-dos' => Spine::faqs(),
             'outil-isbn' => Isbn::faqs(),
             default => [],
@@ -1153,6 +1159,13 @@ final class Seo
                 ['name' => 'Signes et feuillets', 'url' => '/outils/volume'],
             ];
         }
+        if ($screen === 'outil-pages') {
+            return [
+                ['name' => self::BRAND, 'url' => '/'],
+                ['name' => 'Outils', 'url' => '/outils'],
+                ['name' => 'Pages estimées', 'url' => '/outils/pages'],
+            ];
+        }
         if ($screen === 'outil-dos') {
             return [
                 ['name' => self::BRAND, 'url' => '/'],
@@ -1177,6 +1190,7 @@ final class Seo
             'communaute' => 'Communauté',
             'outils' => 'Outils',
             'outil-volume' => 'Signes et feuillets',
+            'outil-pages' => 'Pages estimées',
             'outil-dos' => 'Dos et couverture',
             'outil-isbn' => 'ISBN et EAN',
             'salons' => 'Agenda des salons',
@@ -1271,13 +1285,14 @@ acteursdulivre.fr met en relation des porteurs de projet (auteurs, éditeurs, co
 - [Métiers]({$home}metiers/correction) : pages métiers, exemple correction
 - [Maisons d'édition]({$home}maisons-edition) : annuaire de plus de 600 éditeurs en France et en Europe, par pays ([exemple : France]({$home}maisons-edition/pays/france)), ville et genre ; les coordonnées sont réservées aux membres connectés et les maisons peuvent revendiquer leur fiche
 - [Communauté]({$home}communaute) : forum, annuaire des maisons d'édition, agenda des salons et outils métier
-- [Outils]({$home}outils) : compteur de signes, convertisseur de feuillets, calculateur de dos, validateur ISBN
+- [Outils]({$home}outils) : compteur de signes, estimation de pagination, calculateur de dos, validateur ISBN
 - [Agenda des salons]({$home}salons) : salons du livre et festivals en France et en Europe (2026-2027)
 - [Forum]({$home}forum) : discussions métier (tarifs, contrats, fabrication)
 - [Par besoin]({$home}besoin) : pages d'entrée par besoin (correction, couverture, impression…), utilisées aussi pour les campagnes
 - [Journal]({$home}journal) : articles sur les métiers, tarifs, contrats et diffusion
 - [Ouverture]({$home}journal/acteurs-du-livre-ouvre-ses-portes) : la plateforme est ouverte depuis le 6 octobre 2026
 - [Autoédition : le guide complet]({$home}journal/autoedition-guide-complet) : publier son livre en France (budget, ISBN, dépôt légal, fabrication, librairie)
+- [Combien de pages fera ce manuscrit]({$home}journal/combien-de-pages-fera-ce-manuscrit) : estimer la pagination, du feuillet au cahier
 - [Contact]({$home}contact) : écrire à l'équipe
 - [Mentions légales]({$home}mentions-legales) : informations légales
 

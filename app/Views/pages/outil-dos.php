@@ -201,6 +201,7 @@ $fmt = static fn (float $n, int $d = 1): string => \Adl\Data\Tools::formatNumber
         <div class="side-kicker">Méthode</div>
         <p>Dos = <strong>(pages / 2) × grammage × volume / 1&nbsp;000</strong>. Le volume, ou main du papier, change tout : un bouffant 80&nbsp;g n’a pas le dos d’un offset 80&nbsp;g.</p>
         <p>Le fond perdu français courant est de <strong>5&nbsp;mm</strong>. Sans lui, un filet blanc apparaît au massicot.</p>
+        <a href="<?= e(url('/outils/pages')) ?>">Estimer les pages d’un manuscrit →</a>
       </div>
 
       <div class="side-card">

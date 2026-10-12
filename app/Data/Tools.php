@@ -50,6 +50,15 @@ final class Tools
                 'available' => true,
             ],
             [
+                'slug' => 'pages',
+                'title' => 'Pages estimées',
+                'kicker' => 'Calage',
+                'lead' => 'Format, corps, interligne : estimez les pages d’un manuscrit, puis l’arrondi au cahier. La police réelle a le dernier mot.',
+                'href' => self::path('pages'),
+                'icon' => 'trade-maquette',
+                'available' => true,
+            ],
+            [
                 'slug' => 'dos',
                 'title' => 'Dos et couverture',
                 'kicker' => 'Fabrication',

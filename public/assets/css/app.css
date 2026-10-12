@@ -11311,7 +11311,8 @@ a.co-event:hover { border-color: var(--navy); color: inherit; }
 .tool-faq { padding-top: 0; }
 .tool-faq h2 { margin: 0 0 16px; }
 .tool-custom-row.is-hidden { display: none; }
-.tool-spine-fields {
+.tool-spine-fields,
+.tool-pages-fields {
   display: flex;
   flex-direction: column;
   gap: 20px;
@@ -11424,6 +11425,44 @@ a.co-event:hover { border-color: var(--navy); color: inherit; }
 .tool-spread-part.is-flap-back,
 .tool-spread-part.is-flap-front { background: #EEF1F4; }
 .tool-spread-caption { margin: 10px 0 8px; font-size: 13px; color: #66768A; }
+.tool-page-preview {
+  display: grid;
+  grid-template-columns: 150px minmax(0, 1fr);
+  gap: 22px;
+  align-items: center;
+  margin: 22px 0 8px;
+}
+.tool-page-sheet {
+  position: relative;
+  width: 150px;
+  background: #fff;
+  border: 1px solid #D5D0C6;
+  border-radius: 2px 8px 8px 2px;
+  box-shadow: 8px 10px 0 rgba(21, 33, 47, .05);
+}
+.tool-page-block {
+  position: absolute;
+  background-color: #F4F0E8;
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent 0,
+    transparent calc(100% / var(--lines, 32) - 1px),
+    #C4BEB4 calc(100% / var(--lines, 32) - 1px),
+    #C4BEB4 calc(100% / var(--lines, 32))
+  );
+}
+.tool-page-sigs {
+  margin: 14px 0 0;
+  font-size: 14px;
+  color: #66768A;
+}
+.tool-page-sigs strong { color: var(--navy); font-weight: 600; }
+.tool-stat.is-emphasis {
+  background: #fff;
+  border-color: var(--navy);
+}
+.tool-actions a.btn-navy { text-decoration: none; }
+.tool-actions a.btn-navy[hidden] { display: none; }
 .tool-warn {
   margin-top: 16px;
   padding: 12px 14px;
@@ -11575,6 +11614,8 @@ a.co-event:hover { border-color: var(--navy); color: inherit; }
 @media (max-width: 640px) {
   .tool-results { grid-template-columns: 1fr 1fr; }
   .tool-mode { font-size: 13px; }
+  .tool-page-preview { grid-template-columns: 112px minmax(0, 1fr); gap: 14px; }
+  .tool-page-sheet { width: 112px; }
   .tool-isbn-part strong { font-size: 13px; }
   .tool-isbn-cell { min-width: 22px; height: 32px; font-size: 13px; }
   .tool-isbn-parts { min-height: 0; }

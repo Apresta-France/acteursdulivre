@@ -212,6 +212,7 @@ final class Sitemap
             ['path' => '/communaute', 'priority' => '0.7'],
             ['path' => '/outils', 'priority' => '0.7'],
             ['path' => '/outils/volume', 'priority' => '0.7'],
+            ['path' => '/outils/pages', 'priority' => '0.8', 'lastmod' => '2026-10-12'],
             ['path' => '/outils/dos', 'priority' => '0.8', 'lastmod' => '2026-10-08'],
             ['path' => '/outils/isbn', 'priority' => '0.8', 'lastmod' => '2026-10-08'],
             ['path' => '/salons', 'priority' => '0.9', 'lastmod' => '2026-10-08'],

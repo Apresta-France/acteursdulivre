@@ -56,7 +56,7 @@ $souscriptions = $souscriptions ?? [];
       <a class="co-door" href="<?= e(url('/outils')) ?>">
         <span class="co-door-ico" aria-hidden="true"><?= icon('counter', 22) ?></span>
         <h2>Outils</h2>
-        <p>Signes, feuillets, mots : pour cadrer un devis avant d’écrire au prestataire. Le manuscrit ne quitte pas votre navigateur.</p>
+        <p>Signes, pages, dos : pour cadrer un devis avant d’écrire au prestataire. Le manuscrit ne quitte pas votre navigateur.</p>
         <span class="co-door-cta">Ouvrir les outils →</span>
       </a>
     </div>

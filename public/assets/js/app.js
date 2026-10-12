@@ -4924,6 +4924,11 @@
           );
         }
       }
+      var pagesLink = root.querySelector('[data-volume-pages]');
+      if (pagesLink) {
+        var pagesBase = pagesLink.getAttribute('data-pages-base') || pagesLink.getAttribute('href') || '';
+        pagesLink.href = has ? (pagesBase + '?n=' + stats.sec + '&u=signes') : pagesBase;
+      }
       syncUrl(stats);
     }
 
@@ -4989,6 +4994,7 @@
         render(emptyStats());
       });
     }
+    render(currentStats());
   });
 
   document.querySelectorAll('[data-spine-tool]').forEach(function (root) {
@@ -5265,6 +5271,401 @@
         if (bleedInput) bleedInput.value = '5';
         if (flapsInput) { flapsInput.checked = false; flapsInput.disabled = false; }
         if (flapInput) flapInput.value = '80';
+        render();
+      });
+    }
+    render();
+  });
+
+  document.querySelectorAll('[data-pages-tool]').forEach(function (root) {
+    var cfg = {};
+    try { cfg = JSON.parse(root.getAttribute('data-pages-config') || '{}'); } catch (e) {}
+    var formats = cfg.formats || {};
+    var gabarits = cfg.gabarits || {};
+    var ptMm = Number(cfg.ptMm) || (25.4 / 72);
+    var chasseRatio = Number(cfg.chasse) || 0.45;
+    var chapterPage = Number(cfg.chapterPage);
+    if (!isFinite(chapterPage)) chapterPage = 0.5;
+    var feuillet = Number(cfg.feuillet) || 1500;
+    var signsPerWord = Number(cfg.signsPerWord) || 6;
+    var amountMax = Number(cfg.amountMax) || 100000000;
+    var spaceRatio = (signsPerWord - 1) / signsPerWord;
+    var dosBase = root.getAttribute('data-dos-base') || '/outils/dos';
+    var amountInput = root.querySelector('[data-pages-amount]');
+    var unitSelect = root.querySelector('[data-pages-unit]');
+    var formatSelect = root.querySelector('[data-pages-format]');
+    var gabaritSelect = root.querySelector('[data-pages-gabarit]');
+    var widthInput = root.querySelector('[data-pages-width]');
+    var heightInput = root.querySelector('[data-pages-height]');
+    var corpsInput = root.querySelector('[data-pages-corps]');
+    var leadingInput = root.querySelector('[data-pages-leading]');
+    var extraInput = root.querySelector('[data-pages-extra]');
+    var chaptersInput = root.querySelector('[data-pages-chapters]');
+    var customFormat = root.querySelector('[data-pages-custom-format]');
+    var libreRow = root.querySelector('[data-pages-libre]');
+    var sheet = root.querySelector('[data-pages-sheet]');
+    var block = root.querySelector('[data-pages-block]');
+    var caption = root.querySelector('[data-pages-caption]');
+    var note = root.querySelector('[data-pages-note]');
+    var sigs = root.querySelector('[data-pages-sigs]');
+    var warningsBox = root.querySelector('[data-pages-warnings]');
+    var summaryEl = root.querySelector('[data-pages-summary]');
+    var dosLink = root.querySelector('[data-pages-dos]');
+    var copyBtn = root.querySelector('[data-pages-copy]');
+    var resetBtn = root.querySelector('[data-pages-reset]');
+    var form = root.querySelector('[data-pages-form]');
+    var lastSummary = summaryEl ? summaryEl.textContent : '';
+
+    function clamp(n, min, max) {
+      return Math.max(min, Math.min(max, n));
+    }
+
+    function parseDecimal(raw) {
+      var value = String(raw || '').replace(/\u00a0/g, ' ').replace(/\u202f/g, ' ').replace(/\s/g, '').replace(',', '.');
+      if (!value || !isFinite(Number(value))) return null;
+      return Number(value);
+    }
+
+    function parseAmount(raw) {
+      var n = parseDecimal(raw);
+      if (n === null || n < 0 || n > amountMax) return null;
+      return n;
+    }
+
+    function formatNumber(n, maxDecimals) {
+      if (!isFinite(n)) return '—';
+      if (Math.abs(n - Math.round(n)) < 0.05) return Math.round(n).toLocaleString('fr-FR');
+      return n.toLocaleString('fr-FR', { minimumFractionDigits: 0, maximumFractionDigits: maxDecimals || 1 });
+    }
+
+    function formatSize(w, h) {
+      return formatNumber(w, 1) + ' × ' + formatNumber(h, 1) + ' mm';
+    }
+
+    function formatField(n) {
+      if (Math.abs(n - Math.round(n)) < 0.001) return String(Math.round(n));
+      return String(Math.round(n * 10) / 10).replace('.', ',');
+    }
+
+    function param(n) {
+      return String(n).replace('.', ',');
+    }
+
+    function toggle(el, on) {
+      if (!el) return;
+      el.classList.toggle('is-hidden', !on);
+      el.hidden = !on;
+    }
+
+    function fromAmount(amount, unit) {
+      if (!amount) return 0;
+      if (unit === 'signes-nc') return Math.round(amount / spaceRatio);
+      if (unit === 'mots') return Math.round(amount * signsPerWord);
+      if (unit === 'feuillets') return Math.round(amount * feuillet);
+      return Math.round(amount);
+    }
+
+    function textBlock(width, height, gab) {
+      var inner = Number(gab.inner);
+      var outer = Number(gab.outer);
+      var head = Number(gab.head);
+      var foot = Number(gab.foot);
+      var scaled = false;
+      var minW = Number(cfg.minTextW) || 60;
+      var minH = Number(cfg.minTextH) || 90;
+      var textW = width - inner - outer;
+      if (textW < minW) {
+        var availableW = width - minW;
+        var sumW = inner + outer;
+        if (sumW > 0 && availableW > 16) {
+          var factorW = availableW / sumW;
+          inner *= factorW;
+          outer *= factorW;
+          scaled = true;
+        }
+        textW = width - inner - outer;
+      }
+      var textH = height - head - foot;
+      if (textH < minH) {
+        var availableH = height - minH;
+        var sumH = head + foot;
+        if (sumH > 0 && availableH > 20) {
+          var factorH = availableH / sumH;
+          head *= factorH;
+          foot *= factorH;
+          scaled = true;
+        }
+        textH = height - head - foot;
+      }
+      return {
+        inner: inner,
+        outer: outer,
+        head: head,
+        foot: foot,
+        textW: Math.max(1, textW),
+        textH: Math.max(1, textH),
+        scaled: scaled
+      };
+    }
+
+    function pad(pages, signature) {
+      if (pages <= 0) return 0;
+      var mod = pages % signature;
+      if (mod === 0) return pages;
+      return pages + (signature - mod);
+    }
+
+    function readInput() {
+      var format = (formatSelect && formatSelect.value) || 'roman';
+      var gabarit = (gabaritSelect && gabaritSelect.value) || 'roman';
+      var presetF = formats[format] || formats.roman || { w: 140, h: 210 };
+      var gab = gabarits[gabarit] || gabarits.roman || { corps: 11, leading: 13.5, inner: 16, outer: 22, head: 16, foot: 24, note: '' };
+      var width = format === 'custom' ? (parseDecimal(widthInput && widthInput.value) ?? Number(presetF.w)) : Number(presetF.w);
+      var height = format === 'custom' ? (parseDecimal(heightInput && heightInput.value) ?? Number(presetF.h)) : Number(presetF.h);
+      var corps = gabarit === 'libre' ? (parseDecimal(corpsInput && corpsInput.value) ?? Number(gab.corps)) : Number(gab.corps);
+      var leading = gabarit === 'libre' ? (parseDecimal(leadingInput && leadingInput.value) ?? Number(gab.leading)) : Number(gab.leading);
+      var extra = parseDecimal(extraInput && extraInput.value);
+      if (extra === null) extra = Number(cfg.defaultExtra);
+      if (!isFinite(extra)) extra = 8;
+      var chapters = parseDecimal(chaptersInput && chaptersInput.value);
+      if (chapters === null) chapters = 0;
+      var amount = parseAmount(amountInput && amountInput.value);
+      if (amount === null) amount = 0;
+      return {
+        amount: amount,
+        unit: (unitSelect && unitSelect.value) || 'signes',
+        format: format,
+        width: clamp(width, cfg.sizeMin || 80, cfg.sizeMax || 420),
+        height: clamp(height, cfg.sizeMin || 80, cfg.sizeMax || 420),
+        gabarit: gabarit,
+        gab: gab,
+        corps: clamp(corps, cfg.corpsMin || 7, cfg.corpsMax || 18),
+        leading: clamp(leading, cfg.leadingMin || 8, cfg.leadingMax || 28),
+        extra: clamp(Math.round(extra), 0, cfg.extraMax || 96),
+        chapters: clamp(Math.round(chapters), 0, cfg.chaptersMax || 400)
+      };
+    }
+
+    function compute(input) {
+      var corps = input.corps;
+      var leading = input.leading;
+      var leadingClamped = false;
+      if (leading < corps) {
+        leading = corps;
+        leadingClamped = true;
+      }
+      var block = textBlock(input.width, input.height, input.gab);
+      var chasse = corps * ptMm * chasseRatio;
+      var signsPerLine = Math.max(1, Math.round(block.textW / chasse));
+      var lines = Math.max(1, Math.floor((block.textH / (leading * ptMm)) + 1e-9));
+      var signsPerPage = signsPerLine * lines;
+      var sec = fromAmount(input.amount, input.unit);
+      var has = sec > 0 && signsPerPage > 0;
+      var textPages = 0;
+      var bookPages = 0;
+      var sig16 = 0;
+      var sig8 = 0;
+      var sig4 = 0;
+      if (has) {
+        var flow = (sec / signsPerPage) + (input.chapters * chapterPage);
+        textPages = Math.ceil(flow - 1e-9);
+        bookPages = textPages + input.extra;
+        sig16 = pad(bookPages, 16);
+        sig8 = pad(bookPages, 8);
+        sig4 = pad(bookPages, 4);
+      }
+      var warnings = [];
+      if (signsPerLine > (cfg.lineLong || 70)) {
+        warnings.push('La ligne dépasse 70 signes : la lecture suivie fatigue. Élargissez les marges, baissez le corps, ou passez sur un format plus étroit.');
+      } else if (signsPerLine < (cfg.lineShort || 45)) {
+        warnings.push('La ligne est courte (moins de 45 signes). Le poche le supporte ; en grand format, réduisez les marges.');
+      }
+      if (leadingClamped) {
+        warnings.push('L’interligne est inférieur au corps. Le calcul aligne l’interligne sur le corps.');
+      }
+      if (block.scaled) {
+        warnings.push('Les marges du gabarit ont été réduites : ce format est petit pour ces fonds.');
+      }
+      if (has && (sig16 - bookPages) >= 8) {
+        warnings.push('Le cahier de 16 ajoute ' + (sig16 - bookPages) + ' pages blanches. Un cahier de 8, ou le numérique, colle mieux à ce volume.');
+      }
+      if (textPages >= 700) {
+        warnings.push('Au-delà de 700 pages de texte, le façonnage et le prix public changent de nature. Vérifiez le dos.');
+      }
+      var summary = '';
+      if (has) {
+        var formatLabel = (formats[input.format] && formats[input.format].label) || input.format;
+        var unitLabel = input.unit === 'feuillets' ? 'feuillets' : (input.unit === 'mots' ? 'mots' : (input.unit === 'signes-nc' ? 'signes hors espaces' : 'signes'));
+        summary = formatNumber(input.amount, input.unit === 'feuillets' ? 1 : 0) + ' ' + unitLabel
+          + ' · ' + formatLabel
+          + ' · ' + formatNumber(input.corps, 1) + ' / ' + formatNumber(leading, 1)
+          + ' · ' + signsPerLine + ' signes/ligne · ' + lines + ' lignes'
+          + ' · ' + formatNumber(signsPerPage, 0) + ' signes/page'
+          + ' · ' + formatNumber(textPages, 0) + ' pages de texte';
+        if (input.chapters > 0) summary += ' · ' + formatNumber(input.chapters, 0) + ' chapitres';
+        summary += ' · ' + input.extra + ' hors texte · ' + formatNumber(sig16, 0) + ' pages au cahier de 16';
+      }
+      return {
+        sec: sec,
+        signsPerLine: signsPerLine,
+        lines: lines,
+        signsPerPage: signsPerPage,
+        textPages: textPages,
+        bookPages: bookPages,
+        sig16: sig16,
+        sig8: sig8,
+        sig4: sig4,
+        block: block,
+        leading: leading,
+        has: has,
+        warnings: warnings,
+        summary: summary
+      };
+    }
+
+    function setOut(name, value) {
+      root.querySelectorAll('[data-pages-out="' + name + '"]').forEach(function (el) {
+        el.textContent = value;
+      });
+    }
+
+    function spineHref(input, pages) {
+      var url = new URL(dosBase, window.location.href);
+      url.search = '';
+      if (input.format !== 'roman') url.searchParams.set('f', input.format);
+      if (input.format === 'custom') {
+        url.searchParams.set('w', param(input.width));
+        url.searchParams.set('h', param(input.height));
+      }
+      if (pages > 0 && pages !== 280) url.searchParams.set('p', String(pages));
+      return url.pathname + url.search;
+    }
+
+    function syncUrl(input) {
+      if (!window.history || !window.history.replaceState) return;
+      var url = new URL(window.location.href);
+      var amountEmpty = !amountInput || String(amountInput.value || '').trim() === '';
+      if (amountEmpty) {
+        url.searchParams.set('n', '0');
+        url.searchParams.delete('u');
+      } else if (input.amount === 520000 && input.unit === 'signes') {
+        url.searchParams.delete('n');
+        url.searchParams.delete('u');
+      } else {
+        url.searchParams.set('n', param(input.amount));
+        if (input.unit !== 'signes') url.searchParams.set('u', input.unit);
+        else url.searchParams.delete('u');
+      }
+      if (input.format !== 'roman') url.searchParams.set('f', input.format);
+      else url.searchParams.delete('f');
+      if (input.format === 'custom') {
+        url.searchParams.set('w', param(input.width));
+        url.searchParams.set('h', param(input.height));
+      } else {
+        url.searchParams.delete('w');
+        url.searchParams.delete('h');
+      }
+      if (input.gabarit !== 'roman') url.searchParams.set('gab', input.gabarit);
+      else url.searchParams.delete('gab');
+      if (input.gabarit === 'libre') {
+        if (Math.abs(input.corps - 11) > 0.001) url.searchParams.set('c', param(input.corps));
+        else url.searchParams.delete('c');
+        if (Math.abs(input.leading - 13.5) > 0.001) url.searchParams.set('l', param(input.leading));
+        else url.searchParams.delete('l');
+      } else {
+        url.searchParams.delete('c');
+        url.searchParams.delete('l');
+      }
+      if (input.extra !== 8) url.searchParams.set('ht', String(input.extra));
+      else url.searchParams.delete('ht');
+      if (input.chapters !== 0) url.searchParams.set('ch', String(input.chapters));
+      else url.searchParams.delete('ch');
+      history.replaceState(null, '', url.pathname + url.search);
+    }
+
+    function render() {
+      var input = readInput();
+      toggle(customFormat, input.format === 'custom');
+      toggle(libreRow, input.gabarit === 'libre');
+      if (input.gabarit !== 'libre') {
+        if (corpsInput) corpsInput.value = formatField(input.corps);
+        if (leadingInput) leadingInput.value = formatField(input.leading);
+      }
+      var result = compute(input);
+      var dash = '—';
+      setOut('signs-line', result.signsPerLine > 0 ? String(result.signsPerLine) : dash);
+      setOut('lines', result.lines > 0 ? String(result.lines) : dash);
+      setOut('signs-page', result.signsPerPage > 0 ? formatNumber(result.signsPerPage, 0) : dash);
+      setOut('text', result.has ? formatNumber(result.textPages, 0) : dash);
+      setOut('book', result.has ? formatNumber(result.bookPages, 0) : dash);
+      setOut('book-inline', result.has ? formatNumber(result.bookPages, 0) : dash);
+      setOut('sig16', result.has ? formatNumber(result.sig16, 0) : dash);
+      setOut('sig8', result.has ? formatNumber(result.sig8, 0) : dash);
+      setOut('sig4', result.has ? formatNumber(result.sig4, 0) : dash);
+      if (sheet) sheet.style.aspectRatio = input.width + ' / ' + input.height;
+      if (block) {
+        block.style.top = (result.block.head / input.height * 100) + '%';
+        block.style.right = (result.block.outer / input.width * 100) + '%';
+        block.style.bottom = (result.block.foot / input.height * 100) + '%';
+        block.style.left = (result.block.inner / input.width * 100) + '%';
+        block.style.setProperty('--lines', String(Math.max(1, result.lines)));
+      }
+      if (caption) caption.textContent = 'Bloc de texte ' + formatSize(result.block.textW, result.block.textH) + '.';
+      if (note) note.textContent = input.gab.note || '';
+      if (sigs) sigs.hidden = !result.has;
+      if (warningsBox) {
+        warningsBox.hidden = result.warnings.length === 0;
+        while (warningsBox.firstChild) warningsBox.removeChild(warningsBox.firstChild);
+        result.warnings.forEach(function (warning) {
+          var p = document.createElement('p');
+          p.textContent = warning;
+          warningsBox.appendChild(p);
+        });
+      }
+      if (dosLink) {
+        dosLink.hidden = !result.has;
+        dosLink.href = spineHref(input, result.sig16);
+        dosLink.textContent = result.has ? ('Voir le dos sur ' + formatNumber(result.sig16, 0) + ' pages →') : 'Voir le dos →';
+      }
+      lastSummary = result.summary;
+      if (summaryEl) summaryEl.textContent = lastSummary;
+      if (copyBtn) copyBtn.disabled = !result.has;
+      syncUrl(input);
+    }
+
+    [amountInput, unitSelect, formatSelect, gabaritSelect, widthInput, heightInput, corpsInput, leadingInput, extraInput, chaptersInput].forEach(function (el) {
+      if (!el) return;
+      el.addEventListener('input', render);
+      el.addEventListener('change', render);
+    });
+    if (form) {
+      form.addEventListener('submit', function (event) {
+        event.preventDefault();
+        render();
+      });
+    }
+    if (copyBtn) {
+      copyBtn.addEventListener('click', function () {
+        if (!lastSummary) return;
+        copyText(lastSummary).then(function () {
+          showToast('Résultat copié.');
+        }).catch(function () {
+          showToast('Copie impossible.');
+        });
+      });
+    }
+    if (resetBtn) {
+      resetBtn.addEventListener('click', function () {
+        if (amountInput) amountInput.value = '520 000';
+        if (unitSelect) unitSelect.value = 'signes';
+        if (formatSelect) formatSelect.value = 'roman';
+        if (gabaritSelect) gabaritSelect.value = 'roman';
+        if (widthInput) widthInput.value = '140';
+        if (heightInput) heightInput.value = '210';
+        if (corpsInput) corpsInput.value = '11';
+        if (leadingInput) leadingInput.value = '13,5';
+        if (extraInput) extraInput.value = '8';
+        if (chaptersInput) chaptersInput.value = '0';
         render();
       });
     }

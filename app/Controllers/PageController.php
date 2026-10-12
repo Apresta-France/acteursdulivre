@@ -17,6 +17,7 @@ use Adl\Data\Seo;
 use Adl\Data\Share;
 use Adl\Data\Sitemap;
 use Adl\Data\Isbn;
+use Adl\Data\Pagination;
 use Adl\Data\Souscriptions;
 use Adl\Data\Spine;
 use Adl\Data\Tools;
@@ -956,6 +957,7 @@ final class PageController
 
         match ($slug) {
             'volume' => $this->outilVolume($request, $tool),
+            'pages' => $this->outilPages($request, $tool),
             'dos' => $this->outilDos($request, $tool),
             'isbn' => $this->outilIsbn($request, $tool),
             default => not_found('Cet outil n\'existe pas.'),
@@ -1000,6 +1002,49 @@ final class PageController
             'simulated' => $simulated,
             'faqs' => Tools::volumeFaqs(),
             'jsConfig' => Tools::jsConfig(),
+        ]);
+    }
+
+    /**
+     * @param array<string, mixed> $tool
+     */
+    private function outilPages(Request $request, array $tool): void
+    {
+        $input = Pagination::fromQuery(
+            $request->string('n'),
+            $request->string('u'),
+            $request->string('f'),
+            $request->string('w'),
+            $request->string('h'),
+            $request->string('gab'),
+            $request->string('c'),
+            $request->string('l'),
+            $request->string('ht'),
+            $request->string('ch')
+        );
+        $result = Pagination::compute($input);
+        $title = (string) $tool['title'];
+        $path = Tools::path('pages');
+        $meta = Seo::forScreen('outil-pages', [
+            'path' => $path,
+            'breadcrumbs' => [
+                ['name' => Seo::BRAND, 'url' => '/'],
+                ['name' => 'Outils', 'url' => Tools::path()],
+                ['name' => $title, 'url' => $path],
+            ],
+        ]);
+
+        View::page('outil-pages', [
+            'title' => (string) (Seo::catalog()['outil-pages']['title'] ?? $title),
+            'meta' => $meta,
+            'tool' => $tool,
+            'input' => $input,
+            'result' => $result,
+            'formats' => Spine::formats(),
+            'gabarits' => Pagination::gabarits(),
+            'unitLabels' => Tools::unitLabels(),
+            'faqs' => Pagination::faqs(),
+            'jsConfig' => Pagination::jsConfig(),
         ]);
     }
 
