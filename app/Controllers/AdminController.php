@@ -152,6 +152,7 @@ final class AdminController
                 'kpis' => [],
                 'series' => [],
                 'pages' => [],
+                'other_pages' => [],
                 'paths' => [],
                 'profiles' => [],
                 'services' => [],

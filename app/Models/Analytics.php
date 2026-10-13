@@ -119,6 +119,9 @@ final class Analytics
             }
             self::bump('page', $classified['page'], '', true);
             self::bump('path', $classified['path'], '', true);
+            if ($classified['page'] === 'autre') {
+                self::bump('autre', self::otherDetailPath($path), '', true);
+            }
             if ($classified['entity'] !== null) {
                 self::bump($classified['entity'][0], $classified['entity'][1], '', true);
             }
@@ -304,6 +307,15 @@ final class Analytics
             'kpis' => self::kpis($current, $previous, $compare),
             'series' => $series,
             'pages' => self::ranked($current['page'], $previous['page'], $compare, [self::class, 'pageLabel']),
+            'other_pages' => self::otherPages(
+                $current['autre'] ?? [],
+                $previous['autre'] ?? [],
+                $current['path'],
+                $previous['path'],
+                (int) ($current['page']['autre'] ?? 0),
+                (int) ($previous['page']['autre'] ?? 0),
+                $compare
+            ),
             'paths' => self::rankedPaths($current['path'], $previous['path'], $compare),
             'profiles' => self::rankedEntities('profile', $current['profile'], $previous['profile'], $compare),
             'services' => self::rankedEntities('service', $current['service'], $previous['service'], $compare),
@@ -1016,6 +1028,9 @@ final class Analytics
                 return null;
             }
         }
+        if (preg_match('#^/erreur/(\d{3})$#', $path, $errorMatch)) {
+            return ['page' => 'erreur', 'path' => '/erreur/' . $errorMatch[1], 'entity' => null];
+        }
         $code = http_response_code();
         if ($code >= 400) {
             return ['page' => 'erreur', 'path' => '/erreur/' . $code, 'entity' => null];
@@ -1317,6 +1332,7 @@ final class Analytics
      *     search_city: array<string, int>,
      *     page: array<string, int>,
      *     path: array<string, int>,
+     *     autre: array<string, int>,
      *     profile: array<string, int>,
      *     service: array<string, int>,
      *     mission: array<string, int>,
@@ -1375,6 +1391,7 @@ final class Analytics
             'search_city' => [],
             'page' => [],
             'path' => [],
+            'autre' => [],
             'profile' => [],
             'service' => [],
             'mission' => [],
@@ -1559,6 +1576,223 @@ final class Analytics
         } catch (Throwable) {
         }
         return $out;
+    }
+
+    /**
+     * Détail des visites classées « Autre page » : adresses enregistrées,
+     * puis les rubriques encore regroupées dans les statistiques plus anciennes.
+     *
+     * @param array<string, int> $detailed
+     * @param array<string, int> $detailedPrev
+     * @param array<string, int> $paths
+     * @param array<string, int> $pathsPrev
+     * @return list<array<string, mixed>>
+     */
+    private static function otherPages(
+        array $detailed,
+        array $detailedPrev,
+        array $paths,
+        array $pathsPrev,
+        int $autreTotal,
+        int $autrePrev,
+        bool $compare
+    ): array {
+        $current = [];
+        $previous = [];
+        foreach ($detailed as $path => $hits) {
+            $path = (string) $path;
+            if ($path !== '' && (int) $hits > 0) {
+                $current[$path] = (int) $hits;
+            }
+        }
+        foreach ($detailedPrev as $path => $hits) {
+            $path = (string) $path;
+            if ($path !== '' && (int) $hits > 0) {
+                $previous[$path] = (int) $hits;
+            }
+        }
+
+        $sectionCurrent = self::otherSectionRemainders($paths, self::coveredHeads($detailed));
+        $sectionPrevious = self::otherSectionRemainders($pathsPrev, self::coveredHeads($detailedPrev));
+        foreach ($sectionCurrent as $head => $hits) {
+            $key = 'group:' . $head;
+            $current[$key] = (int) $hits;
+            $prevRemain = (int) ($sectionPrevious[$head] ?? 0);
+            if ($prevRemain > 0) {
+                $previous[$key] = $prevRemain;
+            }
+        }
+
+        $listed = (int) array_sum($current);
+        $gap = $autreTotal - $listed;
+        if ($gap > 0) {
+            $current['__gap'] = $gap;
+            $prevListed = (int) array_sum($detailedPrev) + (int) array_sum($sectionPrevious);
+            $prevGap = $autrePrev - $prevListed;
+            if ($prevGap > 0) {
+                $previous['__gap'] = $prevGap;
+            }
+        }
+
+        if ($current === []) {
+            return [];
+        }
+
+        arsort($current, SORT_NUMERIC);
+        $addressHits = $current;
+        unset($addressHits['__gap']);
+        $top = array_slice($addressHits, 0, 40, true);
+        if (isset($current['__gap'])) {
+            $top['__gap'] = $current['__gap'];
+        }
+        $max = max(1, ...array_values($top));
+        $out = [];
+        foreach ($top as $key => $hits) {
+            $presented = self::presentOtherPage((string) $key);
+            $prev = (int) ($previous[$key] ?? 0);
+            $out[] = [
+                'key' => (string) $key,
+                'label' => $presented['label'],
+                'n' => (int) $hits,
+                'v' => format_int((int) $hits),
+                'pct' => (int) round(100 * $hits / $max),
+                'delta' => $compare ? self::delta((int) $hits, $prev) : null,
+                'href' => $presented['href'],
+                'note' => $presented['note'],
+            ];
+        }
+
+        return $out;
+    }
+
+    /**
+     * @param array<string, int> $paths
+     * @param array<string, int> $covered
+     * @return array<string, int>
+     */
+    private static function otherSectionRemainders(array $paths, array $covered): array
+    {
+        $out = [];
+        foreach ($paths as $path => $hits) {
+            $path = (string) $path;
+            if ($path === '' || str_starts_with($path, '/erreur/')) {
+                continue;
+            }
+            $classified = self::classify($path);
+            if ($classified === null || $classified['page'] !== 'autre') {
+                continue;
+            }
+            $head = self::pathHead($path);
+            $remain = (int) $hits - (int) ($covered[$head] ?? 0);
+            if ($remain <= 0) {
+                continue;
+            }
+            $out[$head] = ($out[$head] ?? 0) + $remain;
+        }
+
+        return $out;
+    }
+
+    /**
+     * @param array<string, int> $paths
+     * @return array<string, int>
+     */
+    private static function coveredHeads(array $paths): array
+    {
+        $covered = [];
+        foreach ($paths as $path => $hits) {
+            $head = self::pathHead((string) $path);
+            $covered[$head] = ($covered[$head] ?? 0) + (int) $hits;
+        }
+
+        return $covered;
+    }
+
+    /** @return array{label: string, href: ?string, note: ?string} */
+    private static function presentOtherPage(string $key): array
+    {
+        if ($key === '__gap') {
+            return [
+                'label' => 'Sans adresse distincte',
+                'href' => null,
+                'note' => 'Visites plus anciennes mêlées à un type de page déjà nommé.',
+            ];
+        }
+        $grouped = str_starts_with($key, 'group:');
+        $path = $grouped ? substr($key, 6) : $key;
+        $friendly = self::otherSectionLabel($path);
+
+        return [
+            'label' => $friendly ?? $path,
+            'href' => str_starts_with($path, '/') ? $path : null,
+            'note' => $grouped
+                ? 'Visites regroupées sur ' . $path . ', sans le détail de chaque adresse.'
+                : ($friendly !== null && $friendly !== $path ? $path : null),
+        ];
+    }
+
+    private static function otherSectionLabel(string $path): ?string
+    {
+        return match ($path) {
+            '/forum' => 'Forum',
+            '/auteurs' => 'Auteurs',
+            '/maisons-edition' => 'Maisons d’édition',
+            '/salons' => 'Salons',
+            '/communaute' => 'Communauté',
+            '/souscriptions' => 'Souscriptions',
+            '/recommandation' => 'Recommandation',
+            '/ecrire' => 'Écrire',
+            '/blog' => 'Ancien blog',
+            '/contact-us' => 'Ancien contact',
+            default => null,
+        };
+    }
+
+    private static function pathHead(string $path): string
+    {
+        $head = explode('/', trim($path, '/'))[0] ?? '';
+
+        return $head === '' ? '/' : '/' . $head;
+    }
+
+    private static function otherDetailPath(string $path): string
+    {
+        $parts = array_values(array_filter(
+            explode('/', trim($path, '/')),
+            static fn (string $part): bool => $part !== ''
+        ));
+        if ($parts === []) {
+            return '/';
+        }
+        if ($parts[0] === 'recommandation') {
+            return '/recommandation';
+        }
+        $safe = [];
+        foreach ($parts as $part) {
+            if (self::looksLikeSecret($part)) {
+                break;
+            }
+            $safe[] = $part;
+            if (count($safe) >= 4) {
+                break;
+            }
+        }
+        if ($safe === []) {
+            return '/' . $parts[0];
+        }
+
+        return mb_substr('/' . implode('/', $safe), 0, 160);
+    }
+
+    private static function looksLikeSecret(string $part): bool
+    {
+        if (preg_match('/^[a-f0-9]{16,}$/i', $part)) {
+            return true;
+        }
+
+        return strlen($part) >= 32
+            && preg_match('/^[A-Za-z0-9_-]+$/', $part)
+            && !str_contains($part, '-');
     }
 
     /**

@@ -33,7 +33,8 @@ foreach ($liveMinutes as $m) {
     $maxLive = max($maxLive, (int) ($m['n'] ?? 0));
 }
 
-$rankTable = static function (array $rows, string $empty): void {
+$otherPages = $other_pages ?? [];
+$rankTable = static function (array $rows, string $empty) use ($otherPages): void {
     if ($rows === []) {
         echo '<p class="admin-muted">' . e($empty) . '</p>';
         return;
@@ -43,15 +44,24 @@ $rankTable = static function (array $rows, string $empty): void {
         $href = $row['href'] ?? null;
         $label = (string) ($row['label'] ?? '');
         $delta = $row['delta'] ?? null;
+        $detail = ($row['key'] ?? '') === 'autre' && $otherPages !== [] ? 'stats-other-pages' : '';
         echo '<li>';
         echo '<div class="stats-rank-top">';
+        echo '<div class="stats-rank-label">';
         if (is_string($href) && $href !== '') {
             echo '<a href="' . e(url($href)) . '" target="_blank" rel="noopener">' . e($label) . '</a>';
         } else {
             echo '<span>' . e($label) . '</span>';
         }
+        if ($detail !== '') {
+            echo '<button type="button" class="stats-more" data-stats-dialog-open="' . e($detail) . '" aria-haspopup="dialog" aria-controls="' . e($detail) . '">Voir plus</button>';
+        }
+        echo '</div>';
         echo '<em>' . e((string) ($row['v'] ?? format_int((int) ($row['n'] ?? 0)))) . '</em>';
         echo '</div>';
+        if (!empty($row['note'])) {
+            echo '<small class="admin-muted stats-rank-note">' . e((string) $row['note']) . '</small>';
+        }
         echo '<div class="admin-bar"><i style="width:' . (int) ($row['pct'] ?? 0) . '%"></i></div>';
         if (is_array($delta)) {
             echo '<small class="stats-delta is-' . e((string) ($delta['tone'] ?? 'flat')) . '">' . e((string) ($delta['text'] ?? '')) . '</small>';
@@ -226,6 +236,18 @@ $rankTable = static function (array $rows, string $empty): void {
         <div class="admin-card"><h2>Appareils</h2><?php $rankTable($devices ?? [], 'Aucun appareil distingué.'); ?></div>
         <div class="admin-card"><h2>Actions</h2><?php $rankTable($actions ?? [], 'Aucune action enregistrée sur cette période.'); ?></div>
       </div>
+      <?php if ($otherPages !== []): ?>
+        <dialog class="stats-dialog" id="stats-other-pages" data-stats-dialog aria-labelledby="stats-other-pages-title">
+          <div class="stats-dialog-inner">
+            <div class="stats-dialog-bar">
+              <h2 id="stats-other-pages-title">Autres pages</h2>
+              <button type="button" class="stats-dialog-close" data-stats-dialog-close aria-label="Fermer">×</button>
+            </div>
+            <p class="admin-muted">Adresses comptées dans « Autre page » sur la période affichée.</p>
+            <?php $rankTable($otherPages, 'Aucune autre page sur cette période.'); ?>
+          </div>
+        </dialog>
+      <?php endif; ?>
     </section>
   <?php endif; ?>
 

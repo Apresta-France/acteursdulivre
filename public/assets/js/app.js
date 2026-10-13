@@ -4291,6 +4291,25 @@
     fetch(statsEndpoint, { method: 'POST', body: body, credentials: 'same-origin', keepalive: true }).catch(function () {});
   }, true);
 
+  document.querySelectorAll('[data-stats-dialog-open]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var id = btn.getAttribute('data-stats-dialog-open');
+      var dialog = id ? document.getElementById(id) : null;
+      if (!dialog || typeof dialog.showModal !== 'function') return;
+      dialog.showModal();
+    });
+  });
+  document.querySelectorAll('[data-stats-dialog]').forEach(function (dialog) {
+    dialog.querySelectorAll('[data-stats-dialog-close]').forEach(function (closeBtn) {
+      closeBtn.addEventListener('click', function () {
+        if (typeof dialog.close === 'function') dialog.close();
+      });
+    });
+    dialog.addEventListener('click', function (event) {
+      if (event.target === dialog && typeof dialog.close === 'function') dialog.close();
+    });
+  });
+
   var liveBox = document.querySelector('[data-stats-live]');
   if (liveBox) {
     var liveUrl = liveBox.getAttribute('data-live-url');
