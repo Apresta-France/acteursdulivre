@@ -17,6 +17,16 @@ final class NewsletterCampaign
     public const AUDIENCE_CONFIRMED = 'confirmed';
     public const AUDIENCE_ACCOUNTS = 'accounts';
 
+    /** @var list<string> */
+    public const AUDIENCES = [
+        'confirmed',
+        'confirmed_presta',
+        'confirmed_client',
+        'accounts',
+        'accounts_presta',
+        'accounts_client',
+    ];
+
     /**
      * @param array{subject: string, html: string} $composed
      */
@@ -231,8 +241,8 @@ final class NewsletterCampaign
              JOIN newsletter_subscribers s ON s.id = d.subscriber_id
              WHERE d.status = "pending"
                AND (
-                 (c.audience = "accounts" AND s.status <> "unsubscribed")
-                 OR (c.audience <> "accounts" AND s.status = "confirmed")
+                 (c.audience IN ("accounts", "accounts_presta", "accounts_client") AND s.status <> "unsubscribed")
+                 OR (c.audience NOT IN ("accounts", "accounts_presta", "accounts_client") AND s.status = "confirmed")
                )
              ORDER BY d.id ASC
              LIMIT ' . $limit
@@ -281,8 +291,8 @@ final class NewsletterCampaign
              JOIN newsletter_campaigns c ON c.id = d.campaign_id
              WHERE d.status = "pending"
                AND (
-                 (c.audience = "accounts" AND s.status = "unsubscribed")
-                 OR (c.audience <> "accounts" AND s.status <> "confirmed")
+                 (c.audience IN ("accounts", "accounts_presta", "accounts_client") AND s.status = "unsubscribed")
+                 OR (c.audience NOT IN ("accounts", "accounts_presta", "accounts_client") AND s.status <> "confirmed")
                )'
         );
         foreach ($rows as $row) {
@@ -359,22 +369,95 @@ final class NewsletterCampaign
 
     public static function audience(string $audience): string
     {
-        return $audience === self::AUDIENCE_ACCOUNTS ? self::AUDIENCE_ACCOUNTS : self::AUDIENCE_CONFIRMED;
+        return in_array($audience, self::AUDIENCES, true) ? $audience : self::AUDIENCE_CONFIRMED;
+    }
+
+    public static function compose(string $pool, string $segment): string
+    {
+        $pool = $pool === self::AUDIENCE_ACCOUNTS ? self::AUDIENCE_ACCOUNTS : self::AUDIENCE_CONFIRMED;
+        $suffix = match ($segment) {
+            'presta' => '_presta',
+            'client' => '_client',
+            default => '',
+        };
+
+        return self::audience($pool . $suffix);
+    }
+
+    /** @return array{pool: string, segment: string, key: string} */
+    public static function parse(string $audience): array
+    {
+        $audience = self::audience($audience);
+        $pool = str_starts_with($audience, self::AUDIENCE_ACCOUNTS) ? self::AUDIENCE_ACCOUNTS : self::AUDIENCE_CONFIRMED;
+        $segment = 'all';
+        if (str_ends_with($audience, '_presta')) {
+            $segment = 'presta';
+        } elseif (str_ends_with($audience, '_client')) {
+            $segment = 'client';
+        }
+
+        return ['pool' => $pool, 'segment' => $segment, 'key' => $audience];
+    }
+
+    public static function sendPhrase(string $audience): string
+    {
+        $parsed = self::parse($audience);
+        $accounts = $parsed['pool'] === self::AUDIENCE_ACCOUNTS;
+
+        return match ($parsed['segment']) {
+            'presta' => $accounts
+                ? 'les comptes prestataires, même sans la case lettre'
+                : 'les prestataires abonnés',
+            'client' => $accounts
+                ? 'les comptes clients, même sans la case lettre'
+                : 'les clients abonnés',
+            default => $accounts
+                ? 'tous les comptes, même sans la case lettre'
+                : 'les abonnés confirmés',
+        };
+    }
+
+    public static function listSuffix(string $audience): string
+    {
+        $parsed = self::parse($audience);
+        $bits = [];
+        if ($parsed['pool'] === self::AUDIENCE_ACCOUNTS) {
+            $bits[] = 'comptes';
+        }
+        if ($parsed['segment'] === 'presta') {
+            $bits[] = 'prestataires';
+        } elseif ($parsed['segment'] === 'client') {
+            $bits[] = 'clients';
+        }
+
+        return $bits === [] ? '' : ' · ' . implode(' ', $bits);
     }
 
     /** @return list<array<string, mixed>> */
     private static function recipients(string $audience): array
     {
-        return $audience === self::AUDIENCE_ACCOUNTS
-            ? Newsletter::accountRecipients()
-            : Newsletter::confirmed();
+        $parsed = self::parse($audience);
+        $intent = match ($parsed['segment']) {
+            'presta' => 'offers',
+            'client' => 'seeks',
+            default => null,
+        };
+        if ($parsed['pool'] === self::AUDIENCE_ACCOUNTS) {
+            return Newsletter::accountRecipients($intent);
+        }
+
+        return $intent === null ? Newsletter::confirmed() : Newsletter::confirmedIntent($intent);
     }
 
     private static function emptyAudienceMessage(string $audience): string
     {
-        return $audience === self::AUDIENCE_ACCOUNTS
-            ? 'Aucun compte à qui écrire : rien à envoyer.'
-            : 'Aucun abonné confirmé : rien à envoyer.';
+        return match (self::parse($audience)['segment']) {
+            'presta' => 'Aucun prestataire dans cette sélection : rien à envoyer.',
+            'client' => 'Aucun client dans cette sélection : rien à envoyer.',
+            default => self::parse($audience)['pool'] === self::AUDIENCE_ACCOUNTS
+                ? 'Aucun compte à qui écrire : rien à envoyer.'
+                : 'Aucun abonné confirmé : rien à envoyer.',
+        };
     }
 
     /** @param list<array<string, mixed>> $subscribers */

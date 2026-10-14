@@ -144,18 +144,50 @@ final class Newsletter
     }
 
     /**
+     * Abonnés confirmés dont le compte cherche des prestataires ou en propose.
+     *
+     * @return list<array<string, mixed>>
+     */
+    public static function confirmedIntent(string $intent): array
+    {
+        $column = self::intentColumn($intent);
+        if ($column === null) {
+            return self::confirmed();
+        }
+
+        return Database::fetchAll(
+            'SELECT s.*
+             FROM newsletter_subscribers s
+             WHERE s.status = ?
+               AND EXISTS (
+                 SELECT 1 FROM users u
+                 WHERE u.deleted_at IS NULL
+                   AND u.' . $column . ' = 1
+                   AND (u.id = s.user_id OR LOWER(u.email) = LOWER(s.email))
+               )
+             ORDER BY s.id ASC',
+            [self::STATUS_CONFIRMED]
+        );
+    }
+
+    /**
      * Comptes actifs ou en attente, même sans la case lettre cochée.
      * Les désinscrits explicites sont exclus. N’inscrit pas à la lettre hebdomadaire.
      *
      * @return list<array<string, mixed>>
      */
-    public static function accountRecipients(): array
+    public static function accountRecipients(?string $intent = null): array
     {
+        $intentSql = '';
+        $column = self::intentColumn($intent);
+        if ($column !== null) {
+            $intentSql = ' AND ' . $column . ' = 1';
+        }
         $rows = Database::fetchAll(
             'SELECT id, email FROM users
              WHERE deleted_at IS NULL
                AND status IN ("active", "pending")
-               AND email <> ""
+               AND email <> ""' . $intentSql . '
              ORDER BY id ASC'
         );
         $out = [];
@@ -175,8 +207,13 @@ final class Newsletter
         return $out;
     }
 
-    public static function countAccountRecipients(): int
+    public static function countAccountRecipients(?string $intent = null): int
     {
+        $intentSql = '';
+        $column = self::intentColumn($intent);
+        if ($column !== null) {
+            $intentSql = ' AND u.' . $column . ' = 1';
+        }
         $row = Database::fetch(
             'SELECT COUNT(DISTINCT LOWER(u.email)) AS n
              FROM users u
@@ -184,11 +221,55 @@ final class Newsletter
              WHERE u.deleted_at IS NULL
                AND u.status IN ("active", "pending")
                AND u.email <> ""
-               AND (s.id IS NULL OR s.status <> ?)',
+               AND (s.id IS NULL OR s.status <> ?)' . $intentSql,
             [self::STATUS_UNSUBSCRIBED]
         );
 
         return (int) ($row['n'] ?? 0);
+    }
+
+    /** @return array<string, int> */
+    public static function audienceCounts(): array
+    {
+        return [
+            'confirmed' => self::countByStatus(self::STATUS_CONFIRMED),
+            'confirmed_presta' => self::countConfirmedIntent('offers'),
+            'confirmed_client' => self::countConfirmedIntent('seeks'),
+            'accounts' => self::countAccountRecipients(),
+            'accounts_presta' => self::countAccountRecipients('offers'),
+            'accounts_client' => self::countAccountRecipients('seeks'),
+        ];
+    }
+
+    private static function countConfirmedIntent(string $intent): int
+    {
+        $column = self::intentColumn($intent);
+        if ($column === null) {
+            return self::countByStatus(self::STATUS_CONFIRMED);
+        }
+        $row = Database::fetch(
+            'SELECT COUNT(*) AS n
+             FROM newsletter_subscribers s
+             WHERE s.status = ?
+               AND EXISTS (
+                 SELECT 1 FROM users u
+                 WHERE u.deleted_at IS NULL
+                   AND u.' . $column . ' = 1
+                   AND (u.id = s.user_id OR LOWER(u.email) = LOWER(s.email))
+               )',
+            [self::STATUS_CONFIRMED]
+        );
+
+        return (int) ($row['n'] ?? 0);
+    }
+
+    private static function intentColumn(?string $intent): ?string
+    {
+        return match ($intent) {
+            'offers' => 'offers_services',
+            'seeks' => 'seeks_services',
+            default => null,
+        };
     }
 
     public static function countByStatus(?string $status = null): int

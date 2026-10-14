@@ -7947,6 +7947,7 @@ img.mk-card-media { width: 100%; object-fit: cover; display: block; }
   padding: 0;
   border: 0;
 }
+.admin-nl-audience + .admin-nl-audience { margin-top: 10px; }
 .admin-nl-audience legend {
   font-size: 13px;
   color: #66768A;

@@ -1,16 +1,32 @@
 <?php
 use Adl\Data\AdminCatalog;
 use Adl\Core\Csrf;
+use Adl\Models\NewsletterCampaign;
 
 $letter = $letter ?? [];
 $id = (int) ($letter['id'] ?? 0);
 $action = $id ? '/admin/newsletter/lettre/' . $id : '/admin/newsletter/nouvelle';
 $catalog = $catalog ?? ['missions' => [], 'people' => [], 'articles' => []];
-$confirmedCount = (int) ($confirmedCount ?? 0);
-$accountCount = (int) ($accountCount ?? 0);
 $campaign = is_array($campaign ?? null) ? $campaign : null;
 $hasCampaign = $campaign !== null;
-$audience = (string) ($campaign['audience'] ?? 'confirmed');
+$audience = NewsletterCampaign::audience((string) ($campaign['audience'] ?? 'confirmed'));
+$audienceCounts = is_array($audienceCounts ?? null) ? $audienceCounts : [];
+$audienceGroups = [
+    'Abonnés à la lettre' => [
+        'confirmed' => 'Tous',
+        'confirmed_presta' => 'Prestataires',
+        'confirmed_client' => 'Clients',
+    ],
+    'Comptes, même sans la case lettre' => [
+        'accounts' => 'Tous',
+        'accounts_presta' => 'Prestataires',
+        'accounts_client' => 'Clients',
+    ],
+];
+$countsJson = json_encode($audienceCounts, JSON_UNESCAPED_UNICODE);
+if ($countsJson === false) {
+    $countsJson = '{}';
+}
 $alreadySent = (int) ($campaign['sent_count'] ?? 0);
 $builder = [
     'blocks' => $letter['blocks'] ?? [],
@@ -63,7 +79,7 @@ $tiles = [
           <input class="input" type="email" name="test_email" value="<?= e(auth_user()['email'] ?? '') ?>" required aria-label="Adresse de test">
           <button class="btn-navy" type="submit">Tester</button>
         </form>
-        <form id="nl-send" method="post" action="<?= e(url('/admin/newsletter/lettre/' . $id . '/envoyer')) ?>" data-nl-sync data-nl-send<?= $hasCampaign ? ' data-nl-relaunch="1"' : '' ?> data-confirmed="<?= $confirmedCount ?>" data-accounts="<?= $accountCount ?>" data-already="<?= $alreadySent ?>">
+        <form id="nl-send" method="post" action="<?= e(url('/admin/newsletter/lettre/' . $id . '/envoyer')) ?>" data-nl-sync data-nl-send<?= $hasCampaign ? ' data-nl-relaunch="1"' : '' ?> data-counts="<?= e($countsJson) ?>" data-already="<?= $alreadySent ?>">
           <?= csrf_field() ?>
           <input type="hidden" name="subject" value="<?= e((string) ($letter['subject'] ?? '')) ?>">
           <input type="hidden" name="preheader" value="<?= e((string) ($letter['preheader'] ?? '')) ?>">
@@ -110,29 +126,28 @@ $tiles = [
           <label class="field" for="nl-preheader">Aperçu sous le sujet <span class="admin-nl-optional">(facultatif)</span></label>
           <input class="input" id="nl-preheader" name="preheader" maxlength="180" value="<?= e((string) ($letter['preheader'] ?? '')) ?>" placeholder="Une ligne visible sous le sujet, chez le destinataire" autocomplete="off">
           <?php if ($id): ?>
-            <fieldset class="admin-nl-audience">
-              <legend>Destinataires</legend>
-              <label>
-                <input type="radio" name="audience" value="confirmed" form="nl-send"<?= $audience !== 'accounts' ? ' checked' : '' ?>>
-                <span>Abonnés confirmés <em><?= $confirmedCount ?></em></span>
-              </label>
-              <label>
-                <input type="radio" name="audience" value="accounts" form="nl-send"<?= $audience === 'accounts' ? ' checked' : '' ?>>
-                <span>Tous les comptes, même sans la case lettre <em><?= $accountCount ?></em></span>
-              </label>
-              <p class="field-help"><?php
-                if ($hasCampaign) {
-                    $received = $alreadySent > 1
-                        ? $alreadySent . ' personnes l’ont déjà reçue : elles ne la recevront pas à nouveau.'
-                        : ($alreadySent === 1
-                            ? '1 personne l’a déjà reçue : elle ne la recevra pas à nouveau.'
-                            : 'Personne ne l’a encore reçue.');
-                    echo 'Relancer enregistre le texte modifié et n’écrit qu’à ceux qui n’ont pas encore reçu cette campagne. ' . $received . ' Les désinscrits restent exclus.';
-                } else {
-                    echo 'Les désinscrits ne sont pas inclus, même dans « tous les comptes ». Cet envoi ne coche pas la case lettre à leur place.';
-                }
-              ?></p>
-            </fieldset>
+            <?php foreach ($audienceGroups as $legend => $options): ?>
+              <fieldset class="admin-nl-audience">
+                <legend><?= e($legend) ?></legend>
+                <?php foreach ($options as $value => $label): ?>
+                  <label>
+                    <input type="radio" name="audience" value="<?= e($value) ?>" form="nl-send"<?= $audience === $value ? ' checked' : '' ?>>
+                    <span><?= e($label) ?> <em><?= (int) ($audienceCounts[$value] ?? 0) ?></em></span>
+                  </label>
+                <?php endforeach; ?>
+              </fieldset>
+            <?php endforeach; ?>
+            <p class="field-help"><?php
+              if ($hasCampaign) {
+                  $received = $alreadySent > 1
+                      ? $alreadySent . ' personnes l’ont déjà reçue : elles ne la recevront pas à nouveau.'
+                      : ($alreadySent === 1
+                          ? '1 personne l’a déjà reçue : elle ne la recevra pas à nouveau.'
+                          : 'Personne ne l’a encore reçue.');
+                  echo 'Relancer enregistre le texte modifié et n’écrit qu’à ceux qui n’ont pas encore reçu cette campagne. ' . $received . ' ';
+              }
+              echo 'Les clients sont les porteurs de projet, ceux qui cherchent des prestataires. Quelqu’un qui cherche et propose entre dans les deux profils. Les désinscrits restent exclus, et les inscrits sans compte ne figurent que dans « Tous » des abonnés. Cet envoi ne coche pas la case lettre à la place des comptes.';
+            ?></p>
           <?php endif; ?>
         </div>
 
