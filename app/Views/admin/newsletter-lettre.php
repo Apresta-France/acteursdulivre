@@ -23,10 +23,6 @@ $audienceGroups = [
         'accounts_client' => 'Clients',
     ],
 ];
-$countsJson = json_encode($audienceCounts, JSON_UNESCAPED_UNICODE);
-if ($countsJson === false) {
-    $countsJson = '{}';
-}
 $alreadySent = (int) ($campaign['sent_count'] ?? 0);
 $builder = [
     'blocks' => $letter['blocks'] ?? [],
@@ -79,11 +75,12 @@ $tiles = [
           <input class="input" type="email" name="test_email" value="<?= e(auth_user()['email'] ?? '') ?>" required aria-label="Adresse de test">
           <button class="btn-navy" type="submit">Tester</button>
         </form>
-        <form id="nl-send" method="post" action="<?= e(url('/admin/newsletter/lettre/' . $id . '/envoyer')) ?>" data-nl-sync data-nl-send<?= $hasCampaign ? ' data-nl-relaunch="1"' : '' ?> data-counts="<?= e($countsJson) ?>" data-already="<?= $alreadySent ?>">
+        <form id="nl-send" method="post" action="<?= e(url('/admin/newsletter/lettre/' . $id . '/envoyer')) ?>" data-nl-sync data-nl-send<?= $hasCampaign ? ' data-nl-relaunch="1"' : '' ?> data-already="<?= $alreadySent ?>">
           <?= csrf_field() ?>
           <input type="hidden" name="subject" value="<?= e((string) ($letter['subject'] ?? '')) ?>">
           <input type="hidden" name="preheader" value="<?= e((string) ($letter['preheader'] ?? '')) ?>">
           <input type="hidden" name="blocks" value="">
+          <input type="hidden" name="audience" value="<?= e($audience) ?>">
           <button class="btn-navy" type="submit"><?= $hasCampaign ? 'Relancer' : 'Envoyer' ?></button>
         </form>
       <?php endif; ?>
@@ -131,7 +128,7 @@ $tiles = [
                 <legend><?= e($legend) ?></legend>
                 <?php foreach ($options as $value => $label): ?>
                   <label>
-                    <input type="radio" name="audience" value="<?= e($value) ?>" form="nl-send"<?= $audience === $value ? ' checked' : '' ?>>
+                    <input type="radio" name="audience" value="<?= e($value) ?>" data-count="<?= (int) ($audienceCounts[$value] ?? 0) ?>"<?= $audience === $value ? ' checked' : '' ?>>
                     <span><?= e($label) ?> <em><?= (int) ($audienceCounts[$value] ?? 0) ?></em></span>
                   </label>
                 <?php endforeach; ?>

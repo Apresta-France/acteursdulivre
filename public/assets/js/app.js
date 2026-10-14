@@ -3808,13 +3808,13 @@
     });
     document.querySelectorAll('form[data-nl-send]').forEach(function (sendForm) {
       sendForm.addEventListener('submit', function (event) {
-        var picked = document.querySelector('input[name="audience"]:checked');
+        var picked = document.querySelector('.admin-nl-audience input[name="audience"]:checked');
         var audience = picked ? picked.value : 'confirmed';
+        var hiddenAudience = sendForm.querySelector('[name="audience"]');
+        if (hiddenAudience) hiddenAudience.value = audience;
         var relaunch = sendForm.getAttribute('data-nl-relaunch') === '1';
         var already = parseInt(sendForm.getAttribute('data-already') || '0', 10) || 0;
-        var counts = {};
-        try { counts = JSON.parse(sendForm.getAttribute('data-counts') || '{}'); } catch (err) { counts = {}; }
-        var n = parseInt(counts[audience], 10) || 0;
+        var n = picked ? (parseInt(picked.getAttribute('data-count'), 10) || 0) : 0;
         function nlPeople(count, one, many) {
           return count + ' ' + (count > 1 ? many : one);
         }
