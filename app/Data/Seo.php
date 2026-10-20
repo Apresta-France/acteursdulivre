@@ -30,7 +30,7 @@ final class Seo
     {
         return [
             'accueil' => [
-                'title' => 'Trouvez un prestataire pour votre livre — Acteurs du Livre',
+                'title' => 'Trouvez un prestataire pour votre livre | Acteurs du Livre',
                 'description' => 'Trouvez un correcteur, illustrateur, traducteur ou imprimeur. Comparez des prestations à prix affichés, ou publiez un appel d\'offres. Sans IA générative.',
                 'path' => '/',
             ],
@@ -478,13 +478,13 @@ final class Seo
     {
         $title = trim($title);
         if ($title === '') {
-            return self::BRAND . ' — ' . self::BRAND_HOST;
+            return self::BRAND . ' | ' . self::BRAND_HOST;
         }
         $lower = mb_strtolower($title);
         if (str_contains($lower, 'acteursdulivre') || str_contains($lower, 'acteurs du livre')) {
             return $title;
         }
-        return $title . ' — ' . self::BRAND_HOST;
+        return $title . ' | ' . self::BRAND_HOST;
     }
 
     public static function defaultImage(): string
@@ -1310,7 +1310,8 @@ MD;
 
     /**
      * Titre, extrait et données structurées d'une fiche salon.
-     * Le titre met l'année devant : les recherches portent sur « salon … 2026 ».
+     * L'année reste dans le titre (recherches « salon … 2026 ») mais après le nom
+     * et la ville, pour que la manifestation apparaisse en premier.
      *
      * @param array<string, mixed> $salon
      * @return array{title: string, description: string, json_ld: list<array<string, mixed>>}
@@ -1322,11 +1323,11 @@ MD;
         $start = trim((string) ($salon['starts_on'] ?? $salon['iso'] ?? ''));
         $year = preg_match('/^\d{4}/', $start) === 1 ? substr($start, 0, 4) : '';
         $title = $name;
-        if ($year !== '' && !str_contains($name, $year)) {
-            $title = $year . ' — ' . $name;
-        }
         if ($city !== '' && !str_contains(mb_strtolower($title), mb_strtolower($city))) {
             $title .= ' à ' . $city;
+        }
+        if ($year !== '' && !str_contains($title, $year)) {
+            $title .= ' (' . $year . ')';
         }
 
         $confirmed = !empty($salon['confirmed']) || !empty($salon['dates_confirmed']);

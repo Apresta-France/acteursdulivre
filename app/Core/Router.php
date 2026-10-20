@@ -78,7 +78,7 @@ final class Router
         View::render('errors/404', [
             'title' => 'Page introuvable',
             'meta' => [
-                'title' => 'Page introuvable — acteursdulivre.fr',
+                'title' => 'Page introuvable | acteursdulivre.fr',
                 'description' => 'Cette page n\'existe pas ou a été retirée.',
                 'robots' => \Adl\Data\Seo::ROBOTS_NONE,
             ],

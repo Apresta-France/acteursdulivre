@@ -6498,6 +6498,22 @@ a.me-admin-kpi.is-on { border-color: #022746; }
   background: #fff;
 }
 .inbox-quote .jalon-actions .btn-orange { min-height: 44px; }
+/* Le devis ne doit pas écraser les messages dans les 640 px du fil. */
+.inbox:has(.inbox-quote) .inbox-list { max-height: none; }
+.inbox-thread:has(.inbox-quote) {
+  max-height: none;
+}
+.inbox-thread:has(.inbox-quote) .inbox-thread-head,
+.inbox-thread:has(.inbox-quote) .inbox-quote-wait,
+.inbox-thread:has(.inbox-quote) .inbox-quote,
+.inbox-thread:has(.inbox-quote) .inbox-compose {
+  flex-shrink: 0;
+}
+.inbox-thread:has(.inbox-quote) .inbox-messages {
+  flex: 0 0 auto;
+  min-height: 11rem;
+  max-height: 22rem;
+}
 .inbox-compose { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; padding: 14px 18px; border-top: 1px solid var(--line); }
 .inbox-compose .textarea { flex: 1 1 100%; }
 .inbox-compose-actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }

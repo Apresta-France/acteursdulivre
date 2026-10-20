@@ -225,7 +225,7 @@ $renderWork = static function (array $w, bool $big): void {
       <?php endif; ?>
       <?php
         $shareUrl = $meta['url'] ?? \Adl\Data\Share::current();
-        $shareTitle = $meta['title'] ?? ((string) $a['name'] . ' — acteursdulivre.fr');
+        $shareTitle = $meta['title'] ?? ((string) $a['name'] . ' | acteursdulivre.fr');
         $shareText = $meta['description'] ?? $shortBio;
         $shareLabel = 'Partager';
         $shareCompact = true;

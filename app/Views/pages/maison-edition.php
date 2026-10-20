@@ -124,7 +124,7 @@ $contactHref = $p['href'] . '/contact';
       <?php endif; ?>
       <?php
         $shareUrl = $meta['url'] ?? \Adl\Data\Share::current();
-        $shareTitle = $meta['title'] ?? ($p['name'] . ' — acteursdulivre.fr');
+        $shareTitle = $meta['title'] ?? ($p['name'] . ' | acteursdulivre.fr');
         $shareText = $meta['description'] ?? $description;
         $shareLabel = 'Partager';
         $shareCompact = true;

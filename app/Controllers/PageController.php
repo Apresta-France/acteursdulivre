@@ -1560,7 +1560,7 @@ final class PageController
             'title' => 'Inscription confirmée',
             'ok' => $row !== null,
             'meta' => [
-                'title' => 'Inscription à la lettre — acteursdulivre.fr',
+                'title' => 'Inscription à la lettre | acteursdulivre.fr',
                 'robots' => Seo::ROBOTS_NONE,
             ],
         ]);
@@ -1585,7 +1585,7 @@ final class PageController
                 'pending' => false,
                 'token' => $token,
                 'meta' => [
-                    'title' => 'Désinscription de la lettre — acteursdulivre.fr',
+                    'title' => 'Désinscription de la lettre | acteursdulivre.fr',
                     'robots' => Seo::ROBOTS_NONE,
                 ],
             ]);
@@ -1597,7 +1597,7 @@ final class PageController
             'pending' => $row !== null,
             'token' => $token,
             'meta' => [
-                'title' => 'Désinscription de la lettre — acteursdulivre.fr',
+                'title' => 'Désinscription de la lettre | acteursdulivre.fr',
                 'robots' => Seo::ROBOTS_NONE,
             ],
         ]);
@@ -1726,7 +1726,7 @@ final class PageController
                 'profileHref' => $profile ? Profile::publicHref($profile) : '',
                 'error' => null,
                 'meta' => [
-                    'title' => 'Recommandation envoyée — acteursdulivre.fr',
+                    'title' => 'Recommandation envoyée | acteursdulivre.fr',
                     'robots' => Seo::ROBOTS_NONE,
                 ],
             ]);
@@ -1761,7 +1761,7 @@ final class PageController
             'profileHref' => $profile ? Profile::publicHref($profile) : '',
             'error' => flash('error'),
             'meta' => [
-                'title' => 'Laisser une recommandation — acteursdulivre.fr',
+                'title' => 'Laisser une recommandation | acteursdulivre.fr',
                 'robots' => Seo::ROBOTS_NONE,
             ],
         ]);

@@ -620,7 +620,7 @@ function not_found(string $message = ''): never
         'title' => 'Page introuvable',
         'message' => $message !== '' ? $message : 'Le lien est peut-être ancien, ou la page a été retirée.',
         'meta' => [
-            'title' => 'Page introuvable — acteursdulivre.fr',
+            'title' => 'Page introuvable | acteursdulivre.fr',
             'description' => 'Cette page n\'existe pas ou a été retirée.',
             'robots' => \Adl\Data\Seo::ROBOTS_NONE,
         ],

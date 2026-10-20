@@ -152,7 +152,7 @@ $heroPhoto = img_fit(user_avatar_src($p), 640);
       <?php endif; ?>
       <?php
         $shareUrl = $meta['url'] ?? \Adl\Data\Share::current();
-        $shareTitle = $meta['title'] ?? ((string) ($p['name'] ?? 'Prestataire') . ' — acteursdulivre.fr');
+        $shareTitle = $meta['title'] ?? ((string) ($p['name'] ?? 'Prestataire') . ' | acteursdulivre.fr');
         $shareText = $meta['description'] ?? trim((string) ($p['title'] ?? '') . ($p['city'] ? ' · ' . $p['city'] : ''));
         $shareLabel = 'Partager';
         $shareCompact = true;

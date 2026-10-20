@@ -43,7 +43,7 @@ final class App
                 View::render('errors/419', [
                     'title' => 'Session expirée',
                     'meta' => [
-                        'title' => 'Session expirée — acteursdulivre.fr',
+                        'title' => 'Session expirée | acteursdulivre.fr',
                         'robots' => \Adl\Data\Seo::ROBOTS_NONE,
                     ],
                 ]);
@@ -72,7 +72,7 @@ final class App
             View::render('errors/500', [
                 'title' => 'Erreur',
                 'meta' => [
-                    'title' => 'Erreur — acteursdulivre.fr',
+                    'title' => 'Erreur | acteursdulivre.fr',
                     'robots' => \Adl\Data\Seo::ROBOTS_NONE,
                 ],
             ]);

@@ -723,7 +723,7 @@ final class PublisherController
         View::render('errors/429', [
             'title' => 'Trop de consultations',
             'meta' => [
-                'title' => 'Trop de consultations — acteursdulivre.fr',
+                'title' => 'Trop de consultations | acteursdulivre.fr',
                 'description' => 'Ralentissez ou connectez-vous pour continuer à parcourir l\'annuaire.',
                 'robots' => Seo::ROBOTS_NONE,
             ],
