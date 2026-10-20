@@ -1,5 +1,6 @@
 <?php
 use Adl\Data\AdminCatalog;
+use Adl\Models\NewsletterCampaign;
 
 $s = $settings ?? [];
 $smtp = $smtp ?? [];
@@ -112,7 +113,7 @@ $statusLabels = [
             <div class="admin-users-row admin-nl-row-static">
               <span><?= e((string) ($c['created_at'] ?? '')) ?></span>
               <span><?= e((string) ($c['subject'] ?? '')) ?><br><em><?= (int) ($c['sent_count'] ?? 0) ?> envoyés<?php $pendingN = (int) ($c['pending_n'] ?? 0); if ($pendingN > 0): ?> · <?= $pendingN ?> en file<?php endif; ?> · <?= (int) ($c['fail_count'] ?? 0) ?> échecs</em></span>
-              <span><?= e((($c['source'] ?? '') === 'weekly' ? 'Hebdo' : 'Manuel') . ((($c['audience'] ?? '') === 'accounts') ? ' · comptes' : '')) ?></span>
+              <span><?= e((($c['source'] ?? '') === 'weekly' ? 'Hebdo' : 'Manuel') . NewsletterCampaign::listSuffix((string) ($c['audience'] ?? ''))) ?></span>
               <span><span class="admin-pill" style="<?= e(AdminCatalog::pill($tone)) ?>"><?= e($label) ?></span></span>
             </div>
           <?php endforeach; ?>

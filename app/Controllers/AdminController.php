@@ -1576,8 +1576,7 @@ final class AdminController
             'title' => $letter['id'] ? (string) $letter['subject'] : 'Nouvelle lettre',
             'letter' => $letter,
             'catalog' => $catalog,
-            'confirmedCount' => Newsletter::countByStatus(Newsletter::STATUS_CONFIRMED),
-            'accountCount' => Newsletter::countAccountRecipients(),
+            'audienceCounts' => Newsletter::audienceCounts(),
             'campaign' => $campaignId > 0 ? NewsletterCampaign::find($campaignId) : null,
             'tested' => flash('tested'),
         ]);
@@ -1663,7 +1662,10 @@ final class AdminController
         try {
             $this->newsletterPersistCurrent($request, (int) $letter['id']);
             $letter = NewsletterLetter::find((int) $letter['id']) ?? $letter;
-            $audience = NewsletterCampaign::audience($request->string('audience', NewsletterCampaign::AUDIENCE_CONFIRMED));
+            $postedAudience = $request->string('audience');
+            $audience = $postedAudience !== ''
+                ? NewsletterCampaign::audience($postedAudience)
+                : NewsletterCampaign::compose($request->string('pool'), $request->string('segment'));
             $payload = [
                 'subject' => (string) $letter['subject'],
                 'html' => (string) $letter['body_html'],
@@ -1684,9 +1686,7 @@ final class AdminController
                 $campaignId = NewsletterCampaign::queue($payload, 'manual', $audience);
                 NewsletterLetter::markSent((int) $letter['id'], $campaignId);
                 NewsletterCron::run(false);
-                flash('saved', $audience === NewsletterCampaign::AUDIENCE_ACCOUNTS
-                    ? 'Lettre mise en file pour tous les comptes. Premier lot envoyé.'
-                    : 'Lettre mise en file pour les abonnés confirmés. Premier lot envoyé.');
+                flash('saved', 'Lettre mise en file pour ' . NewsletterCampaign::sendPhrase($audience) . '. Premier lot envoyé.');
             }
             redirect('/admin/newsletter');
         } catch (Throwable $e) {

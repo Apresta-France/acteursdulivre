@@ -3808,16 +3808,24 @@
     });
     document.querySelectorAll('form[data-nl-send]').forEach(function (sendForm) {
       sendForm.addEventListener('submit', function (event) {
-        var picked = document.querySelector('input[name="audience"]:checked');
+        var picked = document.querySelector('.admin-nl-audience input[name="audience"]:checked');
         var audience = picked ? picked.value : 'confirmed';
+        var hiddenAudience = sendForm.querySelector('[name="audience"]');
+        if (hiddenAudience) hiddenAudience.value = audience;
         var relaunch = sendForm.getAttribute('data-nl-relaunch') === '1';
-        var confirmed = parseInt(sendForm.getAttribute('data-confirmed') || '0', 10) || 0;
-        var accounts = parseInt(sendForm.getAttribute('data-accounts') || '0', 10) || 0;
         var already = parseInt(sendForm.getAttribute('data-already') || '0', 10) || 0;
-        var n = audience === 'accounts' ? accounts : confirmed;
-        var who = audience === 'accounts'
-          ? (n + ' compte' + (n > 1 ? 's' : '') + ', y compris sans la case lettre')
-          : (n + ' abonné' + (n > 1 ? 's' : '') + ' confirmé' + (n > 1 ? 's' : ''));
+        var n = picked ? (parseInt(picked.getAttribute('data-count'), 10) || 0) : 0;
+        function nlPeople(count, one, many) {
+          return count + ' ' + (count > 1 ? many : one);
+        }
+        var who = ({
+          confirmed: nlPeople(n, 'abonné confirmé', 'abonnés confirmés'),
+          confirmed_presta: nlPeople(n, 'prestataire abonné', 'prestataires abonnés'),
+          confirmed_client: nlPeople(n, 'client abonné', 'clients abonnés'),
+          accounts: nlPeople(n, 'compte, y compris sans la case lettre', 'comptes, y compris sans la case lettre'),
+          accounts_presta: nlPeople(n, 'compte prestataire, y compris sans la case lettre', 'comptes prestataires, y compris sans la case lettre'),
+          accounts_client: nlPeople(n, 'compte client, y compris sans la case lettre', 'comptes clients, y compris sans la case lettre')
+        })[audience] || nlPeople(n, 'abonné confirmé', 'abonnés confirmés');
         var deja = already > 1
           ? (already + ' personnes ne la recevront pas à nouveau.')
           : (already === 1 ? '1 personne ne la recevra pas à nouveau.' : 'Personne ne l’a encore reçue.');
