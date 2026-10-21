@@ -45,4 +45,5 @@ return [
     'fiche-prestataire-oeuvres-creations-tribune-forum' => '2026-09-14 10:00:00',
     'acteurs-du-livre-ouvre-ses-portes' => '2026-10-06 08:00:00',
     'combien-de-pages-fera-ce-manuscrit' => '2026-10-12 09:30:00',
+    'souscriptions-livre-deja-en-cours' => '2026-10-21 09:30:00',
 ];
