@@ -12,7 +12,7 @@ return [
     'published' => true,
     'body' => <<<'HTML'
 <p>En 2026, fabriquer un roman autoédité de 300 pages, tiré à 300 exemplaires brochés, coûte en général <strong>entre 3 400 et 5 800 €</strong> hors diffusion et hors communication. L’impression seule représente souvent un quart à un tiers de la note : le reste va à la <a href="/metiers/correction">correction</a>, à la <a href="/metiers/maquette">maquette</a> et à la <a href="/metiers/illustration">couverture</a>.</p>
-<p>Ces fourchettes sont des ordres de grandeur du marché français, pas des statistiques d’Acteurs du Livre — la plateforme est en pré-ouverture. Elles servent à cadrer un budget et à lire un devis, pas à remplacer un chiffrage sur votre fichier.</p>
+<p>Ces fourchettes sont des ordres de grandeur du marché français, pas des statistiques d’Acteurs du Livre (fourchettes du marché, octobre 2026). Elles servent à cadrer un budget et à lire un devis, pas à remplacer un chiffrage sur votre fichier.</p>
 
 <h2 id="essentiel">L’essentiel</h2>
 <ul>

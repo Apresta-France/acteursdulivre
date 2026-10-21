@@ -13,6 +13,7 @@
     $metaImage = (string) ($meta['image'] ?? \Adl\Data\Seo::defaultImage());
     $metaType = (string) ($meta['type'] ?? 'website');
     $metaRobots = (string) ($meta['robots'] ?? ((http_response_code() >= 400) ? \Adl\Data\Seo::ROBOTS_NONE : \Adl\Data\Seo::ROBOTS_INDEX));
+    $omitRobots = !empty($meta['robots_omit']);
     $metaImageW = (int) ($meta['image_width'] ?? \Adl\Data\Seo::OG_W);
     $metaImageH = (int) ($meta['image_height'] ?? \Adl\Data\Seo::OG_H);
     $metaImageAlt = (string) ($meta['image_alt'] ?? $metaTitle);
@@ -44,13 +45,16 @@
   ?>
   <title><?= e($metaTitle) ?></title>
   <meta name="description" content="<?= e($metaDesc) ?>">
+  <?php if (!$omitRobots): ?>
   <meta name="robots" content="<?= e($metaRobots) ?>">
+  <?php endif; ?>
   <meta name="author" content="EDITIONS TESSERACT">
   <link rel="canonical" href="<?= e($metaUrl) ?>">
   <link rel="alternate" hreflang="fr" href="<?= e($metaUrl) ?>">
   <link rel="alternate" hreflang="x-default" href="<?= e($metaUrl) ?>">
   <link rel="sitemap" type="application/xml" title="Sitemap" href="<?= e(\Adl\Data\Share::absolute('/sitemap.xml')) ?>">
   <link rel="alternate" type="text/plain" href="<?= e(\Adl\Data\Share::absolute('/llms.txt')) ?>" title="llms.txt">
+  <link rel="alternate" type="text/plain" href="<?= e(\Adl\Data\Share::absolute('/llms-full.txt')) ?>" title="llms-full.txt">
   <meta property="og:type" content="<?= e($metaType) ?>">
   <meta property="og:site_name" content="acteursdulivre.fr">
   <meta property="og:title" content="<?= e($metaTitle) ?>">
@@ -84,7 +88,7 @@
   <?php if (!empty($isArticle) && !empty($article['img'])): ?>
   <link rel="preload" as="image" href="<?= e(img_fit((string) $article['img'], 1200)) ?>">
   <?php endif; ?>
-  <link rel="stylesheet" href="<?= e(asset('css/app.css')) ?>?v=m275">
+  <link rel="stylesheet" href="<?= e(asset('css/app.css')) ?>?v=m276">
   <script src="<?= e(asset('js/app.js')) ?>?v=m122" defer></script>
   <link rel="icon" href="<?= e(asset('img/favicon.ico')) ?>?v=3" sizes="any">
   <link rel="icon" type="image/png" href="<?= e(asset('img/favicon-32x32.png')) ?>?v=3" sizes="32x32">
@@ -340,7 +344,7 @@
                 <img src="<?= e(asset('img/logo-inv.webp')) ?>?v=6" alt="" width="154" height="42" loading="lazy" decoding="async">
               </a>
             </div>
-            <p>La place de marché des métiers du livre. Dix-huit métiers, de l'écriture au coaching.</p>
+            <p>La place de marché des métiers du livre. 18 métiers, de l'écriture au coaching : correcteurs, illustrateurs, maquettistes, imprimeurs.</p>
             <div class="socials">
               <?php foreach ($socials ?? [] as $s): ?>
                 <?php if (is_array($s)): ?>

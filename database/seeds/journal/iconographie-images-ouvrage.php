@@ -12,7 +12,7 @@ return [
     'published' => true,
     'body' => <<<'HTML'
 <p>L’iconographie d’un essai illustré se négocie en 2026 entre <strong>400 et 1 800 €</strong> selon le volume — recherche, légendes et suivi des droits, souvent hors achat des images. Le budget des clichés, lui, est un poste à part, parfois plus lourd que la mission.</p>
-<p>Ces fourchettes sont des ordres de grandeur du marché français, pas des statistiques d’Acteurs du Livre. La plateforme est en pré-ouverture : elles aident à briefer, pas à remplacer un chiffrage sur votre sommaire.</p>
+<p>Ces fourchettes sont des ordres de grandeur du marché français, pas des statistiques d’Acteurs du Livre. Les fourchettes sont celles du marché en octobre 2026 : elles aident à briefer, pas à remplacer un chiffrage sur votre sommaire.</p>
 
 <h2 id="essentiel">L’essentiel</h2>
 <ul>

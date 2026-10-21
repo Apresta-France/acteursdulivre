@@ -32,7 +32,7 @@ return [
 <ul>
   <li><a href="/forum/nouveau">Ouvrir une discussion</a> — compte requis.</li>
   <li>Filtres : récentes, sans réponse, les plus suivies, mes discussions.</li>
-  <li>Catégorie « La plateforme » pour les retours produit et la pré-ouverture.</li>
+  <li>Catégorie « La plateforme » pour les retours produit.</li>
 </ul>
 
 <h2>Ce que nous attendons de vous</h2>

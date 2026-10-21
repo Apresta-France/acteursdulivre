@@ -12,7 +12,7 @@ return [
     'published' => true,
     'body' => <<<'HTML'
 <p>Intérieur et couverture graphique se négocient en 2026 entre <strong>700 et 1 400 €</strong> pour un roman courant. Ce que vous achetez, ce sont des marges, une justification, un dos calculé et un PDF d’impression — pas un fichier Word « mis en page ».</p>
-<p>Ces fourchettes sont des ordres de grandeur du marché français, pas des statistiques d’Acteurs du Livre (pré-ouverture). Elles cadrent un devis. Le prix exact dépend du nombre de pages, des notes, des images et du délai.</p>
+<p>Ces fourchettes sont des ordres de grandeur du marché français, pas des statistiques d’Acteurs du Livre (fourchettes du marché, octobre 2026). Elles cadrent un devis. Le prix exact dépend du nombre de pages, des notes, des images et du délai.</p>
 
 <h2 id="essentiel">L’essentiel</h2>
 <ul>

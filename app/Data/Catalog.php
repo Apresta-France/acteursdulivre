@@ -2020,7 +2020,7 @@ final class Catalog
     }
 
     /**
-     * Couples métier × ville (aire) qui ont au moins un prestataire ou une prestation.
+     * Couples métier × ville (aire) qui ont au moins un prestataire.
      *
      * @return array<string, array<string, array{slug: string, label: string, n: int}>>
      */
@@ -2062,13 +2062,6 @@ final class Catalog
                 }
                 $add($resolved, $provider);
             }
-        }
-        foreach (self::services() as $service) {
-            $trade = self::resolveTrade((string) ($service['cat'] ?? ''));
-            if ($trade === null) {
-                continue;
-            }
-            $add($trade, $service);
         }
 
         foreach ($out as $trade => $cities) {

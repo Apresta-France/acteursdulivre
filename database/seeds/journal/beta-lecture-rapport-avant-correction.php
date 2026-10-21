@@ -12,7 +12,7 @@ return [
     'published' => true,
     'body' => <<<'HTML'
 <p>Une bêta-lecture de roman se négocie en 2026 entre <strong>180 et 450 €</strong>. Ce que vous achetez, c’est un rapport sur la cohérence, le rythme et les personnages — pas une chasse aux fautes, et pas une réécriture.</p>
-<p>Ces montants sont des ordres de grandeur du marché français, pas des statistiques d’Acteurs du Livre (pré-ouverture). Ils aident à comparer un devis, pas à le remplacer.</p>
+<p>Ces montants sont des ordres de grandeur du marché français, pas des statistiques d’Acteurs du Livre (fourchettes du marché, octobre 2026). Ils aident à comparer un devis, pas à le remplacer.</p>
 
 <h2 id="essentiel">L’essentiel</h2>
 <ul>

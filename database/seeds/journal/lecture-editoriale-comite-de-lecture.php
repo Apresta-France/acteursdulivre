@@ -12,7 +12,7 @@ return [
     'published' => true,
     'body' => <<<'HTML'
 <p>Une <strong>lecture éditoriale</strong> commandée en 2026 coûte en général <strong>150 à 400 €</strong> pour un roman de longueur courante. Vous recevez un avis écrit sur la ligne, le public, le potentiel et les points de blocage — pas une réécriture, pas une <a href="/metiers/correction">correction</a>, pas une <a href="/metiers/beta-lecture">bêta-lecture</a> de lecteur complice. Un <strong>comité de lecture</strong>, lui, réunit plusieurs avis dans une maison ou un collectif : le livrable change (note interne, débat, décision de suite), le métier de fond reste le même : dire si le texte a une place, et laquelle.</p>
-<p>Ces tarifs sont des fourchettes du marché français indépendant, pas des statistiques d’Acteurs du Livre — la plateforme est en pré-ouverture. Ils varient avec le volume, le délai et le degré de recommandation demandé.</p>
+<p>Ces tarifs sont des fourchettes du marché français indépendant, pas des statistiques d’Acteurs du Livre (fourchettes du marché, octobre 2026). Ils varient avec le volume, le délai et le degré de recommandation demandé.</p>
 
 <h2 id="essentiel">L’essentiel</h2>
 <ul>

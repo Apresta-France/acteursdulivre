@@ -307,18 +307,14 @@ final class SalonProposal
         if ($url === '') {
             return '';
         }
-        if (!preg_match('#^https?://#i', $url)) {
-            $url = 'https://' . ltrim($url, '/');
-        }
-        $host = parse_url($url, PHP_URL_HOST);
-        $ok = is_string($host) && str_contains($host, '.') && filter_var($url, FILTER_VALIDATE_URL);
-        if (!$ok) {
+        $clean = public_http_url($url);
+        if ($clean === '') {
             if ($strict) {
                 throw new RuntimeException('Le site web n\'est pas une adresse valide.');
             }
             return '';
         }
-        return mb_substr(rtrim($url, '/'), 0, 255);
+        return mb_substr(rtrim($clean, '/'), 0, 255);
     }
 
     private static function isValidDate(string $raw): bool

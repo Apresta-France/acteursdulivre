@@ -1127,3 +1127,44 @@ function forum_cofounder_star(?array $person): string
         . '<span class="sr-only">Co-fondateur de la plateforme</span>'
         . '</span>';
 }
+
+/** URL http(s) publique : hôte avec un point, sans identifiant dans l'autorité. */
+function public_http_url(string $url): string
+{
+    $url = trim($url);
+    if ($url === '' || preg_match('/\s/', $url)) {
+        return '';
+    }
+    if (!preg_match('#^https?://#i', $url)) {
+        $url = 'https://' . ltrim($url, '/');
+    }
+    $parts = parse_url($url);
+    if (!is_array($parts)) {
+        return '';
+    }
+    $scheme = strtolower((string) ($parts['scheme'] ?? ''));
+    $host = strtolower((string) ($parts['host'] ?? ''));
+    if (!in_array($scheme, ['http', 'https'], true) || $host === '' || isset($parts['user']) || isset($parts['pass'])) {
+        return '';
+    }
+    $authority = preg_replace('#^https?://#i', '', $url) ?? $url;
+    $authority = explode('/', $authority, 2)[0];
+    $authority = explode('?', $authority, 2)[0];
+    if (str_contains($authority, '@')) {
+        return '';
+    }
+    if (!preg_match('/^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)+$/', $host)) {
+        return '';
+    }
+    if (!preg_match('/\.[a-z]{2,24}$/', $host)) {
+        return '';
+    }
+    $path = (string) ($parts['path'] ?? '');
+    if (str_contains($path, '\\') || str_contains($path, '..')) {
+        return '';
+    }
+
+    return $scheme . '://' . $host . (isset($parts['port']) ? ':' . (int) $parts['port'] : '')
+        . $path
+        . (isset($parts['query']) ? '?' . $parts['query'] : '');
+}

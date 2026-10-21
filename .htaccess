@@ -5,16 +5,18 @@ RewriteCond %{HTTP_HOST} ^www\.acteursdulivre\.fr$ [NC]
 RewriteRule ^ https://acteursdulivre.fr%{REQUEST_URI} [R=301,L]
 
 # robots / sitemap / llms toujours via PHP (un robots.txt de panel ne doit pas gagner)
-RewriteRule ^(robots\.txt|sitemap\.xml|llms\.txt)$ index.php [L]
+RewriteRule ^(robots\.txt|sitemap\.xml|llms\.txt|llms-full\.txt|\.well-known/security\.txt|f4c8e2a19b6d47c0a3e5d8f1b27490ac\.txt)$ index.php [L]
 
 <FilesMatch "(^\.env|^\.git|composer\.(json|lock)$)">
   Require all denied
 </FilesMatch>
-<FilesMatch "^\.">
+<FilesMatch "^\.(?!well-known)">
   Require all denied
 </FilesMatch>
 
 <IfModule mod_headers.c>
+  Header always set X-Content-Type-Options "nosniff"
+  Header always set Referrer-Policy "strict-origin-when-cross-origin"
   <FilesMatch "\.(css|js|woff2|png|jpe?g|gif|ico|svg|webp)$">
     Header set Cache-Control "public, max-age=2592000, immutable"
   </FilesMatch>

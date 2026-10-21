@@ -12,7 +12,7 @@ return [
     'published' => true,
     'body' => <<<'HTML'
 <p>En 2026, une narration humaine pour 300 pages se facture <strong>1&nbsp;200 à 3&nbsp;500&nbsp;€</strong>&nbsp;; une voix de synthèse coûte souvent quelques dizaines d’euros, mais plusieurs circuits et <strong>Acteurs du Livre l’excluent</strong>. La différence n’est pas seulement le prix&nbsp;: ce sont les droits et ce que l’oreille accepte.</p>
-<p>Les règles des distributeurs évoluent et ne sont pas uniformes. Ce texte pose ce qui est stable pour un auteur ou un éditeur français&nbsp;: ce que l’on achète, ce que l’on peut livrer, et pourquoi la plateforme refuse l’IA générative. Pas de statistiques d’usage maison — le site est en pré-ouverture.</p>
+<p>Les règles des distributeurs évoluent et ne sont pas uniformes. Ce texte pose ce qui est stable pour un auteur ou un éditeur français&nbsp;: ce que l’on achète, ce que l’on peut livrer, et pourquoi la plateforme refuse l’IA générative. Pas de statistiques d’usage maison — ces repères datent d'octobre 2026.</p>
 
 <h2 id="essentiel">L’essentiel</h2>
 <ul>

@@ -12,7 +12,7 @@ return [
     'published' => true,
     'body' => <<<'HTML'
 <p>En 2026, une couverture typographique soignée se situe entre <strong>250 et 500 €</strong> ; une illustration originale, plutôt entre <strong>300 et 900 €</strong> hors cession large. Le forfait « couverture comprise » est le poste le plus difficile à comparer d’un devis à l’autre.</p>
-<p>Ces fourchettes sont des ordres de grandeur du marché français, pas des statistiques d’Acteurs du Livre — pré-ouverture. Elles servent à cadrer un brief, pas à figer un prix sans fichier ni usages.</p>
+<p>Ces fourchettes sont des ordres de grandeur du marché français, pas des statistiques d’Acteurs du Livre — fourchettes du marché, octobre 2026. Elles servent à cadrer un brief, pas à figer un prix sans fichier ni usages.</p>
 
 <h2 id="essentiel">L’essentiel</h2>
 <ul>

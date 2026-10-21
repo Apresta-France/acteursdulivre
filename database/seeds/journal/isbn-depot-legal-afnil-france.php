@@ -12,7 +12,7 @@ return [
     'published' => true,
     'body' => <<<'HTML'
 <p>En France, en 2026, le <strong>dépôt légal</strong> est obligatoire dès qu’un livre est mis en circulation auprès du public ; il est <strong>gratuit</strong>, vous payez surtout le port des exemplaires. L’<strong>ISBN</strong> n’est pas, à lui seul, cette obligation : c’est l’identifiant commercial du livre. L’<strong>AFNIL</strong> attribue les listes ISBN aux éditeurs déclarés. Un autoédité qui n’est pas encore éditeur passe souvent par un <em>intermédiaire</em> : comptez <strong>0 à 50 €</strong> pour un ISBN, selon que la plateforme l’inclut ou qu’un prestataire le facture.</p>
-<p>Ces montants sont des fourchettes de marché, pas des tarifs d’Acteurs du Livre — la plateforme est en pré-ouverture. Ils ne remplacent pas les notices de la BnF ni celles de l’AFNIL au moment où vous déposez.</p>
+<p>Ces montants sont des fourchettes de marché, pas des tarifs d’Acteurs du Livre (fourchettes du marché, octobre 2026). Ils ne remplacent pas les notices de la BnF ni celles de l’AFNIL au moment où vous déposez.</p>
 
 <h2 id="essentiel">L’essentiel</h2>
 <ul>

@@ -12,7 +12,7 @@ return [
     'published' => true,
     'body' => <<<'HTML'
 <p>En 2026, imprimer 300 romans brochés coûte <strong>1&nbsp;100 à 1&nbsp;600&nbsp;€</strong> en numérique court, contre <strong>4 à 8&nbsp;€</strong> l’exemplaire en impression à la demande. L’offset devient intéressant à partir de <strong>500 à 800 exemplaires</strong>.</p>
-<p>Ces fourchettes sont des ordres de grandeur du marché français, pas des statistiques d’Acteurs du Livre — la plateforme est en pré-ouverture. Elles servent à choisir un procédé, pas à remplacer un devis sur votre PDF et votre papier.</p>
+<p>Ces fourchettes sont des ordres de grandeur du marché français, pas des statistiques d’Acteurs du Livre (fourchettes du marché, octobre 2026). Elles servent à choisir un procédé, pas à remplacer un devis sur votre PDF et votre papier.</p>
 
 <h2 id="essentiel">L’essentiel</h2>
 <ul>

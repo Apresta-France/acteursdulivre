@@ -176,14 +176,9 @@ final class Publisher
             return '';
         }
         $raw = preg_replace('/\s.*$/u', '', $raw) ?? $raw;
-        if (!preg_match('#^https?://#i', $raw)) {
-            $raw = 'https://' . ltrim($raw, '/');
-        }
-        $host = parse_url($raw, PHP_URL_HOST);
-        if (!is_string($host) || !str_contains($host, '.')) {
-            return '';
-        }
-        return rtrim($raw, '/');
+        $clean = public_http_url($raw);
+
+        return $clean === '' ? '' : rtrim($clean, '/');
     }
 
     public static function websiteHost(string $url): string
@@ -238,6 +233,11 @@ final class Publisher
         $size = (string) ($row['size'] ?? '');
         $typology = (string) ($row['typology'] ?? '');
         $group = trim((string) ($row['parent_group'] ?? $row['group'] ?? ''));
+        $sizeKey = self::sizeKey($size);
+        $storedGroup = $group;
+        if ($sizeKey === 'grand-groupe' && preg_match('/ind[eé]pendant\s*\(([^)]+)\)/iu', $group, $groupMatch) === 1) {
+            $storedGroup = trim($groupMatch[1]);
+        }
         $founded = trim((string) ($row['founded'] ?? ''));
         $description = trim((string) ($row['description'] ?? ''));
         $genreSlugs = array_map('slugify', $genres);
@@ -262,8 +262,8 @@ final class Publisher
             'city_slug' => $city !== '' ? slugify($city) : '',
             'founded' => self::isUnverifiedText($founded) ? '' : $founded,
             'founded_year' => self::foundedYear($founded),
-            'parent_group' => $group,
-            'independent' => self::isIndependent($group) ? 1 : 0,
+            'parent_group' => $storedGroup,
+            'independent' => self::isIndependent($storedGroup) && $sizeKey !== 'grand-groupe' ? 1 : 0,
             'size' => trim($size),
             'size_key' => self::sizeKey($size),
             'typology' => trim($typology),
@@ -488,6 +488,9 @@ final class Publisher
         }
         if ((string) ($filters['independent'] ?? '') === '1') {
             $where[] = 'independent = 1';
+        }
+        if ((string) ($filters['manuscripts'] ?? '') === '1') {
+            $where[] = 'submissions_note IS NOT NULL AND submissions_note != ""';
         }
 
         return [implode(' AND ', $where), $params];
@@ -989,15 +992,23 @@ final class Publisher
 
     public static function hasContact(array $publisher): bool
     {
+        return self::hasPrivateContact($publisher)
+            || trim((string) ($publisher['website'] ?? '')) !== '';
+    }
+
+    public static function hasPrivateContact(array $publisher): bool
+    {
         return trim((string) ($publisher['contact_email'] ?? '')) !== ''
             || trim((string) ($publisher['contact_address'] ?? '')) !== ''
-            || trim((string) ($publisher['website'] ?? '')) !== ''
             || trim((string) ($publisher['contact_phone'] ?? '')) !== '';
     }
 
     public static function ipHash(): string
     {
-        $ip = (string) ($_SERVER['HTTP_CF_CONNECTING_IP'] ?? $_SERVER['REMOTE_ADDR'] ?? '');
+        $ip = \Adl\Core\VerifiedBot::clientIp();
+        if ($ip === '') {
+            $ip = (string) ($_SERVER['REMOTE_ADDR'] ?? '');
+        }
         return substr(hash('sha256', $ip . '|adl-pub'), 0, 40);
     }
 
@@ -1047,6 +1058,7 @@ final class Publisher
         $row['founded_label'] = self::foundedLabel($row);
         $row['location_label'] = implode(', ', array_filter([(string) ($row['city'] ?? ''), (string) ($row['country'] ?? '')]));
         $row['has_contact'] = self::hasContact($row);
+        $row['has_private_contact'] = self::hasPrivateContact($row);
         $row['group_label'] = $row['is_independent']
             ? 'Indépendant'
             : (trim((string) ($row['parent_group'] ?? '')) !== '' ? (string) $row['parent_group'] : '');
@@ -1137,7 +1149,7 @@ final class Publisher
                 $bits[] = $desc;
             }
 
-            return \Adl\Data\Seo::clip(implode(' ', $bits), 160);
+            return self::enrichMeta(implode(' ', $bits), $publisher);
         }
 
         $line = $name . ' : maison d\'édition ' . (($publisher['typology_key'] ?? '') === 'generaliste' ? 'généraliste' : 'spécialisée');
@@ -1152,6 +1164,29 @@ final class Publisher
             $bits[] = 'Genres : ' . implode(', ', array_slice($publisher['genres'], 0, 5)) . '.';
         }
 
-        return \Adl\Data\Seo::clip(implode(' ', $bits), 160);
+        return self::enrichMeta(implode(' ', $bits), $publisher);
+    }
+
+    /** @param array<string, mixed> $publisher */
+    private static function enrichMeta(string $text, array $publisher): string
+    {
+        $text = trim($text);
+        if (mb_strlen($text) >= 110) {
+            return \Adl\Data\Seo::clip($text, 160);
+        }
+        $extra = [];
+        $place = trim((string) ($publisher['location_label'] ?? ''));
+        if ($place !== '' && !str_contains($text, $place)) {
+            $extra[] = 'Maison d\'édition à ' . $place . '.';
+        }
+        $genres = array_slice(is_array($publisher['genres'] ?? null) ? $publisher['genres'] : [], 0, 4);
+        if ($genres !== [] && !str_contains($text, 'Genres')) {
+            $extra[] = 'Genres : ' . implode(', ', $genres) . '.';
+        }
+        if ($extra === []) {
+            $extra[] = 'Fiche de l\'annuaire Acteurs du Livre.';
+        }
+
+        return \Adl\Data\Seo::clip(trim($text . ' ' . implode(' ', $extra)), 160);
     }
 }

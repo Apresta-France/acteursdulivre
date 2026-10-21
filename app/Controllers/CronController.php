@@ -26,6 +26,14 @@ final class CronController
             'label' => 'Alertes métier : nouvelle recherche pour prestataires disponibles sans mission gagnée',
             'runner' => [MissionMatchCron::class, 'run'],
         ],
+        'robots-verifies' => [
+            'label' => 'Met à jour les plages IP des robots vérifiés',
+            'runner' => [\Adl\Core\VerifiedBot::class, 'refreshRanges'],
+        ],
+        'indexnow' => [
+            'label' => 'Signale à IndexNow les pages d’agenda récemment publiées',
+            'runner' => [\Adl\Core\IndexNowCron::class, 'run'],
+        ],
     ];
 
     public function index(Request $request): void

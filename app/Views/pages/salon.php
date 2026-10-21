@@ -116,6 +116,9 @@ if ($infoLines !== []) {
         <?php endif; ?>
       </div>
       <h1><?= e((string) ($s['name'] ?? '')) ?></h1>
+      <?php if (!empty($s['is_past'])): ?>
+        <p class="profile-hero-sub">Édition passée<?= $when !== '' ? ' (' . e($when) . ')' : '' ?>. Prochaine édition : dates à venir.</p>
+      <?php endif; ?>
       <p class="profile-hero-sub"><?= e(trim($when . (!empty($s['place']) ? ' · ' . $s['place'] : '') . (!empty($s['venue']) ? ' · ' . $s['venue'] : ''))) ?></p>
       <?php if ($description !== ''): ?>
         <p class="auteur-hero-bio"><?= e($description) ?></p>

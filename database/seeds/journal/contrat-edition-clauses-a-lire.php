@@ -12,7 +12,7 @@ return [
     'published' => true,
     'body' => <<<'HTML'
 <p>Avant de signer un contrat d’édition en 2026, lisez d’abord quatre blocs : <strong>ce qui est cédé</strong> (supports, langues, territoires, durée), <strong>l’à-valoir et les taux</strong>, <strong>la reddition des comptes</strong>, et <strong>la sortie de catalogue</strong> — le retour des droits quand le livre n’est plus exploité. Le reste du contrat glose ces quatre points. Un à-valoir de 500 € avec une cession mondiale tous formats pour toute la durée légale n’a pas le même poids qu’un à-valoir nul sur le seul livre de poche France pour huit ans.</p>
-<p>Ce texte décrit les usages français courants, pas un avis d’avocat et pas des statistiques d’Acteurs du Livre — la plateforme est en pré-ouverture. Pour une relecture de contrat, voyez le métier <a href="/metiers/juridique">juridique</a> ou un <a href="/metiers/agent-litteraire">agent littéraire</a>.</p>
+<p>Ce texte décrit les usages français courants, pas un avis d’avocat et pas des statistiques d’Acteurs du Livre (fourchettes du marché, octobre 2026). Pour une relecture de contrat, voyez le métier <a href="/metiers/juridique">juridique</a> ou un <a href="/metiers/agent-litteraire">agent littéraire</a>.</p>
 
 <h2 id="essentiel">L’essentiel</h2>
 <ul>

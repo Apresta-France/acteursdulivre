@@ -8,7 +8,7 @@ final class Seo
 {
     public const BRAND = 'Acteurs du Livre';
     public const BRAND_HOST = 'acteursdulivre.fr';
-    public const DEFAULT_DESC = 'Place de marché des métiers du livre : correcteurs, illustrateurs, traducteurs, imprimeurs. Prix affichés, suivi à jalons, sans IA générative.';
+    public const DEFAULT_DESC = 'Place de marché des métiers du livre, ouverte le 6 octobre 2026 : correcteurs, illustrateurs, traducteurs, imprimeurs. Inscription gratuite, première mission sans commission, puis 8 % HT. Sans IA générative.';
     public const ROBOTS_INDEX = 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1';
     public const ROBOTS_NONE = 'noindex, nofollow';
     public const OG_W = 1200;
@@ -30,8 +30,8 @@ final class Seo
     {
         return [
             'accueil' => [
-                'title' => 'Trouvez un prestataire pour votre livre | Acteurs du Livre',
-                'description' => 'Trouvez un correcteur, illustrateur, traducteur ou imprimeur. Comparez des prestations à prix affichés, ou publiez un appel d\'offres. Sans IA générative.',
+                'title' => 'Acteurs du Livre : correcteurs, illustrateurs, imprimeurs',
+                'description' => 'Place de marché des métiers du livre : prestataires vérifiés, prix affichés, appels d\'offres. Inscription gratuite, 1re mission offerte puis 8 % HT.',
                 'path' => '/',
             ],
             'comment' => [
@@ -110,8 +110,8 @@ final class Seo
                 'path' => '/outils/isbn',
             ],
             'salons' => [
-                'title' => 'Salons du livre 2026 et 2027',
-                'description' => 'Agenda des salons du livre, festivals et foires en France et en Europe : dates, villes et lieux, de septembre 2026 à septembre 2027.',
+                'title' => 'Salons du livre 2026-2027 : agenda par région',
+                'description' => 'Agenda des salons et festivals du livre en France et en Europe : dates, villes, genres. Mis à jour chaque semaine, de septembre 2026 à septembre 2027.',
                 'path' => '/salons',
             ],
             'salon-ajouter' => [
@@ -160,8 +160,8 @@ final class Seo
                 'path' => '/auteurs',
             ],
             'maisons-edition' => [
-                'title' => 'Annuaire des maisons d\'édition en France et en Europe',
-                'description' => 'Plus de 600 maisons d\'édition en activité : grands groupes, indépendants, micro-structures, par pays, ville et genre éditorial. Coordonnées et contact réservés aux membres.',
+                'title' => 'Annuaire des maisons d\'édition',
+                'description' => 'Maisons d\'édition en France et en Europe : ligne éditoriale, genres, taille, ville. Trouvez l\'éditeur qui correspond à votre manuscrit. Le site web est public, les coordonnées directes sont réservées aux membres.',
                 'path' => '/maisons-edition',
             ],
             'inscription' => [
@@ -478,13 +478,78 @@ final class Seo
     {
         $title = trim($title);
         if ($title === '') {
-            return self::BRAND . ' | ' . self::BRAND_HOST;
+            return self::BRAND;
         }
         $lower = mb_strtolower($title);
         if (str_contains($lower, 'acteursdulivre') || str_contains($lower, 'acteurs du livre')) {
             return $title;
         }
-        return $title . ' | ' . self::BRAND_HOST;
+        $withBrand = $title . ' | ' . self::BRAND;
+        if (mb_strlen($withBrand) <= 60) {
+            return $withBrand;
+        }
+
+        return $title;
+    }
+
+    /**
+     * Pagination indexable : canonical propre à ?page=N.
+     * Une vue filtrée (recherche, facette trop mince) reste en noindex, follow.
+     *
+     * @param array<string, mixed> $meta
+     * @return array<string, mixed>
+     */
+    public static function pagedListing(array $meta, string $path, int $page, bool $indexable): array
+    {
+        if (!$indexable) {
+            $meta['robots'] = 'noindex, follow';
+            $meta['url'] = Share::absolute($path);
+
+            return $meta;
+        }
+        $meta['robots'] = self::ROBOTS_INDEX;
+        if ($page > 1) {
+            $join = str_contains($path, '?') ? '&' : '?';
+            $meta['url'] = Share::absolute($path . $join . 'page=' . $page);
+            $title = (string) ($meta['title'] ?? '');
+            $bare = preg_replace('/\s*\|\s*' . preg_quote(self::BRAND, '/') . '\s*$/u', '', $title) ?? $title;
+            $bare = preg_replace('/\s*\|\s*' . preg_quote(self::BRAND_HOST, '/') . '\s*$/u', '', $bare) ?? $bare;
+            if (!str_contains($bare, 'page ' . $page)) {
+                $meta['title'] = self::documentTitle(trim($bare) . ' — page ' . $page);
+            }
+        } else {
+            $meta['url'] = Share::absolute($path);
+        }
+
+        return $meta;
+    }
+
+    public static function entityDefinition(): string
+    {
+        $publishers = 0;
+        $salons = 0;
+        $providers = 0;
+        try {
+            $publishers = \Adl\Models\Publisher::countPublished();
+            $salons = \Adl\Models\Salon::countAll();
+            $providers = \Adl\Models\Profile::countPublished();
+        } catch (\Throwable) {
+        }
+        $directory = $publishers > 0
+            ? 'un annuaire de ' . format_int($publishers) . ' maisons d’édition'
+            : 'un annuaire de maisons d’édition';
+        $agenda = $salons > 0
+            ? 'l’agenda de ' . format_int($salons) . ' salons du livre'
+            : 'l’agenda des salons du livre';
+        $people = $providers > 0
+            ? ' La plateforme publie ' . format_int($providers) . ' prestataires sur 18 métiers.'
+            : ' La plateforme couvre 18 métiers.';
+
+        return 'Acteurs du Livre (acteursdulivre.fr) est une place de marché française des métiers du livre, ouverte le 6 octobre 2026 et éditée par EDITIONS TESSERACT (Sainghin-en-Weppes, Nord). '
+            . 'Auteurs et maisons d’édition y trouvent des correcteurs, illustrateurs, traducteurs, maquettistes et imprimeurs, sans IA générative. '
+            . 'L’inscription est gratuite ; la première mission est sans commission, puis la plateforme facture 8 % HT au prestataire.'
+            . $people
+            . ' Le site publie aussi ' . $directory . ' et ' . $agenda . '.';
     }
 
     public static function defaultImage(): string
@@ -531,7 +596,8 @@ final class Seo
     public static function accueilFaqs(): array
     {
         return [
-            ['q' => 'Comment trouver un prestataire du livre ?', 'a' => 'Vous pouvez parcourir l\'annuaire, commander une prestation à prix affiché, ou publier une recherche pour recevoir des devis.'],
+            ['q' => 'Qu\'est-ce qu\'Acteurs du Livre et combien ça coûte ?', 'a' => self::entityDefinition()],
+            ['q' => 'Comment trouver un prestataire du livre ?', 'a' => 'Vous pouvez parcourir l\'annuaire, commander une prestation à prix affiché, ou publier une recherche pour recevoir des devis. Ce sont 18 métiers, pas 18 prestataires : chaque métier regroupe plusieurs professionnels.'],
             ['q' => 'Faut-il un abonnement ?', 'a' => 'Non. Créer un compte, une vitrine, des fiches ou un appel d\'offres est gratuit. Aucun abonnement.'],
             ['q' => 'L\'IA générative est-elle autorisée ?', 'a' => 'Non, pour les missions entre acteurs du livre : aucun livrable ne peut être produit par une IA générative. Le moratoire ne s\'applique pas à la fabrication de la plateforme. Le détail figure dans les règles IA.'],
             ['q' => 'Qui facture le client ?', 'a' => 'Le prestataire facture directement son client, hors plateforme. La plateforme n\'encaisse pas le prix de la mission.'],
@@ -666,18 +732,33 @@ final class Seo
                 'url' => 'https://editions-tesseract.fr/',
             ],
             'contactPoint' => [
-                '@type' => 'ContactPoint',
-                'contactType' => 'customer support',
-                'email' => 'guillaume@editions-tesseract.fr',
-                'url' => Share::absolute('/contact'),
-                'availableLanguage' => 'French',
+                [
+                    '@type' => 'ContactPoint',
+                    'contactType' => 'customer support',
+                    'email' => 'guillaume@editions-tesseract.fr',
+                    'url' => Share::absolute('/contact'),
+                    'availableLanguage' => 'French',
+                ],
+                [
+                    '@type' => 'ContactPoint',
+                    'contactType' => 'customer support',
+                    'email' => 'mediation@acteursdulivre.fr',
+                    'description' => 'Médiation des litiges',
+                    'availableLanguage' => 'French',
+                ],
+                [
+                    '@type' => 'ContactPoint',
+                    'contactType' => 'public relations',
+                    'email' => 'presse@acteursdulivre.fr',
+                    'availableLanguage' => 'French',
+                ],
             ],
             'sameAs' => Socials::sameAs(),
         ];
     }
 
     /** @return array<string, mixed> */
-    public static function webPage(string $title, string $description, string $path, string $type = 'WebPage'): array
+    public static function webPage(string $title, string $description, string $path, string $type = 'WebPage', ?string $aboutId = null): array
     {
         $url = Share::absolute($path);
         return [
@@ -687,7 +768,7 @@ final class Seo
             'name' => $title,
             'description' => self::clip($description, 200),
             'isPartOf' => ['@id' => Share::absolute('/') . '#website'],
-            'about' => ['@id' => Share::absolute('/') . '#organization'],
+            'about' => ['@id' => $aboutId ?? (Share::absolute('/') . '#organization')],
             'inLanguage' => 'fr-FR',
         ];
     }
@@ -805,9 +886,10 @@ final class Seo
                         : null,
                 ])
                 : [
-                    '@type' => 'Organization',
-                    'name' => self::BRAND,
-                    'url' => Share::absolute('/'),
+                    '@type' => 'Person',
+                    'name' => 'Rédaction Acteurs du Livre',
+                    'url' => Share::absolute('/a-propos'),
+                    'affiliation' => ['@id' => Share::absolute('/') . '#organization'],
                 ],
             'publisher' => ['@id' => Share::absolute('/') . '#organization'],
             'mainEntityOfPage' => [
@@ -1251,10 +1333,20 @@ final class Seo
     public static function llmsTxt(): string
     {
         $home = Share::absolute('/');
+        $entity = self::entityDefinition();
+        $publishers = 0;
+        $salons = 0;
+        try {
+            $publishers = \Adl\Models\Publisher::countPublished();
+            $salons = \Adl\Models\Salon::countAll();
+        } catch (\Throwable) {
+        }
+        $publisherPhrase = $publishers > 0 ? (string) $publishers : 'plusieurs centaines de';
+        $salonPhrase = $salons > 0 ? (string) $salons . ' salons et festivals' : 'les salons et festivals';
         return <<<MD
 # Acteurs du Livre
 
-> Place de marché francophone des métiers du livre, éditée par EDITIONS TESSERACT (SAS, Sainghin-en-Weppes, France).
+> {$entity}
 
 Site : [acteursdulivre.fr]({$home})
 
@@ -1283,10 +1375,10 @@ acteursdulivre.fr met en relation des porteurs de projet (auteurs, éditeurs, co
 - [Prestations]({$home}prestations) : offres à prix affiché
 - [Appels d'offres]({$home}missions) : recherches publiées par les porteurs de projet
 - [Métiers]({$home}metiers/correction) : pages métiers, exemple correction
-- [Maisons d'édition]({$home}maisons-edition) : annuaire de plus de 600 éditeurs en France et en Europe, par pays ([exemple : France]({$home}maisons-edition/pays/france)), ville et genre ; les coordonnées sont réservées aux membres connectés et les maisons peuvent revendiquer leur fiche
+- [Maisons d'édition]({$home}maisons-edition) : annuaire de {$publisherPhrase} éditeurs en France et en Europe, par pays ([exemple : France]({$home}maisons-edition/pays/france)), ville et genre ; le site web et la ville sont publics, les coordonnées directes sont réservées aux membres, et les maisons peuvent revendiquer leur fiche
 - [Communauté]({$home}communaute) : forum, annuaire des maisons d'édition, agenda des salons et outils métier
 - [Outils]({$home}outils) : compteur de signes, estimation de pagination, calculateur de dos, validateur ISBN
-- [Agenda des salons]({$home}salons) : salons du livre et festivals en France et en Europe (2026-2027)
+- [Agenda des salons]({$home}salons) : {$salonPhrase} du livre en France et en Europe (2026-2027), avec une page par région, par genre et par mois
 - [Forum]({$home}forum) : discussions métier (tarifs, contrats, fabrication)
 - [Par besoin]({$home}besoin) : pages d'entrée par besoin (correction, couverture, impression…), utilisées aussi pour les campagnes
 - [Journal]({$home}journal) : articles sur les métiers, tarifs, contrats et diffusion
@@ -1308,10 +1400,26 @@ Les pages locales (exemple : [correctrice à Paris]({$home}correctrice/paris)) r
 MD;
     }
 
+    public static function llmsFullTxt(): string
+    {
+        $lines = [self::llmsTxt(), '', '## Pages région, genre et mois', ''];
+        try {
+            foreach (\Adl\Data\SalonHubs::nav() as $item) {
+                $href = Share::absolute((string) $item['href']);
+                $lines[] = '- [' . $item['label'] . '](' . $href . ')';
+            }
+        } catch (\Throwable) {
+        }
+        $lines[] = '';
+        $lines[] = 'Le sitemap complet est sur ' . Share::absolute('/sitemap.xml') . '.';
+
+        return implode("\n", $lines) . "\n";
+    }
+
     /**
      * Titre, extrait et données structurées d'une fiche salon.
-     * L'année reste dans le titre (recherches « salon … 2026 ») mais après le nom
-     * et la ville, pour que la manifestation apparaisse en premier.
+     * L'année reste dans le titre des éditions à venir. Une édition passée
+     * garde l'URL sans l'année : la prochaine édition n'a pas encore de dates.
      *
      * @param array<string, mixed> $salon
      * @return array{title: string, description: string, json_ld: list<array<string, mixed>>}
@@ -1322,11 +1430,12 @@ MD;
         $city = trim((string) ($salon['city'] ?? ''));
         $start = trim((string) ($salon['starts_on'] ?? $salon['iso'] ?? ''));
         $year = preg_match('/^\d{4}/', $start) === 1 ? substr($start, 0, 4) : '';
+        $past = !empty($salon['is_past']);
         $title = $name;
         if ($city !== '' && !str_contains(mb_strtolower($title), mb_strtolower($city))) {
             $title .= ' à ' . $city;
         }
-        if ($year !== '' && !str_contains($title, $year)) {
+        if ($year !== '' && !$past && !str_contains($title, $year)) {
             $title .= ' (' . $year . ')';
         }
 
@@ -1375,6 +1484,9 @@ MD;
      */
     private static function salonEvent(array $salon, string $description): ?array
     {
+        if (!empty($salon['is_past'])) {
+            return null;
+        }
         $confirmed = !empty($salon['confirmed']) || !empty($salon['dates_confirmed']);
         $start = trim((string) ($salon['starts_on'] ?? $salon['iso'] ?? ''));
         if (!$confirmed || preg_match('/^\d{4}-\d{2}-\d{2}/', $start) !== 1) {
@@ -1383,19 +1495,7 @@ MD;
         $href = Share::absolute((string) ($salon['href'] ?? '/salons'));
         $city = trim((string) ($salon['city'] ?? ''));
         $venue = trim((string) ($salon['venue'] ?? ''));
-        $placeName = $venue !== '' ? $venue : ($city !== '' ? $city : trim((string) ($salon['name'] ?? 'Salon')));
-        $address = ['@type' => 'PostalAddress'];
-        if ($city !== '') {
-            $address['addressLocality'] = $city;
-        }
-        $region = trim((string) ($salon['region'] ?? ''));
-        if ($region !== '') {
-            $address['addressRegion'] = $region;
-        }
-        $code = self::countryCode(trim((string) ($salon['country'] ?? '')));
-        if ($code !== '') {
-            $address['addressCountry'] = $code;
-        }
+        [$placeName, $address] = self::eventPlace($salon, $venue, $city);
         $event = [
             '@type' => 'Event',
             '@id' => $href . '#event',
@@ -1406,6 +1506,7 @@ MD;
             'eventStatus' => 'https://schema.org/EventScheduled',
             'url' => $href,
             'inLanguage' => 'fr',
+            'image' => [Share::absolute(asset('img/covers/salons-evenements.webp'))],
             'location' => [
                 '@type' => 'Place',
                 'name' => $placeName,
@@ -1418,10 +1519,87 @@ MD;
         }
         $organizer = trim((string) ($salon['organizer'] ?? ''));
         if ($organizer !== '') {
-            $event['organizer'] = ['@type' => 'Organization', 'name' => $organizer];
+            $org = ['@type' => 'Organization', 'name' => $organizer];
+            $site = trim((string) ($salon['website'] ?? ''));
+            if ($site !== '' && preg_match('#^https?://#i', $site) === 1) {
+                $org['url'] = $site;
+            }
+            $event['organizer'] = $org;
+        }
+        $offer = self::eventOffer($salon, $href);
+        if ($offer !== null) {
+            $event['offers'] = $offer;
         }
 
         return $event;
+    }
+
+    /**
+     * @param array<string, mixed> $salon
+     * @return array{0: string, 1: array<string, string>}
+     */
+    private static function eventPlace(array $salon, string $venue, string $city): array
+    {
+        $placeName = $city !== '' ? $city : trim((string) ($salon['name'] ?? 'Salon'));
+        $street = '';
+        if ($venue !== '') {
+            if (preg_match('/\d+\s+(?:rue|avenue|av\.|bd\.?|boulevard|place|chemin|all[ée]e|quai|impasse|route)\b/iu', $venue) === 1) {
+                $street = $venue;
+            } else {
+                $placeName = $venue;
+            }
+        }
+        $address = ['@type' => 'PostalAddress'];
+        if ($street !== '') {
+            $address['streetAddress'] = $street;
+        }
+        if (preg_match('/\b(\d{5})\b/', $venue . ' ' . (string) ($salon['department'] ?? ''), $postal) === 1) {
+            $address['postalCode'] = $postal[1];
+        }
+        if ($city !== '') {
+            $address['addressLocality'] = $city;
+        }
+        $region = trim((string) ($salon['region'] ?? ''));
+        if ($region !== '' && $region !== '—') {
+            $address['addressRegion'] = $region;
+        }
+        $code = self::countryCode(trim((string) ($salon['country'] ?? '')));
+        if ($code !== '') {
+            $address['addressCountry'] = $code;
+        }
+
+        return [$placeName, $address];
+    }
+
+    /** @param array<string, mixed> $salon
+     *  @return array<string, string>|null
+     */
+    private static function eventOffer(array $salon, string $href): ?array
+    {
+        $ticket = trim((string) ($salon['ticket'] ?? ''));
+        if ($ticket === '') {
+            return null;
+        }
+        $folded = search_norm($ticket);
+        $offer = [
+            '@type' => 'Offer',
+            'url' => trim((string) ($salon['website'] ?? '')) !== '' ? (string) $salon['website'] : $href,
+            'priceCurrency' => 'EUR',
+            'availability' => 'https://schema.org/InStock',
+            'description' => $ticket,
+        ];
+        if (str_contains($folded, 'gratuit') && !str_contains($folded, 'payant')) {
+            $offer['price'] = '0';
+
+            return $offer;
+        }
+        $amount = self::priceAmount($ticket);
+        if ($amount === null) {
+            return null;
+        }
+        $offer['price'] = $amount;
+
+        return $offer;
     }
 
     private static function countryCode(string $country): string

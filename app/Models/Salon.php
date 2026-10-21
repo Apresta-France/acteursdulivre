@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Adl\Models;
 
 use Adl\Core\Database;
+use Adl\Data\SalonHubs;
 
 final class Salon
 {
@@ -263,7 +264,7 @@ final class Salon
             $end = $start;
         }
         $slug = unique_slug(trim($name . ' ' . $city), static function (string $candidate): bool {
-            if (in_array($candidate, self::RESERVED_SLUGS, true)) {
+            if (in_array($candidate, self::RESERVED_SLUGS, true) || SalonHubs::isReserved($candidate)) {
                 return true;
             }
             return Database::fetch('SELECT id FROM salons WHERE slug = ?', [$candidate]) !== null;
@@ -343,6 +344,97 @@ final class Salon
             return $start;
         }
         return $start . ' – ' . $end;
+    }
+
+    /** @param array<string, string> $filters */
+    public static function countWhere(array $filters): int
+    {
+        [$where, $params] = self::whereFor($filters);
+
+        return (int) (Database::fetch('SELECT COUNT(*) AS n FROM salons WHERE ' . $where, $params)['n'] ?? 0);
+    }
+
+    /**
+     * @return list<array{ym: string, n: int}>
+     */
+    public static function monthCounts(): array
+    {
+        return Database::fetchAll(
+            'SELECT DATE_FORMAT(starts_on, "%Y-%m") AS ym, COUNT(*) AS n
+             FROM salons
+             WHERE starts_on IS NOT NULL
+             GROUP BY ym
+             ORDER BY ym ASC'
+        );
+    }
+
+    /**
+     * Toutes les fiches d'un filtre, pour les liens internes d'une page indexable.
+     *
+     * @param array<string, string> $filters
+     * @return list<array{name: string, href: string, city: string}>
+     */
+    public static function linkIndex(array $filters, int $limit = 500): array
+    {
+        [$where, $params] = self::whereFor($filters);
+        $rows = Database::fetchAll(
+            'SELECT name, slug, city, starts_on FROM salons WHERE ' . $where . '
+             ORDER BY (starts_on IS NULL) ASC, starts_on ASC, name ASC
+             LIMIT ' . max(1, $limit),
+            $params
+        );
+        $out = [];
+        foreach ($rows as $row) {
+            $slug = trim((string) ($row['slug'] ?? ''));
+            $name = trim((string) ($row['name'] ?? ''));
+            if ($slug === '' || $name === '' || in_array($slug, self::RESERVED_SLUGS, true)) {
+                continue;
+            }
+            $out[] = [
+                'name' => $name,
+                'href' => '/salons/' . $slug,
+                'city' => trim((string) ($row['city'] ?? '')),
+            ];
+        }
+
+        return $out;
+    }
+
+    /**
+     * Éditions déjà terminées, liées depuis la page agenda indexable.
+     *
+     * @return list<array{name: string, href: string, city: string}>
+     */
+    public static function pastLinks(int $limit = 500): array
+    {
+        $rows = Database::fetchAll(
+            'SELECT name, slug, city, starts_on FROM salons
+             WHERE slug != ""
+               AND starts_on IS NOT NULL
+               AND starts_on < CURDATE()
+               AND (ends_on IS NULL OR ends_on < CURDATE())
+             ORDER BY starts_on DESC, name ASC
+             LIMIT ' . max(1, $limit)
+        );
+        $out = [];
+        foreach ($rows as $row) {
+            $slug = trim((string) ($row['slug'] ?? ''));
+            $name = trim((string) ($row['name'] ?? ''));
+            if ($slug === '' || $name === '') {
+                continue;
+            }
+            $year = substr((string) ($row['starts_on'] ?? ''), 0, 4);
+            if ($year !== '' && !str_contains($name, $year)) {
+                $name .= ', édition ' . $year;
+            }
+            $out[] = [
+                'name' => $name,
+                'href' => '/salons/' . $slug,
+                'city' => trim((string) ($row['city'] ?? '')),
+            ];
+        }
+
+        return $out;
     }
 
     public static function find(string $slug): ?array
@@ -439,6 +531,16 @@ final class Salon
             $where[] = 'country_slug = ?';
             $params[] = $country;
         }
+        $from = trim((string) ($filters['from'] ?? ''));
+        if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $from) === 1) {
+            $where[] = 'starts_on IS NOT NULL AND starts_on >= ?';
+            $params[] = $from;
+        }
+        $until = trim((string) ($filters['until'] ?? ''));
+        if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $until) === 1) {
+            $where[] = 'starts_on IS NOT NULL AND starts_on <= ?';
+            $params[] = $until;
+        }
 
         return [implode(' AND ', $where), $params];
     }
@@ -465,6 +567,8 @@ final class Salon
         $row['day'] = $start !== '' ? (string) (int) substr($start, 8, 2) : '—';
         $row['month'] = $start !== '' ? (self::MONTHS[(int) substr($start, 5, 2)] ?? '') : '';
         $row['confirmed'] = !empty($row['dates_confirmed']);
+        $until = $end !== '' ? substr($end, 0, 10) : ($start !== '' ? substr($start, 0, 10) : '');
+        $row['is_past'] = $until !== '' && $until < date('Y-m-d');
         $row['when_dates'] = self::formatWhen($start, $end, (string) ($row['dates_raw'] ?? ''), true);
         $row['when'] = self::formatWhen($start, $end, (string) ($row['dates_raw'] ?? ''), $row['confirmed']);
         if ($start !== '') {

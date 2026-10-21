@@ -19,7 +19,8 @@ require ADL_ROOT . '/app/helpers.php';
 $uri = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
 $isInstall = str_starts_with($uri, '/install');
 $isCron = $uri === '/cron' || str_starts_with($uri, '/cron/');
-$isSeo = $uri === '/sitemap.xml' || $uri === '/robots.txt' || $uri === '/llms.txt';
+$isSeo = $uri === '/sitemap.xml' || $uri === '/robots.txt' || $uri === '/llms.txt' || $uri === '/llms-full.txt'
+    || $uri === '/.well-known/security.txt' || $uri === '/f4c8e2a19b6d47c0a3e5d8f1b27490ac.txt';
 $envFile = ADL_ROOT . '/.env';
 
 if (!is_file($envFile) && !$isInstall) {

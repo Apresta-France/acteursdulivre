@@ -7,7 +7,7 @@ $q = (string) ($filters['q'] ?? '');
 $category = (string) ($filters['category'] ?? '');
 $region = (string) ($filters['region'] ?? '');
 $country = (string) ($filters['country'] ?? '');
-$pagerPath = '/salons';
+$pagerPath = (string) ($pagerPath ?? '/salons');
 $total = (int) ($pager['total'] ?? 0);
 
 $active = [];
@@ -75,8 +75,8 @@ foreach ($salons as $event) {
         <span aria-hidden="true"> · </span>
         <span>Agenda des salons</span>
       </nav>
-      <h1>Salons du livre 2026 et 2027</h1>
-      <p class="profile-hero-sub">Agenda des salons du livre, festivals et foires en France et en Europe : dates, villes et lieux, de septembre 2026 à septembre 2027. Dates à reconfirmer sur le site de chaque manifestation.</p>
+      <h1><?= e((string) ($salonHeading ?? 'Salons du livre 2026-2027')) ?></h1>
+      <p class="profile-hero-sub"><?= e((string) ($salonIntro ?? 'Agenda des salons du livre, festivals et foires en France et en Europe : dates, villes et lieux, de septembre 2026 à septembre 2027. Dates à reconfirmer sur le site de chaque manifestation.')) ?></p>
     </div>
     <div class="profile-hero-actions">
       <a class="btn-orange" href="<?= e(url('/salons/ajouter')) ?>">Ajouter un salon</a>
@@ -225,13 +225,35 @@ foreach ($salons as $event) {
 
       <?php if (!empty($salonIndex)): ?>
         <details class="me-geo">
-          <summary>Tous les salons à venir (<?= count($salonIndex) ?>)</summary>
+          <summary><?= e((string) ($salonIndexLabel ?? 'Tous les salons à venir')) ?> (<?= count($salonIndex) ?>)</summary>
           <div class="me-geo-links">
             <?php foreach ($salonIndex as $item): ?>
               <a href="<?= e(url((string) $item['href'])) ?>"><?= e((string) $item['name']) ?></a>
             <?php endforeach; ?>
           </div>
         </details>
+      <?php endif; ?>
+
+      <?php if (!empty($salonPastIndex)): ?>
+        <details class="me-geo">
+          <summary>Éditions passées (<?= count($salonPastIndex) ?>)</summary>
+          <div class="me-geo-links">
+            <?php foreach ($salonPastIndex as $item): ?>
+              <a href="<?= e(url((string) $item['href'])) ?>"><?= e((string) $item['name']) ?></a>
+            <?php endforeach; ?>
+          </div>
+        </details>
+      <?php endif; ?>
+
+      <?php if (!empty($salonHubNav)): ?>
+        <nav class="me-geo" aria-label="Agenda par région, genre et mois">
+          <h2>Par région, genre et mois</h2>
+          <div class="me-geo-links">
+            <?php foreach ($salonHubNav as $hubLink): ?>
+              <a href="<?= e(url((string) $hubLink['href'])) ?>"><?= e((string) $hubLink['label']) ?></a>
+            <?php endforeach; ?>
+          </div>
+        </nav>
       <?php endif; ?>
 
       <aside class="salon-cta">

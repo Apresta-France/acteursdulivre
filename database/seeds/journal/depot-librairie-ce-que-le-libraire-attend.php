@@ -12,7 +12,7 @@ return [
     'published' => true,
     'body' => <<<'HTML'
 <p>En 2026, un premier dépôt en librairie se joue sur <strong>5 à 15 exemplaires</strong>, une remise de <strong>30 à 40 %</strong> sur le prix public TTC, un bon de dépôt signé et un rendez-vous — pas un carton laissé au comptoir un samedi. Le libraire n’achète pas le roman : il l’expose avec un droit de retour. Sans présentation, suivi ni renvoi tenable, le livre part au pilon.</p>
-<p>Ces fourchettes sont celles du marché français de la librairie indépendante, pas des statistiques d’Acteurs du Livre — la plateforme est en pré-ouverture. Elles servent à préparer le rendez-vous, pas à imposer un barème au commerçant.</p>
+<p>Ces fourchettes sont celles du marché français de la librairie indépendante, pas des statistiques d’Acteurs du Livre (fourchettes du marché, octobre 2026). Elles servent à préparer le rendez-vous, pas à imposer un barème au commerçant.</p>
 
 <h2 id="essentiel">L’essentiel</h2>
 <ul>

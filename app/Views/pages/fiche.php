@@ -109,6 +109,7 @@ if ($hasSeveralPackages && count($packageDelays) > 1) {
         </p>
       <?php endif; ?>
       <h1><?= e((string) $service['title']) ?></h1>
+      <h2 class="sr-only">La prestation</h2>
       <div class="service-excerpt"><?= user_html(
           (string) ($service['excerpt'] ?? ''),
           '<p>Prestation proposée par ' . e((string) $service['by']) . '.</p>'

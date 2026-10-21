@@ -241,6 +241,77 @@ final class ImageFit
         return true;
     }
 
+    /** Réduit une image sur place (bord max 800 px), en gardant le même format. */
+    public static function compressInPlace(string $absolutePath, int $maxEdge = 800): bool
+    {
+        if (!is_file($absolutePath) || !function_exists('imagecreatetruecolor')) {
+            return false;
+        }
+        $info = @getimagesize($absolutePath);
+        if (!is_array($info)) {
+            return false;
+        }
+        $srcW = (int) $info[0];
+        $srcH = (int) $info[1];
+        $type = (int) ($info[2] ?? 0);
+        if ($srcW < 1 || $srcH < 1 || $srcW * $srcH > 24000000) {
+            return false;
+        }
+        $bytes = filesize($absolutePath);
+        if (max($srcW, $srcH) <= $maxEdge && $bytes !== false && $bytes < 180000) {
+            return false;
+        }
+        if (!in_array($type, [IMAGETYPE_JPEG, IMAGETYPE_PNG, IMAGETYPE_WEBP], true)) {
+            return false;
+        }
+        $im = match ($type) {
+            IMAGETYPE_JPEG => @imagecreatefromjpeg($absolutePath),
+            IMAGETYPE_PNG => @imagecreatefrompng($absolutePath),
+            IMAGETYPE_WEBP => function_exists('imagecreatefromwebp') ? @imagecreatefromwebp($absolutePath) : false,
+            default => false,
+        };
+        if ($im === false) {
+            return false;
+        }
+        if (function_exists('imagepalettetotruecolor')) {
+            @imagepalettetotruecolor($im);
+        }
+        $scale = min(1, $maxEdge / max($srcW, $srcH));
+        $dstW = max(1, (int) round($srcW * $scale));
+        $dstH = max(1, (int) round($srcH * $scale));
+        $out = imagecreatetruecolor($dstW, $dstH);
+        if ($out === false) {
+            imagedestroy($im);
+            return false;
+        }
+        imagealphablending($out, false);
+        imagesavealpha($out, true);
+        $clear = imagecolorallocatealpha($out, 0, 0, 0, 127);
+        if ($clear !== false) {
+            imagefilledrectangle($out, 0, 0, $dstW, $dstH, $clear);
+        }
+        imagecopyresampled($out, $im, 0, 0, 0, 0, $dstW, $dstH, $srcW, $srcH);
+        imagedestroy($im);
+        $tmp = $absolutePath . '.tmp';
+        $ok = match ($type) {
+            IMAGETYPE_JPEG => imagejpeg($out, $tmp, 82),
+            IMAGETYPE_PNG => imagepng($out, $tmp, 7),
+            IMAGETYPE_WEBP => function_exists('imagewebp') && imagewebp($out, $tmp, 76),
+            default => false,
+        };
+        imagedestroy($out);
+        if (!$ok || !is_file($tmp)) {
+            @unlink($tmp);
+            return false;
+        }
+        if (!@rename($tmp, $absolutePath)) {
+            @unlink($tmp);
+            return false;
+        }
+
+        return true;
+    }
+
     private static function redirectOriginal(string $sourceRel): never
     {
         header('Location: ' . url('public/' . implode('/', array_map('rawurlencode', explode('/', $sourceRel)))), true, 302);

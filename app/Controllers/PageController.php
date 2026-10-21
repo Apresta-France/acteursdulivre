@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Adl\Controllers;
 
+use Adl\Core\IndexNow;
 use Adl\Core\Auth;
 use Adl\Core\BotGuard;
 use Adl\Core\Mailer;
@@ -13,6 +14,7 @@ use Adl\Data\Catalog;
 use Adl\Data\Cities;
 use Adl\Data\Landings;
 use Adl\Data\LegalPages;
+use Adl\Data\SalonHubs;
 use Adl\Data\Seo;
 use Adl\Data\Share;
 use Adl\Data\Sitemap;
@@ -68,6 +70,33 @@ final class PageController
         header('Content-Type: text/plain; charset=utf-8');
         header('Cache-Control: public, max-age=3600');
         echo Seo::llmsTxt();
+    }
+
+    public function llmsFull(Request $request): void
+    {
+        http_response_code(200);
+        header('Content-Type: text/plain; charset=utf-8');
+        header('Cache-Control: public, max-age=3600');
+        echo Seo::llmsFullTxt();
+    }
+
+    public function securityTxt(Request $request): void
+    {
+        http_response_code(200);
+        header('Content-Type: text/plain; charset=utf-8');
+        header('Cache-Control: public, max-age=86400');
+        echo "Contact: mailto:guillaume@editions-tesseract.fr\n";
+        echo "Expires: 2027-10-21T22:00:00.000Z\n";
+        echo "Preferred-Languages: fr, en\n";
+        echo 'Canonical: ' . Share::absolute('/.well-known/security.txt') . "\n";
+    }
+
+    public function indexNowKey(Request $request): void
+    {
+        http_response_code(200);
+        header('Content-Type: text/plain; charset=utf-8');
+        header('Cache-Control: public, max-age=86400');
+        echo IndexNow::KEY;
     }
 
     public function home(Request $request): void
@@ -519,11 +548,9 @@ final class PageController
         $meta = Seo::forScreen('auteurs', [
             'title' => $seo['title'],
             'description' => $seo['description'],
-            'path' => $pageNum > 1 ? '/auteurs?page=' . $pageNum : '/auteurs',
+            'path' => '/auteurs',
         ]);
-        if ($pageNum > 1) {
-            $meta['robots'] = 'noindex, follow';
-        }
+        $meta = Seo::pagedListing($meta, '/auteurs', $pageNum, true);
         View::page('auteurs', [
             'title' => $seo['title'],
             'authors' => $found['items'],
@@ -639,14 +666,14 @@ final class PageController
                 'pages' => (int) ($found['pages'] ?? 1),
                 'total' => (int) ($found['count'] ?? 0),
             ],
-            'meta' => Seo::build(
+            'meta' => Seo::pagedListing(Seo::build(
                 'Appels d\'offres du livre',
                 'Missions ouvertes : correction, illustration, traduction, impression. Candidatez sans commission sur la candidature.',
                 Share::absolute('/missions'),
                 'website',
                 null,
                 [
-                    'robots' => ($filtered || (int) ($found['page'] ?? 1) > 1) ? 'noindex, follow' : Seo::ROBOTS_INDEX,
+                    'robots' => $filtered ? 'noindex, follow' : Seo::ROBOTS_INDEX,
                     'json_ld' => ($filtered || (int) ($found['page'] ?? 1) > 1) ? [] : Seo::webPageGraph(
                         'Appels d\'offres du livre',
                         'Missions ouvertes des métiers du livre.',
@@ -654,7 +681,7 @@ final class PageController
                         'missions'
                     ),
                 ]
-            ),
+            ), '/missions', (int) ($found['page'] ?? 1), !$filtered),
         ]);
     }
 
@@ -1140,24 +1167,41 @@ final class PageController
         }
 
         $meta = Seo::forScreen('salons');
-        if ($filters['q'] !== '' || $found['page'] > 1) {
-            $meta['robots'] = 'noindex, follow';
+        $salonCount = 0;
+        try {
+            $salonCount = Salon::countAll();
+        } catch (\Throwable) {
         }
+        if ($salonCount > 0) {
+            $meta['description'] = 'Agenda de ' . $salonCount . ' salons et festivals du livre en France et en Europe : dates, villes, genres. Mis à jour chaque semaine, de septembre 2026 à septembre 2027.';
+        }
+        $clean = $filters['q'] === '' && $filters['category'] === '' && $filters['region'] === '' && $filters['country'] === '';
+        if ($filters['q'] === '' && $filters['category'] !== '' && $filters['region'] === '' && $filters['country'] === '') {
+            $target = SalonHubs::resolve($filters['category']);
+            if ($target !== null) {
+                redirect((string) ($target['redirect'] ?? $target['path']), 301);
+            }
+        }
+        if ($filters['q'] === '' && $filters['region'] !== '' && $filters['category'] === '' && $filters['country'] === '') {
+            $target = SalonHubs::resolve($filters['region']);
+            if ($target !== null) {
+                redirect((string) ($target['redirect'] ?? $target['path']), 301);
+            }
+        }
+        $meta = Seo::pagedListing($meta, '/salons', (int) $found['page'], $clean);
         $salonIndex = [];
-        $unfiltered = $filters['q'] === ''
-            && $filters['category'] === ''
-            && $filters['region'] === ''
-            && $filters['country'] === ''
-            && $page === 1;
+        $salonPastIndex = [];
+        $unfiltered = $clean && $page === 1;
         if ($unfiltered) {
             try {
                 $salonIndex = Salon::indexLinks();
+                $salonPastIndex = Salon::pastLinks();
             } catch (\Throwable) {
             }
         }
 
         View::page('salons', [
-            'title' => 'Salons du livre 2026 et 2027',
+            'title' => 'Salons du livre 2026-2027',
             'meta' => $meta,
             'salons' => $found['items'],
             'pager' => $found,
@@ -1165,11 +1209,35 @@ final class PageController
             'facets' => $facets,
             'query' => $filters['q'],
             'salonIndex' => $salonIndex,
+            'salonPastIndex' => $salonPastIndex,
+            'salonHeading' => 'Salons du livre 2026-2027',
+            'salonIntro' => 'Agenda des salons du livre, festivals et foires en France et en Europe : dates, villes et lieux, de septembre 2026 à septembre 2027. Une page par région, par genre et par mois. Dates à reconfirmer sur le site de chaque manifestation.',
+            'salonHubNav' => $unfiltered ? SalonHubs::nav() : [],
         ]);
+    }
+
+    public function salonMonth(Request $request, string $year, string $month): void
+    {
+        if (preg_match('/^\d{4}$/', $year) !== 1) {
+            not_found('Ce salon n\'est pas dans l\'agenda.');
+        }
+        $hub = SalonHubs::month((int) $year, $month);
+        if ($hub === null) {
+            not_found('Aucun salon n\'est daté sur ce mois.');
+        }
+        $this->renderSalonHub($request, $hub);
     }
 
     public function salon(Request $request, string $slug): void
     {
+        $hub = SalonHubs::resolve($slug);
+        if ($hub !== null) {
+            if (!empty($hub['redirect'])) {
+                redirect((string) $hub['redirect'], 301);
+            }
+            $this->renderSalonHub($request, $hub);
+            return;
+        }
         $salon = null;
         try {
             $salon = Salon::find($slug);
@@ -1214,6 +1282,97 @@ final class PageController
             'salonForumTopic' => $salonForumTopic,
             'salonCommentError' => flash('salon_comment_error'),
             'salonCommentOld' => flash('salon_comment_old') ?: [],
+        ]);
+    }
+
+    /** @param array<string, mixed> $hub */
+    private function renderSalonHub(Request $request, array $hub): void
+    {
+        if ($request->string('q') !== '') {
+            redirect('/salons?q=' . rawurlencode($request->string('q')));
+        }
+        $askedRegion = $request->string('region');
+        if ($askedRegion !== '' && $askedRegion !== (string) ($hub['filters']['region'] ?? '')) {
+            $target = SalonHubs::resolve($askedRegion);
+            if ($target !== null) {
+                redirect((string) ($target['redirect'] ?? $target['path']), 301);
+            }
+        }
+        $askedCat = $request->string('cat');
+        if ($askedCat !== '' && $askedCat !== (string) ($hub['facet_category'] ?? '')) {
+            $target = SalonHubs::resolve($askedCat);
+            if ($target !== null) {
+                redirect((string) ($target['redirect'] ?? $target['path']), 301);
+            }
+        }
+
+        $page = max(1, $request->int('page', 1) ?? 1);
+        $filters = is_array($hub['filters'] ?? null) ? $hub['filters'] : [];
+        $found = ['items' => [], 'total' => 0, 'page' => 1, 'pages' => 1];
+        $facets = ['categories' => [], 'regions' => [], 'countries' => []];
+        $links = [];
+        try {
+            $found = Salon::search($filters, $page);
+            $facets = Salon::facets();
+            if ((int) $found['page'] === 1) {
+                $links = Salon::linkIndex($filters);
+            }
+        } catch (\Throwable) {
+        }
+
+        $path = (string) $hub['path'];
+        $items = [];
+        $position = 1;
+        foreach (array_slice($links, 0, 100) as $link) {
+            $items[] = [
+                '@type' => 'ListItem',
+                'position' => $position,
+                'url' => Share::absolute((string) $link['href']),
+                'name' => (string) $link['name'],
+            ];
+            $position++;
+        }
+        $jsonLd = [
+            Seo::organization(),
+            Seo::website(),
+            Seo::webPage((string) $hub['h1'], (string) $hub['description'], $path, 'CollectionPage'),
+            Seo::breadcrumb([
+                ['name' => Seo::BRAND, 'url' => '/'],
+                ['name' => 'Salons du livre', 'url' => '/salons'],
+                ['name' => (string) $hub['label'], 'url' => $path],
+            ]),
+        ];
+        if ($items !== []) {
+            $jsonLd[] = [
+                '@type' => 'ItemList',
+                'name' => (string) $hub['h1'],
+                'numberOfItems' => count($links),
+                'itemListElement' => $items,
+            ];
+        }
+        $meta = Seo::build((string) $hub['title'], (string) $hub['description'], Share::absolute($path), 'website', null, [
+            'json_ld' => $jsonLd,
+        ]);
+        $meta = Seo::pagedListing($meta, $path, (int) $found['page'], true);
+
+        View::page('salons', [
+            'title' => (string) $hub['h1'],
+            'meta' => $meta,
+            'salons' => $found['items'],
+            'pager' => $found,
+            'filters' => [
+                'q' => '',
+                'category' => (string) ($hub['facet_category'] ?? ''),
+                'region' => (string) ($hub['facet_region'] ?? ''),
+                'country' => '',
+            ],
+            'facets' => $facets,
+            'salonIndex' => $links,
+            'salonIndexLabel' => 'Tous les salons de cette sélection',
+            'salonHeading' => (string) $hub['h1'],
+            'salonIntro' => (string) $hub['intro'],
+            'pagerPath' => $path,
+            'salonHubNav' => SalonHubs::nav(),
         ]);
     }
 
@@ -1369,9 +1528,7 @@ final class PageController
         }
         $metaExtra['path'] = $canonical;
         $meta = Seo::forScreen('journal', $metaExtra);
-        if ($q !== '' || $found['page'] > 1) {
-            $meta['robots'] = 'noindex, follow';
-        }
+        $meta = Seo::pagedListing($meta, $canonical, (int) $found['page'], $q === '');
         $journalIndex = [];
         if (!$filtered && $found['page'] === 1) {
             try {
@@ -1801,9 +1958,9 @@ final class PageController
         if ($query === '' && $cat !== '' && $cityLabel !== '' && !$availableOnly && !Catalog::hasFacetFilters($filters)) {
             $geoCopy = Seo::tradeCityCopy($cat, $cityLabel);
         }
-        $indexable = (($query === '' && $cat === '' && $citySlug === '' && !$availableOnly && !Catalog::hasFacetFilters($filters))
-            || $geoCopy !== null)
-            && (int) ($found['page'] ?? 1) === 1;
+        $thickGeo = $geoCopy !== null && (int) ($found['count'] ?? 0) >= 3;
+        $cleanHub = $query === '' && $cat === '' && $citySlug === '' && !$availableOnly && !Catalog::hasFacetFilters($filters);
+        $indexable = $cleanHub || $thickGeo;
         $copy = match ($type) {
             'prestations' => [
                 'title' => 'Prestations des métiers du livre',
@@ -1852,7 +2009,8 @@ final class PageController
                 'pages' => (int) ($found['pages'] ?? 1),
                 'total' => (int) ($found['count'] ?? 0),
             ],
-            'meta' => Seo::build(
+            'meta' => Seo::pagedListing(
+                Seo::build(
                 $query !== '' ? 'Recherche : ' . $heading : $pageTitle,
                 $pageDescription,
                 Share::absolute($canonical),
@@ -1860,7 +2018,7 @@ final class PageController
                 null,
                 [
                     'robots' => $indexable ? Seo::ROBOTS_INDEX : 'noindex, follow',
-                    'json_ld' => $indexable
+                    'json_ld' => ($indexable && (int) ($found['page'] ?? 1) === 1)
                         ? ($geoCopy !== null
                             ? [
                                 Seo::organization(),
@@ -1885,6 +2043,10 @@ final class PageController
                             ))
                         : [],
                 ]
+            ),
+                $canonical,
+                (int) ($found['page'] ?? 1),
+                $indexable
             ),
         ]);
     }

@@ -12,7 +12,7 @@ return [
     'published' => true,
     'body' => <<<'HTML'
 <p>L’<strong>autoédition</strong> consiste, pour un auteur, à publier son livre <em>sans céder l’exploitation à une maison d’édition</em> : il assume (seul ou avec des prestataires) la fabrication, les identifiants, le dépôt légal et la diffusion. En France, en 2026, un roman autoédité de 300 pages, 300 exemplaires brochés, se situe souvent entre <strong>3&nbsp;400 et 5&nbsp;800&nbsp;€</strong> hors communication — détail dans <a href="/journal/cout-fabrication-roman-autoedition">Combien coûte la fabrication d’un roman en autoédition&nbsp;?</a>.</p>
-<p>Ce guide décrit le circuit français — droit d’auteur, ISBN, BnF, prix unique, librairie — pas un mode d’emploi d’une boutique mondiale. Les fourchettes sont des ordres de grandeur du marché, pas des statistiques d’Acteurs du Livre (pré-ouverture). La plateforme met en relation ; elle n’édite pas vos ouvrages. Voir <a href="/a-propos">à propos</a> et <a href="/comment-ca-marche">comment ça marche</a>.</p>
+<p>Ce guide décrit le circuit français — droit d’auteur, ISBN, BnF, prix unique, librairie — pas un mode d’emploi d’une boutique mondiale. Les fourchettes sont des ordres de grandeur du marché, pas des statistiques d’Acteurs du Livre (fourchettes du marché, octobre 2026). La plateforme met en relation ; elle n’édite pas vos ouvrages. Voir <a href="/a-propos">à propos</a> et <a href="/comment-ca-marche">comment ça marche</a>.</p>
 
 <h2 id="essentiel">L’essentiel</h2>
 <ul>

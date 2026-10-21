@@ -1044,14 +1044,7 @@ final class Profile
             return '';
         }
 
-        $parts = parse_url($raw);
-        $scheme = strtolower((string) ($parts['scheme'] ?? ''));
-        $host = strtolower((string) ($parts['host'] ?? ''));
-        if (!in_array($scheme, ['http', 'https'], true) || $host === '' || !str_contains($host, '.')) {
-            return '';
-        }
-
-        return $raw;
+        return public_http_url($raw);
     }
 
     /** @param array<string, mixed> $row */

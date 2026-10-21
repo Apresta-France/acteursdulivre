@@ -432,7 +432,7 @@ final class Landings
             'meta_title' => '',
             'meta_description' => '',
             'price' => '',
-            'price_note' => 'Fourchettes du marché français 2026, pas des statistiques de la plateforme (pré-ouverture). Un devis sur votre fichier dit le prix réel.',
+            'price_note' => 'Fourchettes du marché français, octobre 2026, pas des statistiques de la plateforme. Un devis sur votre fichier dit le prix réel.',
             'includes' => [],
             'excludes' => [],
             'steps' => $audience === 'prestataire' ? self::OFFERER_STEPS : self::CLIENT_STEPS,

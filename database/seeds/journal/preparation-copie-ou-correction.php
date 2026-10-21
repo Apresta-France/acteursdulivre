@@ -12,7 +12,7 @@ return [
     'published' => true,
     'body' => <<<'HTML'
 <p>La préparation de copie d’un roman se situe, en 2026, entre <strong>1 200 et 2 400 €</strong> ; une correction orthotypographique du même manuscrit, plutôt entre <strong>620 et 1 100 €</strong>. Ce ne sont pas deux tarifs du même métier : vous achetez deux prestations distinctes.</p>
-<p>Ces fourchettes sont des ordres de grandeur du marché français, pas des statistiques d’Acteurs du Livre — la plateforme est en pré-ouverture. Elles servent à lire un devis et à poser les bonnes questions, pas à remplacer un chiffrage sur votre fichier.</p>
+<p>Ces fourchettes sont des ordres de grandeur du marché français, pas des statistiques d’Acteurs du Livre (fourchettes du marché, octobre 2026). Elles servent à lire un devis et à poser les bonnes questions, pas à remplacer un chiffrage sur votre fichier.</p>
 
 <h2 id="essentiel">L’essentiel</h2>
 <ul>

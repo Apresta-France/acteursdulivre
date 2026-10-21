@@ -22,15 +22,15 @@ final class Sitemap
         }
 
         foreach (Landings::sitemapUrls() as $page) {
-            self::push($urls, $seen, $page['loc'], null, $page['priority'] ?? '0.7');
+            self::push($urls, $seen, $page['loc'], '2026-10-21', $page['priority'] ?? '0.7');
         }
 
         foreach (self::tradePaths() as $path) {
-            self::push($urls, $seen, $path, null, '0.8');
+            self::push($urls, $seen, $path, '2026-10-21', '0.8');
         }
 
         foreach (self::tradeCityPaths() as $path) {
-            self::push($urls, $seen, $path, null, '0.7');
+            self::push($urls, $seen, $path, '2026-10-21', '0.7');
         }
 
         foreach (self::rows(
@@ -124,6 +124,12 @@ final class Sitemap
             self::push($urls, $seen, '/salons/' . $row['slug'], $row['lastmod'] ?? null, '0.4');
         }
 
+        foreach (\Adl\Data\SalonHubs::sitemapPaths() as $hub) {
+            self::push($urls, $seen, $hub['path'], '2026-10-21', $hub['priority']);
+        }
+
+        self::push($urls, $seen, '/maisons-edition?manuscrits=1', '2026-10-21', '0.6');
+
         foreach (self::rows(
             'SELECT slug, COALESCE(updated_at, created_at) AS lastmod
              FROM souscriptions
@@ -199,15 +205,15 @@ final class Sitemap
     {
         $legalMod = '2026-08-31';
         $pages = [
-            ['path' => '/', 'priority' => '1.0', 'lastmod' => '2026-10-08'],
+            ['path' => '/', 'priority' => '1.0', 'lastmod' => '2026-10-21'],
             ['path' => '/recherche', 'priority' => '0.8'],
             ['path' => '/prestations', 'priority' => '0.8'],
             ['path' => '/prestataires', 'priority' => '0.8'],
             ['path' => '/auteurs', 'priority' => '0.7'],
-            ['path' => '/maisons-edition', 'priority' => '0.9', 'lastmod' => '2026-10-08'],
+            ['path' => '/maisons-edition', 'priority' => '0.9', 'lastmod' => '2026-10-21'],
             ['path' => '/maisons-edition/pays', 'priority' => '0.6'],
             ['path' => '/missions', 'priority' => '0.8'],
-            ['path' => '/journal', 'priority' => '0.8', 'lastmod' => '2026-10-08'],
+            ['path' => '/journal', 'priority' => '0.8', 'lastmod' => '2026-10-21'],
             ['path' => '/forum', 'priority' => '0.8'],
             ['path' => '/communaute', 'priority' => '0.7'],
             ['path' => '/outils', 'priority' => '0.7'],
@@ -215,17 +221,17 @@ final class Sitemap
             ['path' => '/outils/pages', 'priority' => '0.8', 'lastmod' => '2026-10-12'],
             ['path' => '/outils/dos', 'priority' => '0.8', 'lastmod' => '2026-10-08'],
             ['path' => '/outils/isbn', 'priority' => '0.8', 'lastmod' => '2026-10-08'],
-            ['path' => '/salons', 'priority' => '0.9', 'lastmod' => '2026-10-08'],
+            ['path' => '/salons', 'priority' => '0.9', 'lastmod' => '2026-10-21'],
             ['path' => '/souscriptions', 'priority' => '0.6'],
-            ['path' => '/besoin', 'priority' => '0.8', 'lastmod' => '2026-10-08'],
+            ['path' => '/besoin', 'priority' => '0.8', 'lastmod' => '2026-10-21'],
             ['path' => '/comment-ca-marche', 'priority' => '0.7', 'lastmod' => '2026-10-08'],
-            ['path' => '/tarifs', 'priority' => '0.7'],
+            ['path' => '/tarifs', 'priority' => '0.7', 'lastmod' => '2026-10-21'],
             ['path' => '/confiance', 'priority' => '0.6'],
             ['path' => '/a-propos', 'priority' => '0.6'],
             ['path' => '/inscription', 'priority' => '0.6'],
             ['path' => '/aide', 'priority' => '0.5'],
             ['path' => '/questions', 'priority' => '0.6'],
-            ['path' => '/contact', 'priority' => '0.5'],
+            ['path' => '/contact', 'priority' => '0.5', 'lastmod' => '2026-10-21'],
         ];
         foreach (LegalPages::slugs() as $item) {
             $pages[] = [
@@ -266,6 +272,9 @@ final class Sitemap
         $paths = [];
         foreach ($pairs as $trade => $cities) {
             foreach ($cities as $row) {
+                if ((int) ($row['n'] ?? 0) < 3) {
+                    continue;
+                }
                 $path = Catalog::catalogPath('prestataires', (string) $trade, (string) ($row['slug'] ?? ''));
                 if ($path !== '' && str_contains($path, 'ville=')) {
                     $paths[] = $path;

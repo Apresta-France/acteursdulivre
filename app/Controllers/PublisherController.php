@@ -30,12 +30,21 @@ final class PublisherController
         $filters = $this->filters($request);
         $seo = Seo::catalog()['maisons-edition'];
         $total = $this->safeCount();
+        $countries = 0;
+        try {
+            $countries = count(Publisher::countries());
+        } catch (\Throwable) {
+        }
+        $title = $total > 0 ? 'Annuaire des maisons d\'édition : ' . $total . ' éditeurs' : $seo['title'];
+        $description = $total > 0
+            ? $total . ' maisons d\'édition en France et dans ' . max(0, $countries - 1) . ' autres pays : ligne éditoriale, genres, taille, ville. Trouvez l\'éditeur qui correspond à votre manuscrit.'
+            : $seo['description'];
         $this->renderListing($request, $filters, [
             'heading' => 'Annuaire des maisons d\'édition en France et en Europe',
             'heading_count' => $total,
-            'lead' => 'Plus de ' . format_int(max(0, (int) floor($total / 50) * 50)) . ' éditeurs recensés dans ' . count(Publisher::countries()) . ' pays : grands groupes, indépendants, micro-structures, généralistes et spécialisés. Cherchez par nom, pays, ville ou genre éditorial ; connectez-vous pour consulter les coordonnées et prendre contact.',
-            'title' => $seo['title'],
-            'description' => $seo['description'],
+            'lead' => 'Plus de ' . format_int(max(0, (int) floor($total / 50) * 50)) . ' éditeurs recensés dans ' . $countries . ' pays : grands groupes, indépendants, micro-structures, généralistes et spécialisés. Le site web de chaque maison est public ; connectez-vous pour consulter les coordonnées directes.',
+            'title' => $title,
+            'description' => $description,
             'path' => self::BASE,
             'crumbs' => [
                 ['name' => 'Communauté', 'url' => '/communaute'],
@@ -152,7 +161,7 @@ final class PublisherController
         }
 
         // Anti-aspiration : les visiteurs non connectés sont plafonnés en nombre de fiches par IP.
-        if (!$viewer && rate_limited('pub-view', Publisher::ipHash(), Publisher::VISITOR_VIEW_LIMIT, Publisher::VISITOR_VIEW_WINDOW)) {
+        if (!$viewer && !\Adl\Core\VerifiedBot::isExempt() && rate_limited('pub-view', Publisher::ipHash(), Publisher::VISITOR_VIEW_LIMIT, Publisher::VISITOR_VIEW_WINDOW)) {
             $this->tooMany();
         }
 
@@ -203,7 +212,7 @@ final class PublisherController
                     'json_ld' => [
                         Seo::organization(),
                         Seo::website(),
-                        Seo::webPage($title, $description, $publisher['href'], 'ItemPage'),
+                        Seo::webPage($title, $description, $publisher['href'], 'ItemPage', Share::absolute($publisher['href']) . '#organization'),
                         Seo::breadcrumb($crumbs),
                         self::organizationLd($publisher, $description),
                     ],
@@ -543,8 +552,18 @@ final class PublisherController
         ];
 
         $userQuery = $this->queryFor($filters, (string) $ctx['scope']);
-        $isFiltered = $userQuery !== [] || $pageNum > 1;
-        $path = (string) $ctx['path'];
+        $otherQuery = $userQuery;
+        unset($otherQuery['manuscrits']);
+        $manuscriptsHub = ($filters['manuscripts'] ?? '') === '1'
+            && $otherQuery === []
+            && ($ctx['scope'] ?? '') === 'all';
+        if ($manuscriptsHub) {
+            $ctx['title'] = 'Maisons d\'édition et manuscrits';
+            $ctx['heading'] = 'Maisons d\'édition qui précisent leur politique de manuscrits';
+            $ctx['description'] = 'Maisons qui indiquent comment elles reçoivent les manuscrits : ligne éditoriale, genres et ville. Le site web est public, les coordonnées directes restent réservées aux membres.';
+        }
+        $listingFiltered = $otherQuery !== [];
+        $path = $manuscriptsHub ? self::BASE . '?manuscrits=1' : (string) $ctx['path'];
         $canonical = $path;
         $crumbs = array_merge([['name' => Seo::BRAND, 'url' => '/']], $ctx['crumbs']);
 
@@ -563,7 +582,7 @@ final class PublisherController
             Seo::webPage((string) $ctx['title'], (string) $ctx['description'], $path, 'CollectionPage'),
             Seo::breadcrumb($crumbs),
         ];
-        if ($itemList !== [] && !$isFiltered) {
+        if ($itemList !== [] && !$listingFiltered && ($pageNum === 1 || $manuscriptsHub)) {
             $jsonLd[] = [
                 '@type' => 'ItemList',
                 'name' => (string) $ctx['heading'],
@@ -574,24 +593,24 @@ final class PublisherController
         }
 
         $directoryLinks = [];
-        if (($ctx['scope'] ?? '') === 'all' && $pageNum === 1 && !$isFiltered) {
+        if (($ctx['scope'] ?? '') === 'all' && $pageNum === 1 && $userQuery === []) {
             try {
                 $directoryLinks = Publisher::directoryLinks();
             } catch (\Throwable) {
             }
         }
 
-        $meta = Seo::build(
-            (string) $ctx['title'] . ($pageNum > 1 ? ' — page ' . $pageNum : ''),
+        $meta = Seo::pagedListing(Seo::build(
+            (string) $ctx['title'],
             (string) $ctx['description'],
             Share::absolute($canonical),
             'website',
             null,
             [
-                'robots' => $isFiltered ? 'noindex, follow' : Seo::ROBOTS_INDEX,
-                'json_ld' => $isFiltered ? [] : $jsonLd,
+                'robots' => $listingFiltered ? 'noindex, follow' : Seo::ROBOTS_INDEX,
+                'json_ld' => $listingFiltered ? [] : $jsonLd,
             ]
-        );
+        ), $canonical, $pageNum, !$listingFiltered);
 
         $genreLabel = ($filters['genre'] ?? '') !== '' ? Publisher::genreLabel((string) $filters['genre']) : '';
 
@@ -603,7 +622,7 @@ final class PublisherController
             'filters' => $filters,
             'genreLabel' => $genreLabel,
             'facets' => $facets,
-            'isFiltered' => $userQuery !== [],
+            'isFiltered' => $listingFiltered || $manuscriptsHub,
             'sizes' => Publisher::SIZES,
             'typologies' => Publisher::TYPOLOGIES,
             'meta' => $meta,
@@ -622,6 +641,7 @@ final class PublisherController
             'size' => $request->string('taille'),
             'typology' => $request->string('typologie'),
             'independent' => $request->bool('independant') ? '1' : '',
+            'manuscripts' => $request->bool('manuscrits') ? '1' : '',
         ];
         $sort = $request->string('tri');
         if (isset(Publisher::SORTS[$sort]) && $sort !== 'az') {
@@ -661,6 +681,9 @@ final class PublisherController
         }
         if (($filters['independent'] ?? '') === '1') {
             $q['independant'] = '1';
+        }
+        if (($filters['manuscripts'] ?? '') === '1') {
+            $q['manuscrits'] = '1';
         }
         if (($filters['sort'] ?? '') !== '') {
             $q['tri'] = $filters['sort'];
@@ -720,12 +743,13 @@ final class PublisherController
         http_response_code(429);
         \Adl\Models\HttpError::note('Trop de consultations');
         header('Retry-After: ' . Publisher::VISITOR_VIEW_WINDOW);
+        header('Cache-Control: private, no-store');
         View::render('errors/429', [
             'title' => 'Trop de consultations',
             'meta' => [
-                'title' => 'Trop de consultations | acteursdulivre.fr',
+                'title' => 'Trop de consultations',
                 'description' => 'Ralentissez ou connectez-vous pour continuer à parcourir l\'annuaire.',
-                'robots' => Seo::ROBOTS_NONE,
+                'robots_omit' => true,
             ],
         ]);
         exit;
@@ -749,7 +773,7 @@ final class PublisherController
         return 'à ' . $country;
     }
 
-    /** JSON-LD Organization volontairement sans e-mail, téléphone ni URL (anti-aspiration). */
+    /** JSON-LD Organization : site web public, sans e-mail ni téléphone. */
     private static function organizationLd(array $p, string $description): array
     {
         $ld = [
@@ -762,6 +786,10 @@ final class PublisherController
         ];
         if ($p['logo_src'] !== '') {
             $ld['logo'] = Share::absolute($p['logo_src']);
+        }
+        $website = trim((string) ($p['website'] ?? ''));
+        if ($website !== '' && preg_match('#^https?://#i', $website) === 1) {
+            $ld['url'] = $website;
         }
         if ($p['founded_year']) {
             $ld['foundingDate'] = (string) $p['founded_year'];

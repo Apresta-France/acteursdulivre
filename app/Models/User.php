@@ -723,6 +723,7 @@ final class User
         if ($stored === null) {
             return null;
         }
+        \Adl\Core\ImageFit::compressInPlace(ADL_ROOT . '/public/uploads/' . $stored);
         self::update($userId, ['avatar_url' => $stored]);
         return $stored;
     }

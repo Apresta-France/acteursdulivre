@@ -12,7 +12,7 @@ return [
     'published' => true,
     'body' => <<<'HTML'
 <p>En 2026, un <strong>premier stand</strong> sur un salon du livre de ville ou de région, table simple, se situe souvent entre <strong>80 et 400 €</strong> de droit de table — auxquels s’ajoutent le déplacement, l’hébergement s’il y a une nuit, le stock emporté et une animation minimale. Le droit de table n’est pas le budget. C’est la ligne que l’on voit sur le formulaire d’inscription ; ce n’est pas celle qui vide le compte.</p>
-<p>Ces fourchettes décrivent le marché français des salons de taille petite à moyenne, pas Paris ni les foires professionnelles à plusieurs milliers d’euros. Ce ne sont pas des statistiques d’Acteurs du Livre — la plateforme est en pré-ouverture. Elles aident à dire oui ou non <em>avant</em> de réserver.</p>
+<p>Ces fourchettes décrivent le marché français des salons de taille petite à moyenne, pas Paris ni les foires professionnelles à plusieurs milliers d’euros. Ce ne sont pas des statistiques d’Acteurs du Livre (fourchettes du marché, octobre 2026). Elles aident à dire oui ou non <em>avant</em> de réserver.</p>
 
 <h2 id="essentiel">L’essentiel</h2>
 <ul>

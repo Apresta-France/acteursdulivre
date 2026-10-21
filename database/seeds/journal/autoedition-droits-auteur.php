@@ -12,7 +12,7 @@ return [
     'published' => true,
     'body' => <<<'HTML'
 <p>En autoédition, vous possédez le <strong>texte</strong> dès sa création — sans dépôt constitutif en France. Vous ne possédez pas automatiquement la <strong>couverture</strong>, la <strong>maquette</strong>, les <strong>photos</strong> ni l’<strong>enregistrement audio</strong> : chaque intervenant reste titulaire de ses droits tant qu’une cession écrite ne les limite pas. Payer une facture n’est pas une cession. Mélanger ces objets dans un seul « je t’ai réglé, donc c’est à moi » est la source la plus banale de blocage à la réédition ou à l’<a href="/metiers/audio">audio</a>.</p>
-<p>Les usages 2026 ci-dessous sont ceux du marché français, pas des règles d’Acteurs du Livre — la plateforme est en pré-ouverture et n’acquiert aucun droit sur vos œuvres. Pour rédiger une cession, voyez le <a href="/metiers/juridique">juridique</a>.</p>
+<p>Les usages 2026 ci-dessous sont ceux du marché français, pas des règles d’Acteurs du Livre — la plateforme n’acquiert aucun droit sur vos œuvres. Fourchettes du marché, octobre 2026. Pour rédiger une cession, voyez le <a href="/metiers/juridique">juridique</a>.</p>
 
 <h2 id="essentiel">L’essentiel</h2>
 <ul>

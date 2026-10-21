@@ -124,7 +124,7 @@ $forumFlashError = trim((string) ($forumFlashError ?? ''));
       <?php endif; ?>
 
       <div class="forum-replies-head" id="reponses">
-        <span><?= e(format_int($replyTotal)) ?> réponse<?= $replyTotal > 1 ? 's' : '' ?></span>
+        <h2><?= e(format_int($replyTotal)) ?> réponse<?= $replyTotal > 1 ? 's' : '' ?></h2>
         <div class="forum-replies-line"></div>
         <a class="chip<?= $sort === 'useful' ? ' is-on' : '' ?>" href="<?= e(url($topicHref . '?tri=utiles')) ?>">Les plus utiles</a>
         <a class="chip<?= $sort === 'chrono' ? ' is-on' : '' ?>" href="<?= e(url($topicHref)) ?>">Chronologique</a>

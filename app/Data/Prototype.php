@@ -435,8 +435,8 @@ final class Prototype
             'contactMotifs' => self::chips(['Question générale', 'Problème sur une commande', 'Presse & partenariats', 'Signaler un abus'], 0, false, true),
             'contactCanaux' => [
                 ['k' => 'E-mail', 'v' => 'guillaume@editions-tesseract.fr', 'href' => 'mailto:guillaume@editions-tesseract.fr'],
-                ['k' => 'Litiges', 'v' => 'olivier@editions-tesseract.fr', 'href' => 'mailto:olivier@editions-tesseract.fr'],
-                ['k' => 'Presse', 'v' => 'contact@editions-tesseract.fr', 'href' => 'mailto:contact@editions-tesseract.fr'],
+                ['k' => 'Médiation', 'v' => 'mediation@acteursdulivre.fr', 'href' => 'mailto:mediation@acteursdulivre.fr'],
+                ['k' => 'Presse', 'v' => 'presse@acteursdulivre.fr', 'href' => 'mailto:presse@acteursdulivre.fr'],
                 ['k' => 'Facebook', 'v' => 'acteursdulivre', 'href' => Socials::FACEBOOK],
                 ['k' => 'Instagram', 'v' => '@acteursdulivre.fr', 'href' => Socials::INSTAGRAM],
                 ['k' => 'LinkedIn', 'v' => 'Acteurs du Livre', 'href' => Socials::LINKEDIN],
@@ -636,10 +636,11 @@ final class Prototype
             'exemple' => [
                 ['k' => 'Prestation vendue (montant HT)', 'v' => '780 €', 'style' => 'color: #14202C;'],
                 ['k' => '1ʳᵉ mission : commission', 'v' => '0 €', 'style' => 'color: #2E6B45;'],
-                ['k' => 'À partir de la 2ᵉ : 8 % HT', 'v' => '− 62 € HT', 'style' => 'color: #D85D3F;'],
-                ['k' => 'TVA 20 % sur la commission', 'v' => '− 12,40 €', 'style' => 'color: #D85D3F;'],
-                ['k' => 'Commission TTC à régler', 'v' => '74,40 €', 'style' => 'color: #022746; font-weight: 700; font-family: \'Space Grotesk\', sans-serif;'],
-                ['k' => 'Le prestataire conserve (dès la 2ᵉ, hors sa TVA)', 'v' => '718 € HT', 'style' => 'color: #022746; font-weight: 700; font-family: \'Space Grotesk\', sans-serif;'],
+                ['k' => 'À partir de la 2ᵉ : 8 % HT', 'v' => '− 62,40 € HT', 'style' => 'color: #D85D3F;'],
+                ['k' => 'TVA 20 % sur la commission', 'v' => '− 12,48 €', 'style' => 'color: #D85D3F;'],
+                ['k' => 'Commission TTC à régler', 'v' => '74,88 €', 'style' => 'color: #022746; font-weight: 700; font-family: \'Space Grotesk\', sans-serif;'],
+                ['k' => 'Le prestataire conserve (calcul exact, hors sa TVA)', 'v' => '717,60 € HT', 'style' => 'color: #022746; font-weight: 700; font-family: \'Space Grotesk\', sans-serif;'],
+                ['k' => 'Facture : commission arrondie à l\'euro', 'v' => '62 € HT', 'style' => 'color: #4A5A6B;'],
             ],
             'gratuit' => [
                 'Créer un compte, une vitrine et autant de fiches que nécessaire — aucun abonnement',

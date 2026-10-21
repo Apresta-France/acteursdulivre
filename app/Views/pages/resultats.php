@@ -148,6 +148,7 @@ if ($searchCity !== '') {
       <div class="search-head">
         <div>
           <h1><?= e($heading) ?> <span data-search-count><?= e($countLabel) ?></span></h1>
+          <h2 class="sr-only">Liste des résultats</h2>
         </div>
         <?php
           $shareUrl = $meta['url'] ?? \Adl\Data\Share::current();

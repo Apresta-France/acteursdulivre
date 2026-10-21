@@ -730,11 +730,11 @@ body.is-nav-open .site-header, .site-header.is-open { position: relative; z-inde
 }
 .footer-col-title.muted { color: #7B93AC; }
 .footer-links { display: flex; flex-direction: column; gap: 10px; }
-.footer-links a { font-size: 14px; color: #C6D5E6; }
+.footer-links a { font-size: 14px; color: #C6D5E6; display: inline-flex; align-items: center; min-height: 32px; }
 .footer-links a:hover { color: #fff; }
 .footer-metiers { border-top: 1px solid rgba(255,255,255,.12); padding: 24px 44px; }
 .metier-links { display: flex; flex-wrap: wrap; gap: 8px 22px; }
-.metier-links a { font-size: 14px; color: #A9C0D5; }
+.metier-links a { font-size: 14px; color: #A9C0D5; display: inline-flex; align-items: center; min-height: 32px; }
 .metier-links a:hover { color: #fff; }
 .footer-legal {
   border-top: 1px solid rgba(255,255,255,.12);
@@ -746,7 +746,8 @@ body.is-nav-open .site-header, .site-header.is-open { position: relative; z-inde
   color: #7B93AC;
 }
 .footer-legal div { display: flex; flex-wrap: wrap; gap: 12px 22px; }
-.footer-legal a { color: #7B93AC; }
+.footer-legal a { color: #7B93AC; display: inline-flex; align-items: center; min-height: 32px; }
+.forum-replies-head h2 { margin: 0; font: inherit; font-size: inherit; }
 
 .legal-page {
   padding: 44px;
@@ -6570,6 +6571,8 @@ a.me-admin-kpi.is-on { border-color: #022746; }
 }
 .mk-kicker-light { color: #E8845F; }
 .mk-lead { font-size: 18px; line-height: 1.65; color: #4A5A6B; max-width: 36em; }
+.mk-entity { font-size: 15px; line-height: 1.6; color: #33485A; max-width: 46em; margin: 14px 0 0; }
+.mk-entity a { color: #0E3A5D; }
 .mk-page .mk-lead { font-size: 18px; }
 .mk-page .mk-kicker { color: var(--orange); }
 .mk-page .mk-kicker-light { color: #E8845F; }
@@ -6578,6 +6581,7 @@ a.me-admin-kpi.is-on { border-color: #022746; }
 .mk-hero { display: grid; grid-template-columns: minmax(0, 1fr) 440px; gap: 48px; align-items: center; background: linear-gradient(165deg, color-mix(in srgb, var(--beige) 52%, #fff) 0%, #fff 78%); }
 .mk-hero h1 { font-size: 52px; margin: 0 0 18px; }
 .mk-hero .mk-lead { margin: 0 0 16px; }
+.mk-hero .mk-entity { margin: 0 0 18px; }
 .mk-hero .mk-cta-actions { margin-top: 8px; }
 .mk-search { position: relative; z-index: 3; display: flex; align-items: center; background: #fff; border: 1px solid #E1E7ED; border-radius: 12px; padding: 0 6px 0 18px; height: 58px; box-shadow: 0 10px 30px rgba(2,39,70,.07); max-width: 620px; }
 .mk-search input { flex: 1; border: 0; outline: none; font-size: 16px; }

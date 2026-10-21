@@ -111,14 +111,14 @@ $contactHref = $p['href'] . '/contact';
         <?php endif; ?>
         <?php if ($revealed): ?>
           <a class="btn-navy me-coord-btn is-done" href="#contact">Coordonnées affichées</a>
-        <?php elseif ($p['has_contact']): ?>
+        <?php elseif (!empty($p['has_private_contact'])): ?>
           <form method="post" action="<?= e(url($contactHref)) ?>">
             <?= csrf_field() ?>
             <?= form_guard_fields('publisher-contact') ?>
             <button class="btn-orange" type="submit"<?= $contactLeft <= 0 ? ' disabled title="Plafond quotidien atteint"' : '' ?>>Voir les coordonnées</button>
           </form>
           <p class="profile-avail-note"><?= $contactLeft > 0 ? 'Encore ' . $contactLeft . ' ' . ($contactLeft > 1 ? 'fiches de contact' : 'fiche de contact') . ' aujourd\'hui.' : 'Plafond quotidien atteint : revenez demain.' ?></p>
-        <?php else: ?>
+        <?php elseif ($p['website'] === ''): ?>
           <p class="profile-avail-note">Aucune coordonnée publique n'a été trouvée pour cette maison.</p>
         <?php endif; ?>
       <?php endif; ?>
@@ -153,12 +153,12 @@ $contactHref = $p['href'] . '/contact';
       <?php endif; ?>
 
       <h2 id="contact">Coordonnées et contact</h2>
+      <?php if ($p['website'] !== ''): ?>
+        <p class="profile-text">Site web : <a href="<?= e($p['website']) ?>" target="_blank" rel="noopener noreferrer"><?= e($p['website_host'] !== '' ? $p['website_host'] : $p['website']) ?></a></p>
+      <?php endif; ?>
       <?php if ($revealed && ($isOwner || $isAdmin || $viewer)): ?>
         <?php if ($p['has_contact']): ?>
           <dl class="me-contact">
-            <?php if ($p['website'] !== ''): ?>
-              <div><dt>Site web</dt><dd><a href="<?= e($p['website']) ?>" target="_blank" rel="noopener noreferrer nofollow"><?= e($p['website_host']) ?></a></dd></div>
-            <?php endif; ?>
             <?php if ($p['contact_email'] !== ''): ?>
               <div><dt>E-mail</dt><dd><a href="mailto:<?= e($p['contact_email']) ?>"><?= e($p['contact_email']) ?></a></dd></div>
             <?php endif; ?>
@@ -175,13 +175,13 @@ $contactHref = $p['href'] . '/contact';
         <?php else: ?>
           <p class="profile-text">Aucune coordonnée publique fiable n'a été trouvée pour cette maison.</p>
         <?php endif; ?>
-      <?php elseif ($viewer): ?>
+      <?php elseif ($viewer && !empty($p['has_private_contact'])): ?>
         <div class="me-gate">
           <div>
             <strong>Coordonnées réservées aux membres</strong>
-            <p>Site, adresse et contact éditorial. Vous pouvez consulter les coordonnées de <?= Publisher::CONTACT_DAILY_LIMIT ?> maisons par jour<?= $contactLeft > 0 ? ' — il vous en reste ' . $contactLeft . ' aujourd\'hui' : '' ?>.</p>
+            <p>E-mail, téléphone et adresse postale. Le site web est indiqué plus haut. Vous pouvez consulter les coordonnées de <?= Publisher::CONTACT_DAILY_LIMIT ?> maisons par jour<?= $contactLeft > 0 ? ' — il vous en reste ' . $contactLeft . ' aujourd\'hui' : '' ?>.</p>
           </div>
-          <?php if ($p['has_contact'] && $contactLeft > 0): ?>
+          <?php if ($contactLeft > 0): ?>
             <form method="post" action="<?= e(url($contactHref)) ?>">
               <?= csrf_field() ?>
               <?= form_guard_fields('publisher-contact') ?>
@@ -189,11 +189,11 @@ $contactHref = $p['href'] . '/contact';
             </form>
           <?php endif; ?>
         </div>
-      <?php else: ?>
+      <?php elseif (!$viewer && !empty($p['has_private_contact'])): ?>
         <div class="me-gate">
           <div>
             <strong>Réservé aux membres d'acteursdulivre.fr</strong>
-            <p>Créez un compte gratuit pour consulter les coordonnées des maisons d'édition et leur écrire. Cette règle protège les éditeurs des envois automatisés et garantit des échanges entre vrais professionnels du livre.</p>
+            <p>Créez un compte gratuit pour consulter l'e-mail, le téléphone et l'adresse des maisons d'édition. Le site web reste visible sans compte. Cette règle protège les éditeurs des envois automatisés.</p>
             <div class="me-gate-actions">
               <a class="btn-navy" href="<?= e(url('/inscription')) ?>">Créer un compte</a>
               <a class="btn-ghost" href="<?= e(url('/connexion?next=' . rawurlencode($p['href']))) ?>">Se connecter</a>

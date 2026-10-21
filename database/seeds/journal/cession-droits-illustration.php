@@ -12,7 +12,7 @@ return [
     'published' => true,
     'body' => <<<'HTML'
 <p>Une illustration originale de couverture se négocie en 2026 entre <strong>300 et 900 €</strong> ; sans cinq lignes écrites — durée, territoires, supports, exclusivité, réédition — vous ne savez pas ce que ces 300 ou 900 € ont acheté.</p>
-<p>Les montants ci-dessous sont des ordres de grandeur du marché français, pas des statistiques d’Acteurs du Livre. La plateforme, en pré-ouverture, n’est pas partie au contrat : le règlement de la mission se fait hors site. Un <a href="/metiers/juridique">regard juridique</a> reste utile dès que l’usage sort du livre.</p>
+<p>Les montants ci-dessous sont des ordres de grandeur du marché français, pas des statistiques d’Acteurs du Livre. La plateforme n’est pas partie au contrat : le règlement de la mission se fait hors site. Un <a href="/metiers/juridique">regard juridique</a> reste utile dès que l’usage sort du livre.</p>
 
 <h2 id="essentiel">L’essentiel</h2>
 <ul>

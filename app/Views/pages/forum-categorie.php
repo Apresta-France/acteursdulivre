@@ -81,6 +81,7 @@ $catUrl = static function (string $filtre = 'recent', int $p = 1) use ($catHref)
             <span><?php if ($logged): ?><a href="<?= e(url('/forum/nouveau?rubrique=' . rawurlencode((string) ($category['slug'] ?? '')))) ?>">Ouvrir la première</a><?php else: ?><a href="<?= e(url('/connexion')) ?>">Connectez-vous</a> pour en ouvrir une.<?php endif; ?></span>
           </div>
         <?php else: ?>
+          <h2 class="sr-only">Discussions</h2>
           <div class="forum-table">
             <div class="forum-table-head">
               <span>Discussion</span>

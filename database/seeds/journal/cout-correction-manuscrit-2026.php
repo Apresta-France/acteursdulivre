@@ -12,7 +12,7 @@ return [
     'published' => true,
     'body' => <<<'HTML'
 <p>En 2026, une correction orthotypographique d’un roman d’environ <strong>520 000 signes</strong> se situe en général entre <strong>620 et 1 100 €</strong>. Au feuillet de 1 500 signes, cela donne souvent 1,80 à 3,20 € — des ordres de grandeur, pas un tarif unique.</p>
-<p>Ces fourchettes sont celles du marché français, pas des statistiques d’Acteurs du Livre : la plateforme est en pré-ouverture. Elles cadrent un budget. Seul un devis sur votre fichier dit le prix réel.</p>
+<p>Ces fourchettes sont celles du marché français, pas des statistiques d’Acteurs du Livre : les fourchettes sont celles du marché en octobre 2026. Elles cadrent un budget. Seul un devis sur votre fichier dit le prix réel.</p>
 
 <h2 id="essentiel">L’essentiel</h2>
 <ul>

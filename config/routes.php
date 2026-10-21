@@ -19,6 +19,9 @@ return static function (Router $router): void {
     $router->get('/sitemap.xml', [PageController::class, 'sitemap']);
     $router->get('/robots.txt', [PageController::class, 'robots']);
     $router->get('/llms.txt', [PageController::class, 'llms']);
+    $router->get('/llms-full.txt', [PageController::class, 'llmsFull']);
+    $router->get('/.well-known/security.txt', [PageController::class, 'securityTxt']);
+    $router->get('/' . \Adl\Core\IndexNow::KEY . '.txt', [PageController::class, 'indexNowKey']);
 
     $router->get('/', [PageController::class, 'home']);
     $router->get('/recherche', [PageController::class, 'search']);
@@ -67,6 +70,7 @@ return static function (Router $router): void {
     $router->get('/salons', [PageController::class, 'salons']);
     $router->get('/salons/ajouter', [PageController::class, 'salonAddForm']);
     $router->post('/salons/ajouter', [PageController::class, 'salonAdd']);
+    $router->get('/salons/{year}/{month}', [PageController::class, 'salonMonth']);
     $router->post('/salons/{slug}/commenter', [ForumController::class, 'salonComment']);
     $router->get('/salons/{slug}', [PageController::class, 'salon']);
     $router->get('/forum', [ForumController::class, 'index']);

@@ -57,10 +57,7 @@ final class ForumController
         }
 
         $meta = Seo::forScreen('forum');
-        if ($q !== '' || $page > 1 || $filter !== 'recent') {
-            $meta['robots'] = 'noindex, follow';
-        }
-        $meta['url'] = Share::absolute('/forum');
+        $meta = Seo::pagedListing($meta, '/forum', $page, $q === '' && $filter === 'recent');
 
         View::page('forum', [
             'title' => 'Le forum des métiers du livre',
@@ -125,9 +122,7 @@ final class ForumController
             (string) $category['description'],
             (string) $category['href']
         );
-        if ($page > 1 || $filter !== 'recent') {
-            $meta['robots'] = 'noindex, follow';
-        }
+        $meta = Seo::pagedListing($meta, (string) $category['href'], $page, $filter === 'recent');
 
         View::page('forum-categorie', [
             'title' => (string) $category['name'],
@@ -215,6 +210,20 @@ final class ForumController
                 ['name' => (string) $topic['title'], 'url' => (string) $topic['href']],
             ]),
         ];
+        $authorName = trim((string) ($op['author']['name'] ?? ''));
+        if ($authorName === '') {
+            $authorName = 'Membre';
+        }
+        $meta['json_ld'][] = array_filter([
+            '@type' => 'DiscussionForumPosting',
+            '@id' => Share::absolute((string) $topic['href']) . '#discussion',
+            'headline' => (string) $topic['title'],
+            'text' => mb_substr(plain_text((string) ($op['body'] ?? '')), 0, 800),
+            'url' => Share::absolute((string) $topic['href']),
+            'datePublished' => !empty($op['created_at']) ? (string) $op['created_at'] : null,
+            'author' => ['@type' => 'Person', 'name' => $authorName],
+            'publisher' => ['@id' => Share::absolute('/') . '#organization'],
+        ]);
 
         View::page('forum-discussion', [
             'title' => (string) $topic['title'],

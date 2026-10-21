@@ -12,7 +12,7 @@ return [
     'published' => true,
     'body' => <<<'HTML'
 <p>En 2026, un service de presse utile pour un premier livre, c’est en général <strong>20 à 80 exemplaires</strong> papier — plus quelques fichiers numériques — envoyés à une liste nommée, <strong>trois à six semaines avant</strong> la mise en vente, parfois deux mois pour une revue mensuelle. En dessous de vingt, vous n’avez presque pas de chances d’être lu hors du cercle. Au-dessus de quatre-vingts sans relais, vous offrez votre tirage à des boîtes qui n’ouvriront pas le colis.</p>
-<p>Ces volumes sont des ordres de grandeur du marché français, pas des statistiques d’<a href="/a-propos">Acteurs du Livre</a> — la plateforme est en pré-ouverture. Ils servent à dimensionner l’<a href="/metiers/impression">impression</a> et le port, pas à garantir une recension.</p>
+<p>Ces volumes sont des ordres de grandeur du marché français, pas des statistiques d’<a href="/a-propos">Acteurs du Livre</a> (fourchettes du marché, octobre 2026). Ils servent à dimensionner l’<a href="/metiers/impression">impression</a> et le port, pas à garantir une recension.</p>
 
 <h2 id="essentiel">L’essentiel</h2>
 <ul>

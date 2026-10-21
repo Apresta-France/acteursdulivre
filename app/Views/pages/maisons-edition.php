@@ -232,6 +232,9 @@ foreach (Publisher::SORTS as $key => $label) {
           <h1><?= e((string) ($heading ?? 'Maisons d\'édition')) ?></h1>
           <div class="me-count"><?= e($countLabel) ?></div>
           <?php if (!empty($lead)): ?><p class="journal-lead me-lead"><?= e((string) $lead) ?></p><?php endif; ?>
+          <?php if (($filters['manuscripts'] ?? '') !== '1' && ($scope ?? '') === 'all'): ?>
+            <p class="journal-lead me-lead"><a href="<?= e(url('/maisons-edition?manuscrits=1')) ?>">Maisons qui précisent leur politique de manuscrits</a></p>
+          <?php endif; ?>
         </div>
       </div>
 
@@ -256,7 +259,7 @@ foreach (Publisher::SORTS as $key => $label) {
       <?php if ($publishers === []): ?>
         <div class="search-empty" style="padding: 26px;">
           <strong>Aucune maison ne correspond à ces critères.</strong>
-          <span>Essayez un autre mot-clé, retirez un filtre, ou <a href="<?= e(url('/maisons-edition/ajouter')) ?>">ajoutez votre maison à l'annuaire</a>.</span>
+          <span>Essayez un autre mot-clé, retirez un filtre, ou <a href="<?= e(url('/maisons-edition/ajouter')) ?>" rel="nofollow">ajoutez votre maison à l'annuaire</a>.</span>
         </div>
       <?php else: ?>
         <div class="me-agenda">
@@ -327,7 +330,7 @@ foreach (Publisher::SORTS as $key => $label) {
             <strong>Vous représentez une maison d'édition absente de l'annuaire ?</strong>
             <span>Ajoutez-la en quelques minutes : la fiche est rattachée à votre compte et publiée après vérification par l'équipe.</span>
           </div>
-          <a class="btn-navy" href="<?= e(url('/maisons-edition/ajouter')) ?>">Ajouter ma maison</a>
+          <a class="btn-navy" href="<?= e(url('/maisons-edition/ajouter')) ?>" rel="nofollow">Ajouter ma maison</a>
         </aside>
       <?php endif; ?>
 
@@ -357,7 +360,7 @@ foreach (Publisher::SORTS as $key => $label) {
         <section class="me-about">
           <h2>Un annuaire vivant des éditeurs européens</h2>
           <p>Cet annuaire recense les maisons d'édition en activité en France et dans les principaux pays d'Europe : grands groupes et leurs marques, éditeurs indépendants, micro-structures, presses universitaires, maisons régionales. Chaque fiche présente la ligne éditoriale, les genres publiés, la taille de la structure, la ville du siège et l'année de fondation quand elle est connue.</p>
-          <p>Les coordonnées sont réservées aux membres connectés, pour protéger les maisons des sollicitations automatisées. Les éditeurs peuvent revendiquer leur fiche, ou <a href="<?= e(url('/maisons-edition/ajouter')) ?>">ajouter leur maison</a> si elle manque, pour la tenir à jour et échanger avec les auteurs, correcteurs, illustrateurs et traducteurs de la plateforme.</p>
+          <p>Les coordonnées directes sont réservées aux membres connectés, pour protéger les maisons des sollicitations automatisées. Le site web, lui, est public. Les éditeurs peuvent revendiquer leur fiche, ou <a href="<?= e(url('/maisons-edition/ajouter')) ?>" rel="nofollow">ajouter leur maison</a> si elle manque, pour la tenir à jour et échanger avec les auteurs, correcteurs, illustrateurs et traducteurs de la plateforme.</p>
         </section>
       <?php endif; ?>
     </div>
