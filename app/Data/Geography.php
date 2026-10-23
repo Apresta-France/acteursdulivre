@@ -129,6 +129,8 @@ final class Geography
         'emirats arabes unis' => 'aux',
         'philippines' => 'aux',
         'monaco' => 'à',
+        'caraibes' => 'aux',
+        'les caraibes' => 'aux',
         'haiti' => 'à',
         'madagascar' => 'à',
         'maurice' => 'à',
@@ -357,6 +359,22 @@ final class Geography
         }
         $prep = self::preposition($country);
         return $prep . ' ' . $country;
+    }
+
+    /**
+     * « à Montréal, Canada », « en Côte d'Ivoire » si la ville est absente.
+     */
+    public static function locationPhrase(string $city, string $country): string
+    {
+        $city = trim($city);
+        $country = trim($country);
+        if ($city !== '') {
+            return $country !== '' ? 'à ' . $city . ', ' . $country : 'à ' . $city;
+        }
+        if ($country !== '') {
+            return self::countryPhrase($country);
+        }
+        return '';
     }
 
     public static function preposition(string $country): string

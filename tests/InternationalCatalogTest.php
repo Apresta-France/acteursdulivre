@@ -73,6 +73,11 @@ $check(Geography::zoneSlugForCountry('Sénégal') === 'afrique', 'zone Sénégal
 $check(Geography::zoneSlugForCountry('Maroc') === 'maghreb-moyen-orient', 'zone Maroc');
 $check(Geography::zoneSlugForCountry('Haïti') === 'caraibes', 'zone Haïti');
 $check(in_array('canada', Geography::countrySlugsForZone('amerique-du-nord'), true), 'filtre Amérique du Nord');
+$check(Geography::countryPhrase('Caraïbes') === 'aux Caraïbes', 'préposition Caraïbes');
+$check(Geography::locationPhrase('Montréal', 'Canada') === 'à Montréal, Canada', 'lieu ville + pays');
+$check(Geography::locationPhrase('', 'Côte d\'Ivoire') === 'en Côte d\'Ivoire', 'lieu pays seul');
+$check(Geography::locationPhrase('', 'États-Unis') === 'aux États-Unis', 'lieu États-Unis');
+$check(Geography::locationPhrase('', '') === '', 'lieu vide');
 
 $placeholder = Salon::hydrate([
     'slug' => 'test-placeholder',
@@ -113,5 +118,9 @@ $check($dated['iso'] === '2027-04-07', 'date réelle conservée');
 $check(Salon::isPlaceholderDate('2026-01-01', false), '1er janvier non confirmé = placeholder');
 $check(!Salon::isPlaceholderDate('2026-01-01', true), '1er janvier confirmé conservé');
 $check(!Salon::isPlaceholderDate('2026-11-21', false), 'vraie date non confirmée conservée');
+
+$check(Salon::cleanNotes('Hors de la fenêtre actuelle du site (sept. 2026 – sept. 2027)') === '', 'note fenêtre seule');
+$check(Salon::cleanNotes('19e édition ; hors de la fenêtre actuelle du site (sept. 2026 – sept. 2027)') === '19e édition', 'note fenêtre partielle');
+$check(Salon::cleanNotes('Hors de la fenêtre actuelle du site (sept. 2026 – sept. 2027) ; dates publiées par l\'AQSL') === 'dates publiées par l\'AQSL', 'note fenêtre + source');
 
 exit($failures === 0 ? 0 : 1);

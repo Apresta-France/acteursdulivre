@@ -140,7 +140,7 @@ $contactHref = $p['href'] . '/contact';
       <?php if ($description !== ''): ?>
         <div class="profile-text"><?= nl2br(e($description)) ?></div>
       <?php else: ?>
-        <p class="profile-text"><?= e($p['name']) ?> est une maison d'édition <?= e(mb_strtolower($p['typology_label'])) ?><?= $p['location_label'] !== '' ? ' installée à ' . e($p['location_label']) : '' ?>. La présentation détaillée sera complétée par la maison lorsqu'elle aura revendiqué sa fiche.</p>
+        <p class="profile-text"><?= e($p['name']) ?> est une maison d'édition <?= e(mb_strtolower($p['typology_label'])) ?><?= ($p['location_phrase'] ?? '') !== '' ? ' installée ' . e((string) $p['location_phrase']) : '' ?>. La présentation détaillée sera complétée par la maison lorsqu'elle aura revendiqué sa fiche.</p>
       <?php endif; ?>
 
       <?php if ($p['genres'] !== []): ?>

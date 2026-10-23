@@ -243,7 +243,7 @@ final class InternationalImport
                 Salon::cleanDateText((string) ($row['socials'] ?? '')),
                 trim((string) ($row['description'] ?? '')) ?: null,
                 trim((string) ($row['audience'] ?? '')),
-                trim((string) ($row['notes'] ?? '')) ?: null,
+                Salon::cleanNotes((string) ($row['notes'] ?? '')) ?: null,
                 $search,
             ]);
             $taken[$slug] = true;
@@ -381,12 +381,12 @@ final class InternationalImport
     public static function fixPlaceholderSalonDates(PDO $pdo): void
     {
         $rows = $pdo->query(
-            'SELECT id, dates_raw, starts_on, ends_on, dates_confirmed, venue, attendance, exhibitors, ticket, socials, country
+            'SELECT id, dates_raw, starts_on, ends_on, dates_confirmed, venue, attendance, exhibitors, ticket, socials, notes, country
              FROM salons'
         )->fetchAll(PDO::FETCH_ASSOC) ?: [];
         $upd = $pdo->prepare(
             'UPDATE salons SET dates_raw = ?, starts_on = ?, ends_on = ?, dates_confirmed = ?,
-                    venue = ?, attendance = ?, exhibitors = ?, ticket = ?, socials = ?
+                    venue = ?, attendance = ?, exhibitors = ?, ticket = ?, socials = ?, notes = ?
              WHERE id = ?'
         );
         foreach ($rows as $row) {
@@ -410,6 +410,7 @@ final class InternationalImport
             $exhibitors = Salon::cleanDateText((string) ($row['exhibitors'] ?? ''));
             $ticket = Salon::cleanDateText((string) ($row['ticket'] ?? ''));
             $socials = Salon::cleanDateText((string) ($row['socials'] ?? ''));
+            $notes = Salon::cleanNotes((string) ($row['notes'] ?? ''));
             if (
                 $raw === (string) $row['dates_raw']
                 && $newStart === $start
@@ -420,6 +421,7 @@ final class InternationalImport
                 && $exhibitors === (string) $row['exhibitors']
                 && $ticket === (string) $row['ticket']
                 && $socials === (string) $row['socials']
+                && $notes === (string) ($row['notes'] ?? '')
             ) {
                 continue;
             }
@@ -433,6 +435,7 @@ final class InternationalImport
                 $exhibitors,
                 $ticket,
                 $socials,
+                $notes !== '' ? $notes : null,
                 (int) $row['id'],
             ]);
         }

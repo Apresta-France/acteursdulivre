@@ -205,7 +205,7 @@ final class PublisherController
         $title = $publisher['name'] . ' — '
             . (trim((string) ($publisher['submissions_note'] ?? '')) !== '' ? 'manuscrits, ' : '')
             . 'maison d\'édition'
-            . ($publisher['location_label'] !== '' ? ' à ' . $publisher['location_label'] : '');
+            . (($publisher['location_phrase'] ?? '') !== '' ? ' ' . $publisher['location_phrase'] : '');
         $crumbs = [
             ['name' => Seo::BRAND, 'url' => '/'],
             ['name' => 'Communauté', 'url' => '/communaute'],

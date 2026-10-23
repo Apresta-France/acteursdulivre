@@ -634,6 +634,24 @@ final class Salon
         return $raw;
     }
 
+    /**
+     * Retire l’annotation de sourcing « hors de la fenêtre actuelle du site ».
+     */
+    public static function cleanNotes(string $raw): string
+    {
+        $raw = trim($raw);
+        if ($raw === '' || self::isUnverifiedText($raw)) {
+            return '';
+        }
+        $raw = (string) preg_replace(
+            '/\s*[;,]?\s*hors de la fenêtre actuelle du site\s*(?:\([^)]*\))?/iu',
+            '',
+            $raw
+        );
+        $raw = trim($raw, " \t\n\r\0\x0B;,·-");
+        return $raw;
+    }
+
     public static function isPlaceholderDate(string $start, bool $confirmed): bool
     {
         if ($confirmed || $start === '') {
@@ -673,6 +691,7 @@ final class Salon
         $row['exhibitors'] = self::cleanDateText((string) ($row['exhibitors'] ?? ''));
         $row['ticket'] = self::cleanDateText((string) ($row['ticket'] ?? ''));
         $row['socials'] = self::cleanDateText((string) ($row['socials'] ?? ''));
+        $row['notes'] = self::cleanNotes((string) ($row['notes'] ?? ''));
         $row['href'] = '/salons/' . $row['slug'];
         $row['kind'] = (string) ($row['category'] ?? '');
         $row['place'] = $place;

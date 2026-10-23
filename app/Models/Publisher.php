@@ -1137,6 +1137,7 @@ final class Publisher
         $row['website_host'] = self::websiteHost((string) ($row['website'] ?? ''));
         $row['founded_label'] = self::foundedLabel($row);
         $row['location_label'] = Geography::locationFallback((string) ($row['city'] ?? ''), (string) ($row['country'] ?? ''));
+        $row['location_phrase'] = Geography::locationPhrase((string) ($row['city'] ?? ''), (string) ($row['country'] ?? ''));
         $row['zone_slug'] = Geography::zoneSlugForCountry((string) ($row['country'] ?? ''));
         $row['has_contact'] = self::hasContact($row);
         $row['has_private_contact'] = self::hasPrivateContact($row);
@@ -1234,8 +1235,8 @@ final class Publisher
         }
 
         $line = $name . ' : maison d\'édition ' . (($publisher['typology_key'] ?? '') === 'generaliste' ? 'généraliste' : 'spécialisée');
-        if (($publisher['location_label'] ?? '') !== '') {
-            $line .= ' à ' . $publisher['location_label'];
+        if (($publisher['location_phrase'] ?? '') !== '') {
+            $line .= ' ' . $publisher['location_phrase'];
         }
         if (($publisher['founded_year'] ?? null) !== null) {
             $line .= ', fondée en ' . $publisher['founded_year'];
@@ -1257,8 +1258,9 @@ final class Publisher
         }
         $extra = [];
         $place = trim((string) ($publisher['location_label'] ?? ''));
-        if ($place !== '' && !str_contains($text, $place)) {
-            $extra[] = 'Maison d\'édition à ' . $place . '.';
+        $phrase = trim((string) ($publisher['location_phrase'] ?? ''));
+        if ($phrase !== '' && !str_contains($text, $place) && !str_contains($text, $phrase)) {
+            $extra[] = 'Maison d\'édition ' . $phrase . '.';
         }
         $genres = array_slice(is_array($publisher['genres'] ?? null) ? $publisher['genres'] : [], 0, 4);
         if ($genres !== [] && !str_contains($text, 'Genres')) {
