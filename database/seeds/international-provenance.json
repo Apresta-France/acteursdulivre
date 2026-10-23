@@ -1,0 +1,14 @@
+{
+  "generated_at": "2026-10-23",
+  "note": "Les colonnes source_url, statut et date_verification ne sont pas dans le schéma SQL. Elles restent dans les CSV d’import.",
+  "files": {
+    "publishers": "database/seeds/editeurs-international.csv",
+    "salons": "database/seeds/evenements-international.csv",
+    "enrichments": "database/seeds/enrichissement-existants.csv"
+  },
+  "counts": {
+    "publishers": 523,
+    "salons": 99,
+    "enrichments": 13
+  }
+}

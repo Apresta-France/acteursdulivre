@@ -90,7 +90,7 @@ if ($searchCity !== '') {
                 'id' => 'filter-city',
                 'value' => $searchCityLabel,
                 'slug' => $searchCity,
-                'placeholder' => 'France, Europe, une ville…',
+                'placeholder' => 'France, Canada, une ville…',
             ];
             require ADL_ROOT . '/app/Views/partials/city-field.php';
           ?>

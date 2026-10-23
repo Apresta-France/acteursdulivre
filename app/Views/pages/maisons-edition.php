@@ -6,7 +6,7 @@ $publishers = $publishers ?? [];
 $pager = $pager ?? ['page' => 1, 'pages' => 1, 'total' => 0];
 $total = (int) ($pager['total'] ?? 0);
 $filters = $filters ?? [];
-$facets = $facets ?? ['genres' => [], 'sizes' => [], 'countries' => []];
+$facets = $facets ?? ['genres' => [], 'sizes' => [], 'countries' => [], 'zones' => []];
 $scope = (string) ($scope ?? 'all');
 $pagerPath = (string) ($pagerPath ?? '/maisons-edition');
 $crumbs = $breadcrumbs ?? [];
@@ -17,6 +17,7 @@ $size = (string) ($filters['size'] ?? '');
 $typology = (string) ($filters['typology'] ?? '');
 $independent = ($filters['independent'] ?? '') === '1';
 $countrySel = (string) ($filters['country'] ?? '');
+$zoneSel = (string) ($filters['zone'] ?? '');
 $citySel = (string) ($filters['city'] ?? '');
 $sort = (string) ($filters['sort'] ?? 'az');
 if (!isset(Publisher::SORTS[$sort])) {
@@ -42,7 +43,17 @@ if ($typology !== '' && isset($typologies[$typology])) {
 if ($independent) {
     $active[] = ['label' => 'Indépendants', 'href' => catalog_listing_url($pagerPath, 1, array_diff_key($_GET, ['independant' => 1, 'page' => 1]))];
 }
-if ($scope === 'all' && $countrySel !== '') {
+if ($scope === 'all' && $zoneSel !== '') {
+    $zLabel = $zoneSel;
+    foreach (($facets['zones'] ?? []) as $z) {
+        if ($z['v'] === $zoneSel) {
+            $zLabel = $z['l'];
+            break;
+        }
+    }
+    $active[] = ['label' => $zLabel, 'href' => catalog_listing_url($pagerPath, 1, array_diff_key($_GET, ['zone' => 1, 'pays' => 1, 'ville' => 1, 'page' => 1]))];
+}
+if (($scope === 'all' || $scope === 'zone') && $countrySel !== '') {
     $c = Publisher::country($countrySel);
     $active[] = ['label' => $c ? $c['name'] : $countrySel, 'href' => catalog_listing_url($pagerPath, 1, array_diff_key($_GET, ['pays' => 1, 'ville' => 1, 'page' => 1]))];
 }
@@ -58,8 +69,16 @@ if ((int) $pager['pages'] > 1) {
     $countLabel .= ' · page ' . (int) $pager['page'] . ' / ' . (int) $pager['pages'];
 }
 
-$countryOpts = array_slice($facets['countries'], 0, 8);
-if ($scope === 'all' && $countrySel !== '') {
+$countryOpts = $facets['countries'];
+if ($zoneSel !== '' || $scope === 'zone') {
+    $zoneKey = $scope === 'zone' ? (string) (($zone['slug'] ?? $zoneSel)) : $zoneSel;
+    $countryOpts = array_values(array_filter($countryOpts, static function (array $c) use ($zoneKey): bool {
+        return \Adl\Data\Geography::zoneSlugForCountry($c['slug']) === $zoneKey;
+    }));
+} elseif ($scope === 'all') {
+    $countryOpts = array_slice($countryOpts, 0, 12);
+}
+if (($scope === 'all' || $scope === 'zone') && $countrySel !== '') {
     $inList = false;
     foreach ($countryOpts as $c) {
         if ($c['slug'] === $countrySel) {
@@ -132,7 +151,22 @@ foreach (Publisher::SORTS as $key => $label) {
         <form class="search-filters me-filters" method="get" action="<?= e(url($pagerPath)) ?>">
           <?= $hidden('q', $q) ?>
           <?= $hidden('tri', $sort === 'az' ? '' : $sort) ?>
-          <?php if ($scope === 'all'): ?>
+          <?php if ($scope === 'all' || $scope === 'zone'): ?>
+            <?php if ($scope === 'all' && !empty($facets['zones'])): ?>
+            <div class="sf-group">
+              <div class="sf-group-label">Zone</div>
+              <div class="sf-opts">
+                <?php foreach ($facets['zones'] as $z): ?>
+                  <label class="sf-opt">
+                    <input type="radio" name="zone" value="<?= e($z['v']) ?>"<?= $z['v'] === $zoneSel ? ' checked' : '' ?> data-me-autosubmit>
+                    <span class="sf-box" aria-hidden="true"></span>
+                    <span class="sf-txt"><?= e($z['l']) ?></span>
+                    <span class="sf-n"><?= (int) $z['n'] ?></span>
+                  </label>
+                <?php endforeach; ?>
+              </div>
+            </div>
+            <?php endif; ?>
             <div class="sf-group">
               <div class="sf-group-label">Pays</div>
               <div class="sf-opts">
@@ -293,11 +327,11 @@ foreach (Publisher::SORTS as $key => $label) {
                     <div class="me-row-main">
                       <div class="me-row-top">
                         <h3><?= e((string) $p['name']) ?></h3>
-                        <span class="me-typo <?= $typoClass ?>"><?= e($p['typology_label']) ?></span>
-                        <span class="me-row-size"><?= e($p['size_label']) ?></span>
+                        <?php if ($p['typology_label'] !== ''): ?><span class="me-typo <?= $typoClass ?>"><?= e($p['typology_label']) ?></span><?php endif; ?>
+                        <?php if ($p['size_label'] !== ''): ?><span class="me-row-size"><?= e($p['size_label']) ?></span><?php endif; ?>
                         <?php if (!empty($p['is_claimed'])): ?><span class="me-claimed-pill" title="Fiche gérée par la maison"><?= icon('check-circle', 12) ?> Fiche vérifiée</span><?php endif; ?>
                       </div>
-                      <div class="me-row-meta"><?= e($p['location_label'] !== '' ? $p['location_label'] : 'Europe') ?><?= $p['founded_year'] ? ' · depuis ' . (int) $p['founded_year'] : '' ?></div>
+                      <div class="me-row-meta"><?= e($p['location_label'] !== '' ? $p['location_label'] : \Adl\Data\Geography::UNKNOWN_LABEL) ?><?= $p['founded_year'] ? ' · depuis ' . (int) $p['founded_year'] : '' ?></div>
                       <?php if (trim((string) $p['description']) !== ''): ?>
                         <p><?= e(\Adl\Data\Seo::clip((string) $p['description'], 160)) ?></p>
                       <?php endif; ?>
@@ -358,8 +392,8 @@ foreach (Publisher::SORTS as $key => $label) {
 
       <?php if ($scope === 'all' && (int) $pager['page'] === 1 && $active === [] && $sort === 'az'): ?>
         <section class="me-about">
-          <h2>Un annuaire vivant des éditeurs européens</h2>
-          <p>Cet annuaire recense les maisons d'édition en activité en France et dans les principaux pays d'Europe : grands groupes et leurs marques, éditeurs indépendants, micro-structures, presses universitaires, maisons régionales. Chaque fiche présente la ligne éditoriale, les genres publiés, la taille de la structure, la ville du siège et l'année de fondation quand elle est connue.</p>
+          <h2>Un annuaire vivant des éditeurs</h2>
+          <p>Cet annuaire recense les maisons d'édition en activité en France, en Europe et dans la francophonie : grands groupes et leurs marques, éditeurs indépendants, micro-structures, presses universitaires, maisons régionales. Chaque fiche présente la ligne éditoriale, les genres publiés, la taille de la structure, la ville du siège et l'année de fondation quand elle est connue.</p>
           <p>Les coordonnées directes sont réservées aux membres connectés, pour protéger les maisons des sollicitations automatisées. Le site web, lui, est public. Les éditeurs peuvent revendiquer leur fiche, ou <a href="<?= e(url('/maisons-edition/ajouter')) ?>" rel="nofollow">ajouter leur maison</a> si elle manque, pour la tenir à jour et échanger avec les auteurs, correcteurs, illustrateurs et traducteurs de la plateforme.</p>
         </section>
       <?php endif; ?>

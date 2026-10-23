@@ -1156,10 +1156,11 @@ final class PageController
             'category' => $request->string('cat'),
             'region' => $request->string('region'),
             'country' => $request->string('pays'),
+            'zone' => $request->string('zone'),
         ];
         $page = max(1, $request->int('page', 1) ?? 1);
         $found = ['items' => [], 'total' => 0, 'page' => 1, 'pages' => 1];
-        $facets = ['categories' => [], 'regions' => [], 'countries' => []];
+        $facets = ['categories' => [], 'regions' => [], 'countries' => [], 'zones' => []];
         try {
             $found = Salon::search($filters, $page);
             $facets = Salon::facets();
@@ -1173,9 +1174,9 @@ final class PageController
         } catch (\Throwable) {
         }
         if ($salonCount > 0) {
-            $meta['description'] = 'Agenda de ' . $salonCount . ' salons et festivals du livre en France et en Europe : dates, villes, genres. Mis à jour chaque semaine, de septembre 2026 à septembre 2027.';
+            $meta['description'] = 'Agenda de ' . $salonCount . ' salons et festivals du livre en France, en Europe et dans la francophonie : dates, villes, genres. Mis à jour chaque semaine.';
         }
-        $clean = $filters['q'] === '' && $filters['category'] === '' && $filters['region'] === '' && $filters['country'] === '';
+        $clean = $filters['q'] === '' && $filters['category'] === '' && $filters['region'] === '' && $filters['country'] === '' && $filters['zone'] === '';
         if ($filters['q'] === '' && $filters['category'] !== '' && $filters['region'] === '' && $filters['country'] === '') {
             $target = SalonHubs::resolve($filters['category']);
             if ($target !== null) {
@@ -1201,7 +1202,7 @@ final class PageController
         }
 
         View::page('salons', [
-            'title' => 'Salons du livre 2026-2027',
+            'title' => 'Salons du livre : agenda',
             'meta' => $meta,
             'salons' => $found['items'],
             'pager' => $found,
@@ -1210,9 +1211,59 @@ final class PageController
             'query' => $filters['q'],
             'salonIndex' => $salonIndex,
             'salonPastIndex' => $salonPastIndex,
-            'salonHeading' => 'Salons du livre 2026-2027',
-            'salonIntro' => 'Agenda des salons du livre, festivals et foires en France et en Europe : dates, villes et lieux, de septembre 2026 à septembre 2027. Une page par région, par genre et par mois. Dates à reconfirmer sur le site de chaque manifestation.',
+            'salonHeading' => 'Salons du livre',
+            'salonIntro' => 'Agenda des salons du livre, festivals et foires en France, en Europe et dans la francophonie : dates, villes et lieux. Une page par région, par pays, par genre et par mois. Dates à reconfirmer sur le site de chaque manifestation.',
             'salonHubNav' => $unfiltered ? SalonHubs::nav() : [],
+        ]);
+    }
+
+    public function salonCountry(Request $request, string $country): void
+    {
+        try {
+            $row = Salon::country($country);
+        } catch (\Throwable) {
+            $row = null;
+        }
+        if ($row === null) {
+            not_found('Aucun salon n\'est recensé pour ce pays.');
+        }
+        $label = \Adl\Data\Geography::countryPhrase($row['name']);
+        $this->renderSalonHub($request, [
+            'kind' => 'country',
+            'label' => $row['name'],
+            'path' => $row['href'],
+            'h1' => 'Salons du livre ' . $label,
+            'title' => 'Salons du livre ' . $label,
+            'description' => 'Agenda des ' . format_int($row['n']) . ' salons et festivals du livre ' . $label . ' : dates, villes et genres. Dates à reconfirmer auprès de l’organisateur.',
+            'intro' => 'Salons et festivals du livre ' . $label . ', avec leurs dates, leur ville et leur genre. Les dates se confirment auprès de chaque organisateur. Une manifestation manque ? Signalez-la.',
+            'filters' => ['country' => $row['slug']],
+            'facet_region' => '',
+            'facet_category' => '',
+        ]);
+    }
+
+    public function salonZone(Request $request, string $zone): void
+    {
+        try {
+            $row = Salon::zone($zone);
+        } catch (\Throwable) {
+            $row = null;
+        }
+        if ($row === null) {
+            not_found('Aucun salon n\'est recensé pour cette zone.');
+        }
+        $label = \Adl\Data\Geography::countryPhrase($row['name']);
+        $this->renderSalonHub($request, [
+            'kind' => 'zone',
+            'label' => $row['name'],
+            'path' => $row['href'],
+            'h1' => 'Salons du livre ' . $label,
+            'title' => 'Salons du livre ' . $label,
+            'description' => 'Agenda des ' . format_int($row['n']) . ' salons et festivals du livre ' . $label . ' : dates, villes et genres.',
+            'intro' => 'Salons et festivals du livre ' . $label . '. Les dates se confirment auprès de chaque organisateur. Une manifestation manque ? Signalez-la.',
+            'filters' => ['zone' => $row['slug']],
+            'facet_region' => '',
+            'facet_category' => '',
         ]);
     }
 
@@ -1309,7 +1360,7 @@ final class PageController
         $page = max(1, $request->int('page', 1) ?? 1);
         $filters = is_array($hub['filters'] ?? null) ? $hub['filters'] : [];
         $found = ['items' => [], 'total' => 0, 'page' => 1, 'pages' => 1];
-        $facets = ['categories' => [], 'regions' => [], 'countries' => []];
+        $facets = ['categories' => [], 'regions' => [], 'countries' => [], 'zones' => []];
         $links = [];
         try {
             $found = Salon::search($filters, $page);

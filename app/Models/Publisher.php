@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Adl\Models;
 
 use Adl\Core\Database;
+use Adl\Data\Geography;
 use PDO;
 use RuntimeException;
 
@@ -41,7 +42,7 @@ final class Publisher
     ];
 
     /** Slugs réservés sous /maisons-edition/ qui ne peuvent pas désigner une maison. */
-    private const RESERVED_SLUGS = ['pays', 'genre', 'taille', 'recherche', 'nouvelle', 'contact', 'revendiquer', 'ajouter'];
+    private const RESERVED_SLUGS = ['pays', 'zone', 'genre', 'taille', 'recherche', 'nouvelle', 'contact', 'revendiquer', 'ajouter'];
 
     public const STATUS_PUBLISHED = 'published';
     public const STATUS_HIDDEN = 'hidden';
@@ -69,11 +70,14 @@ final class Publisher
         if (count($parts) > 1 && $region === '') {
             $region = 'aussi ' . trim(implode(' / ', array_slice($parts, 1)));
         }
-        return ['country' => $country !== '' ? $country : 'Europe', 'region' => $region];
+        return ['country' => $country, 'region' => $region];
     }
 
     public static function sizeKey(string $raw): string
     {
+        if (trim($raw) === '') {
+            return '';
+        }
         $n = search_norm($raw);
         if (str_contains($n, 'grand groupe') || str_contains($n, 'groupe familial')) {
             return 'grand-groupe';
@@ -92,6 +96,9 @@ final class Publisher
 
     public static function typologyKey(string $raw): string
     {
+        if (trim($raw) === '') {
+            return '';
+        }
         $n = search_norm($raw);
         $g = str_contains($n, 'generaliste');
         $s = str_contains($n, 'specialis');
@@ -300,8 +307,8 @@ final class Publisher
         $stmt = $pdo->prepare(
             'INSERT INTO publishers (slug, name, name_search, country, country_slug, region, city, city_slug, founded, founded_year,
                 parent_group, independent, size, size_key, typology, typology_key, genres_json, genres_search, description,
-                website, contact_email, contact_address, segments, search_text, status, source, created_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, "published", "import", NOW())'
+                website, contact_email, contact_address, contact_phone, segments, search_text, status, source, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, "published", "import", NOW())'
         );
 
         $inserted = 0;
@@ -313,6 +320,10 @@ final class Publisher
                 continue;
             }
             $d = self::derive($row);
+            $region = trim((string) ($row['region'] ?? ''));
+            if ($region !== '' && $region !== '—') {
+                $d['region'] = mb_substr($region, 0, 120);
+            }
             $key = $d['name_search'] . '|' . $d['country_slug'];
             if (isset($known[$key])) {
                 $skipped++;
@@ -330,6 +341,13 @@ final class Publisher
             $taken[$slug] = true;
 
             $contact = self::splitContact((string) ($row['contact'] ?? ''));
+            if ($contact['email'] === '' && trim((string) ($row['email'] ?? '')) !== '') {
+                $contact['email'] = strtolower(trim((string) $row['email']));
+            }
+            if ($contact['address'] === '' && trim((string) ($row['adresse'] ?? $row['contact_address'] ?? '')) !== '') {
+                $contact['address'] = mb_substr(trim((string) ($row['adresse'] ?? $row['contact_address'])), 0, 255);
+            }
+            $phone = mb_substr(trim((string) ($row['telephone'] ?? $row['contact_phone'] ?? '')), 0, 40);
             $stmt->execute([
                 $slug,
                 $name,
@@ -353,6 +371,7 @@ final class Publisher
                 self::normalizeWebsite((string) ($row['website'] ?? '')),
                 $contact['email'],
                 $contact['address'],
+                $phone,
                 trim((string) ($row['segments'] ?? '')),
                 $d['search_text'],
             ]);
@@ -405,7 +424,7 @@ final class Publisher
     }
 
     /**
-     * @param array{q?: string, country?: string, city?: string, genre?: string, size?: string, typology?: string, independent?: string, sort?: string} $filters
+     * @param array{q?: string, country?: string, zone?: string, city?: string, genre?: string, size?: string, typology?: string, independent?: string, sort?: string} $filters
      * @return array{items: list<array<string, mixed>>, total: int, pages: int, page: int}
      */
     public static function search(array $filters, int $page = 1, int $perPage = self::PER_PAGE): array
@@ -465,6 +484,17 @@ final class Publisher
         if ($country !== '') {
             $where[] = 'country_slug = ?';
             $params[] = $country;
+        } else {
+            $zone = slugify((string) ($filters['zone'] ?? ''));
+            if ($zone !== '' && Geography::isZone($zone)) {
+                $slugs = Geography::countrySlugsForZone($zone);
+                if ($slugs === []) {
+                    $where[] = '0=1';
+                } else {
+                    $where[] = 'country_slug IN (' . implode(',', array_fill(0, count($slugs), '?')) . ')';
+                    $params = array_merge($params, $slugs);
+                }
+            }
         }
         $city = slugify((string) ($filters['city'] ?? ''));
         if ($city !== '') {
@@ -523,6 +553,56 @@ final class Publisher
             ];
         }
         return $cache;
+    }
+
+    /**
+     * @return list<array{v: string, l: string, n: int, href: string}>
+     */
+    public static function zoneFacets(): array
+    {
+        $counts = [];
+        foreach (self::countries() as $country) {
+            $zone = Geography::zoneSlugForCountry($country['slug']);
+            if ($zone === '') {
+                continue;
+            }
+            $counts[$zone] = ($counts[$zone] ?? 0) + $country['n'];
+        }
+        $out = [];
+        foreach (Geography::ZONES as $slug => $meta) {
+            $n = $counts[$slug] ?? 0;
+            if ($n === 0) {
+                continue;
+            }
+            $out[] = [
+                'v' => $slug,
+                'l' => $meta['name'],
+                'n' => $n,
+                'href' => '/maisons-edition/zone/' . $slug,
+            ];
+        }
+        return $out;
+    }
+
+    /** @return array{name: string, slug: string, n: int, href: string, hint: string}|null */
+    public static function zone(string $slug): ?array
+    {
+        $zone = Geography::zone($slug);
+        if ($zone === null) {
+            return null;
+        }
+        foreach (self::zoneFacets() as $row) {
+            if ($row['v'] === $zone['slug']) {
+                return [
+                    'name' => $zone['name'],
+                    'slug' => $zone['slug'],
+                    'n' => $row['n'],
+                    'href' => $zone['href'],
+                    'hint' => $zone['hint'],
+                ];
+            }
+        }
+        return null;
     }
 
     /** @return array{name: string, slug: string, n: int, href: string}|null */
@@ -1056,7 +1136,8 @@ final class Publisher
         $row['initials'] = self::initials((string) $row['name']);
         $row['website_host'] = self::websiteHost((string) ($row['website'] ?? ''));
         $row['founded_label'] = self::foundedLabel($row);
-        $row['location_label'] = implode(', ', array_filter([(string) ($row['city'] ?? ''), (string) ($row['country'] ?? '')]));
+        $row['location_label'] = Geography::locationFallback((string) ($row['city'] ?? ''), (string) ($row['country'] ?? ''));
+        $row['zone_slug'] = Geography::zoneSlugForCountry((string) ($row['country'] ?? ''));
         $row['has_contact'] = self::hasContact($row);
         $row['has_private_contact'] = self::hasPrivateContact($row);
         $row['group_label'] = $row['is_independent']

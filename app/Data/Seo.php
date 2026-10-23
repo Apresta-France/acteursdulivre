@@ -111,7 +111,7 @@ final class Seo
             ],
             'salons' => [
                 'title' => 'Salons du livre 2026-2027 : agenda par région',
-                'description' => 'Agenda des salons et festivals du livre en France et en Europe : dates, villes, genres. Mis à jour chaque semaine, de septembre 2026 à septembre 2027.',
+                'description' => 'Agenda des salons et festivals du livre en France, en Europe et dans la francophonie : dates, villes, genres. Mis à jour chaque semaine.',
                 'path' => '/salons',
             ],
             'salon-ajouter' => [
@@ -161,7 +161,7 @@ final class Seo
             ],
             'maisons-edition' => [
                 'title' => 'Annuaire des maisons d\'édition',
-                'description' => 'Maisons d\'édition en France et en Europe : ligne éditoriale, genres, taille, ville. Trouvez l\'éditeur qui correspond à votre manuscrit. Le site web est public, les coordonnées directes sont réservées aux membres.',
+                'description' => 'Maisons d\'édition en France, en Europe et dans la francophonie : ligne éditoriale, genres, taille, ville. Trouvez l\'éditeur qui correspond à votre manuscrit. Le site web est public, les coordonnées directes sont réservées aux membres.',
                 'path' => '/maisons-edition',
             ],
             'inscription' => [
@@ -1375,10 +1375,10 @@ acteursdulivre.fr met en relation des porteurs de projet (auteurs, éditeurs, co
 - [Prestations]({$home}prestations) : offres à prix affiché
 - [Appels d'offres]({$home}missions) : recherches publiées par les porteurs de projet
 - [Métiers]({$home}metiers/correction) : pages métiers, exemple correction
-- [Maisons d'édition]({$home}maisons-edition) : annuaire de {$publisherPhrase} éditeurs en France et en Europe, par pays ([exemple : France]({$home}maisons-edition/pays/france)), ville et genre ; le site web et la ville sont publics, les coordonnées directes sont réservées aux membres, et les maisons peuvent revendiquer leur fiche
+- [Maisons d'édition]({$home}maisons-edition) : annuaire de {$publisherPhrase} éditeurs en France, en Europe et dans la francophonie, par pays ([exemple : France]({$home}maisons-edition/pays/france)), zone, ville et genre ; le site web et la ville sont publics, les coordonnées directes sont réservées aux membres, et les maisons peuvent revendiquer leur fiche
 - [Communauté]({$home}communaute) : forum, annuaire des maisons d'édition, agenda des salons et outils métier
 - [Outils]({$home}outils) : compteur de signes, estimation de pagination, calculateur de dos, validateur ISBN
-- [Agenda des salons]({$home}salons) : {$salonPhrase} du livre en France et en Europe (2026-2027), avec une page par région, par genre et par mois
+- [Agenda des salons]({$home}salons) : {$salonPhrase} du livre en France, en Europe et dans la francophonie, avec une page par région, par pays, par genre et par mois
 - [Forum]({$home}forum) : discussions métier (tarifs, contrats, fabrication)
 - [Par besoin]({$home}besoin) : pages d'entrée par besoin (correction, couverture, impression…), utilisées aussi pour les campagnes
 - [Journal]({$home}journal) : articles sur les métiers, tarifs, contrats et diffusion

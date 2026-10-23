@@ -9,7 +9,7 @@ $id = (string) ($cityField['id'] ?? ($mode === 'search' ? 'search-city' : 'city'
 $value = (string) ($cityField['value'] ?? '');
 $slug = (string) ($cityField['slug'] ?? '');
 $insee = (string) ($cityField['insee'] ?? '');
-$placeholder = (string) ($cityField['placeholder'] ?? ($mode === 'search' ? 'France, Europe, une ville…' : 'Paris, Lyon, Nantes…'));
+$placeholder = (string) ($cityField['placeholder'] ?? ($mode === 'search' ? 'France, Canada, une ville…' : 'Paris, Lyon, Nantes…'));
 $inputClass = (string) ($cityField['input_class'] ?? 'input');
 $extra = (string) ($cityField['extra'] ?? '');
 if (!preg_match('/aria-label|aria-labelledby/', $extra)) {

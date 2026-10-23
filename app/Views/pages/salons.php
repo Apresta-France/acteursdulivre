@@ -2,11 +2,12 @@
 $salons = $salons ?? [];
 $pager = $pager ?? ['page' => 1, 'pages' => 1, 'total' => 0];
 $filters = $filters ?? [];
-$facets = $facets ?? ['categories' => [], 'regions' => [], 'countries' => []];
+$facets = $facets ?? ['categories' => [], 'regions' => [], 'countries' => [], 'zones' => []];
 $q = (string) ($filters['q'] ?? '');
 $category = (string) ($filters['category'] ?? '');
 $region = (string) ($filters['region'] ?? '');
 $country = (string) ($filters['country'] ?? '');
+$zone = (string) ($filters['zone'] ?? '');
 $pagerPath = (string) ($pagerPath ?? '/salons');
 $total = (int) ($pager['total'] ?? 0);
 
@@ -33,6 +34,16 @@ if ($region !== '') {
         }
     }
     $active[] = ['label' => $label, 'href' => catalog_listing_url($pagerPath, 1, array_diff_key($_GET, ['region' => 1, 'page' => 1]))];
+}
+if ($zone !== '') {
+    $label = $zone;
+    foreach (($facets['zones'] ?? []) as $opt) {
+        if ($opt['v'] === $zone) {
+            $label = $opt['l'];
+            break;
+        }
+    }
+    $active[] = ['label' => $label, 'href' => catalog_listing_url($pagerPath, 1, array_diff_key($_GET, ['zone' => 1, 'pays' => 1, 'page' => 1]))];
 }
 if ($country !== '') {
     $label = $country;
@@ -76,7 +87,7 @@ foreach ($salons as $event) {
         <span>Agenda des salons</span>
       </nav>
       <h1><?= e((string) ($salonHeading ?? 'Salons du livre 2026-2027')) ?></h1>
-      <p class="profile-hero-sub"><?= e((string) ($salonIntro ?? 'Agenda des salons du livre, festivals et foires en France et en Europe : dates, villes et lieux, de septembre 2026 à septembre 2027. Dates à reconfirmer sur le site de chaque manifestation.')) ?></p>
+      <p class="profile-hero-sub"><?= e((string) ($salonIntro ?? 'Agenda des salons du livre, festivals et foires en France, en Europe et dans la francophonie : dates, villes et lieux. Dates à reconfirmer sur le site de chaque manifestation.')) ?></p>
     </div>
     <div class="profile-hero-actions">
       <a class="btn-orange" href="<?= e(url('/salons/ajouter')) ?>">Ajouter un salon</a>
@@ -101,11 +112,23 @@ foreach ($salons as $event) {
 
       <form class="search-filters salon-filters" method="get" action="<?= e(url($pagerPath)) ?>">
         <?= $hidden('q', $q) ?>
-        <?php if ($facets['countries'] !== []): ?>
+        <?php $hubGeo = str_contains($pagerPath, '/salons/pays/') || str_contains($pagerPath, '/salons/zone/'); ?>
+        <?php if (!$hubGeo && !empty($facets['zones'])): ?>
+          <div class="sf-group">
+            <label class="sf-group-label" for="salon-zone">Zone</label>
+            <select class="input" id="salon-zone" name="zone" onchange="this.form.submit()">
+              <option value="">Toutes les zones</option>
+              <?php foreach ($facets['zones'] as $opt): ?>
+                <option value="<?= e($opt['v']) ?>"<?= $opt['v'] === $zone ? ' selected' : '' ?>><?= e($opt['l']) ?> (<?= (int) $opt['n'] ?>)</option>
+              <?php endforeach; ?>
+            </select>
+          </div>
+        <?php endif; ?>
+        <?php if (!$hubGeo && $facets['countries'] !== []): ?>
           <div class="sf-group">
             <label class="sf-group-label" for="salon-pays">Pays</label>
             <select class="input" id="salon-pays" name="pays" onchange="this.form.submit()">
-              <option value="">France et Europe</option>
+              <option value="">Tous les pays</option>
               <?php foreach ($facets['countries'] as $opt): ?>
                 <option value="<?= e($opt['v']) ?>"<?= $opt['v'] === $country ? ' selected' : '' ?>><?= e($opt['l']) ?> (<?= (int) $opt['n'] ?>)</option>
               <?php endforeach; ?>
@@ -145,7 +168,7 @@ foreach ($salons as $event) {
 
       <div class="search-aside-card side-card-warm">
         <div class="search-aside-title">Un salon manque ?</div>
-        <p>Cette liste est une sélection France + Europe, sept. 2026 – sept. 2027. Proposez le vôtre : l’équipe le publie après vérification.</p>
+        <p>Cette liste couvre la France, l’Europe et la francophonie. Proposez le vôtre : l’équipe le publie après vérification.</p>
         <a class="btn-navy" href="<?= e(url('/salons/ajouter')) ?>">Ajouter un salon</a>
       </div>
     </aside>
@@ -182,11 +205,12 @@ foreach ($salons as $event) {
                         $regionOrCountry = ($countryName !== '' && $countryName !== 'France') ? $countryName : '';
                     }
                     $attendance = (string) ($event['attendance'] ?? '');
-                    if (str_starts_with(mb_strtolower($attendance), 'non trouvé')) {
-                        $attendance = '';
+                    $when = (string) ($event['when_dates'] ?? $event['when'] ?? '');
+                    if ($when === 'Dates à confirmer' && empty($event['confirmed'])) {
+                        $when = '';
                     }
                     $metaParts = array_filter([
-                        (string) ($event['when_dates'] ?? $event['when'] ?? ''),
+                        $when,
                         (string) ($event['city'] ?? ''),
                         $regionOrCountry,
                         $attendance,
