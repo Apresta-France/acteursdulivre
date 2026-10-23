@@ -44,7 +44,7 @@ $souscriptions = $souscriptions ?? [];
       <a class="co-door" href="<?= e(url('/maisons-edition')) ?>">
         <span class="co-door-ico" aria-hidden="true"><?= icon('store', 22) ?></span>
         <h2>Annuaire</h2>
-        <p>Maisons d’édition en France et en Europe, par ville et genre. Les coordonnées sont réservées aux membres.</p>
+        <p>Maisons d’édition en France, en Europe et dans la francophonie, par ville et genre. Les coordonnées sont réservées aux membres.</p>
         <span class="co-door-cta">Parcourir l’annuaire →</span>
       </a>
       <a class="co-door" href="<?= e(url('/salons')) ?>">
@@ -170,7 +170,7 @@ $souscriptions = $souscriptions ?? [];
     <div class="mk-head">
       <div>
         <h2>Prochains salons</h2>
-        <p>France et Europe, sept. 2026 – sept. 2027.</p>
+        <p>France, Europe et francophonie.</p>
       </div>
       <a href="<?= e(url('/salons')) ?>">Tout l’agenda →</a>
     </div>

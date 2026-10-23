@@ -67,12 +67,36 @@ final class Cities
         'troyes' => 'Troyes',
         'valence' => 'Valence',
         'villeurbanne' => 'Villeurbanne',
+        'montreal' => 'Montréal',
+        'quebec' => 'Québec',
+        'toronto' => 'Toronto',
+        'ottawa' => 'Ottawa',
+        'gatineau' => 'Gatineau',
+        'bruxelles' => 'Bruxelles',
+        'geneve' => 'Genève',
+        'lausanne' => 'Lausanne',
+        'dakar' => 'Dakar',
+        'abidjan' => 'Abidjan',
+        'alger' => 'Alger',
+        'tunis' => 'Tunis',
+        'casablanca' => 'Casablanca',
+        'beyrouth' => 'Beyrouth',
+        'kinshasa' => 'Kinshasa',
+        'yaounde' => 'Yaoundé',
+        'bamako' => 'Bamako',
+        'port-au-prince' => 'Port-au-Prince',
     ];
 
     /** @var array<string, array{name: string, hint: string}> */
     public const REGIONS = [
         'france' => ['name' => 'France', 'hint' => 'Tout le territoire'],
         'europe' => ['name' => 'Europe', 'hint' => 'Tout le continent'],
+        'amerique-du-nord' => ['name' => 'Amérique du Nord', 'hint' => 'Canada, États-Unis'],
+        'afrique' => ['name' => 'Afrique', 'hint' => 'Afrique francophone et continent'],
+        'maghreb-moyen-orient' => ['name' => 'Maghreb et Moyen-Orient', 'hint' => 'Maghreb, Proche-Orient et monde arabe'],
+        'caraibes' => ['name' => 'Caraïbes', 'hint' => 'Caraïbes francophones'],
+        'asie' => ['name' => 'Asie', 'hint' => 'Asie et océan Indien éditorial'],
+        'amerique-latine' => ['name' => 'Amérique latine', 'hint' => 'Mexique, Amérique centrale et du Sud'],
     ];
 
     public static function isRegion(string $slug): bool

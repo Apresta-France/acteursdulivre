@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Adl\Models;
 
 use Adl\Core\Database;
+use Adl\Data\Geography;
 use Adl\Data\SalonHubs;
 
 final class Salon
@@ -12,7 +13,7 @@ final class Salon
     public const PER_PAGE = 20;
 
     /** Slugs réservés sous /salons/ qui ne peuvent pas désigner une fiche. */
-    private const RESERVED_SLUGS = ['ajouter'];
+    private const RESERVED_SLUGS = ['ajouter', 'pays', 'zone'];
 
     public const FALLBACK_CATEGORIES = [
         'Général',
@@ -124,6 +125,46 @@ final class Salon
     }
 
     /** @return list<string> */
+    /** @return array{name: string, slug: string, n: int, href: string}|null */
+    public static function country(string $slug): ?array
+    {
+        $slug = slugify($slug);
+        if ($slug === '') {
+            return null;
+        }
+        foreach (self::facets()['countries'] as $row) {
+            if ($row['v'] === $slug) {
+                return [
+                    'name' => $row['l'],
+                    'slug' => $row['v'],
+                    'n' => $row['n'],
+                    'href' => '/salons/pays/' . $row['v'],
+                ];
+            }
+        }
+        return null;
+    }
+
+    /** @return array{name: string, slug: string, n: int, href: string}|null */
+    public static function zone(string $slug): ?array
+    {
+        $zone = Geography::zone($slug);
+        if ($zone === null) {
+            return null;
+        }
+        foreach (self::facets()['zones'] as $row) {
+            if ($row['v'] === $zone['slug']) {
+                return [
+                    'name' => $zone['name'],
+                    'slug' => $zone['slug'],
+                    'n' => $row['n'],
+                    'href' => '/salons/zone/' . $zone['slug'],
+                ];
+            }
+        }
+        return null;
+    }
+
     public static function countryLabels(): array
     {
         $labels = [];
@@ -473,14 +514,32 @@ final class Salon
     }
 
     /**
-     * @return array{categories: list<array{v: string, l: string, n: int}>, regions: list<array{v: string, l: string, n: int}>, countries: list<array{v: string, l: string, n: int}>}
+     * @return array{categories: list<array{v: string, l: string, n: int}>, regions: list<array{v: string, l: string, n: int}>, countries: list<array{v: string, l: string, n: int}>, zones: list<array{v: string, l: string, n: int}>}
      */
     public static function facets(): array
     {
+        $countries = self::facetRows('country');
+        $zoneCounts = [];
+        foreach ($countries as $row) {
+            $zone = Geography::zoneSlugForCountry($row['v']);
+            if ($zone === '') {
+                continue;
+            }
+            $zoneCounts[$zone] = ($zoneCounts[$zone] ?? 0) + $row['n'];
+        }
+        $zones = [];
+        foreach (Geography::ZONES as $slug => $meta) {
+            $n = $zoneCounts[$slug] ?? 0;
+            if ($n === 0) {
+                continue;
+            }
+            $zones[] = ['v' => $slug, 'l' => $meta['name'], 'n' => $n];
+        }
         return [
             'categories' => self::facetRows('category'),
-            'regions' => self::facetRows('region', 'country = "France" AND region != ""'),
-            'countries' => self::facetRows('country'),
+            'regions' => self::facetRows('region', 'country = "France" AND region != "" AND region != "—"'),
+            'countries' => $countries,
+            'zones' => $zones,
         ];
     }
 
@@ -530,6 +589,17 @@ final class Salon
         if ($country !== '') {
             $where[] = 'country_slug = ?';
             $params[] = $country;
+        } else {
+            $zone = slugify((string) ($filters['zone'] ?? ''));
+            if ($zone !== '' && Geography::isZone($zone)) {
+                $slugs = Geography::countrySlugsForZone($zone);
+                if ($slugs === []) {
+                    $where[] = '0=1';
+                } else {
+                    $where[] = 'country_slug IN (' . implode(',', array_fill(0, count($slugs), '?')) . ')';
+                    $params = array_merge($params, $slugs);
+                }
+            }
         }
         $from = trim((string) ($filters['from'] ?? ''));
         if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $from) === 1) {
@@ -545,13 +615,67 @@ final class Salon
         return [implode(' AND ', $where), $params];
     }
 
+    public static function isUnverifiedText(string $raw): bool
+    {
+        $n = search_norm(trim($raw));
+        return $n === '' || $n === '—' || $n === '-'
+            || str_contains($n, 'non trouve')
+            || str_contains($n, 'non verifie')
+            || str_contains($n, 'non precise')
+            || $n === 'n/a';
+    }
+
+    public static function cleanDateText(string $raw): string
+    {
+        $raw = trim($raw);
+        if ($raw === '' || self::isUnverifiedText($raw)) {
+            return '';
+        }
+        return $raw;
+    }
+
+    /**
+     * Retire l’annotation de sourcing « hors de la fenêtre actuelle du site ».
+     */
+    public static function cleanNotes(string $raw): string
+    {
+        $raw = trim($raw);
+        if ($raw === '' || self::isUnverifiedText($raw)) {
+            return '';
+        }
+        $raw = (string) preg_replace(
+            '/\s*[;,]?\s*hors de la fenêtre actuelle du site\s*(?:\([^)]*\))?/iu',
+            '',
+            $raw
+        );
+        $raw = trim($raw, " \t\n\r\0\x0B;,·-");
+        return $raw;
+    }
+
+    public static function isPlaceholderDate(string $start, bool $confirmed): bool
+    {
+        if ($confirmed || $start === '') {
+            return false;
+        }
+        return (bool) preg_match('/^\d{4}-01-01$/', substr($start, 0, 10));
+    }
+
     /** @param array<string, mixed> $row */
     public static function hydrate(array $row): array
     {
+        $confirmed = !empty($row['dates_confirmed']);
         $start = (string) ($row['starts_on'] ?? '');
         $end = (string) ($row['ends_on'] ?? '');
+        if (self::isPlaceholderDate($start, $confirmed)) {
+            $start = '';
+            $end = '';
+            $confirmed = false;
+            $row['starts_on'] = '';
+            $row['ends_on'] = '';
+            $row['dates_confirmed'] = 0;
+        }
         $city = (string) ($row['city'] ?? '');
-        $region = (string) ($row['region'] ?? '');
+        $region = self::cleanDateText((string) ($row['region'] ?? ''));
         $country = (string) ($row['country'] ?? '');
         $place = $city;
         if ($country !== '' && $country !== 'France') {
@@ -560,17 +684,26 @@ final class Salon
             $place = trim($city . ($city !== '' ? ' · ' : '') . $region);
         }
 
+        $row['region'] = $region;
+        $row['department'] = self::cleanDateText((string) ($row['department'] ?? ''));
+        $row['venue'] = self::cleanDateText((string) ($row['venue'] ?? ''));
+        $row['attendance'] = self::cleanDateText((string) ($row['attendance'] ?? ''));
+        $row['exhibitors'] = self::cleanDateText((string) ($row['exhibitors'] ?? ''));
+        $row['ticket'] = self::cleanDateText((string) ($row['ticket'] ?? ''));
+        $row['socials'] = self::cleanDateText((string) ($row['socials'] ?? ''));
+        $row['notes'] = self::cleanNotes((string) ($row['notes'] ?? ''));
         $row['href'] = '/salons/' . $row['slug'];
         $row['kind'] = (string) ($row['category'] ?? '');
         $row['place'] = $place;
         $row['iso'] = $start;
         $row['day'] = $start !== '' ? (string) (int) substr($start, 8, 2) : '—';
         $row['month'] = $start !== '' ? (self::MONTHS[(int) substr($start, 5, 2)] ?? '') : '';
-        $row['confirmed'] = !empty($row['dates_confirmed']);
+        $row['confirmed'] = $confirmed;
         $until = $end !== '' ? substr($end, 0, 10) : ($start !== '' ? substr($start, 0, 10) : '');
         $row['is_past'] = $until !== '' && $until < date('Y-m-d');
-        $row['when_dates'] = self::formatWhen($start, $end, (string) ($row['dates_raw'] ?? ''), true);
-        $row['when'] = self::formatWhen($start, $end, (string) ($row['dates_raw'] ?? ''), $row['confirmed']);
+        $raw = self::cleanDateText((string) ($row['dates_raw'] ?? ''));
+        $row['when_dates'] = self::formatWhen($start, $end, $raw, true);
+        $row['when'] = self::formatWhen($start, $end, $raw, $confirmed);
         if ($start !== '') {
             $monthNum = (int) substr($start, 5, 2);
             $year = (int) substr($start, 0, 4);
@@ -585,8 +718,13 @@ final class Salon
 
     private static function formatWhen(string $start, string $end, string $raw, bool $confirmed): string
     {
+        $raw = self::cleanDateText($raw);
+        if (self::isPlaceholderDate($start, $confirmed)) {
+            $start = '';
+            $end = '';
+        }
         if ($start === '') {
-            return $raw !== '' ? $raw : 'Date à confirmer';
+            return $raw !== '' ? $raw : 'Dates à confirmer';
         }
         $sy = (int) substr($start, 0, 4);
         $sm = (int) substr($start, 5, 2);

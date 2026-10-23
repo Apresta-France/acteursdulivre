@@ -92,6 +92,13 @@ final class Sitemap
             self::push($urls, $seen, '/maisons-edition/pays/' . $row['slug'], $row['lastmod'] ?? null, '0.7');
         }
 
+        try {
+            foreach (\Adl\Models\Publisher::zoneFacets() as $zone) {
+                self::push($urls, $seen, '/maisons-edition/zone/' . $zone['v'], '2026-10-23', '0.6');
+            }
+        } catch (\Throwable) {
+        }
+
         foreach (self::rows(
             'SELECT country_slug, city_slug, MAX(COALESCE(updated_at, created_at)) AS lastmod
              FROM publishers WHERE status = "published" AND country_slug != "" AND city_slug != ""
@@ -122,6 +129,21 @@ final class Sitemap
             'SELECT slug, created_at AS lastmod FROM salons WHERE slug != ""'
         ) as $row) {
             self::push($urls, $seen, '/salons/' . $row['slug'], $row['lastmod'] ?? null, '0.4');
+        }
+
+        foreach (self::rows(
+            'SELECT country_slug AS slug, MAX(created_at) AS lastmod
+             FROM salons WHERE country_slug != ""
+             GROUP BY country_slug'
+        ) as $row) {
+            self::push($urls, $seen, '/salons/pays/' . $row['slug'], $row['lastmod'] ?? null, '0.6');
+        }
+
+        try {
+            foreach (\Adl\Models\Salon::facets()['zones'] as $zone) {
+                self::push($urls, $seen, '/salons/zone/' . $zone['v'], '2026-10-23', '0.6');
+            }
+        } catch (\Throwable) {
         }
 
         foreach (\Adl\Data\SalonHubs::sitemapPaths() as $hub) {

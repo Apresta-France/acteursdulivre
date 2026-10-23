@@ -3846,7 +3846,7 @@
   "genres": "Fiction noire, récits, arts",
   "description": "Petit éditeur fribourgeois, romans noirs et récits",
   "website": "faimdesiecle.ch",
-  "contact": "contact@faimdesiecle.ch — CP 210, 1701 Fribourg",
+  "contact": "contact@faimdesiecle.ch — CP 500, 1701 Fribourg",
   "segments": "Belgique & Suisse - Approfondissement"
  },
  {
@@ -3859,7 +3859,7 @@
   "typology": "Généraliste",
   "genres": "Histoire, pratique, biographies, gastronomie",
   "description": "Éditeur romand généraliste : histoire suisse, pratique et biographies",
-  "website": "favre.ch",
+  "website": "https://www.editionsfavre.com",
   "contact": "lausanne@editionsfavre.com — 29, rue de Bourg, CH-1003 Lausanne",
   "segments": "Belgique & Suisse"
  },
@@ -3887,7 +3887,7 @@
   "typology": "Généraliste",
   "genres": "Sciences humaines, architecture, essais",
   "description": "Éditeur romand : sciences humaines, architecture et essais",
-  "website": "non vérifié",
+  "website": "https://www.infolio.ch",
   "contact": "info@infolio.ch — En Crausaz 10, CH-1124 Gollion",
   "segments": "Belgique & Suisse"
  },
@@ -4076,7 +4076,7 @@
  {
   "name": "Éditions Zoé",
   "country": "Suisse",
-  "city": "Carouge / Genève",
+  "city": "Chêne-Bourg",
   "founded": "1975",
   "group": "Indépendant",
   "size": "PME",
@@ -4084,7 +4084,7 @@
   "genres": "Littérature suisse et internationale",
   "description": "Maison romande de référence pour la littérature suisse contemporaine",
   "website": "editionszoe.ch",
-  "contact": "16, chemin de la Gravière, CH-1225 Chêne-Bourg",
+  "contact": "info@editionszoe.ch — 16, chemin de la Gravière, CH-1225 Chêne-Bourg",
   "segments": "Belgique & Suisse"
  },
  {
@@ -8375,7 +8375,7 @@
   "name": "La Peuplade",
   "country": "Canada (diffusion France)",
   "city": "Saguenay (Québec)",
-  "founded": "non vérifié",
+  "founded": "2006",
   "group": "Indépendant",
   "size": "PME",
   "typology": "Spécialisé",

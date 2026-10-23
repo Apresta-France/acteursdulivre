@@ -5,6 +5,17 @@ $total = 0;
 foreach ($countries as $c) {
     $total += (int) $c['n'];
 }
+$grouped = [];
+$ungrouped = [];
+foreach ($countries as $c) {
+    $zone = \Adl\Data\Geography::zoneSlugForCountry((string) $c['slug']);
+    if ($zone === '' || !isset(\Adl\Data\Geography::ZONES[$zone])) {
+        $ungrouped[] = $c;
+        continue;
+    }
+    $grouped[$zone][] = $c;
+}
+$zoneOrder = array_keys(\Adl\Data\Geography::ZONES);
 ?>
 <div class="journal-page me-countries-page">
   <nav class="search-crumb" aria-label="Fil d'Ariane">
@@ -19,23 +30,43 @@ foreach ($countries as $c) {
   <div class="search-head">
     <div>
       <h1>Maisons d'édition par pays <span><?= e(format_int($total)) ?> maisons · <?= count($countries) ?> pays</span></h1>
-      <p class="journal-lead">Choisissez un pays pour parcourir ses éditeurs, puis affinez par ville, genre ou taille de structure.</p>
+      <p class="journal-lead">Choisissez une zone ou un pays pour parcourir ses éditeurs, puis affinez par ville, genre ou taille de structure.</p>
     </div>
     <a class="btn-navy" href="<?= e(url('/maisons-edition')) ?>">Rechercher une maison</a>
   </div>
 
-  <div class="me-countries">
-    <?php foreach ($countries as $c): ?>
-      <div class="me-country-card">
-        <a class="me-country-name" href="<?= e(url($c['href'])) ?>"><?= e($c['name']) ?> <em><?= (int) $c['n'] ?></em></a>
-        <?php if (!empty($citiesByCountry[$c['slug']])): ?>
-          <div class="me-country-cities">
-            <?php foreach ($citiesByCountry[$c['slug']] as $city): ?>
-              <a href="<?= e(url($city['href'])) ?>"><?= e($city['name']) ?></a>
-            <?php endforeach; ?>
+  <?php foreach ($zoneOrder as $zoneSlug): ?>
+    <?php if (empty($grouped[$zoneSlug])) { continue; } ?>
+    <?php $zoneMeta = \Adl\Data\Geography::ZONES[$zoneSlug]; ?>
+    <section class="me-geo" style="margin-top: 28px;">
+      <h2><a href="<?= e(url('/maisons-edition/zone/' . $zoneSlug)) ?>"><?= e($zoneMeta['name']) ?></a></h2>
+      <div class="me-countries">
+        <?php foreach ($grouped[$zoneSlug] as $c): ?>
+          <div class="me-country-card">
+            <a class="me-country-name" href="<?= e(url($c['href'])) ?>"><?= e($c['name']) ?> <em><?= (int) $c['n'] ?></em></a>
+            <?php if (!empty($citiesByCountry[$c['slug']])): ?>
+              <div class="me-country-cities">
+                <?php foreach ($citiesByCountry[$c['slug']] as $city): ?>
+                  <a href="<?= e(url($city['href'])) ?>"><?= e($city['name']) ?></a>
+                <?php endforeach; ?>
+              </div>
+            <?php endif; ?>
           </div>
-        <?php endif; ?>
+        <?php endforeach; ?>
       </div>
-    <?php endforeach; ?>
-  </div>
+    </section>
+  <?php endforeach; ?>
+
+  <?php if ($ungrouped !== []): ?>
+    <section class="me-geo" style="margin-top: 28px;">
+      <h2>Autres pays</h2>
+      <div class="me-countries">
+        <?php foreach ($ungrouped as $c): ?>
+          <div class="me-country-card">
+            <a class="me-country-name" href="<?= e(url($c['href'])) ?>"><?= e($c['name']) ?> <em><?= (int) $c['n'] ?></em></a>
+          </div>
+        <?php endforeach; ?>
+      </div>
+    </section>
+  <?php endif; ?>
 </div>

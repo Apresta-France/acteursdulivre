@@ -18,17 +18,17 @@ final class SalonHubs
         'jeunesse' => [
             'category' => 'jeunesse',
             'label' => 'Jeunesse',
-            'intro' => 'Salons, festivals et fêtes du livre jeunesse : albums, romans, BD et rencontres avec les auteurs, en France et en Europe. Les dates, villes et lieux sont ceux de l’agenda, à reconfirmer sur le site de l’organisateur. Une date manque ? Signalez-la.',
+            'intro' => 'Salons, festivals et fêtes du livre jeunesse : albums, romans, BD et rencontres avec les auteurs, en France, en Europe et dans la francophonie. Les dates, villes et lieux sont ceux de l’agenda, à reconfirmer sur le site de l’organisateur. Une date manque ? Signalez-la.',
         ],
         'polar' => [
             'category' => 'polar-roman-noir',
             'label' => 'Polar',
-            'intro' => 'Salons et festivals polar et roman noir : dédicaces, tables rondes et rencontres, en France et en Europe. Cette page suit les dates de l’agenda. Une manifestation manque ? Signalez-la.',
+            'intro' => 'Salons et festivals polar et roman noir : dédicaces, tables rondes et rencontres, en France, en Europe et dans la francophonie. Cette page suit les dates de l’agenda. Une manifestation manque ? Signalez-la.',
         ],
         'bd' => [
             'category' => 'bande-dessinee-bd',
             'label' => 'Bande dessinée',
-            'intro' => 'Festivals et salons de bande dessinée : dédicaces, expositions et rencontres, en France et en Europe. Les dates se confirment auprès de chaque organisateur. Une date manque ? Signalez-la.',
+            'intro' => 'Festivals et salons de bande dessinée : dédicaces, expositions et rencontres, en France, en Europe et dans la francophonie. Les dates se confirment auprès de chaque organisateur. Une date manque ? Signalez-la.',
         ],
         'romance' => [
             'category' => '',
@@ -92,7 +92,7 @@ final class SalonHubs
     public static function isReserved(string $slug): bool
     {
         $slug = slugify($slug);
-        if ($slug === '' || isset(self::GENRES[$slug]) || isset(self::GENRE_REDIRECTS[$slug])) {
+        if ($slug === '' || $slug === 'pays' || $slug === 'zone' || isset(self::GENRES[$slug]) || isset(self::GENRE_REDIRECTS[$slug])) {
             return $slug !== '';
         }
 
@@ -125,8 +125,8 @@ final class SalonHubs
             'path' => $path,
             'h1' => 'Salons du livre en ' . $label,
             'title' => 'Salons du livre en ' . $label,
-            'description' => 'Agenda des salons et festivals du livre en ' . $label . ' : dates, villes et genres, en France et en Europe.',
-            'intro' => 'Salons et festivals du livre datés en ' . $label . ', en France et en Europe. Les dates se confirment auprès de l’organisateur. Une manifestation manque ? Signalez-la.',
+            'description' => 'Agenda des salons et festivals du livre en ' . $label . ' : dates, villes et genres, en France, en Europe et dans la francophonie.',
+            'intro' => 'Salons et festivals du livre datés en ' . $label . ', en France, en Europe et dans la francophonie. Les dates se confirment auprès de l’organisateur. Une manifestation manque ? Signalez-la.',
             'filters' => ['from' => $from, 'until' => $until],
             'facet_region' => '',
             'facet_category' => '',
@@ -143,6 +143,29 @@ final class SalonHubs
         $out = [];
         foreach (self::regions() as $hub) {
             $out[] = ['href' => (string) $hub['path'], 'label' => (string) $hub['label'], 'kind' => 'region'];
+        }
+        try {
+            foreach (Salon::facets()['countries'] as $row) {
+                if ((int) ($row['n'] ?? 0) < self::MIN_REGION) {
+                    continue;
+                }
+                $out[] = [
+                    'href' => '/salons/pays/' . $row['v'],
+                    'label' => $row['l'],
+                    'kind' => 'country',
+                ];
+            }
+            foreach (Salon::facets()['zones'] as $row) {
+                if ((int) ($row['n'] ?? 0) < self::MIN_REGION || $row['v'] === 'france') {
+                    continue;
+                }
+                $out[] = [
+                    'href' => '/salons/zone/' . $row['v'],
+                    'label' => $row['l'],
+                    'kind' => 'zone',
+                ];
+            }
+        } catch (\Throwable) {
         }
         foreach (self::GENRES as $slug => $genre) {
             if ($slug === 'romance' && self::count(['q' => 'romance']) < 1) {
@@ -258,7 +281,7 @@ final class SalonHubs
             'path' => '/salons/' . $slug,
             'h1' => 'Salons du livre ' . mb_strtolower($genre['label']),
             'title' => 'Salons du livre ' . mb_strtolower($genre['label']) . ' 2026-2027',
-            'description' => 'Agenda des salons et festivals ' . mb_strtolower($genre['label']) . ' en France et en Europe : dates, villes et lieux.',
+            'description' => 'Agenda des salons et festivals ' . mb_strtolower($genre['label']) . ' en France, en Europe et dans la francophonie : dates, villes et lieux.',
             'intro' => $genre['intro'],
             'filters' => $filters,
             'facet_region' => '',
@@ -286,8 +309,8 @@ final class SalonHubs
                 'path' => '/salons/' . $slug,
                 'h1' => 'Salons du livre : ' . $label,
                 'title' => $label . ' — salons du livre 2026-2027',
-                'description' => 'Agenda des salons et festivals classés « ' . $label . ' » : dates, villes et lieux, en France et en Europe.',
-                'intro' => 'Salons et festivals classés « ' . $label . ' » dans l’agenda : dates, villes et lieux, en France et en Europe. Une date manque ? Signalez-la.',
+                'description' => 'Agenda des salons et festivals classés « ' . $label . ' » : dates, villes et lieux, en France, en Europe et dans la francophonie.',
+                'intro' => 'Salons et festivals classés « ' . $label . ' » dans l’agenda : dates, villes et lieux, en France, en Europe et dans la francophonie. Une date manque ? Signalez-la.',
                 'filters' => ['category' => $slug],
                 'facet_region' => '',
                 'facet_category' => $slug,

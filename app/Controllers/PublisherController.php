@@ -8,6 +8,7 @@ use Adl\Core\Auth;
 use Adl\Core\BotGuard;
 use Adl\Core\Request;
 use Adl\Core\View;
+use Adl\Data\Geography;
 use Adl\Data\Seo;
 use Adl\Data\Share;
 use Adl\Models\Analytics;
@@ -40,7 +41,7 @@ final class PublisherController
             ? $total . ' maisons d\'édition en France et dans ' . max(0, $countries - 1) . ' autres pays : ligne éditoriale, genres, taille, ville. Trouvez l\'éditeur qui correspond à votre manuscrit.'
             : $seo['description'];
         $this->renderListing($request, $filters, [
-            'heading' => 'Annuaire des maisons d\'édition en France et en Europe',
+            'heading' => 'Annuaire des maisons d\'édition',
             'heading_count' => $total,
             'lead' => 'Plus de ' . format_int(max(0, (int) floor($total / 50) * 50)) . ' éditeurs recensés dans ' . $countries . ' pays : grands groupes, indépendants, micro-structures, généralistes et spécialisés. Le site web de chaque maison est public ; connectez-vous pour consulter les coordonnées directes.',
             'title' => $title,
@@ -62,7 +63,7 @@ final class PublisherController
             $cities[$country['slug']] = array_slice(Publisher::citiesForCountry($country['slug'], 8), 0, 8);
         }
         $title = 'Maisons d\'édition par pays';
-        $description = 'Les éditeurs européens classés par pays et par ville : France, Allemagne, Royaume-Uni, Espagne, Italie, Belgique, Suisse et ' . max(0, count($countries) - 7) . ' autres pays.';
+        $description = 'Les éditeurs classés par pays et par ville : France, Europe, Canada, Afrique francophone, Maghreb et ' . max(0, count($countries) - 5) . ' autres pays.';
         View::page('maisons-edition-pays', [
             'title' => $title,
             'countries' => $countries,
@@ -91,7 +92,7 @@ final class PublisherController
         }
         $filters = $this->filters($request);
         $filters['country'] = $country['slug'];
-        $label = self::countryPhrase($country['name']);
+        $label = Geography::countryPhrase($country['name']);
         $lead = format_int($country['n']) . ' ' . ($country['n'] > 1 ? 'éditeurs recensés' : 'éditeur recensé') . ' ' . $label . ' : littérature, jeunesse, BD, essais, poésie, universitaire… Filtrez par ville, genre ou taille de structure, puis connectez-vous pour joindre la maison.';
         $description = 'Annuaire des ' . format_int($country['n']) . ' maisons d\'édition ' . $label . ' recensées sur acteursdulivre.fr : ligne éditoriale, genres, taille, ville. Coordonnées réservées aux membres.';
         if ($country['slug'] === 'royaume-uni') {
@@ -113,6 +114,33 @@ final class PublisherController
             'scope' => 'country',
             'country' => $country,
             'cities' => Publisher::citiesForCountry($country['slug'], 30),
+        ]);
+    }
+
+    public function zone(Request $request, string $zoneSlug): void
+    {
+        $zone = Publisher::zone($zoneSlug);
+        if (!$zone) {
+            not_found('Aucune maison d\'édition recensée pour cette zone.');
+        }
+        $filters = $this->filters($request);
+        $filters['zone'] = $zone['slug'];
+        $label = Geography::countryPhrase($zone['name']);
+        $lead = format_int($zone['n']) . ' ' . ($zone['n'] > 1 ? 'éditeurs recensés' : 'éditeur recensé') . ' ' . $label . ' : littérature, jeunesse, BD, essais, poésie, universitaire… Filtrez par pays, ville, genre ou taille de structure.';
+        $this->renderListing($request, $filters, [
+            'heading' => 'Maisons d\'édition ' . $label,
+            'heading_count' => $zone['n'],
+            'lead' => $lead,
+            'title' => 'Maisons d\'édition ' . $label . ' : annuaire des éditeurs',
+            'description' => 'Annuaire des ' . format_int($zone['n']) . ' maisons d\'édition ' . $label . ' recensées sur acteursdulivre.fr : ligne éditoriale, genres, taille, ville. Coordonnées réservées aux membres.',
+            'path' => $zone['href'],
+            'crumbs' => [
+                ['name' => 'Communauté', 'url' => '/communaute'],
+                ['name' => 'Maisons d\'édition', 'url' => self::BASE],
+                ['name' => $zone['name'], 'url' => $zone['href']],
+            ],
+            'scope' => 'zone',
+            'zone' => $zone,
         ]);
     }
 
@@ -177,7 +205,7 @@ final class PublisherController
         $title = $publisher['name'] . ' — '
             . (trim((string) ($publisher['submissions_note'] ?? '')) !== '' ? 'manuscrits, ' : '')
             . 'maison d\'édition'
-            . ($publisher['location_label'] !== '' ? ' à ' . $publisher['location_label'] : '');
+            . (($publisher['location_phrase'] ?? '') !== '' ? ' ' . $publisher['location_phrase'] : '');
         $crumbs = [
             ['name' => Seo::BRAND, 'url' => '/'],
             ['name' => 'Communauté', 'url' => '/communaute'],
@@ -549,6 +577,7 @@ final class PublisherController
             'genres' => $this->safe(static fn (): array => Publisher::genreFacets(18, $countrySlug, $citySlug)),
             'sizes' => $this->safe(static fn (): array => Publisher::sizeFacets($countrySlug, $citySlug)),
             'countries' => $this->safe(static fn (): array => Publisher::countries()),
+            'zones' => $this->safe(static fn (): array => Publisher::zoneFacets()),
         ];
 
         $userQuery = $this->queryFor($filters, (string) $ctx['scope']);
@@ -651,6 +680,10 @@ final class PublisherController
         if ($country !== '') {
             $out['country'] = mb_substr($country, 0, 60);
         }
+        $zone = $request->string('zone');
+        if ($zone !== '') {
+            $out['zone'] = mb_substr($zone, 0, 60);
+        }
         $city = $request->string('ville');
         if ($city !== '') {
             $out['city'] = mb_substr($city, 0, 60);
@@ -688,7 +721,10 @@ final class PublisherController
         if (($filters['sort'] ?? '') !== '') {
             $q['tri'] = $filters['sort'];
         }
-        if ($scope === 'all') {
+        if ($scope === 'all' || $scope === 'zone') {
+            if ($scope === 'all' && ($filters['zone'] ?? '') !== '') {
+                $q['zone'] = $filters['zone'];
+            }
             if (($filters['country'] ?? '') !== '') {
                 $q['pays'] = $filters['country'];
             }
@@ -757,20 +793,7 @@ final class PublisherController
 
     public static function countryPhrase(string $country): string
     {
-        $n = search_norm($country);
-        $feminine = ['france', 'allemagne', 'belgique', 'suisse', 'espagne', 'italie', 'autriche', 'irlande', 'suede', 'pologne', 'ukraine', 'norvege', 'finlande', 'republique tcheque', 'serbie', 'roumanie', 'grece', 'lituanie', 'estonie', 'islande', 'hongrie', 'croatie', 'slovenie', 'slovaquie', 'lettonie', 'bosnie-herzegovine', 'albanie', 'macedoine du nord', 'moldavie', 'bulgarie', 'europe'];
-        $plural = ['pays-bas'];
-        $vowel = preg_match('/^[aeiouy]/', $n) === 1;
-        if (in_array($n, $plural, true)) {
-            return 'aux ' . $country;
-        }
-        if (in_array($n, $feminine, true) || $vowel) {
-            return 'en ' . $country;
-        }
-        if (in_array($n, ['luxembourg', 'portugal', 'danemark', 'royaume-uni', 'montenegro', 'canada'], true)) {
-            return 'au ' . $country;
-        }
-        return 'à ' . $country;
+        return Geography::countryPhrase($country);
     }
 
     /** JSON-LD Organization : site web public, sans e-mail ni téléphone. */

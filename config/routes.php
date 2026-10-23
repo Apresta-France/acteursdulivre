@@ -50,6 +50,7 @@ return static function (Router $router): void {
     $router->get('/maisons-edition/pays', [PublisherController::class, 'countries']);
     $router->get('/maisons-edition/pays/{country}', [PublisherController::class, 'country']);
     $router->get('/maisons-edition/pays/{country}/{city}', [PublisherController::class, 'city']);
+    $router->get('/maisons-edition/zone/{zone}', [PublisherController::class, 'zone']);
     $router->get('/maisons-edition/ajouter', [PublisherController::class, 'addForm']);
     $router->post('/maisons-edition/ajouter', [PublisherController::class, 'add']);
     $router->get('/maisons-edition/{slug}', [PublisherController::class, 'show']);
@@ -70,6 +71,8 @@ return static function (Router $router): void {
     $router->get('/salons', [PageController::class, 'salons']);
     $router->get('/salons/ajouter', [PageController::class, 'salonAddForm']);
     $router->post('/salons/ajouter', [PageController::class, 'salonAdd']);
+    $router->get('/salons/pays/{country}', [PageController::class, 'salonCountry']);
+    $router->get('/salons/zone/{zone}', [PageController::class, 'salonZone']);
     $router->get('/salons/{year}/{month}', [PageController::class, 'salonMonth']);
     $router->post('/salons/{slug}/commenter', [ForumController::class, 'salonComment']);
     $router->get('/salons/{slug}', [PageController::class, 'salon']);
