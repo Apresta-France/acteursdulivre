@@ -197,7 +197,7 @@ $souscriptions = $souscriptions ?? [];
       </div>
       <aside class="co-agenda-aside">
         <div class="mk-kicker">Agenda</div>
-        <h3>Parcourir les <?= e(format_int($salonCount)) ?> salons</h3>
+        <h3>Parcourir <?= e(count_label($salonCount, 'salon', 'salons')) ?></h3>
         <p>Filtres par pays, région et catégorie. Un salon manque : <a href="<?= e(url('/salons/ajouter')) ?>">proposez-le</a>.</p>
         <a class="btn-navy" href="<?= e(url('/salons')) ?>">Ouvrir l’agenda</a>
         <div class="co-agenda-aside-sep"></div>

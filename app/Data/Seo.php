@@ -536,10 +536,10 @@ final class Seo
         } catch (\Throwable) {
         }
         $directory = $publishers > 0
-            ? 'un annuaire de ' . format_int($publishers) . ' maisons d’édition'
+            ? 'un annuaire de ' . count_label($publishers, 'maison d’édition', 'maisons d’édition')
             : 'un annuaire de maisons d’édition';
         $agenda = $salons > 0
-            ? 'l’agenda de ' . format_int($salons) . ' salons du livre'
+            ? 'l’agenda de ' . count_label($salons, 'salon du livre', 'salons du livre')
             : 'l’agenda des salons du livre';
         $people = $providers > 0
             ? ' La plateforme publie ' . format_int($providers) . ' prestataires sur 18 métiers.'
@@ -1342,7 +1342,7 @@ final class Seo
         } catch (\Throwable) {
         }
         $publisherPhrase = $publishers > 0 ? (string) $publishers : 'plusieurs centaines de';
-        $salonPhrase = $salons > 0 ? (string) $salons . ' salons et festivals' : 'les salons et festivals';
+        $salonPhrase = $salons > 0 ? count_label($salons, 'salon et festival', 'salons et festivals') : 'les salons et festivals';
         return <<<MD
 # Acteurs du Livre
 

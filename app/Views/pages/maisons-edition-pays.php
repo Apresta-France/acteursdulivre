@@ -29,7 +29,7 @@ $zoneOrder = array_keys(\Adl\Data\Geography::ZONES);
   </nav>
   <div class="search-head">
     <div>
-      <h1>Maisons d'édition par pays <span><?= e(format_int($total)) ?> maisons · <?= count($countries) ?> pays</span></h1>
+      <h1>Maisons d'édition par pays <span><?= e(count_label($total, 'maison', 'maisons')) ?> · <?= e(count_label(count($countries), 'pays', 'pays')) ?></span></h1>
       <p class="journal-lead">Choisissez une zone ou un pays pour parcourir ses éditeurs, puis affinez par ville, genre ou taille de structure.</p>
     </div>
     <a class="btn-navy" href="<?= e(url('/maisons-edition')) ?>">Rechercher une maison</a>

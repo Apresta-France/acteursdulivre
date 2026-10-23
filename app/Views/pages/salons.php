@@ -59,7 +59,7 @@ if ($country !== '') {
 $hidden = static function (string $name, string $value): string {
     return $value === '' ? '' : '<input type="hidden" name="' . e($name) . '" value="' . e($value) . '">';
 };
-$countLabel = format_int($total) . ' ' . ($total > 1 ? 'salons' : 'salon');
+$countLabel = count_label($total, 'salon', 'salons');
 if ((int) $pager['pages'] > 1) {
     $countLabel .= ' · page ' . (int) $pager['page'] . ' / ' . (int) $pager['pages'];
 }
@@ -188,7 +188,7 @@ foreach ($salons as $event) {
           <?php foreach ($groups as $group): ?>
             <?php
               $n = count($group['items']);
-              $groupCount = format_int($n) . ' ' . ($n > 1 ? 'salons' : 'salon');
+              $groupCount = count_label($n, 'salon', 'salons');
             ?>
             <section class="salon-month">
               <div class="salon-month-head">
@@ -249,7 +249,7 @@ foreach ($salons as $event) {
 
       <?php if (!empty($salonIndex)): ?>
         <details class="me-geo">
-          <summary><?= e((string) ($salonIndexLabel ?? 'Tous les salons à venir')) ?> (<?= count($salonIndex) ?>)</summary>
+          <summary><?= e((string) ($salonIndexLabel ?? 'Tous les salons à venir')) ?> (<?= e(count_label(count($salonIndex), 'salon', 'salons')) ?>)</summary>
           <div class="me-geo-links">
             <?php foreach ($salonIndex as $item): ?>
               <a href="<?= e(url((string) $item['href'])) ?>"><?= e((string) $item['name']) ?></a>
