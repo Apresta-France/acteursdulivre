@@ -1174,7 +1174,7 @@ final class PageController
         } catch (\Throwable) {
         }
         if ($salonCount > 0) {
-            $meta['description'] = 'Agenda de ' . $salonCount . ' salons et festivals du livre en France, en Europe et dans la francophonie : dates, villes, genres. Mis à jour chaque semaine.';
+            $meta['description'] = 'Agenda ' . count_des($salonCount, 'salon et festival', 'salons et festivals') . ' du livre en France, en Europe et dans la francophonie : dates, villes, genres. Mis à jour chaque semaine.';
         }
         $clean = $filters['q'] === '' && $filters['category'] === '' && $filters['region'] === '' && $filters['country'] === '' && $filters['zone'] === '';
         if ($filters['q'] === '' && $filters['category'] !== '' && $filters['region'] === '' && $filters['country'] === '') {
@@ -1234,7 +1234,7 @@ final class PageController
             'path' => $row['href'],
             'h1' => 'Salons du livre ' . $label,
             'title' => 'Salons du livre ' . $label,
-            'description' => 'Agenda des ' . format_int($row['n']) . ' salons et festivals du livre ' . $label . ' : dates, villes et genres. Dates à reconfirmer auprès de l’organisateur.',
+            'description' => 'Agenda ' . count_des((int) $row['n'], 'salon et festival', 'salons et festivals') . ' du livre ' . $label . ' : dates, villes et genres. Dates à reconfirmer auprès de l’organisateur.',
             'intro' => 'Salons et festivals du livre ' . $label . ', avec leurs dates, leur ville et leur genre. Les dates se confirment auprès de chaque organisateur. Une manifestation manque ? Signalez-la.',
             'filters' => ['country' => $row['slug']],
             'facet_region' => '',
@@ -1259,7 +1259,7 @@ final class PageController
             'path' => $row['href'],
             'h1' => 'Salons du livre ' . $label,
             'title' => 'Salons du livre ' . $label,
-            'description' => 'Agenda des ' . format_int($row['n']) . ' salons et festivals du livre ' . $label . ' : dates, villes et genres.',
+            'description' => 'Agenda ' . count_des((int) $row['n'], 'salon et festival', 'salons et festivals') . ' du livre ' . $label . ' : dates, villes et genres.',
             'intro' => 'Salons et festivals du livre ' . $label . '. Les dates se confirment auprès de chaque organisateur. Une manifestation manque ? Signalez-la.',
             'filters' => ['zone' => $row['slug']],
             'facet_region' => '',

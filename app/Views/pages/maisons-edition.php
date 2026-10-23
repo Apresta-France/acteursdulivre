@@ -64,7 +64,7 @@ if ($scope !== 'city' && $citySel !== '') {
 $hidden = static function (string $name, string $value): string {
     return $value === '' ? '' : '<input type="hidden" name="' . e($name) . '" value="' . e($value) . '">';
 };
-$countLabel = format_int($total) . ' ' . ($total > 1 ? 'maisons' : 'maison');
+$countLabel = count_label($total, 'maison', 'maisons');
 if ((int) $pager['pages'] > 1) {
     $countLabel .= ' · page ' . (int) $pager['page'] . ' / ' . (int) $pager['pages'];
 }
@@ -300,7 +300,7 @@ foreach (Publisher::SORTS as $key => $label) {
           <?php foreach ($groups as $group): ?>
             <?php
               $n = count($group['items']);
-              $groupCount = format_int($n) . ' ' . ($n > 1 ? 'maisons' : 'maison');
+              $groupCount = count_label($n, 'maison', 'maisons');
             ?>
             <section class="me-letter">
               <?php if ($group['letter'] !== ''): ?>

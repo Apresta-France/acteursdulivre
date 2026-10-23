@@ -633,6 +633,18 @@ function format_int(int $n): string
     return number_format($n, 0, ',', ' ');
 }
 
+/** « 1 salon », « 12 salons ». */
+function count_label(int $n, string $one, string $many): string
+{
+    return format_int($n) . ' ' . ($n > 1 ? $many : $one);
+}
+
+/** « de 1 salon », « des 12 salons » — pour « Agenda de/des … ». */
+function count_des(int $n, string $one, string $many): string
+{
+    return ($n > 1 ? 'des ' : 'de ') . count_label($n, $one, $many);
+}
+
 function format_euros(?int $amount): string
 {
     if ($amount === null) {
