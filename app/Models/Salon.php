@@ -13,7 +13,7 @@ final class Salon
     public const PER_PAGE = 20;
 
     /** Slugs réservés sous /salons/ qui ne peuvent pas désigner une fiche. */
-    private const RESERVED_SLUGS = ['ajouter', 'pays', 'zone'];
+    private const RESERVED_SLUGS = ['ajouter', 'pays', 'zone', 'visibilite'];
 
     public const FALLBACK_CATEGORIES = [
         'Général',

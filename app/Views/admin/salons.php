@@ -1,5 +1,10 @@
 <?php
+$onglet = (string) ($onglet ?? 'propositions');
+$salonTabs = $salonTabs ?? [];
 $proposals = $proposals ?? [];
+$claims = $claims ?? [];
+$fiches = $fiches ?? [];
+$fichesQ = (string) ($fichesQ ?? '');
 $pendingCount = (int) ($pendingCount ?? 0);
 $filters = $filters ?? [];
 $categories = $categories ?? [];
@@ -9,12 +14,153 @@ $back = '/admin/salons';
   <div class="admin-page-head">
     <div>
       <h1>Agenda des salons</h1>
-      <p class="admin-lead" style="margin-bottom: 0;">Propositions envoyées depuis le site. Une fiche validée rejoint l’agenda public ; le demandeur est prévenu par e-mail.</p>
+      <p class="admin-lead" style="margin-bottom: 0;">Propositions, revendications d’organisateurs et gestion des fiches publiées — attribution des comptes et mises en avant partenaires.</p>
     </div>
   </div>
 
   <?php if (!empty($saved)): ?><div class="flash flash-ok"><?= e(is_string($saved) ? $saved : 'Enregistré.') ?></div><?php endif; ?>
   <?php if (!empty($error)): ?><div class="flash flash-error"><?= e((string) $error) ?></div><?php endif; ?>
+
+  <div class="chip-row" style="margin-bottom: 18px;">
+    <?php foreach ($salonTabs as $t): ?>
+      <a class="chip<?= !empty($t['on']) ? ' is-on' : '' ?>" href="<?= e(url($t['href'])) ?>"><?= e($t['label']) ?></a>
+    <?php endforeach; ?>
+  </div>
+
+<?php if ($onglet === 'revendications'): ?>
+
+  <div class="chip-row" style="margin-bottom: 18px;">
+    <?php foreach ($filters as $f): ?>
+      <a class="chip<?= !empty($f['on']) ? ' is-on' : '' ?>" href="<?= e(url($f['href'])) ?>"><?= e($f['label']) ?></a>
+    <?php endforeach; ?>
+  </div>
+
+  <?php if ($claims === []): ?>
+    <p class="admin-muted">Aucune demande pour ce filtre.</p>
+  <?php endif; ?>
+
+  <div class="admin-stack">
+    <?php foreach ($claims as $c):
+        $pending = ($c['status'] ?? '') === 'pending';
+        $tone = $c['status'] === 'approved' ? 'green' : ($c['status'] === 'refused' ? 'orange' : 'navy');
+        $cid = (int) $c['id'];
+        ?>
+      <article class="admin-card admin-dossier me-claim-card">
+        <div class="admin-dossier-who">
+          <?= avatar_html(['avatar_url' => $c['avatar_url'] ?? '', 'first_name' => $c['first_name'] ?? '', 'last_name' => $c['last_name'] ?? ''], 40) ?>
+          <div>
+            <strong><?= e((string) $c['who']) ?> <span class="me-claim-arrow">revendique</span> <a href="<?= e(url((string) $c['salon_href'])) ?>" target="_blank" rel="noopener"><?= e((string) $c['salon_name']) ?></a></strong>
+            <span><?= e((string) $c['user_email']) ?> · pro : <?= e((string) $c['company_email']) ?></span>
+            <em><?= e((string) $c['role_title']) ?> · demande du <?= e((string) $c['when']) ?><?= (string) ($c['decided_label'] ?? '') !== '' ? ' · traitée le ' . e((string) $c['decided_label']) : '' ?></em>
+          </div>
+          <span class="admin-pill tone-<?= e($tone) ?>"><?= e((string) $c['status_label']) ?></span>
+        </div>
+
+        <div class="me-claim-signals">
+          <?php if ($c['domain_match']): ?>
+            <span class="me-signal is-ok"><?= icon('check-circle', 14) ?> E-mail pro sur le domaine du site déclaré</span>
+          <?php else: ?>
+            <span class="me-signal is-warn"><?= icon('dot', 14) ?> <?= (string) ($c['salon_website'] ?? '') === '' ? 'Aucun site déclaré : domaine non vérifiable' : 'Domaine de l’e-mail ≠ site déclaré' ?></span>
+          <?php endif; ?>
+          <?php if (!empty($c['salon_website'])): ?>
+            <span class="me-signal"><a href="<?= e((string) $c['salon_website']) ?>" target="_blank" rel="noopener nofollow">Site de la manifestation</a></span>
+          <?php endif; ?>
+          <?php if (!empty($c['phone'])): ?>
+            <span class="me-signal">Tél : <?= e((string) $c['phone']) ?></span>
+          <?php endif; ?>
+          <?php if (!empty($c['already_owned'])): ?>
+            <span class="me-signal is-warn"><?= icon('dot', 14) ?> Fiche déjà attribuée à un autre compte</span>
+          <?php endif; ?>
+        </div>
+
+        <blockquote class="me-claim-message"><?= nl2br(e((string) $c['message'])) ?></blockquote>
+
+        <?php if ($pending): ?>
+          <div class="admin-actions">
+            <form method="post" action="<?= e(url('/admin/salons/revendications/' . $cid)) ?>">
+              <?= csrf_field() ?>
+              <input type="hidden" name="status" value="approved">
+              <button class="btn-navy" type="submit"<?= !empty($c['already_owned']) ? ' onclick="return confirm(\'Cette fiche est déjà attribuée à un autre compte. Lui transférer ?\');"' : '' ?>>Attribuer la fiche</button>
+            </form>
+          </div>
+          <details class="me-refuse">
+            <summary class="admin-ghost">Refuser…</summary>
+            <form method="post" action="<?= e(url('/admin/salons/revendications/' . $cid)) ?>" class="me-refuse-form">
+              <?= csrf_field() ?>
+              <input type="hidden" name="status" value="refused">
+              <textarea class="textarea" name="note" rows="2" required minlength="5" maxlength="600" placeholder="Motif transmis au demandeur (lien avec la manifestation non établi, fiche déjà gérée…)"></textarea>
+              <button class="admin-ghost" type="submit">Confirmer le refus</button>
+            </form>
+          </details>
+        <?php elseif (!empty($c['admin_note'])): ?>
+          <p class="admin-muted" style="margin: 0;">Note : <?= e((string) $c['admin_note']) ?></p>
+        <?php endif; ?>
+      </article>
+    <?php endforeach; ?>
+  </div>
+
+<?php elseif ($onglet === 'fiches'): ?>
+
+  <form method="get" action="<?= e(url('/admin/salons')) ?>" class="admin-search" style="margin-bottom: 18px;">
+    <input type="hidden" name="onglet" value="fiches">
+    <input class="input" name="q" value="<?= e($fichesQ) ?>" placeholder="Chercher une fiche (nom, ville…)">
+    <button class="btn-ghost" type="submit">Chercher</button>
+  </form>
+
+  <?php if ($fiches === []): ?>
+    <p class="admin-muted">Aucune fiche.</p>
+  <?php endif; ?>
+
+  <div class="admin-stack">
+    <?php foreach ($fiches as $fiche):
+        $fid = (int) $fiche['id'];
+        $meta = array_filter([
+            (string) ($fiche['when_dates'] ?? $fiche['when'] ?? ''),
+            (string) ($fiche['place'] ?? ''),
+            (string) ($fiche['category'] ?? ''),
+        ]);
+        ?>
+      <article class="admin-card admin-dossier">
+        <div class="admin-dossier-who">
+          <div>
+            <strong><a href="<?= e(url((string) $fiche['href'])) ?>" target="_blank" rel="noopener"><?= e((string) $fiche['name']) ?></a></strong>
+            <span><?= e(implode(' · ', $meta)) ?></span>
+            <em>
+              <?php if (!empty($fiche['is_featured'])): ?>Partenaire jusqu’au <?= e((string) $fiche['featured_label']) ?><?php else: ?>Non mis en avant<?php endif; ?>
+              <?php if (!empty($fiche['owner_user_id'])): ?> · gérée par <?= e((string) ($fiche['owner_name'] !== '' ? $fiche['owner_name'] : $fiche['owner_email'])) ?><?php else: ?> · fiche revendicable<?php endif; ?>
+            </em>
+          </div>
+          <span class="admin-pill tone-<?= !empty($fiche['is_featured']) ? 'green' : 'navy' ?>"><?= !empty($fiche['is_featured']) ? 'Partenaire' : 'Standard' ?></span>
+        </div>
+
+        <div class="form-grid-2" style="margin-top: 12px;">
+          <form method="post" action="<?= e(url('/admin/salons/fiches/' . $fid)) ?>" class="me-refuse-form">
+            <?= csrf_field() ?>
+            <input type="hidden" name="action" value="featured">
+            <label class="field" for="feat-<?= $fid ?>">Mise en avant « Partenaire » jusqu’au</label>
+            <input class="input" id="feat-<?= $fid ?>" name="featured_until" type="date" value="<?= e((string) ($fiche['featured_until'] ?? '')) ?>">
+            <p class="field-help">La fiche s’affiche en tête de son mois et dans les encarts partenaires, avec le badge « Partenaire ». Vide = retirer.</p>
+            <button class="admin-ghost" type="submit">Appliquer</button>
+          </form>
+          <form method="post" action="<?= e(url('/admin/salons/fiches/' . $fid)) ?>" class="me-refuse-form">
+            <?= csrf_field() ?>
+            <input type="hidden" name="action" value="assign">
+            <label class="field" for="own-<?= $fid ?>">Compte organisateur (e-mail du membre)</label>
+            <input class="input" id="own-<?= $fid ?>" name="owner_email" type="email" value="<?= e((string) $fiche['owner_email']) ?>" placeholder="organisateur@salon.fr">
+            <p class="field-help">Le membre gère la fiche depuis « Mon salon » dans son espace.</p>
+            <div class="admin-actions" style="margin-top: 8px;">
+              <button class="admin-ghost" type="submit">Attribuer</button>
+              <?php if (!empty($fiche['owner_user_id'])): ?>
+                <button class="admin-ghost" type="submit" name="action" value="detach" onclick="return confirm('Retirer la gestion de cette fiche à ce compte ?');">Détacher</button>
+              <?php endif; ?>
+            </div>
+          </form>
+        </div>
+      </article>
+    <?php endforeach; ?>
+  </div>
+
+<?php else: ?>
 
   <div class="me-admin-kpis">
     <div class="admin-card me-admin-kpi<?= $pendingCount > 0 ? ' is-hot' : '' ?>"><strong><?= $pendingCount ?></strong><span>proposition<?= $pendingCount > 1 ? 's' : '' ?> à traiter</span></div>
@@ -181,4 +327,6 @@ $back = '/admin/salons';
       </article>
     <?php endforeach; ?>
   </div>
+
+<?php endif; ?>
 </div>

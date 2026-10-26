@@ -72,6 +72,7 @@ return static function (Router $router): void {
     $router->get('/salons', [PageController::class, 'salons']);
     $router->get('/salons/ajouter', [PageController::class, 'salonAddForm']);
     $router->post('/salons/ajouter', [PageController::class, 'salonAdd']);
+    $router->get('/salons/visibilite', [PageController::class, 'salonVisibilite']);
     $router->get('/salons/pays/{country}', [PageController::class, 'salonCountry']);
     $router->get('/salons/zone/{zone}', [PageController::class, 'salonZone']);
     $router->get('/salons/{year}/{month}', [PageController::class, 'salonMonth']);

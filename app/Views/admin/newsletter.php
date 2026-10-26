@@ -184,6 +184,7 @@ $statusLabels = [
     <p class="field" style="margin-top:8px;">Contenu de la lettre automatique</p>
     <label class="check-row"><input type="checkbox" name="newsletter_include_missions" value="1"<?= !empty($s['newsletter_include_missions']) ? ' checked' : '' ?>> Dernières recherches / projets publiés</label>
     <label class="check-row"><input type="checkbox" name="newsletter_include_people" value="1"<?= !empty($s['newsletter_include_people']) ? ' checked' : '' ?>> Derniers profils inscrits (vitrines publiques)</label>
+    <label class="check-row"><input type="checkbox" name="newsletter_include_salons" value="1"<?= !empty($s['newsletter_include_salons']) ? ' checked' : '' ?>> Salons partenaires (mises en avant en cours, signalés comme contenu partenaire)</label>
     <label class="check-row"><input type="checkbox" name="newsletter_include_url" value="1"<?= !empty($s['newsletter_include_url']) ? ' checked' : '' ?>> Brief généré automatiquement à partir d’une URL</label>
 
     <div>

@@ -335,6 +335,11 @@ final class Newsletter
         return self::setting('newsletter_include_people', '1') === '1';
     }
 
+    public static function includePartners(): bool
+    {
+        return self::setting('newsletter_include_salons', '1') === '1';
+    }
+
     public static function includeUrl(): bool
     {
         return self::setting('newsletter_include_url', '1') === '1';

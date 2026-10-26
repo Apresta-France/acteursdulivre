@@ -25,21 +25,24 @@ require ADL_ROOT . '/app/bootstrap.php';
 
 use Adl\Models\Contest;
 
-$file = $argv[1] ?? ADL_ROOT . '/database/seeds/prix.json';
-if (!is_file($file)) {
-    fwrite(STDERR, "Fichier introuvable : {$file}\n");
-    exit(1);
-}
+// Fonctions réutilisables : le bloc ci-dessous ne s'exécute qu'en appel direct.
+if (isset($argv) && realpath((string) ($argv[0] ?? '')) === __FILE__) {
+    $file = $argv[1] ?? ADL_ROOT . '/database/seeds/prix.json';
+    if (!is_file($file)) {
+        fwrite(STDERR, "Fichier introuvable : {$file}\n");
+        exit(1);
+    }
 
-$isCsv = str_ends_with(strtolower($file), '.csv');
-$items = $isCsv ? rowsFromCsv($file) : rowsFromJson($file);
-if ($items === null) {
-    fwrite(STDERR, "Fichier illisible ou vide.\n");
-    exit(1);
-}
+    $isCsv = str_ends_with(strtolower($file), '.csv');
+    $items = $isCsv ? rowsFromCsv($file) : rowsFromJson($file);
+    if ($items === null) {
+        fwrite(STDERR, "Fichier illisible ou vide.\n");
+        exit(1);
+    }
 
-$result = Contest::importItems($items);
-echo 'inserted=' . $result['inserted'] . ' skipped=' . $result['skipped'] . ' total=' . count($items) . PHP_EOL;
+    $result = Contest::importItems($items);
+    echo 'inserted=' . $result['inserted'] . ' skipped=' . $result['skipped'] . ' total=' . count($items) . PHP_EOL;
+}
 
 /** @return list<array<string, mixed>>|null */
 function rowsFromJson(string $file): ?array

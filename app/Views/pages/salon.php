@@ -12,6 +12,12 @@ $commentOld = is_array($salonCommentOld ?? null) ? $salonCommentOld : [];
 $salonHref = (string) ($s['href'] ?? '/salons/' . ($s['slug'] ?? ''));
 $authNext = rawurlencode($salonHref . '#commentaires');
 $salonUser = auth_user();
+$isOwner = !empty($salonIsOwner);
+$claimPending = !empty($salonClaimPending);
+$claimed = !empty($s['claimed']);
+$program = trim((string) ($s['program'] ?? ''));
+$exhibitorsList = trim((string) ($s['exhibitors_list'] ?? ''));
+$logo = trim((string) ($s['logo_src'] ?? ''));
 
 $glance = [];
 $when = trim((string) ($s['when_dates'] ?? $s['when'] ?? ''));
@@ -109,12 +115,16 @@ if ($infoLines !== []) {
       </nav>
       <div class="profile-hero-line">
         <?php if (!empty($s['kind'])): ?><span class="profile-badge"><?= e((string) $s['kind']) ?></span><?php endif; ?>
+        <?php if (!empty($s['is_featured'])): ?><span class="salon-partner-tag">Partenaire</span><?php endif; ?>
         <?php if ($confirmed): ?>
-          <span class="salon-pill salon-pill-ok">Dates confirmées</span>
+          <span class="salon-pill salon-pill-ok"><?= !empty($s['confirmed_by_organizer']) ? 'Dates confirmées par l’organisateur' : 'Dates confirmées' ?></span>
         <?php else: ?>
           <span class="salon-pill">Dates à confirmer</span>
         <?php endif; ?>
       </div>
+      <?php if ($logo !== ''): ?>
+        <img class="salon-logo" src="<?= e($logo) ?>" alt="Logo <?= e((string) ($s['name'] ?? '')) ?>" width="120" height="120" loading="lazy">
+      <?php endif; ?>
       <h1><?= e((string) ($s['name'] ?? '')) ?></h1>
       <?php if (!empty($s['is_past'])): ?>
         <p class="profile-hero-sub">Édition passée<?= $when !== '' ? ' (' . e($when) . ')' : '' ?>. Prochaine édition : dates à venir.</p>
@@ -161,6 +171,20 @@ if ($infoLines !== []) {
             </div>
           <?php endforeach; ?>
         </div>
+      <?php endif; ?>
+
+      <?php if ($program !== ''): ?>
+        <section class="salon-extra">
+          <h2>Programme</h2>
+          <div class="salon-extra-body"><?= nl2br(e($program)) ?></div>
+        </section>
+      <?php endif; ?>
+
+      <?php if ($exhibitorsList !== ''): ?>
+        <section class="salon-extra">
+          <h2>Exposants</h2>
+          <div class="salon-extra-body"><?= nl2br(e($exhibitorsList)) ?></div>
+        </section>
       <?php endif; ?>
 
       <?php if ($notes !== '' && $notes !== '-'): ?>
@@ -245,6 +269,26 @@ if ($infoLines !== []) {
     </div>
 
     <aside class="salon-fiche-side">
+      <?php if ($isOwner): ?>
+        <div class="side-card">
+          <div class="side-kicker">Votre fiche</div>
+          <p class="me-side-text">Cette fiche vous est attribuée : dates, logo, programme et exposants se gèrent depuis votre espace.</p>
+          <a class="btn-navy" href="<?= e(url('/espace/salon')) ?>">Gérer ma fiche</a>
+        </div>
+      <?php elseif ($claimPending): ?>
+        <div class="side-card">
+          <div class="side-kicker">Demande en cours</div>
+          <p class="me-side-text">Votre demande de gestion de cette fiche est en cours d’examen. Nous vous prévenons par e-mail dès qu’elle est traitée.</p>
+        </div>
+      <?php elseif (!$claimed): ?>
+        <div class="side-card">
+          <div class="side-kicker">C’est votre salon ?</div>
+          <p class="me-side-text">Revendiquez cette fiche pour gérer vous-même ses informations : dates confirmées par l’organisateur, programme, exposants, logo.</p>
+          <a class="btn-navy" href="<?= e(url($salonHref . '/revendiquer')) ?>">Gérer ma fiche</a>
+          <a class="btn-ghost salon-side-cta" href="<?= e(url('/salons/visibilite')) ?>">Mise en avant partenaire</a>
+        </div>
+      <?php endif; ?>
+
       <?php if ($glance !== []): ?>
         <div class="side-card">
           <div class="side-kicker">En un coup d’œil</div>
@@ -265,7 +309,7 @@ if ($infoLines !== []) {
           <div class="salon-near-list">
             <?php foreach ($upcoming as $event): ?>
               <a class="salon-near" href="<?= e(url((string) ($event['href'] ?? '/salons'))) ?>">
-                <strong><?= e((string) ($event['name'] ?? '')) ?></strong>
+                <strong><?= e((string) ($event['name'] ?? '')) ?><?php if (!empty($event['is_featured'])): ?> <span class="salon-partner-tag">Partenaire</span><?php endif; ?></strong>
                 <span><?= e(trim((string) ($event['when_dates'] ?? $event['when'] ?? '') . (!empty($event['place']) ? ' · ' . $event['place'] : ''))) ?></span>
               </a>
             <?php endforeach; ?>
@@ -276,8 +320,9 @@ if ($infoLines !== []) {
 
       <div class="side-card forum-panel-dark">
         <div class="forum-panel-heading">Votre salon</div>
-        <p>Vous organisez un salon, un festival ou une foire du livre ? Proposez-le : l’équipe le publie après vérification.</p>
+        <p>Vous organisez un salon, un festival ou une foire du livre ? Proposez-le : l’équipe le publie après vérification. Organisateur du vôtre ? Prenez la main sur sa fiche, et découvrez la mise en avant partenaire.</p>
         <a class="btn-orange" href="<?= e(url('/salons/ajouter')) ?>">Ajouter un salon</a>
+        <a class="btn-ghost salon-side-cta" href="<?= e(url('/salons/visibilite')) ?>">Visibilité pour votre édition</a>
       </div>
     </aside>
   </section>

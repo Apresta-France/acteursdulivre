@@ -195,6 +195,7 @@ $souscriptions = $souscriptions ?? [];
             </time>
             <div class="co-event-main">
               <div class="co-event-tags">
+                <?php if (!empty($event['is_featured'])): ?><span class="salon-partner-tag">Partenaire</span><?php endif; ?>
                 <span class="mk-tag"><?= e((string) ($event['kind'] ?? '')) ?></span>
                 <?php if (!empty($event['when'])): ?>
                   <span class="co-event-when"><?= e((string) $event['when']) ?></span>

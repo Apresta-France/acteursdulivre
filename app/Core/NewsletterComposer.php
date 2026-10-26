@@ -26,13 +26,14 @@ final class NewsletterComposer
     {
         $missions = Newsletter::includeMissions() ? self::missions() : [];
         $people = Newsletter::includePeople() ? self::people() : [];
+        $salons = Newsletter::includePartners() ? self::partnerSalons() : [];
         $urlItems = [];
         if (Newsletter::includeUrl()) {
             $url = $sourceUrl !== null ? trim($sourceUrl) : Newsletter::sourceUrl();
             $urlItems = self::fromUrl($url);
         }
 
-        $empty = $missions === [] && $people === [] && $urlItems === [];
+        $empty = $missions === [] && $people === [] && $salons === [] && $urlItems === [];
         $week = (new \DateTimeImmutable('now', new \DateTimeZone(Env::get('APP_TIMEZONE', 'Europe/Paris'))))
             ->format('d/m/Y');
         $subject = 'Le point sur les métiers du livre — semaine du ' . $week;
@@ -40,6 +41,7 @@ final class NewsletterComposer
         $html = View::fetch('emails/newsletter', [
             'missions' => $missions,
             'people' => $people,
+            'salons' => $salons,
             'urlItems' => $urlItems,
             'empty' => $empty,
             'week' => $week,
@@ -52,6 +54,7 @@ final class NewsletterComposer
             'text' => $text,
             'missions' => $missions,
             'people' => $people,
+            'salons' => $salons,
             'url_items' => $urlItems,
             'empty' => $empty,
             'week' => $week,
@@ -99,6 +102,31 @@ final class NewsletterComposer
                 'excerpt' => $brief,
                 'href' => url((string) ($row['href'] ?? '/missions')),
             ];
+        }
+        return $out;
+    }
+
+    /** @return list<array<string, string>> */
+    private static function partnerSalons(): array
+    {
+        $out = [];
+        try {
+            foreach (\Adl\Models\Salon::featured(3) as $salon) {
+                $excerpt = trim((string) ($salon['description'] ?? ''));
+                if (mb_strlen($excerpt) > 180) {
+                    $excerpt = rtrim(mb_substr($excerpt, 0, 177)) . '…';
+                }
+                $out[] = [
+                    'title' => (string) ($salon['name'] ?? 'Salon'),
+                    'meta' => trim(implode(' · ', array_filter([
+                        (string) ($salon['when_dates'] ?? $salon['when'] ?? ''),
+                        (string) ($salon['place'] ?? ''),
+                    ]))),
+                    'excerpt' => $excerpt,
+                    'href' => url((string) ($salon['href'] ?? '/salons')),
+                ];
+            }
+        } catch (\Throwable) {
         }
         return $out;
     }

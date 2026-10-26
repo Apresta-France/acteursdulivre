@@ -1,6 +1,7 @@
 <?php
 $missions = $missions ?? [];
 $people = $people ?? [];
+$salons = $salons ?? [];
 $urlItems = $urlItems ?? [];
 $week = (string) ($week ?? '');
 ?>
@@ -21,6 +22,17 @@ $week = (string) ($week ?? '');
 <?php if ($people !== []): ?>
   <h2 style="font-size:17px;margin:28px 0 10px;color:#022746;">Nouveaux profils</h2>
   <?php foreach ($people as $item): ?>
+    <p style="margin:0 0 14px;">
+      <a href="<?= e((string) ($item['href'] ?? '#')) ?>" style="color:#022746;"><?= e((string) ($item['title'] ?? '')) ?></a>
+      <?php if (!empty($item['meta'])): ?><br><span style="color:#66768A;font-size:13px;"><?= e((string) $item['meta']) ?></span><?php endif; ?>
+      <?php if (!empty($item['excerpt'])): ?><br><?= e((string) $item['excerpt']) ?><?php endif; ?>
+    </p>
+  <?php endforeach; ?>
+<?php endif; ?>
+
+<?php if ($salons !== []): ?>
+  <h2 style="font-size:17px;margin:28px 0 10px;color:#022746;">Salons partenaires <span style="color:#C76A1A;font-size:12px;font-weight:normal;">— contenu partenaire</span></h2>
+  <?php foreach ($salons as $item): ?>
     <p style="margin:0 0 14px;">
       <a href="<?= e((string) ($item['href'] ?? '#')) ?>" style="color:#022746;"><?= e((string) ($item['title'] ?? '')) ?></a>
       <?php if (!empty($item['meta'])): ?><br><span style="color:#66768A;font-size:13px;"><?= e((string) $item['meta']) ?></span><?php endif; ?>

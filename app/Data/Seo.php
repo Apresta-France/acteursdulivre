@@ -119,6 +119,11 @@ final class Seo
                 'description' => 'Ajoutez un salon, un festival ou une foire du livre à l\'agenda d\'acteursdulivre.fr. L\'équipe vérifie chaque proposition avant publication.',
                 'path' => '/salons/ajouter',
             ],
+            'salon-visibilite' => [
+                'title' => 'Visibilité pour votre salon du livre',
+                'description' => 'Salons, festivals et foires du livre : gérez votre fiche gratuitement, et mettez votre édition en avant dans l\'agenda, la newsletter et le journal.',
+                'path' => '/salons/visibilite',
+            ],
             'prix' => [
                 'title' => 'Prix et concours littéraires 2026-2027 : annuaire',
                 'description' => 'Annuaire des prix littéraires, concours et appels à textes en France, en Europe et dans la francophonie : dates limites, dotations, conditions.',

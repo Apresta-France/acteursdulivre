@@ -1,5 +1,6 @@
 <?php
 $salons = $salons ?? [];
+$salonFeatured = $salonFeatured ?? [];
 $pager = $pager ?? ['page' => 1, 'pages' => 1, 'total' => 0];
 $filters = $filters ?? [];
 $facets = $facets ?? ['categories' => [], 'regions' => [], 'countries' => [], 'zones' => []];
@@ -171,12 +172,35 @@ foreach ($salons as $event) {
         <p>Cette liste couvre la France, l’Europe et la francophonie. Proposez le vôtre : l’équipe le publie après vérification.</p>
         <a class="btn-navy" href="<?= e(url('/salons/ajouter')) ?>">Ajouter un salon</a>
       </div>
+      <div class="search-aside-card">
+        <div class="search-aside-title">Vous êtes organisateur ?</div>
+        <p>Prenez la main sur votre fiche, et mettez votre édition en avant dans l’agenda, la newsletter et le journal.</p>
+        <a class="btn-ghost" href="<?= e(url('/salons/visibilite')) ?>">Voir l’offre de visibilité</a>
+      </div>
     </aside>
 
     <div>
       <div class="salon-toolbar">
         <span class="salon-count"><?= e($countLabel) ?></span>
       </div>
+
+      <?php if ($salonFeatured !== []): ?>
+        <section class="salon-partners" aria-label="Salons partenaires">
+          <div class="salon-partners-head">
+            <h2>Salons partenaires</h2>
+            <a href="<?= e(url('/salons/visibilite')) ?>">Mettre votre salon en avant</a>
+          </div>
+          <div class="salon-partners-list">
+            <?php foreach ($salonFeatured as $event): ?>
+              <a class="salon-partner-card" href="<?= e(url((string) ($event['href'] ?? '/salons'))) ?>">
+                <span class="salon-partner-tag">Partenaire</span>
+                <strong><?= e((string) ($event['name'] ?? '')) ?></strong>
+                <span class="salon-partner-meta"><?= e(trim((string) ($event['when_dates'] ?? $event['when'] ?? '') . (!empty($event['place']) ? ' · ' . $event['place'] : ''))) ?></span>
+              </a>
+            <?php endforeach; ?>
+          </div>
+        </section>
+      <?php endif; ?>
 
       <?php if ($salons === []): ?>
         <div class="search-empty" style="padding: 26px;">
@@ -224,6 +248,7 @@ foreach ($salons as $event) {
                     <div class="salon-row-main">
                       <div class="salon-row-top">
                         <h3><?= e((string) ($event['name'] ?? '')) ?></h3>
+                        <?php if (!empty($event['is_featured'])): ?><span class="salon-partner-tag">Partenaire</span><?php endif; ?>
                         <?php if (!empty($event['kind'])): ?><span class="mk-tag"><?= e((string) $event['kind']) ?></span><?php endif; ?>
                         <?php if (empty($event['confirmed'])): ?>
                           <span class="salon-flag">Dates à confirmer</span>
@@ -283,9 +308,10 @@ foreach ($salons as $event) {
       <aside class="salon-cta">
         <div>
           <strong>Votre salon n’est pas dans l’agenda ?</strong>
-          <span>Proposez-le : l’équipe vérifie les dates auprès de l’organisateur avant publication.</span>
+          <span>Proposez-le : l’équipe vérifie les dates auprès de l’organisateur avant publication. Et pour gagner en visibilité : gestion gratuite de votre fiche, mise en avant « Partenaire » sur devis.</span>
         </div>
         <a class="btn-orange" href="<?= e(url('/salons/ajouter')) ?>">Ajouter un salon</a>
+        <a class="btn-ghost" href="<?= e(url('/salons/visibilite')) ?>">Visibilité partenaire</a>
       </aside>
     </div>
   </div>

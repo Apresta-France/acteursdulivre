@@ -1627,6 +1627,7 @@ final class Prototype
             'candidatures', 'mesprestations', 'creer', 'messagerie', 'notifications',
             'favoris', 'avis', 'vitrine', 'parametres', 'facturation', 'statistiques', 'espace-forum',
             'auteur', 'auteur-oeuvres', 'auteur-oeuvre', 'tribune', 'tribune-edit', 'espace-maison',
+            'espace-salon',
         ], true);
     }
 
@@ -1679,6 +1680,17 @@ final class Prototype
                 $links[] = [
                     'label' => 'Voir ma maison d\'édition',
                     'href' => (string) ($publisher['href'] ?? ('/maisons-edition/' . $slug)),
+                ];
+            }
+        } catch (\Throwable) {
+        }
+
+        try {
+            $salon = \Adl\Models\Salon::findForOwner($userId);
+            if ($salon) {
+                $links[] = [
+                    'label' => 'Voir mon salon',
+                    'href' => (string) ($salon['href'] ?? '/salons'),
                 ];
             }
         } catch (\Throwable) {
@@ -1816,6 +1828,7 @@ final class Prototype
             'items' => [
                 $item('Fiche auteur', '/espace/auteur', 'auteur', 'book'),
                 $item('Maison d\'édition', '/espace/maison-edition', 'espace-maison', 'store'),
+                $item('Mon salon', '/espace/salon', 'espace-salon', 'calendar'),
                 $item('Tribune', '/espace/tribune', 'tribune', 'file-plus'),
                 $item('Messages', '/espace/messages', 'messagerie', 'mail'),
                 $item('Alertes', '/espace/notifications', 'notifications', 'bell'),

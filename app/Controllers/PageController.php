@@ -1501,6 +1501,20 @@ final class PageController
         unset($_SESSION['_old']);
     }
 
+    public function salonVisibilite(Request $request): void
+    {
+        $featured = [];
+        try {
+            $featured = Salon::featured(3);
+        } catch (\Throwable) {
+        }
+        View::page('salon-visibilite', [
+            'title' => 'Visibilité pour votre salon',
+            'meta' => Seo::forScreen('salon-visibilite'),
+            'featured' => $featured,
+        ]);
+    }
+
     public function salonAdd(Request $request): void
     {
         $old = [

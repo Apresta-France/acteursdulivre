@@ -89,6 +89,9 @@ $forumFlashError = trim((string) ($forumFlashError ?? ''));
           <aside class="forum-post-side">
             <?= avatar_html($op['author'] ?? [], 54, 'forum-avatar') ?>
             <div class="forum-post-name"><?= e((string) ($op['author']['name'] ?? '')) ?><?= forum_cofounder_star($op['author'] ?? null) ?></div>
+            <?php if (!empty($topic['salon_owner_id']) && (int) $topic['salon_owner_id'] === (int) ($op['user_id'] ?? 0)): ?>
+              <span class="forum-verif">Organisateur</span>
+            <?php endif; ?>
             <div class="forum-aside-meta"><?= e((string) ($op['author']['meta'] ?? '')) ?></div>
             <div class="forum-aside-meta forum-post-joined">
               <?php if (!empty($op['author']['member_since'])): ?>Membre depuis <?= e((string) $op['author']['member_since']) ?><br><?php endif; ?>
@@ -143,6 +146,9 @@ $forumFlashError = trim((string) ($forumFlashError ?? ''));
                 <?= avatar_html($r['author'] ?? [], 46, 'forum-avatar') ?>
                 <div class="forum-post-name"><?= e((string) ($r['author']['name'] ?? '')) ?><?= forum_cofounder_star($r['author'] ?? null) ?></div>
                 <div class="forum-aside-meta"><?= e((string) ($r['author']['meta'] ?? '')) ?></div>
+                <?php if (!empty($topic['salon_owner_id']) && (int) $topic['salon_owner_id'] === (int) ($r['user_id'] ?? 0)): ?>
+                  <span class="forum-verif">Organisateur</span>
+                <?php endif; ?>
                 <?php if (!empty($r['author']['verified'])): ?>
                   <span class="forum-verif">Profil vérifié</span>
                 <?php endif; ?>

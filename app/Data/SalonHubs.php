@@ -72,7 +72,7 @@ final class SalonHubs
     public static function resolve(string $slug): ?array
     {
         $slug = slugify($slug);
-        if ($slug === '' || $slug === 'ajouter') {
+        if ($slug === '' || $slug === 'ajouter' || $slug === 'visibilite') {
             return null;
         }
         if (isset(self::GENRE_REDIRECTS[$slug])) {
@@ -92,7 +92,7 @@ final class SalonHubs
     public static function isReserved(string $slug): bool
     {
         $slug = slugify($slug);
-        if ($slug === '' || $slug === 'pays' || $slug === 'zone' || isset(self::GENRES[$slug]) || isset(self::GENRE_REDIRECTS[$slug])) {
+        if ($slug === '' || $slug === 'pays' || $slug === 'zone' || $slug === 'visibilite' || isset(self::GENRES[$slug]) || isset(self::GENRE_REDIRECTS[$slug])) {
             return $slug !== '';
         }
 
