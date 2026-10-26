@@ -100,7 +100,7 @@ $tok = tokenFrom($cmd);
     'package_id' => '6',
     'q_mode' => '1',
     'q_genre' => 'Policier & thriller',
-    'q_volume' => '250 à 500 pages',
+    'q_volume' => '60 000 à 120 000 mots',
     'q_stade' => 'Premier jet',
     'q_besoins[]' => ['Correction orthotypographique', 'Relecture d’épreuves', 'ValeurInventée'],
     'q_echanges[]' => ['Des points d’avancement réguliers'],
@@ -122,7 +122,7 @@ require ADL_ROOT . '/app/bootstrap.php';
 $order = \Adl\Core\Database::fetch('SELECT * FROM orders ORDER BY id DESC LIMIT 1');
 echo "── brief stocké ──\n{$order['brief']}\n──────────────────\n";
 $ok = str_contains((string) $order['brief'], 'Ouvrage : Policier & thriller')
-    && str_contains((string) $order['brief'], 'Volume : 250 à 500 pages')
+    && str_contains((string) $order['brief'], 'Volume : 60 000 à 120 000 mots')
     && str_contains((string) $order['brief'], 'Calendrier : Pour le 15/12/2026')
     && !str_contains((string) $order['brief'], 'ValeurInventée')
     && str_contains((string) $order['brief'], 'vocabulaire maritime');

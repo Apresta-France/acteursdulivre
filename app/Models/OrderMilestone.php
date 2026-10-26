@@ -836,7 +836,7 @@ final class OrderMilestone
         $idList = array_keys($ids);
         $marks = implode(',', array_fill(0, count($idList), '?'));
         $rows = Database::fetchAll(
-            "SELECT order_id, code, status, completed_at
+            "SELECT order_id, code, status, completed_at, amount, delay
              FROM order_milestones
              WHERE order_id IN ($marks) AND code IN ('quote', 'quote_accept')",
             $idList
@@ -849,17 +849,42 @@ final class OrderMilestone
         foreach ($map as $orderId => $milestones) {
             $quote = $milestones['quote'] ?? null;
             $accept = $milestones['quote_accept'] ?? null;
+            $state = null;
             if ($accept && ($accept['status'] ?? '') === self::STATUS_DONE) {
-                $states[$orderId] = ['label' => 'Accepté', 'tone' => 'green'];
+                $state = ['key' => 'accepte', 'label' => 'Accepté', 'tone' => 'green', 'actor' => 'Terminé'];
             } elseif ($quote && ($quote['status'] ?? '') === self::STATUS_DONE) {
-                $states[$orderId] = ['label' => 'Envoyé, attente client', 'tone' => 'orange'];
+                $state = ['key' => 'envoye', 'label' => 'Envoyé, attente client', 'tone' => 'orange', 'actor' => 'Client'];
             } elseif ($quote && !empty($quote['completed_at'])) {
-                $states[$orderId] = ['label' => 'Révision demandée', 'tone' => 'orange'];
+                $state = ['key' => 'revision', 'label' => 'Révision demandée', 'tone' => 'orange', 'actor' => 'Prestataire'];
             } elseif ($quote) {
-                $states[$orderId] = ['label' => 'Attente prestataire', 'tone' => 'grey'];
+                $state = ['key' => 'attente', 'label' => 'Attente prestataire', 'tone' => 'grey', 'actor' => 'Prestataire'];
+            }
+            if ($state !== null) {
+                $when = (string) (($quote['completed_at'] ?? '') ?: '');
+                $state['amount_label'] = isset($quote['amount']) && $quote['amount'] !== null
+                    ? format_euros((int) $quote['amount'])
+                    : '';
+                $state['delay'] = trim((string) ($quote['delay'] ?? ''));
+                $state['when'] = $when !== '' ? time_ago($when) : '';
+                $states[$orderId] = $state;
             }
         }
         return $states;
+    }
+
+    /**
+     * Commandes dont le devis attend une réponse du prestataire
+     * (premier envoi ou renvoi après révision).
+     */
+    public static function countQuotePending(): int
+    {
+        $row = Database::fetch(
+            'SELECT COUNT(*) AS n FROM order_milestones q
+             JOIN orders o ON o.id = q.order_id
+             WHERE q.code = "quote" AND q.status <> ? AND o.status = "pending"',
+            [self::STATUS_DONE]
+        );
+        return (int) ($row['n'] ?? 0);
     }
 
     private static function reopenQuote(int $orderId): void

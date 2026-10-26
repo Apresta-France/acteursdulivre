@@ -258,6 +258,7 @@ return static function (Router $router): void {
     $router->post('/admin/maisons-edition/{id}/supprimer', [AdminController::class, 'maisonDelete']);
     $router->get('/admin/salons', [AdminController::class, 'salonsAdmin']);
     $router->post('/admin/salons/{id}', [AdminController::class, 'salonDecide']);
+    $router->get('/admin/devis', [AdminController::class, 'devis']);
     $router->get('/admin/finances', [AdminController::class, 'finances']);
     $router->post('/admin/finances/factures/{id}', [AdminController::class, 'invoiceSave']);
     $router->get('/admin/finances/{id}', [AdminController::class, 'commande']);

@@ -405,7 +405,7 @@ final class Catalog
 
     /**
      * Questions propres à chaque métier :
-     * - volume_label / volume : l'unité qui fait sens (pages, visuels, tirage…)
+     * - volume_label / volume : l'unité qui fait sens (mots, visuels, tirage…)
      * - stade_label / stade : où en est le projet
      * - besoins : ce que couvre le devis (multi-choix)
      * - extra : questions supplémentaires [{key, step, label, recap, options, required, multi}]
@@ -416,21 +416,21 @@ final class Catalog
     public const QUOTE_WIZARD = [
         'Écriture' => [
             'volume_label' => 'Quel volume de texte ?',
-            'volume' => ['Une scène ou un chapitre', 'Moins de 100 pages', '100 à 250 pages', 'Plus de 250 pages'],
+            'volume' => ['Une scène ou un chapitre', 'Moins de 25 000 mots', '25 000 à 60 000 mots', 'Plus de 60 000 mots'],
             'stade_label' => 'Où en est le projet ?',
             'stade' => ['Juste une idée', 'Des notes ou un plan', 'Un manuscrit partiel', 'Un texte complet à reprendre'],
             'besoins' => ['Prête-plume (ghostwriting)', 'Réécriture complète', 'Construction du plan', 'Biographie ou mémoires', 'Je ne sais pas encore'],
         ],
         'Correction' => [
             'volume_label' => 'Quel volume de texte ?',
-            'volume' => ['Moins de 100 pages', '100 à 250 pages', '250 à 500 pages', 'Plus de 500 pages'],
+            'volume' => ['Moins de 25 000 mots', '25 000 à 60 000 mots', '60 000 à 120 000 mots', 'Plus de 120 000 mots'],
             'stade_label' => 'Où en est le texte ?',
             'stade' => ['Premier jet', 'Texte retravaillé', 'Version quasi finale', 'Déjà corrigé une fois'],
             'besoins' => ['Correction orthotypographique', 'Réécriture et lissage du style', 'Préparation de copie', 'Relecture d’épreuves', 'Je ne sais pas encore'],
         ],
         'Bêta-lecture' => [
             'volume_label' => 'Quel volume de texte ?',
-            'volume' => ['Moins de 100 pages', '100 à 250 pages', '250 à 500 pages', 'Plus de 500 pages'],
+            'volume' => ['Moins de 25 000 mots', '25 000 à 60 000 mots', '60 000 à 120 000 mots', 'Plus de 120 000 mots'],
             'stade_label' => 'Où en est le texte ?',
             'stade' => ['Premier jet', 'Texte retravaillé', 'Version quasi finale'],
             'besoins' => ['Rapport de lecture global', 'Retour sur les personnages', 'Retour sur le rythme et la structure', 'Fiche de lecture détaillée', 'Je ne sais pas encore'],
@@ -453,15 +453,15 @@ final class Catalog
             ],
         ],
         'Maquette' => [
-            'volume_label' => 'Quel volume à mettre en pages ?',
-            'volume' => ['Moins de 100 pages', '100 à 250 pages', '250 à 500 pages', 'Plus de 500 pages'],
+            'volume_label' => 'Quel volume de texte ?',
+            'volume' => ['Moins de 25 000 mots', '25 000 à 60 000 mots', '60 000 à 120 000 mots', 'Plus de 120 000 mots'],
             'stade_label' => 'Où en est le fichier ?',
             'stade' => ['Texte final prêt', 'Texte en correction', 'Direction artistique à définir'],
             'besoins' => ['Mise en pages intérieure', 'Couverture', 'EPUB & numérique', 'Identité visuelle complète', 'Je ne sais pas encore'],
         ],
         'Édition' => [
             'volume_label' => 'Quel volume de texte ?',
-            'volume' => ['Moins de 100 pages', '100 à 250 pages', '250 à 500 pages', 'Plus de 500 pages'],
+            'volume' => ['Moins de 25 000 mots', '25 000 à 60 000 mots', '60 000 à 120 000 mots', 'Plus de 120 000 mots'],
             'stade_label' => 'Où en est le projet ?',
             'stade' => ['Projet éditorial à cadrer', 'Manuscrit en cours', 'Manuscrit terminé'],
             'besoins' => ['Lecture et avis éditorial', 'Accompagnement vers la publication', 'Travail éditorial complet', 'Je ne sais pas encore'],
@@ -496,7 +496,7 @@ final class Catalog
         ],
         'Agent littéraire' => [
             'volume_label' => 'Quel volume de texte ?',
-            'volume' => ['Moins de 100 pages', '100 à 250 pages', '250 à 500 pages', 'Plus de 500 pages'],
+            'volume' => ['Moins de 25 000 mots', '25 000 à 60 000 mots', '60 000 à 120 000 mots', 'Plus de 120 000 mots'],
             'stade_label' => 'Où en est le manuscrit ?',
             'stade' => ['Manuscrit en cours', 'Manuscrit terminé', 'Plusieurs projets'],
             'besoins' => ['Représentation auprès d’éditeurs', 'Conseil de carrière', 'Négociation de contrat', 'Je ne sais pas encore'],
@@ -517,7 +517,7 @@ final class Catalog
         ],
         'Lecture éditoriale' => [
             'volume_label' => 'Quel volume de texte ?',
-            'volume' => ['Moins de 100 pages', '100 à 250 pages', '250 à 500 pages', 'Plus de 500 pages'],
+            'volume' => ['Moins de 25 000 mots', '25 000 à 60 000 mots', '60 000 à 120 000 mots', 'Plus de 120 000 mots'],
             'stade_label' => 'Où en est le texte ?',
             'stade' => ['Premier jet', 'Texte retravaillé', 'Version quasi finale'],
             'besoins' => ['Rapport de lecture', 'Avis de publication', 'Recommandations de retravail', 'Je ne sais pas encore'],

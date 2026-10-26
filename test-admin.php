@@ -40,6 +40,15 @@ preg_match('/name="_gate" value="(login[^"]+)"/', $html, $mg);
 if ($code !== 302) { fwrite(STDERR, "LOGIN FAIL ($code)\n"); exit(1); }
 echo "✓ login admin\n";
 
+[$code, , $dev] = req('GET', '/admin/devis', [], $jar);
+echo $code === 200 ? "✓ /admin/devis 200\n" : "✗ /admin/devis $code\n";
+foreach (['Attente prestataire','Envoyé, attente client','Révision demandée','Accepté'] as $lbl) {
+    if (str_contains($dev, $lbl)) echo "✓ état « $lbl » dans /admin/devis\n";
+}
+echo str_contains($dev, 'Qui doit agir') ? "✓ colonne acteur\n" : "✗ colonne acteur absente\n";
+[$code, , $dev2] = req('GET', '/admin/devis?filtre=revision', [], $jar);
+echo $code === 200 ? "✓ filtre révision 200\n" : "✗ filtre $code\n";
+
 [$code, , $fin] = req('GET', '/admin/finances', [], $jar);
 echo $code === 200 ? "✓ /admin/finances 200\n" : "✗ finances $code\n";
 echo str_contains($fin, '<th>Devis</th>') ? "✓ colonne Devis\n" : "✗ colonne Devis absente\n";

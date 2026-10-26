@@ -939,6 +939,50 @@ final class AdminController
         ]);
     }
 
+    public function devis(Request $request): void
+    {
+        $labels = [
+            'tous' => 'Tous',
+            'attente' => 'Attente prestataire',
+            'envoye' => 'Envoyé, attente client',
+            'revision' => 'Révision demandée',
+            'accepte' => 'Accepté',
+        ];
+        $filtre = $this->filtre($request, array_keys($labels), 'tous');
+
+        $orders = Order::recent(120);
+        $states = OrderMilestone::quoteStates(array_map(
+            static fn (array $o): int => (int) ($o['id'] ?? 0),
+            $orders
+        ));
+        $rows = [];
+        $counts = array_fill_keys(array_keys($labels), 0);
+        foreach ($orders as $order) {
+            $state = $states[(int) ($order['id'] ?? 0)] ?? null;
+            if (!is_array($state)) {
+                continue;
+            }
+            $order['quote_state'] = $state;
+            $counts['tous']++;
+            $counts[(string) $state['key']]++;
+            if ($filtre === 'tous' || $state['key'] === $filtre) {
+                $rows[] = $order;
+            }
+        }
+
+        $this->page('devis', 'admin/devis', [
+            'orders' => $rows,
+            'filtre' => $filtre,
+            'quoteFilters' => $this->filterLinks('/admin/devis', $labels, $filtre),
+            'kpis' => [
+                ['k' => 'Attente prestataire', 'v' => format_int($counts['attente'] + $counts['revision'])],
+                ['k' => 'Attente client', 'v' => format_int($counts['envoye'])],
+                ['k' => 'Acceptés', 'v' => format_int($counts['accepte'])],
+                ['k' => 'Révisions demandées', 'v' => format_int($counts['revision'])],
+            ],
+        ]);
+    }
+
     public function commande(Request $request, string $id): void
     {
         Auth::requireAdmin();

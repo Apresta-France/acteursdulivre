@@ -36,7 +36,7 @@ final class AdminCatalog
         $user = Auth::user();
         $data = array_merge(self::shared($user, $screen, $extra['query'] ?? ''), self::content(), self::liveOverlay(), $extra);
         $data['screen'] = $screen;
-        $flags = ['dash', 'verif', 'moderation', 'echanges', 'users', 'catalogue', 'missions', 'finances', 'litiges', 'contact', 'avis', 'preouverture', 'cms', 'livres', 'reglages', 'stats'];
+        $flags = ['dash', 'verif', 'moderation', 'echanges', 'users', 'catalogue', 'missions', 'devis', 'finances', 'litiges', 'contact', 'avis', 'preouverture', 'cms', 'livres', 'reglages', 'stats'];
         foreach ($flags as $id) {
             $data['is' . ucfirst($id)] = $id === $screen;
         }
@@ -64,6 +64,7 @@ final class AdminCatalog
             ['stats', 'Statistiques', '', '', '/admin/statistiques'],
             ['catalogue', 'Prestations', '', '', '/admin/prestations'],
             ['missions', 'Appels d\'offres', '', '', '/admin/missions'],
+            ['devis', 'Devis', $badges['devis'], '', '/admin/devis'],
             ['finances', 'Commandes & finances', $badges['finances'], '', '/admin/finances'],
             ['preouverture', 'Pré-ouverture', '', 'Plateforme', '/admin/pre-ouverture'],
             ['cms', 'Journal & pages', '', '', '/admin/journal'],
@@ -117,6 +118,7 @@ final class AdminCatalog
             'maisons' => self::badgeCount(static fn (): int => PublisherClaim::countPending()),
             'salons' => self::badgeCount(static fn (): int => SalonProposal::countPending()),
             'livres' => self::badgeCount(static fn (): int => Souscription::countPending()),
+            'devis' => self::badgeCount(static fn (): int => \Adl\Models\OrderMilestone::countQuotePending()),
             'finances' => self::badgeCount(static fn (): int => Invoice::countOverdue()),
             'migrations' => self::badgeCount(static fn (): int => Migrator::pendingCount()),
             'erreurs' => self::badgeCount(static fn (): int => HttpError::countOpen()),
@@ -159,6 +161,7 @@ final class AdminCatalog
             'stats' => 'Statistiques',
             'catalogue' => 'Prestations',
             'missions' => 'Appels d\'offres',
+            'devis' => 'Devis',
             'finances' => 'Commandes & finances',
             'preouverture' => 'Pré-ouverture',
             'cms' => 'Journal & pages',
