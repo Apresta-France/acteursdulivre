@@ -373,7 +373,7 @@ final class Prototype
      */
     private static function platformCounts(): array
     {
-        $pros = Profile::countPublished();
+        $pros = User::countOfferers();
         $services = Service::countPublished();
         $openMissions = Mission::countOpen();
         $commission = \Adl\Models\Setting::get('commission_percent', '8') ?: '8';

@@ -25,7 +25,7 @@ $query = (string) ($query ?? '');
       <p class="mk-lead"><?php
         $providerCount = 0;
         try {
-            $providerCount = \Adl\Models\Profile::countPublished();
+            $providerCount = \Adl\Models\User::countOfferers();
         } catch (\Throwable) {
         }
         echo e($providerCount > 0

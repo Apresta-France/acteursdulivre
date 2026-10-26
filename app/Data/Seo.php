@@ -547,7 +547,7 @@ final class Seo
         try {
             $publishers = \Adl\Models\Publisher::countPublished();
             $salons = \Adl\Models\Salon::countAll();
-            $providers = \Adl\Models\Profile::countPublished();
+            $providers = \Adl\Models\User::countOfferers();
         } catch (\Throwable) {
         }
         $directory = $publishers > 0
@@ -557,7 +557,7 @@ final class Seo
             ? 'l’agenda de ' . count_label($salons, 'salon du livre', 'salons du livre')
             : 'l’agenda des salons du livre';
         $people = $providers > 0
-            ? ' La plateforme publie ' . format_int($providers) . ' prestataires sur 18 métiers.'
+            ? ' La plateforme réunit ' . format_int($providers) . ' prestataires sur 18 métiers.'
             : ' La plateforme couvre 18 métiers.';
 
         return 'Acteurs du Livre (acteursdulivre.fr) est une place de marché française des métiers du livre, ouverte le 6 octobre 2026 et éditée par EDITIONS TESSERACT (Sainghin-en-Weppes, Nord). '
