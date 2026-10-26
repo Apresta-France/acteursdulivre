@@ -32,7 +32,7 @@ $query = (string) ($query ?? '');
             ? '18 métiers et ' . format_int($providerCount) . ' prestataires, de l\'écriture au coaching : trouvez les bonnes personnes, comparez des prestations à prix affichés, ou publiez votre recherche.'
             : '18 métiers, de l\'écriture au coaching : trouvez les bonnes personnes, comparez des prestations à prix affichés, ou publiez votre recherche.');
       ?></p>
-      <p class="mk-entity"><?= e(\Adl\Data\Seo::entityDefinition()) ?> <a href="<?= e(url('/salons')) ?>">Voir l'agenda des salons</a> · <a href="<?= e(url('/maisons-edition')) ?>">Voir l'annuaire des éditeurs</a> · <a href="<?= e(url('/tarifs')) ?>">Voir les tarifs</a>.</p>
+      <p class="mk-entity">Inscription gratuite, première mission sans commission, puis 8 % HT au prestataire. Aucun livrable produit par IA générative. <a href="<?= e(url('/salons')) ?>">Voir l'agenda des salons</a> · <a href="<?= e(url('/maisons-edition')) ?>">Voir l'annuaire des éditeurs</a> · <a href="<?= e(url('/tarifs')) ?>">Voir les tarifs</a>.</p>
       <form class="mk-search" method="get" action="<?= e(url('/recherche')) ?>" role="search" data-live-search data-api="<?= e(url('/api/recherche')) ?>" autocomplete="off" toolname="search_home" tooldescription="Rechercher depuis l'accueil un prestataire, une prestation ou un besoin lié à un livre.">
         <label class="sr-only" for="home-search-q">Rechercher un prestataire ou une prestation</label>
         <input id="home-search-q" type="search" name="q" value="<?= e($query) ?>" placeholder="De quoi votre livre a-t-il besoin ?" aria-label="Rechercher un prestataire ou une prestation" data-live-input autocomplete="off" toolparamdescription="Mots-clés décrivant le besoin du livre.">
