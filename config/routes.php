@@ -10,6 +10,7 @@ use Adl\Controllers\ForumController;
 use Adl\Controllers\InstallController;
 use Adl\Controllers\PageController;
 use Adl\Controllers\PublisherController;
+use Adl\Controllers\SalonController;
 use Adl\Core\Router;
 
 return static function (Router $router): void {
@@ -74,8 +75,18 @@ return static function (Router $router): void {
     $router->get('/salons/pays/{country}', [PageController::class, 'salonCountry']);
     $router->get('/salons/zone/{zone}', [PageController::class, 'salonZone']);
     $router->get('/salons/{year}/{month}', [PageController::class, 'salonMonth']);
+    $router->get('/salons/{slug}/revendiquer', [SalonController::class, 'claimForm']);
+    $router->post('/salons/{slug}/revendiquer', [SalonController::class, 'claim']);
     $router->post('/salons/{slug}/commenter', [ForumController::class, 'salonComment']);
     $router->get('/salons/{slug}', [PageController::class, 'salon']);
+    $router->get('/prix-et-concours', [PageController::class, 'contests']);
+    $router->get('/prix-et-concours/ajouter', [PageController::class, 'contestAddForm']);
+    $router->post('/prix-et-concours/ajouter', [PageController::class, 'contestAdd']);
+    $router->get('/prix-et-concours/pays/{country}', [PageController::class, 'contestCountry']);
+    $router->get('/prix-et-concours/zone/{zone}', [PageController::class, 'contestZone']);
+    $router->get('/prix-et-concours/{year}/{month}', [PageController::class, 'contestMonth']);
+    $router->post('/prix-et-concours/{slug}/commenter', [ForumController::class, 'contestComment']);
+    $router->get('/prix-et-concours/{slug}', [PageController::class, 'contest']);
     $router->get('/forum', [ForumController::class, 'index']);
     $router->get('/forum/nouveau', [ForumController::class, 'createForm']);
     $router->post('/forum/nouveau', [ForumController::class, 'create']);
@@ -212,6 +223,8 @@ return static function (Router $router): void {
     $router->post('/espace/auteur/oeuvres/{id}/deplacer', [AccountController::class, 'auteurOeuvreMove']);
     $router->get('/espace/maison-edition', [PublisherController::class, 'espace']);
     $router->post('/espace/maison-edition', [PublisherController::class, 'espaceSave']);
+    $router->get('/espace/salon', [SalonController::class, 'espace']);
+    $router->post('/espace/salon', [SalonController::class, 'espaceSave']);
     $router->get('/espace/parametres', [AccountController::class, 'parametres']);
     $router->post('/espace/parametres', [AccountController::class, 'parametresSave']);
     $router->post('/espace/parametres/mot-de-passe', [AccountController::class, 'parametresPassword']);
@@ -258,6 +271,10 @@ return static function (Router $router): void {
     $router->post('/admin/maisons-edition/{id}/supprimer', [AdminController::class, 'maisonDelete']);
     $router->get('/admin/salons', [AdminController::class, 'salonsAdmin']);
     $router->post('/admin/salons/{id}', [AdminController::class, 'salonDecide']);
+    $router->post('/admin/salons/fiches/{id}', [AdminController::class, 'salonFicheSave']);
+    $router->post('/admin/salons/revendications/{id}', [AdminController::class, 'salonClaimDecide']);
+    $router->get('/admin/prix', [AdminController::class, 'contestsAdmin']);
+    $router->post('/admin/prix/{id}', [AdminController::class, 'contestDecide']);
     $router->get('/admin/devis', [AdminController::class, 'devis']);
     $router->get('/admin/finances', [AdminController::class, 'finances']);
     $router->post('/admin/finances/factures/{id}', [AdminController::class, 'invoiceSave']);

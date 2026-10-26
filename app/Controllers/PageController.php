@@ -14,6 +14,7 @@ use Adl\Data\Catalog;
 use Adl\Data\Cities;
 use Adl\Data\Landings;
 use Adl\Data\LegalPages;
+use Adl\Data\ContestHubs;
 use Adl\Data\SalonHubs;
 use Adl\Data\Seo;
 use Adl\Data\Share;
@@ -37,7 +38,10 @@ use Adl\Models\Mission;
 use Adl\Models\Newsletter;
 use Adl\Models\Profile;
 use Adl\Models\Publisher;
+use Adl\Models\Contest;
+use Adl\Models\ContestProposal;
 use Adl\Models\Salon;
+use Adl\Models\SalonClaim;
 use Adl\Models\SalonProposal;
 use Adl\Models\Souscription;
 use Adl\Models\ReviewRequest;
@@ -102,9 +106,15 @@ final class PageController
     public function home(Request $request): void
     {
         $page = Seo::catalog()['accueil'];
+        $salonSpotlight = null;
+        try {
+            $salonSpotlight = Salon::featured(1)[0] ?? null;
+        } catch (\Throwable) {
+        }
         View::page('accueil', [
             'title' => $page['title'],
             'meta' => Seo::forScreen('accueil', ['title' => $page['title']]),
+            'salonSpotlight' => $salonSpotlight,
         ]);
     }
 
@@ -850,6 +860,7 @@ final class PageController
             'publisherCount' => $publisherCount,
             'agenda' => self::communityAgendaPreview(),
             'salonCount' => self::salonCount(),
+            'contestCount' => self::contestCount(),
             'souscriptions' => Souscriptions::preview(3),
         ]);
     }
@@ -1201,6 +1212,14 @@ final class PageController
             }
         }
 
+        $salonFeatured = [];
+        if ($unfiltered) {
+            try {
+                $salonFeatured = Salon::featured(3);
+            } catch (\Throwable) {
+            }
+        }
+
         View::page('salons', [
             'title' => 'Salons du livre : agenda',
             'meta' => $meta,
@@ -1209,6 +1228,7 @@ final class PageController
             'filters' => $filters,
             'facets' => $facets,
             'query' => $filters['q'],
+            'salonFeatured' => $salonFeatured,
             'salonIndex' => $salonIndex,
             'salonPastIndex' => $salonPastIndex,
             'salonHeading' => 'Salons du livre',
@@ -1325,10 +1345,26 @@ final class PageController
             $salonForumTopic['category_href'] = '';
         }
 
+        $salonIsOwner = false;
+        $salonClaimPending = false;
+        $viewer = Auth::user();
+        if ($viewer) {
+            $viewerId = (int) $viewer['id'];
+            $salonIsOwner = (int) ($salon['owner_user_id'] ?? 0) === $viewerId;
+            if (!$salonIsOwner && empty($salon['owner_user_id'])) {
+                try {
+                    $salonClaimPending = SalonClaim::pendingFor((int) $salon['id'], $viewerId) !== null;
+                } catch (\Throwable) {
+                }
+            }
+        }
+
         View::page('salon', [
             'title' => (string) $salon['name'],
             'meta' => $meta,
             'salon' => $salon,
+            'salonIsOwner' => $salonIsOwner,
+            'salonClaimPending' => $salonClaimPending,
             'upcoming' => $upcoming,
             'salonForumTopic' => $salonForumTopic,
             'salonCommentError' => flash('salon_comment_error'),
@@ -1362,11 +1398,13 @@ final class PageController
         $found = ['items' => [], 'total' => 0, 'page' => 1, 'pages' => 1];
         $facets = ['categories' => [], 'regions' => [], 'countries' => [], 'zones' => []];
         $links = [];
+        $salonFeatured = [];
         try {
             $found = Salon::search($filters, $page);
             $facets = Salon::facets();
             if ((int) $found['page'] === 1) {
                 $links = Salon::linkIndex($filters);
+                $salonFeatured = Salon::featured(3, $filters);
             }
         } catch (\Throwable) {
         }
@@ -1418,6 +1456,7 @@ final class PageController
                 'country' => '',
             ],
             'facets' => $facets,
+            'salonFeatured' => $salonFeatured,
             'salonIndex' => $links,
             'salonIndexLabel' => 'Tous les salons de cette sélection',
             'salonHeading' => (string) $hub['h1'],
@@ -1520,6 +1559,371 @@ final class PageController
         }
     }
 
+    public function contests(Request $request): void
+    {
+        $filters = [
+            'q' => $request->string('q'),
+            'category' => $request->string('cat'),
+            'kind' => $request->string('type'),
+            'fee' => $request->string('frais'),
+            'country' => $request->string('pays'),
+            'zone' => $request->string('zone'),
+            'tri' => $request->string('tri'),
+        ];
+        $page = max(1, $request->int('page', 1) ?? 1);
+        $found = ['items' => [], 'total' => 0, 'page' => 1, 'pages' => 1];
+        $facets = ['categories' => [], 'countries' => [], 'zones' => [], 'kinds' => []];
+        try {
+            $found = Contest::search($filters, $page);
+            $facets = Contest::facets();
+        } catch (\Throwable) {
+        }
+
+        $meta = Seo::forScreen('prix');
+        $contestCount = 0;
+        try {
+            $contestCount = Contest::countAll();
+        } catch (\Throwable) {
+        }
+        if ($contestCount > 0) {
+            $meta['description'] = 'Annuaire ' . count_des($contestCount, 'prix et concours littéraire', 'prix et concours littéraires') . ' en France, en Europe et dans la francophonie : dates limites, dotations, conditions.';
+        }
+        $clean = $filters['q'] === '' && $filters['category'] === '' && $filters['kind'] === '' && $filters['fee'] === '' && $filters['country'] === '' && $filters['zone'] === '' && $filters['tri'] === '';
+        if ($filters['q'] === '' && $filters['category'] !== '' && $filters['country'] === '' && $filters['zone'] === '') {
+            $target = ContestHubs::resolve($filters['category']);
+            if ($target !== null) {
+                redirect((string) ($target['redirect'] ?? $target['path']), 301);
+            }
+        }
+        $meta = Seo::pagedListing($meta, '/prix-et-concours', (int) $found['page'], $clean);
+        $contestIndex = [];
+        $contestPastIndex = [];
+        $unfiltered = $clean && $page === 1;
+        if ($unfiltered) {
+            try {
+                $contestIndex = Contest::indexLinks();
+                $contestPastIndex = Contest::pastLinks();
+            } catch (\Throwable) {
+            }
+        }
+
+        View::page('prix', [
+            'title' => 'Prix et concours littéraires : annuaire',
+            'meta' => $meta,
+            'contests' => $found['items'],
+            'pager' => $found,
+            'filters' => $filters,
+            'facets' => $facets,
+            'query' => $filters['q'],
+            'contestIndex' => $contestIndex,
+            'contestPastIndex' => $contestPastIndex,
+            'contestHeading' => 'Prix et concours littéraires',
+            'contestIntro' => 'Prix littéraires, concours et appels à textes en France, en Europe et dans la francophonie : dates limites de candidature, dotations et conditions. Une page par pays, par genre et par mois. Dates à reconfirmer dans le règlement de chaque récompense.',
+            'contestHubNav' => $unfiltered ? ContestHubs::nav() : [],
+        ]);
+    }
+
+    public function contestCountry(Request $request, string $country): void
+    {
+        try {
+            $row = Contest::country($country);
+        } catch (\Throwable) {
+            $row = null;
+        }
+        if ($row === null) {
+            not_found('Aucun prix ou concours n\'est recensé pour ce pays.');
+        }
+        $label = \Adl\Data\Geography::countryPhrase($row['name']);
+        $this->renderContestHub($request, [
+            'kind' => 'country',
+            'label' => $row['name'],
+            'path' => $row['href'],
+            'h1' => 'Prix et concours ' . $label,
+            'title' => 'Prix et concours littéraires ' . $label,
+            'description' => 'Annuaire ' . count_des((int) $row['n'], 'prix et concours littéraire', 'prix et concours littéraires') . ' ' . $label . ' : dates limites, dotations et conditions.',
+            'intro' => 'Prix littéraires et concours ' . $label . ', avec leurs dates limites, leur dotation et leurs conditions. Les dates se confirment dans le règlement officiel. Une récompense manque ? Signalez-la.',
+            'filters' => ['country' => $row['slug']],
+            'facet_category' => '',
+        ]);
+    }
+
+    public function contestZone(Request $request, string $zone): void
+    {
+        try {
+            $row = Contest::zone($zone);
+        } catch (\Throwable) {
+            $row = null;
+        }
+        if ($row === null) {
+            not_found('Aucun prix ou concours n\'est recensé pour cette zone.');
+        }
+        $label = \Adl\Data\Geography::countryPhrase($row['name']);
+        $this->renderContestHub($request, [
+            'kind' => 'zone',
+            'label' => $row['name'],
+            'path' => $row['href'],
+            'h1' => 'Prix et concours ' . $label,
+            'title' => 'Prix et concours littéraires ' . $label,
+            'description' => 'Annuaire ' . count_des((int) $row['n'], 'prix et concours littéraire', 'prix et concours littéraires') . ' ' . $label . ' : dates limites, dotations et conditions.',
+            'intro' => 'Prix littéraires et concours ' . $label . '. Les dates se confirment dans le règlement officiel. Une récompense manque ? Signalez-la.',
+            'filters' => ['zone' => $row['slug']],
+            'facet_category' => '',
+        ]);
+    }
+
+    public function contestMonth(Request $request, string $year, string $month): void
+    {
+        if (preg_match('/^\d{4}$/', $year) !== 1) {
+            not_found('Ce prix n\'est pas dans l\'annuaire.');
+        }
+        $hub = ContestHubs::month((int) $year, $month);
+        if ($hub === null) {
+            not_found('Aucun prix ou concours ne clôture sur ce mois.');
+        }
+        $this->renderContestHub($request, $hub);
+    }
+
+    public function contest(Request $request, string $slug): void
+    {
+        $hub = ContestHubs::resolve($slug);
+        if ($hub !== null) {
+            if (!empty($hub['redirect'])) {
+                redirect((string) $hub['redirect'], 301);
+            }
+            $this->renderContestHub($request, $hub);
+            return;
+        }
+        $contest = null;
+        try {
+            $contest = Contest::find($slug);
+        } catch (\Throwable) {
+        }
+        if (!$contest) {
+            not_found('Ce prix ou concours n\'est pas dans l\'annuaire.');
+        }
+
+        $contestSeo = Seo::contestMeta($contest);
+        $meta = Seo::build(
+            $contestSeo['title'],
+            $contestSeo['description'],
+            (string) $contest['href'],
+            'website',
+            null,
+            ['json_ld' => $contestSeo['json_ld']]
+        );
+
+        $upcoming = [];
+        try {
+            $upcoming = Contest::upcoming(5, (string) ($contest['slug'] ?? ''));
+        } catch (\Throwable) {
+        }
+
+        try {
+            $contestForumTopic = ForumTopic::findByContest((int) $contest['id'], false);
+        } catch (\Throwable) {
+            $contestForumTopic = null;
+        }
+        if (is_array($contestForumTopic) && ($contestForumTopic['status'] ?? '') !== 'visible') {
+            $contestForumTopic['is_locked'] = true;
+            $contestForumTopic['href'] = '';
+            $contestForumTopic['category_href'] = '';
+        }
+
+        View::page('prix-fiche', [
+            'title' => (string) $contest['name'],
+            'meta' => $meta,
+            'contest' => $contest,
+            'upcoming' => $upcoming,
+            'contestForumTopic' => $contestForumTopic,
+            'contestCommentError' => flash('contest_comment_error'),
+            'contestCommentOld' => flash('contest_comment_old') ?: [],
+        ]);
+    }
+
+    /** @param array<string, mixed> $hub */
+    private function renderContestHub(Request $request, array $hub): void
+    {
+        if ($request->string('q') !== '') {
+            redirect('/prix-et-concours?q=' . rawurlencode($request->string('q')));
+        }
+        $askedCat = $request->string('cat');
+        if ($askedCat !== '' && $askedCat !== (string) ($hub['facet_category'] ?? '')) {
+            $target = ContestHubs::resolve($askedCat);
+            if ($target !== null) {
+                redirect((string) ($target['redirect'] ?? $target['path']), 301);
+            }
+        }
+
+        $page = max(1, $request->int('page', 1) ?? 1);
+        $filters = is_array($hub['filters'] ?? null) ? $hub['filters'] : [];
+        $found = ['items' => [], 'total' => 0, 'page' => 1, 'pages' => 1];
+        $facets = ['categories' => [], 'countries' => [], 'zones' => [], 'kinds' => []];
+        $links = [];
+        try {
+            $found = Contest::search($filters, $page);
+            $facets = Contest::facets();
+            if ((int) $found['page'] === 1) {
+                $links = Contest::linkIndex($filters);
+            }
+        } catch (\Throwable) {
+        }
+
+        $path = (string) $hub['path'];
+        $items = [];
+        $position = 1;
+        foreach (array_slice($links, 0, 100) as $link) {
+            $items[] = [
+                '@type' => 'ListItem',
+                'position' => $position,
+                'url' => Share::absolute((string) $link['href']),
+                'name' => (string) $link['name'],
+            ];
+            $position++;
+        }
+        $jsonLd = [
+            Seo::organization(),
+            Seo::website(),
+            Seo::webPage((string) $hub['h1'], (string) $hub['description'], $path, 'CollectionPage'),
+            Seo::breadcrumb([
+                ['name' => Seo::BRAND, 'url' => '/'],
+                ['name' => 'Prix et concours', 'url' => '/prix-et-concours'],
+                ['name' => (string) $hub['label'], 'url' => $path],
+            ]),
+        ];
+        if ($items !== []) {
+            $jsonLd[] = [
+                '@type' => 'ItemList',
+                'name' => (string) $hub['h1'],
+                'numberOfItems' => count($links),
+                'itemListElement' => $items,
+            ];
+        }
+        $meta = Seo::build((string) $hub['title'], (string) $hub['description'], Share::absolute($path), 'website', null, [
+            'json_ld' => $jsonLd,
+        ]);
+        $meta = Seo::pagedListing($meta, $path, (int) $found['page'], true);
+
+        View::page('prix', [
+            'title' => (string) $hub['h1'],
+            'meta' => $meta,
+            'contests' => $found['items'],
+            'pager' => $found,
+            'filters' => [
+                'q' => '',
+                'category' => (string) ($hub['facet_category'] ?? ''),
+                'kind' => '',
+                'fee' => '',
+                'country' => '',
+                'zone' => '',
+                'tri' => '',
+            ],
+            'facets' => $facets,
+            'contestIndex' => $links,
+            'contestIndexLabel' => 'Tous les prix et concours de cette sélection',
+            'contestHeading' => (string) $hub['h1'],
+            'contestIntro' => (string) $hub['intro'],
+            'pagerPath' => $path,
+            'contestHubNav' => ContestHubs::nav(),
+        ]);
+    }
+
+    public function contestAddForm(Request $request): void
+    {
+        $user = Auth::user();
+        $similar = [];
+        $oldName = trim((string) old('name'));
+        $oldCity = trim((string) old('city'));
+        if ($oldName !== '') {
+            try {
+                $similar = Contest::similar($oldName, $oldCity, 4);
+            } catch (\Throwable) {
+            }
+        }
+        $categories = [];
+        $countries = ['France'];
+        try {
+            $categories = Contest::categoryLabels();
+            $countries = Contest::countryLabels();
+        } catch (\Throwable) {
+        }
+
+        View::page('prix-ajouter', [
+            'title' => 'Proposer un prix ou un concours',
+            'meta' => Seo::forScreen('prix-ajouter'),
+            'sent' => flash('contest_proposed') ? true : false,
+            'error' => flash('error'),
+            'user' => $user,
+            'similar' => $similar,
+            'categories' => $categories,
+            'countries' => $countries,
+            'kinds' => Contest::KINDS,
+            'suggestedEmail' => $user['email'] ?? '',
+            'suggestedName' => $user ? trim((string) (($user['first_name'] ?? '') . ' ' . ($user['last_name'] ?? ''))) : '',
+        ]);
+        unset($_SESSION['_old']);
+    }
+
+    public function contestAdd(Request $request): void
+    {
+        $old = [
+            'name' => $request->string('name'),
+            'kind' => $request->string('kind'),
+            'category' => $request->string('category'),
+            'opens_on' => $request->string('opens_on'),
+            'deadline_on' => $request->string('deadline_on'),
+            'awarded_on' => $request->string('awarded_on'),
+            'prize' => $request->string('prize'),
+            'entry_fee' => $request->string('entry_fee'),
+            'eligibility' => $request->string('eligibility'),
+            'city' => $request->string('city'),
+            'region' => $request->string('region'),
+            'country' => $request->string('country'),
+            'venue' => $request->string('venue'),
+            'website' => $request->string('website'),
+            'organizer' => $request->string('organizer'),
+            'description' => $request->string('description'),
+            'notes' => $request->string('notes'),
+            'contact_name' => $request->string('contact_name'),
+            'contact_email' => $request->string('contact_email'),
+        ];
+        $guard = BotGuard::consume('contest-add', $request);
+        if ($guard === BotGuard::HONEYPOT) {
+            flash('contest_proposed', true);
+            redirect('/prix-et-concours/ajouter');
+        }
+        if ($guard !== BotGuard::OK) {
+            flash('error', BotGuard::RETRY_MESSAGE);
+            $_SESSION['_old'] = $old;
+            redirect('/prix-et-concours/ajouter');
+        }
+        if (rate_limited('contest-add-ip', client_ip_hash(), 8, 3600)) {
+            flash('error', BotGuard::TOO_MANY_MESSAGE);
+            $_SESSION['_old'] = $old;
+            redirect('/prix-et-concours/ajouter');
+        }
+        $similar = [];
+        try {
+            $similar = Contest::similar($old['name'], $old['city'], 4);
+        } catch (\Throwable) {
+        }
+        if ($similar !== [] && !$request->bool('not_duplicate')) {
+            flash('error', 'Si aucune des récompenses listées n\'est la vôtre, cochez la case pour envoyer une nouvelle fiche.');
+            $_SESSION['_old'] = $old;
+            redirect('/prix-et-concours/ajouter#doublons');
+        }
+        try {
+            ContestProposal::create($old, Auth::user());
+            unset($_SESSION['_old']);
+            Analytics::action('contest_proposal');
+            flash('contest_proposed', true);
+            redirect('/prix-et-concours/ajouter');
+        } catch (\Throwable $e) {
+            $_SESSION['_old'] = $old;
+            flash('error', user_error_message($e));
+            redirect('/prix-et-concours/ajouter');
+        }
+    }
+
     /** @return list<array<string, mixed>> */
     private static function communityAgendaPreview(): array
     {
@@ -1541,6 +1945,15 @@ final class PageController
             return Salon::tableExists() ? Salon::countAll() : count(Catalog::communityAgenda());
         } catch (\Throwable) {
             return count(Catalog::communityAgenda());
+        }
+    }
+
+    private static function contestCount(): int
+    {
+        try {
+            return Contest::tableExists() ? Contest::countAll() : 0;
+        } catch (\Throwable) {
+            return 0;
         }
     }
 

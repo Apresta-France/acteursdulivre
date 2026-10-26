@@ -41,7 +41,10 @@ use Adl\Models\OrderMilestone;
 use Adl\Models\Profile;
 use Adl\Models\Publisher;
 use Adl\Models\PublisherClaim;
+use Adl\Models\Contest;
+use Adl\Models\ContestProposal;
 use Adl\Models\Salon;
+use Adl\Models\SalonClaim;
 use Adl\Models\SalonProposal;
 use Adl\Models\Report;
 use Adl\Models\Recommendation;
@@ -609,35 +612,122 @@ final class AdminController
 
     public function salonsAdmin(Request $request): void
     {
+        $onglet = $request->string('onglet', 'propositions');
+        if (!in_array($onglet, ['propositions', 'revendications', 'fiches'], true)) {
+            $onglet = 'propositions';
+        }
         $filtre = $this->filtre($request, ['pending', 'approved', 'refused', 'tous'], 'pending');
+        $proposals = [];
+        $pendingCount = 0;
+        $claims = [];
+        $claimsPending = 0;
+        $fiches = [];
+        $fichesQ = $request->string('q');
         try {
-            $proposals = SalonProposal::forAdmin($filtre);
-            foreach ($proposals as &$proposal) {
-                $proposal['similar'] = [];
-                if ($proposal['status'] === SalonProposal::STATUS_PENDING) {
-                    $proposal['similar'] = Salon::similar((string) $proposal['name'], (string) ($proposal['city'] ?? ''), 4);
-                }
-                if (!empty($proposal['salon_id'])) {
-                    $proposal['salon'] = Salon::findById((int) $proposal['salon_id']);
-                }
-            }
-            unset($proposal);
             $pendingCount = SalonProposal::countPending();
+            $claimsPending = SalonClaim::countPending();
+            if ($onglet === 'revendications') {
+                $claims = SalonClaim::forAdmin($filtre);
+            } elseif ($onglet === 'fiches') {
+                $fiches = Salon::adminList($fichesQ);
+            } else {
+                $proposals = SalonProposal::forAdmin($filtre);
+                foreach ($proposals as &$proposal) {
+                    $proposal['similar'] = [];
+                    if ($proposal['status'] === SalonProposal::STATUS_PENDING) {
+                        $proposal['similar'] = Salon::similar((string) $proposal['name'], (string) ($proposal['city'] ?? ''), 4);
+                    }
+                    if (!empty($proposal['salon_id'])) {
+                        $proposal['salon'] = Salon::findById((int) $proposal['salon_id']);
+                    }
+                }
+                unset($proposal);
+            }
         } catch (Throwable) {
-            $proposals = [];
-            $pendingCount = 0;
+        }
+        $salonTabs = [];
+        foreach ([
+            'propositions' => 'Propositions' . ($pendingCount > 0 ? ' (' . $pendingCount . ')' : ''),
+            'revendications' => 'Revendications' . ($claimsPending > 0 ? ' (' . $claimsPending . ')' : ''),
+            'fiches' => 'Fiches publiées',
+        ] as $tabId => $tabLabel) {
+            $salonTabs[] = [
+                'id' => $tabId,
+                'label' => $tabLabel,
+                'href' => '/admin/salons' . ($tabId === 'propositions' ? '' : '?onglet=' . $tabId),
+                'on' => $tabId === $onglet,
+            ];
         }
         $this->page('salons', 'admin/salons', [
+            'onglet' => $onglet,
+            'salonTabs' => $salonTabs,
             'proposals' => $proposals,
             'pendingCount' => $pendingCount,
+            'claims' => $claims,
+            'fiches' => $fiches,
+            'fichesQ' => $fichesQ,
             'categories' => Salon::categoryLabels(),
             'filters' => $this->filterLinks('/admin/salons', [
                 'pending' => 'En attente',
                 'approved' => 'Publiées',
                 'refused' => 'Refusées',
                 'tous' => 'Toutes',
-            ], $filtre),
+            ], $filtre, ['onglet' => $onglet]),
         ]);
+    }
+
+    public function salonClaimDecide(Request $request, string $id): void
+    {
+        $admin = Auth::requireAdmin();
+        try {
+            $claim = SalonClaim::decide(
+                (int) $id,
+                $request->string('status'),
+                $request->string('note'),
+                (int) $admin['id']
+            );
+            $approved = $request->string('status') === SalonClaim::STATUS_APPROVED;
+            flash('saved', $approved
+                ? 'La fiche « ' . ($claim['salon_name'] ?? '') . ' » est attribuée à son organisateur. Il a été prévenu par e-mail.'
+                : 'Demande refusée. Le motif a été transmis au demandeur.');
+        } catch (Throwable $e) {
+            flash('error', $e->getMessage());
+        }
+        redirect('/admin/salons?onglet=revendications');
+    }
+
+    public function salonFicheSave(Request $request, string $id): void
+    {
+        Auth::requireAdmin();
+        $salon = Salon::findById((int) $id);
+        if (!$salon) {
+            not_found('Salon introuvable.');
+        }
+        $back = '/admin/salons?onglet=fiches';
+        try {
+            $action = $request->string('action');
+            if ($action === 'featured') {
+                $until = $request->string('featured_until');
+                Salon::setFeatured((int) $salon['id'], $until !== '' ? $until : null);
+                flash('saved', $until !== ''
+                    ? '« ' . $salon['name'] . ' » est mis en avant jusqu\'au ' . admin_date($until . ' 00:00:00') . '.'
+                    : 'La mise en avant de « ' . $salon['name'] . ' » est retirée.');
+            } elseif ($action === 'detach') {
+                Salon::assignOwner((int) $salon['id'], null);
+                flash('saved', 'La fiche n\'est plus attribuée : elle redevient revendicable.');
+            } else {
+                $email = strtolower(trim($request->string('owner_email')));
+                $user = $email !== '' ? User::findByEmail($email) : null;
+                if (!$user) {
+                    throw new \RuntimeException('Aucun compte ne correspond à cette adresse e-mail.');
+                }
+                Salon::assignOwner((int) $salon['id'], (int) $user['id']);
+                flash('saved', 'Fiche attribuée à ' . User::displayName($user) . '.');
+            }
+        } catch (Throwable $e) {
+            flash('error', $e->getMessage());
+        }
+        redirect($back);
     }
 
     public function salonDecide(Request $request, string $id): void
@@ -675,6 +765,80 @@ final class AdminController
             flash('error', $e->getMessage());
         }
         redirect($request->string('back') !== '' ? $request->string('back') : '/admin/salons');
+    }
+
+    public function contestsAdmin(Request $request): void
+    {
+        $filtre = $this->filtre($request, ['pending', 'approved', 'refused', 'tous'], 'pending');
+        try {
+            $proposals = ContestProposal::forAdmin($filtre);
+            foreach ($proposals as &$proposal) {
+                $proposal['similar'] = [];
+                if ($proposal['status'] === ContestProposal::STATUS_PENDING) {
+                    $proposal['similar'] = Contest::similar((string) $proposal['name'], (string) ($proposal['city'] ?? ''), 4);
+                }
+                if (!empty($proposal['contest_id'])) {
+                    $proposal['contest'] = Contest::findById((int) $proposal['contest_id']);
+                }
+            }
+            unset($proposal);
+            $pendingCount = ContestProposal::countPending();
+        } catch (Throwable) {
+            $proposals = [];
+            $pendingCount = 0;
+        }
+        $this->page('prix', 'admin/prix', [
+            'proposals' => $proposals,
+            'pendingCount' => $pendingCount,
+            'categories' => Contest::categoryLabels(),
+            'kinds' => Contest::KINDS,
+            'filters' => $this->filterLinks('/admin/prix', [
+                'pending' => 'En attente',
+                'approved' => 'Publiées',
+                'refused' => 'Refusées',
+                'tous' => 'Toutes',
+            ], $filtre),
+        ]);
+    }
+
+    public function contestDecide(Request $request, string $id): void
+    {
+        $admin = Auth::requireAdmin();
+        try {
+            $overrides = [
+                'name' => $request->string('name'),
+                'kind' => $request->string('kind'),
+                'category' => $request->string('category'),
+                'opens_on' => $request->string('opens_on'),
+                'deadline_on' => $request->string('deadline_on'),
+                'awarded_on' => $request->string('awarded_on'),
+                'prize' => $request->string('prize'),
+                'entry_fee' => $request->string('entry_fee'),
+                'eligibility' => $request->string('eligibility'),
+                'city' => $request->string('city'),
+                'region' => $request->string('region'),
+                'country' => $request->string('country'),
+                'venue' => $request->string('venue'),
+                'website' => $request->string('website'),
+                'organizer' => $request->string('organizer'),
+                'description' => $request->string('description'),
+                'dates_confirmed' => $request->bool('dates_confirmed'),
+            ];
+            $proposal = ContestProposal::decide(
+                (int) $id,
+                $request->string('status'),
+                $request->string('note'),
+                (int) $admin['id'],
+                $request->string('status') === ContestProposal::STATUS_APPROVED ? $overrides : []
+            );
+            $approved = $request->string('status') === ContestProposal::STATUS_APPROVED;
+            flash('saved', $approved
+                ? 'Prix « ' . ($proposal['contest']['name'] ?? $proposal['name']) . ' » publié dans l\'annuaire. Le demandeur a été prévenu.'
+                : 'Proposition refusée. Le motif a été transmis au demandeur.');
+        } catch (Throwable $e) {
+            flash('error', $e->getMessage());
+        }
+        redirect($request->string('back') !== '' ? $request->string('back') : '/admin/prix');
     }
 
     public function litiges(Request $request): void
@@ -1510,6 +1674,7 @@ final class AdminController
                 'newsletter_batch_size' => (string) Newsletter::batchSize(),
                 'newsletter_include_missions' => Newsletter::includeMissions(),
                 'newsletter_include_people' => Newsletter::includePeople(),
+                'newsletter_include_salons' => Newsletter::includePartners(),
                 'newsletter_include_url' => Newsletter::includeUrl(),
                 'newsletter_source_url' => Newsletter::sourceUrl(),
             ],
@@ -1536,6 +1701,7 @@ final class AdminController
         Setting::set('newsletter_batch_size', (string) max(1, min(200, (int) $request->string('newsletter_batch_size', '25'))));
         Setting::set('newsletter_include_missions', $request->bool('newsletter_include_missions') ? '1' : '0');
         Setting::set('newsletter_include_people', $request->bool('newsletter_include_people') ? '1' : '0');
+        Setting::set('newsletter_include_salons', $request->bool('newsletter_include_salons') ? '1' : '0');
         Setting::set('newsletter_include_url', $request->bool('newsletter_include_url') ? '1' : '0');
         $url = $request->string('newsletter_source_url');
         if ($url !== '' && !preg_match('#^https://#i', $url) && !str_starts_with($url, '/')) {

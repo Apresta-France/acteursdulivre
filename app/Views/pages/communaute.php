@@ -6,6 +6,7 @@ $publishers = $publishers ?? [];
 $publisherCount = (int) ($publisherCount ?? 0);
 $agenda = $agenda ?? [];
 $salonCount = (int) ($salonCount ?? count($agenda));
+$contestCount = (int) ($contestCount ?? 0);
 $souscriptions = $souscriptions ?? [];
 ?>
 <div class="mk-page co-page">
@@ -28,6 +29,10 @@ $souscriptions = $souscriptions ?? [];
         <a class="forum-stat" href="<?= e(url('/salons')) ?>">
           <strong><?= e(format_int($salonCount)) ?></strong>
           <span>salons</span>
+        </a>
+        <a class="forum-stat" href="<?= e(url('/prix-et-concours')) ?>">
+          <strong><?= e(format_int($contestCount)) ?></strong>
+          <span>prix</span>
         </a>
       </div>
     </div>
@@ -52,6 +57,12 @@ $souscriptions = $souscriptions ?? [];
         <h2>Agenda</h2>
         <p>Dates, villes, type de manifestation. Pour préparer un stand, une dédicace, ou simplement y aller.</p>
         <span class="co-door-cta">Voir les prochains salons →</span>
+      </a>
+      <a class="co-door" href="<?= e(url('/prix-et-concours')) ?>">
+        <span class="co-door-ico" aria-hidden="true"><?= icon('star', 22) ?></span>
+        <h2>Prix et concours</h2>
+        <p>Prix littéraires, concours et appels à textes en Europe : dates limites, dotations, conditions de candidature.</p>
+        <span class="co-door-cta">Voir les prochaines clôtures →</span>
       </a>
       <a class="co-door" href="<?= e(url('/outils')) ?>">
         <span class="co-door-ico" aria-hidden="true"><?= icon('counter', 22) ?></span>
@@ -200,6 +211,10 @@ $souscriptions = $souscriptions ?? [];
         <h3>Parcourir <?= e(count_label($salonCount, 'salon', 'salons')) ?></h3>
         <p>Filtres par pays, région et catégorie. Un salon manque : <a href="<?= e(url('/salons/ajouter')) ?>">proposez-le</a>.</p>
         <a class="btn-navy" href="<?= e(url('/salons')) ?>">Ouvrir l’agenda</a>
+        <div class="co-agenda-aside-sep"></div>
+        <h3>Prix et concours</h3>
+        <p>Dates limites, dotations et conditions des récompenses littéraires en Europe.</p>
+        <a href="<?= e(url('/prix-et-concours')) ?>">Parcourir les prix →</a>
         <div class="co-agenda-aside-sep"></div>
         <h3>Premier stand</h3>
         <p>Table, stock, droit de table : ce qu’il faut prévoir avant d’y aller.</p>

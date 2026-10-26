@@ -2022,7 +2022,7 @@ final class Catalog
     }
 
     /**
-     * Accueil — mises en avant : fiches les plus renseignées (tarif, bannière, etc.), puis les plus récentes.
+     * Accueil — mises en avant : tirage au hasard parmi les fiches avec au moins une image existante.
      *
      * @param list<array<string, mixed>> $exclude déjà retenues (formats d'entrée)
      * @return list<array<string, mixed>>
@@ -2116,16 +2116,17 @@ final class Catalog
                 if ($price === null || $price > self::ENTRY_PRICE_MAX) {
                     continue;
                 }
+            } elseif (!self::serviceHasExistingImage($service)) {
+                continue;
             }
             $candidates[] = $service;
         }
 
-        usort(
-            $candidates,
-            $mode === 'entry'
-                ? [self::class, 'compareEntryServices']
-                : [self::class, 'compareFeaturedServices']
-        );
+        if ($mode === 'featured') {
+            shuffle($candidates);
+        } else {
+            usort($candidates, [self::class, 'compareEntryServices']);
+        }
 
         $out = [];
         $seenUsers = [];
@@ -2161,17 +2162,24 @@ final class Catalog
     }
 
     /**
-     * @param array<string, mixed> $a
-     * @param array<string, mixed> $b
+     * La première image (celle affichée) doit pointer sur un fichier réel.
+     *
+     * @param array<string, mixed> $service
      */
-    private static function compareFeaturedServices(array $a, array $b): int
+    private static function serviceHasExistingImage(array $service): bool
     {
-        [$keyA, $extraA] = self::featuredInfoScore($a);
-        [$keyB, $extraB] = self::featuredInfoScore($b);
-        return ($keyB <=> $keyA)
-            ?: ($extraB <=> $extraA)
-            ?: (self::serviceTimestamp($b) <=> self::serviceTimestamp($a))
-            ?: ((int) ($b['id'] ?? 0) <=> (int) ($a['id'] ?? 0));
+        if (empty($service['has_image'])) {
+            return false;
+        }
+        $paths = $service['image_paths'] ?? [];
+        $first = is_array($paths) ? trim((string) ($paths[0] ?? '')) : '';
+        if ($first === '') {
+            $first = trim((string) ($service['image_path'] ?? ''));
+        }
+        if ($first === '' || str_contains($first, '..')) {
+            return false;
+        }
+        return is_file(ADL_ROOT . '/public/uploads/' . ltrim($first, '/'));
     }
 
     /**
@@ -2188,40 +2196,6 @@ final class Catalog
             ?: (self::serviceTimestamp($b) <=> self::serviceTimestamp($a))
             ?: ($priceA <=> $priceB)
             ?: ((int) ($b['id'] ?? 0) <=> (int) ($a['id'] ?? 0));
-    }
-
-    /**
-     * Tarif et bannière pèsent le plus ; le reste (délai, texte, formules) départage.
-     *
-     * @param array<string, mixed> $service
-     * @return array{0: int, 1: int}
-     */
-    private static function featuredInfoScore(array $service): array
-    {
-        $key = (self::serviceListedPrice($service) !== null ? 1 : 0)
-            + (!empty($service['has_image']) ? 1 : 0);
-
-        $extra = 0;
-        if (trim((string) ($service['delay'] ?? '')) !== '') {
-            $extra++;
-        }
-        if (trim((string) ($service['specialty'] ?? '')) !== '') {
-            $extra++;
-        }
-        $excerptLen = mb_strlen(trim(plain_text((string) ($service['excerpt'] ?? ''))));
-        if ($excerptLen >= 120) {
-            $extra += 2;
-        } elseif ($excerptLen >= 40) {
-            $extra++;
-        }
-        if (is_array($service['packages'] ?? null) && $service['packages'] !== []) {
-            $extra++;
-        }
-        if (is_array($service['options'] ?? null) && $service['options'] !== []) {
-            $extra++;
-        }
-
-        return [$key, $extra];
     }
 
     /** @param array<string, mixed> $service */

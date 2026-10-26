@@ -148,14 +148,16 @@
             || str_starts_with($headerPath, '/maisons-edition/');
         $headerSearchSalons = $headerPath === '/salons'
             || str_starts_with($headerPath, '/salons/');
-        $headerSearchLocal = $headerSearchPublishers || $headerSearchSalons;
-        $headerSearchAction = $headerSearchPublishers ? '/maisons-edition' : ($headerSearchSalons ? '/salons' : '/recherche');
+        $headerSearchPrix = $headerPath === '/prix-et-concours'
+            || str_starts_with($headerPath, '/prix-et-concours/');
+        $headerSearchLocal = $headerSearchPublishers || $headerSearchSalons || $headerSearchPrix;
+        $headerSearchAction = $headerSearchPublishers ? '/maisons-edition' : ($headerSearchSalons ? '/salons' : ($headerSearchPrix ? '/prix-et-concours' : '/recherche'));
         $headerSearchPlaceholder = $headerSearchPublishers
             ? 'Nom, ville, genre éditorial…'
-            : ($headerSearchSalons ? 'Nom, ville, région…' : 'correcteur roman, illustration jeunesse…');
+            : ($headerSearchSalons ? 'Nom, ville, région…' : ($headerSearchPrix ? 'Nom du prix, genre, pays…' : 'correcteur roman, illustration jeunesse…'));
         $headerSearchLabel = $headerSearchPublishers
             ? 'Rechercher une maison d’édition'
-            : ($headerSearchSalons ? 'Rechercher un salon' : 'Rechercher un prestataire, une prestation ou un appel d’offres');
+            : ($headerSearchSalons ? 'Rechercher un salon' : ($headerSearchPrix ? 'Rechercher un prix ou un concours' : 'Rechercher un prestataire, une prestation ou un appel d’offres'));
       ?>
       <header class="site-header">
         <a href="<?= e(url('/')) ?>" class="brand" aria-label="acteursdulivre.fr — accueil">

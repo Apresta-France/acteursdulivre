@@ -70,6 +70,7 @@ final class Analytics
         'partage' => 'Partage',
         'signalement' => 'Signalement',
         'salon_proposal' => 'Proposition de salon',
+        'contest_proposal' => 'Proposition de prix ou concours',
     ];
 
     private const PERIODS = [
@@ -1738,6 +1739,7 @@ final class Analytics
             '/auteurs' => 'Auteurs',
             '/maisons-edition' => 'Maisons d’édition',
             '/salons' => 'Salons',
+            '/prix-et-concours' => 'Prix et concours',
             '/communaute' => 'Communauté',
             '/souscriptions' => 'Souscriptions',
             '/recommandation' => 'Recommandation',

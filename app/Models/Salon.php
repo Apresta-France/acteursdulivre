@@ -67,9 +67,44 @@ final class Salon
             $sql .= ' AND slug != ?';
             $params[] = $exceptSlug;
         }
-        $sql .= ' ORDER BY starts_on ASC, name ASC LIMIT ' . max(1, $limit);
+        $sql .= ' ORDER BY ' . self::FEATURED_SQL . ' DESC, starts_on ASC, name ASC LIMIT ' . max(1, $limit);
         $rows = Database::fetchAll($sql, $params);
         return array_map([self::class, 'hydrate'], $rows);
+    }
+
+    private const FEATURED_SQL = '(featured_until IS NOT NULL AND featured_until >= CURDATE())';
+
+    /**
+     * Salons partenaires en cours de mise en avant.
+     *
+     * @param array<string, string> $filters mêmes filtres que search() (pays, région, zone, catégorie…)
+     * @return list<array<string, mixed>>
+     */
+    public static function featured(int $limit = 4, array $filters = []): array
+    {
+        [$where, $params] = self::whereFor($filters);
+        $rows = Database::fetchAll(
+            'SELECT * FROM salons WHERE ' . self::FEATURED_SQL . ' AND ' . $where . '
+             ORDER BY (starts_on IS NULL) ASC, starts_on ASC, name ASC
+             LIMIT ' . max(1, $limit),
+            $params
+        );
+        return array_map([self::class, 'hydrate'], $rows);
+    }
+
+    public static function isFeatured(array $salon): bool
+    {
+        $until = trim((string) ($salon['featured_until'] ?? ''));
+        return $until !== '' && $until >= date('Y-m-d');
+    }
+
+    public static function featuredLabel(array $salon): string
+    {
+        $until = trim((string) ($salon['featured_until'] ?? ''));
+        if ($until === '') {
+            return '';
+        }
+        return admin_date($until . ' 00:00:00', $until);
     }
 
     /**
@@ -484,6 +519,133 @@ final class Salon
         return $row ? self::hydrate($row) : null;
     }
 
+    public static function findForOwner(int $userId): ?array
+    {
+        $row = Database::fetch('SELECT * FROM salons WHERE owner_user_id = ? ORDER BY id ASC LIMIT 1', [$userId]);
+        return $row ? self::hydrate($row) : null;
+    }
+
+    public static function assignOwner(int $id, ?int $userId): void
+    {
+        if ($userId === null) {
+            Database::query('UPDATE salons SET owner_user_id = NULL, claimed_at = NULL WHERE id = ?', [$id]);
+            return;
+        }
+        Database::query('UPDATE salons SET owner_user_id = ?, claimed_at = NOW() WHERE id = ?', [$userId, $id]);
+    }
+
+    public static function setFeatured(int $id, ?string $until): void
+    {
+        $until = trim((string) $until);
+        if ($until !== '' && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $until)) {
+            throw new \RuntimeException('Indiquez une date de fin de mise en avant valide.');
+        }
+        Database::query('UPDATE salons SET featured_until = ? WHERE id = ?', [$until !== '' ? $until : null, $id]);
+    }
+
+    /**
+     * Fiches publiées pour l’administration : gestion du partenariat et de l’attribution.
+     *
+     * @return list<array<string, mixed>>
+     */
+    public static function adminList(string $q = '', int $limit = 80): array
+    {
+        $where = 's.slug != ""';
+        $params = [];
+        $q = search_norm(trim($q));
+        if ($q !== '') {
+            $where .= ' AND s.search_text LIKE ?';
+            $params[] = '%' . $q . '%';
+        }
+        $rows = Database::fetchAll(
+            'SELECT s.*, u.email AS owner_email, u.first_name AS owner_first_name, u.last_name AS owner_last_name
+             FROM salons s
+             LEFT JOIN users u ON u.id = s.owner_user_id
+             WHERE ' . $where . '
+             ORDER BY ' . str_replace('featured_until', 's.featured_until', self::FEATURED_SQL) . ' DESC,
+                      (s.starts_on IS NULL) ASC, s.starts_on ASC, s.name ASC
+             LIMIT ' . max(1, $limit),
+            $params
+        );
+        $out = [];
+        foreach ($rows as $row) {
+            $item = self::hydrate($row);
+            $item['owner_email'] = (string) ($row['owner_email'] ?? '');
+            $item['owner_name'] = trim((string) (($row['owner_first_name'] ?? '') . ' ' . ($row['owner_last_name'] ?? '')));
+            $out[] = $item;
+        }
+        return $out;
+    }
+
+    /**
+     * Mise à jour de la fiche par l’organisateur qui en est propriétaire.
+     * Le slug reste identique pour ne pas casser les liens.
+     *
+     * @param array<string, mixed> $data
+     */
+    public static function updateFromOwner(int $id, array $data): void
+    {
+        $name = mb_substr(trim((string) ($data['name'] ?? '')), 0, 255);
+        if (mb_strlen($name) < 2) {
+            throw new \RuntimeException('Indiquez le nom du salon.');
+        }
+        $city = trim((string) ($data['city'] ?? ''));
+        if (mb_strlen($city) < 2) {
+            throw new \RuntimeException('Indiquez la ville.');
+        }
+        $country = trim((string) ($data['country'] ?? 'France')) ?: 'France';
+        $region = trim((string) ($data['region'] ?? ''));
+        $category = mb_substr(trim((string) ($data['category'] ?? '')), 0, 120);
+        $start = self::dateOrNull($data['starts_on'] ?? null);
+        $end = self::dateOrNull($data['ends_on'] ?? null);
+        if ($end !== null && $start !== null && $end < $start) {
+            $end = $start;
+        }
+        $confirmed = !empty($data['dates_confirmed']);
+        if ($start === null) {
+            $confirmed = false;
+        }
+        $description = trim((string) ($data['description'] ?? ''));
+        $organizer = trim((string) ($data['organizer'] ?? ''));
+        $search = search_norm(implode(' ', array_filter([
+            $name, $category, $city, $region, $country, $description, $organizer,
+        ])));
+
+        $fields = [
+            'name' => $name,
+            'category' => $category,
+            'category_slug' => slugify($category),
+            'type_label' => $category,
+            'dates_raw' => self::rawDates($start, $end),
+            'starts_on' => $start,
+            'ends_on' => $end,
+            'dates_confirmed' => $confirmed ? 1 : 0,
+            'confirmed_by_organizer' => $confirmed ? 1 : 0,
+            'city' => $city,
+            'region' => $region,
+            'region_slug' => slugify($region),
+            'country' => $country,
+            'country_slug' => slugify($country),
+            'venue' => mb_substr(trim((string) ($data['venue'] ?? '')), 0, 255),
+            'website' => SalonProposal::normalizeWebsite((string) ($data['website'] ?? ''), false),
+            'ticket' => mb_substr(trim((string) ($data['ticket'] ?? '')), 0, 255),
+            'organizer' => mb_substr($organizer, 0, 255),
+            'contact' => mb_substr(trim((string) ($data['contact'] ?? '')), 0, 255),
+            'socials' => mb_substr(trim((string) ($data['socials'] ?? '')), 0, 255),
+            'description' => $description !== '' ? mb_substr($description, 0, 4000) : null,
+            'program' => trim((string) ($data['program'] ?? '')) !== '' ? mb_substr(trim((string) $data['program']), 0, 6000) : null,
+            'exhibitors_list' => trim((string) ($data['exhibitors_list'] ?? '')) !== '' ? mb_substr(trim((string) $data['exhibitors_list']), 0, 4000) : null,
+            'audience' => mb_substr(trim((string) ($data['audience'] ?? '')), 0, 190),
+            'search_text' => $search,
+        ];
+        if (array_key_exists('logo_path', $data)) {
+            $fields['logo_path'] = $data['logo_path'] !== null ? (string) $data['logo_path'] : null;
+        }
+
+        $set = implode(', ', array_map(static fn (string $k): string => $k . ' = ?', array_keys($fields)));
+        Database::query('UPDATE salons SET ' . $set . ' WHERE id = ?', [...array_values($fields), $id]);
+    }
+
     /**
      * @param array{q?: string, category?: string, region?: string, country?: string} $filters
      * @return array{items: list<array<string, mixed>>, total: int, page: int, pages: int}
@@ -499,6 +661,8 @@ final class Salon
             'SELECT * FROM salons WHERE ' . $where . '
              ORDER BY (starts_on IS NOT NULL AND starts_on < CURDATE() AND (ends_on IS NULL OR ends_on < CURDATE())) ASC,
                       (starts_on IS NULL) ASC,
+                      DATE_FORMAT(starts_on, "%Y-%m") ASC,
+                      ' . self::FEATURED_SQL . ' DESC,
                       starts_on ASC,
                       name ASC
              LIMIT ' . self::PER_PAGE . ' OFFSET ' . $offset,
@@ -692,6 +856,13 @@ final class Salon
         $row['ticket'] = self::cleanDateText((string) ($row['ticket'] ?? ''));
         $row['socials'] = self::cleanDateText((string) ($row['socials'] ?? ''));
         $row['notes'] = self::cleanNotes((string) ($row['notes'] ?? ''));
+        $row['is_featured'] = self::isFeatured($row);
+        $row['featured_label'] = self::featuredLabel($row);
+        $row['confirmed_by_organizer'] = !empty($row['confirmed_by_organizer']);
+        $row['logo_src'] = !empty($row['logo_path']) ? uploaded((string) $row['logo_path']) : '';
+        $row['program'] = trim((string) ($row['program'] ?? ''));
+        $row['exhibitors_list'] = trim((string) ($row['exhibitors_list'] ?? ''));
+        $row['claimed'] = !empty($row['owner_user_id']);
         $row['href'] = '/salons/' . $row['slug'];
         $row['kind'] = (string) ($row['category'] ?? '');
         $row['place'] = $place;

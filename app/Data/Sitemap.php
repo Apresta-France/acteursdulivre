@@ -150,6 +150,31 @@ final class Sitemap
             self::push($urls, $seen, $hub['path'], '2026-10-21', $hub['priority']);
         }
 
+        foreach (self::rows(
+            'SELECT slug, created_at AS lastmod FROM contests WHERE slug != ""'
+        ) as $row) {
+            self::push($urls, $seen, '/prix-et-concours/' . $row['slug'], $row['lastmod'] ?? null, '0.4');
+        }
+
+        foreach (self::rows(
+            'SELECT country_slug AS slug, MAX(created_at) AS lastmod
+             FROM contests WHERE country_slug != ""
+             GROUP BY country_slug'
+        ) as $row) {
+            self::push($urls, $seen, '/prix-et-concours/pays/' . $row['slug'], $row['lastmod'] ?? null, '0.6');
+        }
+
+        try {
+            foreach (\Adl\Models\Contest::facets()['zones'] as $zone) {
+                self::push($urls, $seen, '/prix-et-concours/zone/' . $zone['v'], '2026-10-23', '0.6');
+            }
+        } catch (\Throwable) {
+        }
+
+        foreach (\Adl\Data\ContestHubs::sitemapPaths() as $hub) {
+            self::push($urls, $seen, $hub['path'], '2026-10-27', $hub['priority']);
+        }
+
         self::push($urls, $seen, '/maisons-edition?manuscrits=1', '2026-10-21', '0.6');
 
         foreach (self::rows(
@@ -244,6 +269,7 @@ final class Sitemap
             ['path' => '/outils/dos', 'priority' => '0.8', 'lastmod' => '2026-10-08'],
             ['path' => '/outils/isbn', 'priority' => '0.8', 'lastmod' => '2026-10-08'],
             ['path' => '/salons', 'priority' => '0.9', 'lastmod' => '2026-10-21'],
+            ['path' => '/prix-et-concours', 'priority' => '0.9', 'lastmod' => '2026-10-27'],
             ['path' => '/souscriptions', 'priority' => '0.6'],
             ['path' => '/besoin', 'priority' => '0.8', 'lastmod' => '2026-10-21'],
             ['path' => '/comment-ca-marche', 'priority' => '0.7', 'lastmod' => '2026-10-08'],

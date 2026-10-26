@@ -45,6 +45,16 @@ final class ForumTopic
         return $row ? self::present($row) : null;
     }
 
+    public static function findByContest(int $contestId, bool $visibleOnly = true): ?array
+    {
+        $where = 't.contest_id = ?';
+        if ($visibleOnly) {
+            $where .= ' AND t.status = "visible"';
+        }
+        $row = self::baseFetch($where, [$contestId]);
+        return $row ? self::present($row) : null;
+    }
+
     /**
      * @param array<string, mixed> $article
      * @param array<string, mixed> $data
@@ -256,6 +266,113 @@ final class ForumTopic
         }
     }
 
+    /**
+     * @param array<string, mixed> $contest
+     * @param array<string, mixed> $data
+     * @return array{topic: array<string, mixed>, post: array<string, mixed>, created: bool}
+     */
+    public static function commentOnContest(array $contest, int $userId, array $data): array
+    {
+        $contestId = (int) ($contest['id'] ?? 0);
+        if ($contestId <= 0) {
+            throw new RuntimeException('Ce prix n’est plus dans l’annuaire.');
+        }
+
+        $existing = self::findByContest($contestId, false);
+        if ($existing) {
+            self::assertCommentable($existing);
+            return [
+                'topic' => $existing,
+                'post' => ForumPost::create((int) $existing['id'], $userId, $data),
+                'created' => false,
+            ];
+        }
+
+        $body = trim((string) ($data['body'] ?? ''));
+        if (mb_strlen(plain_text($body) ?: $body) < ForumPost::MIN_BODY) {
+            throw new RuntimeException('Le commentaire doit faire au moins ' . ForumPost::MIN_BODY . ' caractères.');
+        }
+        if (empty($data['no_ai'])) {
+            throw new RuntimeException('Confirmez que votre commentaire n’a pas été généré par IA.');
+        }
+        ProfanityFilter::assertClean($body);
+
+        $category = self::categoryForContest();
+        $categoryId = (int) ($category['id'] ?? 0);
+        if ($categoryId <= 0) {
+            throw new RuntimeException('La rubrique du forum est introuvable.');
+        }
+
+        $title = trim((string) ($contest['name'] ?? ''));
+        if ($title === '') {
+            $title = 'Discussion autour d’un prix littéraire';
+        }
+        $title = mb_substr($title, 0, 180);
+        $safeBody = sanitize_user_html($body);
+        $tags = self::normalizeTags(['prix', (string) ($contest['kind'] ?? $contest['category'] ?? '')]);
+        $slug = unique_slug(
+            mb_substr('prix-' . (string) ($contest['slug'] ?? $title), 0, 180),
+            static fn (string $candidate): bool => Database::fetch(
+                'SELECT id FROM forum_topics WHERE category_id = ? AND slug = ?',
+                [$categoryId, $candidate]
+            ) !== null
+        );
+
+        try {
+            return Database::transaction(static function () use (
+                $contestId,
+                $userId,
+                $categoryId,
+                $title,
+                $slug,
+                $tags,
+                $safeBody
+            ): array {
+                Database::query(
+                    'INSERT INTO forum_topics
+                        (category_id, contest_id, user_id, title, slug, tags_json, reply_count, view_count,
+                         follow_count, last_post_at, last_post_user_id, status, created_at, updated_at)
+                     VALUES (?, ?, ?, ?, ?, ?, 0, 0, 0, NOW(), ?, "visible", NOW(), NOW())',
+                    [$categoryId, $contestId, $userId, $title, $slug, self::encodeTags($tags), $userId]
+                );
+                $topicId = (int) Database::lastId();
+                Database::query(
+                    'INSERT INTO forum_posts
+                        (topic_id, user_id, body, position, is_op, status, created_at, updated_at)
+                     VALUES (?, ?, ?, 1, 1, "visible", NOW(), NOW())',
+                    [$topicId, $userId, $safeBody]
+                );
+                $postId = (int) Database::lastId();
+                Database::query(
+                    'INSERT INTO forum_topic_follows (topic_id, user_id, created_at, last_read_at, last_read_post_id)
+                     VALUES (?, ?, NOW(), NOW(), ?)
+                     ON DUPLICATE KEY UPDATE last_read_at = NOW(), last_read_post_id = VALUES(last_read_post_id)',
+                    [$topicId, $userId, $postId]
+                );
+                Database::query('UPDATE forum_topics SET follow_count = 1 WHERE id = ?', [$topicId]);
+
+                $topic = self::find($topicId);
+                $post = ForumPost::find($postId);
+                if (!$topic || !$post) {
+                    throw new RuntimeException('Discussion introuvable après création.');
+                }
+                return ['topic' => $topic, 'post' => $post, 'created' => true];
+            });
+        } catch (\Throwable $e) {
+            // La contrainte UNIQUE(contest_id) arbitre deux premiers commentaires simultanés.
+            $existing = self::findByContest($contestId, false);
+            if (!$existing) {
+                throw $e;
+            }
+            self::assertCommentable($existing);
+            return [
+                'topic' => $existing,
+                'post' => ForumPost::create((int) $existing['id'], $userId, $data),
+                'created' => false,
+            ];
+        }
+    }
+
     /** @return array<string, mixed> */
     private static function categoryForArticle(string $label): array
     {
@@ -279,6 +396,14 @@ final class ForumTopic
     private static function categoryForSalon(): array
     {
         return ForumCategory::findBySlug('diffusion-et-librairies')
+            ?? ForumCategory::findBySlug('divers')
+            ?? [];
+    }
+
+    /** @return array<string, mixed> */
+    private static function categoryForContest(): array
+    {
+        return ForumCategory::findBySlug('edition')
             ?? ForumCategory::findBySlug('divers')
             ?? [];
     }
@@ -1050,6 +1175,8 @@ final class ForumTopic
             'article_href' => !empty($row['article_slug']) ? '/journal/' . $row['article_slug'] : null,
             'salon_id' => isset($row['salon_id']) && $row['salon_id'] !== null ? (int) $row['salon_id'] : null,
             'salon_href' => !empty($row['salon_slug']) ? '/salons/' . $row['salon_slug'] : null,
+            'contest_id' => isset($row['contest_id']) && $row['contest_id'] !== null ? (int) $row['contest_id'] : null,
+            'contest_href' => !empty($row['contest_slug']) ? '/prix-et-concours/' . $row['contest_slug'] : null,
             'user_id' => (int) ($row['user_id'] ?? 0),
             'title' => (string) ($row['title'] ?? ''),
             'slug' => $slug,
@@ -1108,6 +1235,7 @@ final class ForumTopic
                     c.name AS category_name, c.slug AS category_slug,
                     a.slug AS article_slug,
                     s.slug AS salon_slug,
+                    ct.slug AS contest_slug,
                     u.first_name, u.last_name, u.avatar_url, u.platform_cofounder, u.created_at AS user_created_at,
                     p.title AS profile_title, p.city AS profile_city, p.verification_status,
                     p.trades_json, p.slug AS profile_slug,
@@ -1116,6 +1244,7 @@ final class ForumTopic
              INNER JOIN forum_categories c ON c.id = t.category_id
              LEFT JOIN articles a ON a.id = t.article_id
              LEFT JOIN salons s ON s.id = t.salon_id
+             LEFT JOIN contests ct ON ct.id = t.contest_id
              INNER JOIN users u ON u.id = t.user_id
              LEFT JOIN profiles p ON p.user_id = u.id
              LEFT JOIN users lu ON lu.id = t.last_post_user_id

@@ -9,6 +9,7 @@ use Adl\Core\Migrator;
 use Adl\Models\Article;
 use Adl\Models\Commission;
 use Adl\Models\ContactMessage;
+use Adl\Models\ContestProposal;
 use Adl\Models\Conversation;
 use Adl\Models\HttpError;
 use Adl\Models\Invoice;
@@ -17,6 +18,7 @@ use Adl\Models\Order;
 use Adl\Models\Profile;
 use Adl\Models\PublisherClaim;
 use Adl\Models\Report;
+use Adl\Models\SalonClaim;
 use Adl\Models\SalonProposal;
 use Adl\Models\Souscription;
 use Adl\Models\Service;
@@ -60,6 +62,7 @@ final class AdminCatalog
             ['avis', 'Avis', $badges['avis'], '', '/admin/avis'],
             ['maisons', 'Maisons d\'édition', $badges['maisons'], '', '/admin/maisons-edition'],
             ['salons', 'Agenda des salons', $badges['salons'], '', '/admin/salons'],
+            ['prix', 'Prix et concours', $badges['prix'], '', '/admin/prix'],
             ['users', 'Utilisateurs', '', 'Données', '/admin/utilisateurs'],
             ['stats', 'Statistiques', '', '', '/admin/statistiques'],
             ['catalogue', 'Prestations', '', '', '/admin/prestations'],
@@ -117,6 +120,7 @@ final class AdminCatalog
             'avis' => self::badgeCount(static fn (): int => Report::countOpenForType('review')),
             'maisons' => self::badgeCount(static fn (): int => PublisherClaim::countPending()),
             'salons' => self::badgeCount(static fn (): int => SalonProposal::countPending()),
+            'prix' => self::badgeCount(static fn (): int => ContestProposal::countPending()),
             'livres' => self::badgeCount(static fn (): int => Souscription::countPending()),
             'devis' => self::badgeCount(static fn (): int => \Adl\Models\OrderMilestone::countQuotePending()),
             'finances' => self::badgeCount(static fn (): int => Invoice::countOverdue()),
@@ -157,6 +161,7 @@ final class AdminCatalog
             'avis' => 'Avis',
             'maisons' => 'Maisons d\'édition',
             'salons' => 'Agenda des salons',
+            'prix' => 'Prix et concours',
             'users' => 'Utilisateurs',
             'stats' => 'Statistiques',
             'catalogue' => 'Prestations',

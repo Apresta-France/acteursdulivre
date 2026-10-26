@@ -74,6 +74,7 @@ final class Prototype
             'communaute' => 'isCommunaute',
             'outils' => 'isOutils', 'outil-volume' => 'isOutils', 'outil-pages' => 'isOutils', 'outil-dos' => 'isOutils', 'outil-isbn' => 'isOutils',
             'salons' => 'isSalons', 'salon' => 'isSalon', 'salon-ajouter' => 'isSalons',
+            'prix' => 'isPrix', 'prix-fiche' => 'isPrix', 'prix-ajouter' => 'isPrix',
             'souscriptions' => 'isSouscriptions', 'souscription' => 'isSouscriptions', 'souscription-proposer' => 'isSouscriptions',
             'maisons-edition' => 'isMaisons', 'maisons-edition-pays' => 'isMaisons', 'maison-edition' => 'isMaison',
             'maison-edition-revendiquer' => 'isMaison', 'maison-edition-ajouter' => 'isMaisons', 'espace-maison' => 'isEspaceMaison',

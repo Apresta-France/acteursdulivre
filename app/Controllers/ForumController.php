@@ -497,6 +497,48 @@ final class ForumController
         redirect((string) $result['topic']['href'] . '#post-' . (int) $result['post']['id']);
     }
 
+    public function contestComment(Request $request, string $slug): void
+    {
+        Auth::requireUser();
+        $user = Auth::user();
+        $userId = (int) ($user['id'] ?? 0);
+
+        try {
+            $contest = \Adl\Models\Contest::find($slug);
+        } catch (\Throwable) {
+            $contest = null;
+        }
+        if (!$contest) {
+            not_found('Ce prix n’est plus dans l’annuaire.');
+        }
+
+        $guard = BotGuard::consume('contest-comment', $request);
+        if ($guard !== BotGuard::OK) {
+            flash('contest_comment_error', BotGuard::RETRY_MESSAGE);
+            flash('contest_comment_old', ['body' => $request->string('body')]);
+            redirect((string) $contest['href'] . '#commentaires');
+        }
+        if (rate_limited('forum-post-user', (string) $userId, 20, 3600)) {
+            flash('contest_comment_error', BotGuard::TOO_MANY_MESSAGE);
+            flash('contest_comment_old', ['body' => $request->string('body')]);
+            redirect((string) $contest['href'] . '#commentaires');
+        }
+
+        try {
+            $result = ForumTopic::commentOnContest($contest, $userId, [
+                'body' => $request->string('body'),
+                'no_ai' => $request->bool('no_ai'),
+            ]);
+        } catch (\Throwable $e) {
+            flash('contest_comment_error', user_error_message($e, 'Impossible de publier ce commentaire.'));
+            flash('contest_comment_old', ['body' => $request->string('body')]);
+            redirect((string) $contest['href'] . '#commentaires');
+        }
+
+        flash('saved', !empty($result['created']) ? 'Discussion ouverte sur le forum.' : 'Commentaire publié.');
+        redirect((string) $result['topic']['href'] . '#post-' . (int) $result['post']['id']);
+    }
+
     public function follow(Request $request, string $categorySlug, string $topicSlug): void
     {
         Auth::requireUser();

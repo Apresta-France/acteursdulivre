@@ -119,6 +119,16 @@ final class Seo
                 'description' => 'Ajoutez un salon, un festival ou une foire du livre à l\'agenda d\'acteursdulivre.fr. L\'équipe vérifie chaque proposition avant publication.',
                 'path' => '/salons/ajouter',
             ],
+            'prix' => [
+                'title' => 'Prix et concours littéraires 2026-2027 : annuaire',
+                'description' => 'Annuaire des prix littéraires, concours et appels à textes en France, en Europe et dans la francophonie : dates limites, dotations, conditions.',
+                'path' => '/prix-et-concours',
+            ],
+            'prix-ajouter' => [
+                'title' => 'Proposer un prix ou un concours',
+                'description' => 'Ajoutez un prix littéraire, un concours ou un appel à textes à l\'annuaire d\'acteursdulivre.fr. L\'équipe vérifie chaque proposition avant publication.',
+                'path' => '/prix-et-concours/ajouter',
+            ],
             'aide' => [
                 'title' => 'Centre d\'aide',
                 'description' => 'Jalons, règlement hors plateforme, commission, annulation, facturation, avis, litiges : les réponses utiles pour utiliser acteursdulivre.fr.',
@@ -549,7 +559,7 @@ final class Seo
             . 'Auteurs et maisons d’édition y trouvent des correcteurs, illustrateurs, traducteurs, maquettistes et imprimeurs, sans IA générative. '
             . 'L’inscription est gratuite ; la première mission est sans commission, puis la plateforme facture 8 % HT au prestataire.'
             . $people
-            . ' Le site publie aussi ' . $directory . ' et ' . $agenda . '.';
+            . ' Le site publie aussi ' . $directory . ', ' . $agenda . ' et un annuaire des prix et concours littéraires.';
     }
 
     public static function defaultImage(): string
@@ -1276,6 +1286,7 @@ final class Seo
             'outil-dos' => 'Dos et couverture',
             'outil-isbn' => 'ISBN et EAN',
             'salons' => 'Agenda des salons',
+            'prix' => 'Prix et concours',
             'aide' => 'Centre d\'aide',
             'questions' => 'Questions fréquentes',
             'contact' => 'Contact',
@@ -1379,6 +1390,7 @@ acteursdulivre.fr met en relation des porteurs de projet (auteurs, éditeurs, co
 - [Communauté]({$home}communaute) : forum, annuaire des maisons d'édition, agenda des salons et outils métier
 - [Outils]({$home}outils) : compteur de signes, estimation de pagination, calculateur de dos, validateur ISBN
 - [Agenda des salons]({$home}salons) : {$salonPhrase} du livre en France, en Europe et dans la francophonie, avec une page par région, par pays, par genre et par mois
+- [Prix et concours]({$home}prix-et-concours) : prix littéraires, concours et appels à textes en France, en Europe et dans la francophonie, avec dates limites, dotations et conditions, une page par pays, par genre et par mois
 - [Forum]({$home}forum) : discussions métier (tarifs, contrats, fabrication)
 - [Par besoin]({$home}besoin) : pages d'entrée par besoin (correction, couverture, impression…), utilisées aussi pour les campagnes
 - [Journal]({$home}journal) : articles sur les métiers, tarifs, contrats et diffusion
@@ -1476,6 +1488,142 @@ MD;
             'description' => $description,
             'json_ld' => $jsonLd,
         ];
+    }
+
+    /**
+     * Titre, extrait et données structurées d'une fiche prix / concours.
+     *
+     * @param array<string, mixed> $contest
+     * @return array{title: string, description: string, json_ld: list<array<string, mixed>>}
+     */
+    public static function contestMeta(array $contest): array
+    {
+        $name = trim((string) ($contest['name'] ?? 'Prix littéraire'));
+        $city = trim((string) ($contest['city'] ?? ''));
+        $deadline = trim((string) ($contest['deadline_on'] ?? ''));
+        $awarded = trim((string) ($contest['awarded_on'] ?? ''));
+        $sortDate = $deadline !== '' ? $deadline : $awarded;
+        $year = preg_match('/^\d{4}/', $sortDate) === 1 ? substr($sortDate, 0, 4) : '';
+        $past = !empty($contest['is_past']);
+        $title = $name;
+        if ($year !== '' && !$past && !str_contains($title, $year)) {
+            $title .= ' (' . $year . ')';
+        }
+
+        $confirmed = !empty($contest['confirmed']) || !empty($contest['dates_confirmed']);
+        $when = trim((string) ($contest['when'] ?? ''));
+        $place = trim((string) ($contest['place'] ?? ''));
+        $kind = trim((string) ($contest['kind'] ?? $contest['kind_label'] ?? $contest['category'] ?? ''));
+        $prize = trim((string) ($contest['prize'] ?? ''));
+        $own = trim((string) ($contest['description'] ?? ''));
+        $bits = array_values(array_filter(
+            [
+                $when,
+                $place !== '' ? $place : $city,
+                $kind !== '' ? $kind : 'Prix littéraire',
+                $prize !== '' ? 'Dotation : ' . $prize : '',
+                $own,
+                $confirmed ? '' : 'Dates à confirmer dans le règlement officiel',
+            ],
+            static fn (string $bit): bool => $bit !== ''
+        ));
+        $description = self::clip(implode(' · ', $bits), 160);
+        $href = (string) ($contest['href'] ?? '/prix-et-concours');
+        $jsonLd = [
+            self::organization(),
+            self::website(),
+            self::breadcrumb([
+                ['name' => self::BRAND, 'url' => '/'],
+                ['name' => 'Communauté', 'url' => '/communaute'],
+                ['name' => 'Prix et concours', 'url' => '/prix-et-concours'],
+                ['name' => $name, 'url' => $href],
+            ]),
+        ];
+        $event = self::contestEvent($contest, $description);
+        if ($event !== null) {
+            $jsonLd[] = $event;
+        }
+
+        return [
+            'title' => $title,
+            'description' => $description,
+            'json_ld' => $jsonLd,
+        ];
+    }
+
+    /**
+     * @param array<string, mixed> $contest
+     * @return array<string, mixed>|null
+     */
+    private static function contestEvent(array $contest, string $description): ?array
+    {
+        if (!empty($contest['is_past'])) {
+            return null;
+        }
+        $confirmed = !empty($contest['confirmed']) || !empty($contest['dates_confirmed']);
+        $deadline = trim((string) ($contest['deadline_on'] ?? ''));
+        $awarded = trim((string) ($contest['awarded_on'] ?? ''));
+        $start = $awarded !== '' ? $awarded : $deadline;
+        if (!$confirmed || preg_match('/^\d{4}-\d{2}-\d{2}/', $start) !== 1) {
+            return null;
+        }
+        $href = Share::absolute((string) ($contest['href'] ?? '/prix-et-concours'));
+        $city = trim((string) ($contest['city'] ?? ''));
+        $venue = trim((string) ($contest['venue'] ?? ''));
+        [$placeName, $address] = self::eventPlace($contest, $venue, $city);
+        $event = [
+            '@type' => 'Event',
+            '@id' => $href . '#event',
+            'name' => trim((string) ($contest['name'] ?? 'Prix littéraire')),
+            'description' => $description,
+            'startDate' => substr($start, 0, 10),
+            'eventStatus' => 'https://schema.org/EventScheduled',
+            'url' => $href,
+            'inLanguage' => 'fr',
+            'image' => [Share::absolute(asset('img/covers/salons-evenements.webp'))],
+            'location' => [
+                '@type' => 'Place',
+                'name' => $placeName,
+                'address' => $address,
+            ],
+        ];
+        $organizer = trim((string) ($contest['organizer'] ?? ''));
+        if ($organizer !== '') {
+            $org = ['@type' => 'Organization', 'name' => $organizer];
+            $site = trim((string) ($contest['website'] ?? ''));
+            if ($site !== '' && preg_match('#^https?://#i', $site) === 1) {
+                $org['url'] = $site;
+            }
+            $event['organizer'] = $org;
+        }
+        $fee = trim((string) ($contest['entry_fee'] ?? ''));
+        if ($fee !== '') {
+            $folded = search_norm($fee);
+            if (str_contains($folded, 'gratuit') || $folded === '0') {
+                $event['offers'] = [
+                    '@type' => 'Offer',
+                    'url' => $href,
+                    'priceCurrency' => 'EUR',
+                    'price' => '0',
+                    'availability' => 'https://schema.org/InStock',
+                    'description' => 'Candidature gratuite',
+                ];
+            } else {
+                $amount = self::priceAmount($fee);
+                if ($amount !== null) {
+                    $event['offers'] = [
+                        '@type' => 'Offer',
+                        'url' => $href,
+                        'priceCurrency' => 'EUR',
+                        'price' => $amount,
+                        'availability' => 'https://schema.org/InStock',
+                        'description' => $fee,
+                    ];
+                }
+            }
+        }
+
+        return $event;
     }
 
     /**
