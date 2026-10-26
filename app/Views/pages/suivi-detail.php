@@ -85,7 +85,7 @@ $mine = !empty($action['mine']);
             </div>
           <?php elseif ($form === 'quote'): ?>
             <?php if (!empty($action['revision'])): ?>
-              <p class="jalon-hint">Le client a refusé le devis précédent. Les champs sont préremplis : ajustez votre proposition.</p>
+              <p class="jalon-hint">Le client a demandé une révision du devis précédent. Les champs sont préremplis : ajustez votre proposition.</p>
             <?php endif; ?>
             <form class="jalon-form" method="post" action="<?= e($actionUrl) ?>" enctype="multipart/form-data">
               <?= csrf_field() ?>
@@ -104,18 +104,39 @@ $mine = !empty($action['mine']);
                          data-startup-kind="<?= e((string) ($order['startup_kind'] ?? 'amount')) ?>"
                          data-startup-value="<?= (int) ($order['startup_value'] ?? 0) ?>"
                          <?php endif; ?>>
+                  <?php if (!$startupOn): ?>
+                    <div class="chip-row quote-fill-row">
+                      <?php foreach (\Adl\Data\Catalog::QUOTE_REPLY_DEPOSITS as $dLabel => $dPct): ?>
+                        <button type="button" class="chip" data-deposit-fill="<?= e($dPct) ?>"><?= e($dLabel) ?></button>
+                      <?php endforeach; ?>
+                    </div>
+                  <?php endif; ?>
                   <p class="field-help"><?= $startupOn
                       ? 'Prérempli depuis votre prestation. Vous pouvez l’ajuster.'
                       : 'Souvent 30 %. Laissez vide s’il n’y a pas d’acompte.' ?></p>
                 </div>
               </div>
               <div>
-                <label class="field" for="jalon-delay">Délai</label>
+                <label class="field" for="jalon-delay">Délai annoncé au client</label>
+                <div class="chip-row quote-fill-row">
+                  <?php foreach (\Adl\Data\Catalog::QUOTE_REPLY_DELAYS as $dLabel): ?>
+                    <button type="button" class="chip" data-delay-fill="<?= e($dLabel) ?>"><?= e($dLabel) ?></button>
+                  <?php endforeach; ?>
+                </div>
                 <input class="input" id="jalon-delay" name="delay" value="<?= e((string) ($order['quote_form_delay'] ?? '')) ?>" placeholder="3 semaines">
               </div>
               <div>
-                <label class="field" for="jalon-note">Précisions (périmètre, formats, allers-retours)</label>
-                <textarea class="textarea" id="jalon-note" name="note" rows="8" placeholder="Ce qui est inclus, ce qui ne l’est pas…"><?= e((string) ($order['quote_form_note'] ?? '')) ?></textarea>
+                <span class="field">Ce que comprend votre devis <em class="quote-q-tag">facultatif</em></span>
+                <div class="chip-row">
+                  <?php foreach (\Adl\Data\Catalog::QUOTE_REPLY_INCLUS as $inclus): ?>
+                    <label class="chip"><input type="checkbox" name="d_inclus[]" value="<?= e($inclus) ?>"><?= e($inclus) ?></label>
+                  <?php endforeach; ?>
+                </div>
+                <p class="field-help">Ces éléments sont ajoutés en tête de vos précisions — le client sait ce que couvre le montant.</p>
+              </div>
+              <div>
+                <label class="field" for="jalon-note">Précisions (périmètre, formats, ce qui n’est pas inclus)</label>
+                <textarea class="textarea" id="jalon-note" name="note" rows="6" placeholder="Ce qui est inclus, ce qui ne l’est pas…"><?= e((string) ($order['quote_form_note'] ?? '')) ?></textarea>
               </div>
               <div>
                 <span class="field" id="jalon-doc-quote-label">Devis PDF (facultatif)</span>
@@ -158,21 +179,32 @@ $mine = !empty($action['mine']);
               </form>
             </div>
             <div class="jalon-secondary">
-              <p class="jalon-hint">Refuser le devis laisse la commande ouverte : le prestataire peut en proposer un autre. Annuler clôture définitivement le dossier.</p>
-              <form class="jalon-form" method="post" action="<?= e(url('/espace/suivi/' . (int) $order['id'] . '/devis/refuser')) ?>">
-                <?= csrf_field() ?>
-                <div>
-                  <label class="field" for="jalon-refuse-note">Message au prestataire (facultatif)</label>
-                  <textarea class="textarea" id="jalon-refuse-note" name="note" rows="3" placeholder="Budget, délai, périmètre… il pourra ajuster sa proposition."></textarea>
-                </div>
-                <div class="jalon-actions">
-                  <button class="btn-ghost" type="submit" onclick="return confirm('Refuser ce devis ? Le prestataire pourra en proposer un autre.');">Refuser le devis</button>
-                </div>
-              </form>
+              <div class="quote-decision-block">
+                <p class="field" style="margin-bottom: 4px;">Le devis ne convient pas tout à fait ?</p>
+                <p class="jalon-hint">Demandez une révision : la commande reste ouverte et le prestataire vous renvoie une proposition ajustée.</p>
+                <form class="jalon-form" method="post" action="<?= e(url('/espace/suivi/' . (int) $order['id'] . '/devis/refuser')) ?>">
+                  <?= csrf_field() ?>
+                  <div>
+                    <span class="field">Ce qui bloque <em class="quote-q-tag">plusieurs choix possibles</em></span>
+                    <div class="chip-row">
+                      <?php foreach (\Adl\Data\Catalog::QUOTE_REVISION_REASONS as $reason): ?>
+                        <label class="chip"><input type="checkbox" name="reasons[]" value="<?= e($reason) ?>"><?= e($reason) ?></label>
+                      <?php endforeach; ?>
+                    </div>
+                  </div>
+                  <div>
+                    <label class="field" for="jalon-refuse-note">Précisez au prestataire (facultatif)</label>
+                    <textarea class="textarea" id="jalon-refuse-note" name="note" rows="3" placeholder="Ex. : 900 € maximum, ou une livraison après le 10 mai…"></textarea>
+                  </div>
+                  <div class="jalon-actions">
+                    <button class="btn-ghost" type="submit">Demander une révision</button>
+                  </div>
+                </form>
+              </div>
               <form method="post" action="<?= e(url('/espace/suivi/' . (int) $order['id'] . '/annuler')) ?>">
                 <?= csrf_field() ?>
                 <div class="jalon-actions">
-                  <button class="btn-ghost btn-danger" type="submit" onclick="return confirm('Annuler définitivement cette commande ? Cette action est irréversible.');">Annuler la commande</button>
+                  <button class="btn-ghost btn-danger" type="submit" onclick="return confirm('Annuler définitivement cette commande ? Cette action est irréversible.');">Refuser et clôturer la commande</button>
                 </div>
               </form>
             </div>
@@ -265,6 +297,13 @@ $mine = !empty($action['mine']);
         </section>
       <?php endif; ?>
 
+      <?php if (!empty($order['brief'])): ?>
+        <div class="jalon-brief">
+          <div class="side-kicker">Brief du client</div>
+          <p><?= nl2br(e((string) $order['brief'])) ?></p>
+        </div>
+      <?php endif; ?>
+
       <section class="jalon-timeline">
         <h2 class="espace-section-title">Jalons</h2>
         <ol class="jalon-list">
@@ -315,13 +354,6 @@ $mine = !empty($action['mine']);
           <?php endif; ?>
         </ol>
       </section>
-
-      <?php if (!empty($order['brief'])): ?>
-        <div class="jalon-brief">
-          <div class="side-kicker">Brief</div>
-          <p><?= nl2br(e((string) $order['brief'])) ?></p>
-        </div>
-      <?php endif; ?>
 
       <?php if (!empty($order['package_name']) || !empty($order['options'])): ?>
         <div class="jalon-brief">

@@ -815,6 +815,53 @@ final class OrderMilestone
         return ($milestone['code'] ?? '') === 'quote' && !empty($milestone['completed_at']);
     }
 
+    /**
+     * État du cycle de devis par commande, pour le suivi admin.
+     *
+     * @param list<int> $orderIds
+     * @return array<int, array{label: string, tone: string}>
+     */
+    public static function quoteStates(array $orderIds): array
+    {
+        $ids = [];
+        foreach ($orderIds as $id) {
+            $id = (int) $id;
+            if ($id > 0) {
+                $ids[$id] = true;
+            }
+        }
+        if ($ids === []) {
+            return [];
+        }
+        $idList = array_keys($ids);
+        $marks = implode(',', array_fill(0, count($idList), '?'));
+        $rows = Database::fetchAll(
+            "SELECT order_id, code, status, completed_at
+             FROM order_milestones
+             WHERE order_id IN ($marks) AND code IN ('quote', 'quote_accept')",
+            $idList
+        );
+        $map = [];
+        foreach ($rows as $row) {
+            $map[(int) $row['order_id']][(string) ($row['code'] ?? '')] = $row;
+        }
+        $states = [];
+        foreach ($map as $orderId => $milestones) {
+            $quote = $milestones['quote'] ?? null;
+            $accept = $milestones['quote_accept'] ?? null;
+            if ($accept && ($accept['status'] ?? '') === self::STATUS_DONE) {
+                $states[$orderId] = ['label' => 'Accepté', 'tone' => 'green'];
+            } elseif ($quote && ($quote['status'] ?? '') === self::STATUS_DONE) {
+                $states[$orderId] = ['label' => 'Envoyé, attente client', 'tone' => 'orange'];
+            } elseif ($quote && !empty($quote['completed_at'])) {
+                $states[$orderId] = ['label' => 'Révision demandée', 'tone' => 'orange'];
+            } elseif ($quote) {
+                $states[$orderId] = ['label' => 'Attente prestataire', 'tone' => 'grey'];
+            }
+        }
+        return $states;
+    }
+
     private static function reopenQuote(int $orderId): void
     {
         Database::query(

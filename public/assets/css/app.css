@@ -12298,3 +12298,41 @@ a.co-event:hover { border-color: var(--navy); color: inherit; }
   .sub-grid { grid-template-columns: 1fr; }
   .sub-card.is-row { align-items: flex-start; }
 }
+
+/* ---- Parcours guidé « Demander un devis » ---- */
+.quote-progress { margin-bottom: 22px; }
+.quote-progress-meta { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin-bottom: 8px; }
+.quote-progress-title { font-family: var(--display); font-size: 14px; font-weight: 500; color: var(--navy); }
+.quote-progress-count { font-size: 12px; color: #8496A8; white-space: nowrap; }
+.quote-bar { height: 5px; border-radius: 999px; background: #E1E7ED; overflow: hidden; }
+.quote-bar-fill { display: block; height: 100%; background: var(--orange); border-radius: 999px; transition: width .3s ease; }
+
+.quote-wizard.is-paged .quote-step { display: none; }
+.quote-wizard.is-paged .quote-step.is-current { display: flex; animation: quote-step-in .22s ease; }
+@keyframes quote-step-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+.quote-step.espace-panel { display: flex; flex-direction: column; gap: 22px; margin-bottom: 0; }
+.quote-step > .espace-group-title:first-child { padding-bottom: 12px; margin-bottom: 0; border-bottom: 1px solid var(--line); }
+.quote-q .field-help { margin-top: 2px; }
+.quote-q-label { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; font-size: 14.5px; font-weight: 600; color: var(--navy); margin: 0 0 10px; }
+.quote-q-tag { font-family: var(--display); font-size: 10px; font-weight: 500; letter-spacing: .08em; text-transform: uppercase; color: var(--orange); border: 1px solid #F4DFD8; border-radius: 999px; padding: 2px 8px; }
+.quote-date { margin-top: 14px; max-width: 230px; }
+
+.quote-recap { display: flex; flex-direction: column; gap: 9px; margin: 0; }
+.quote-recap-row { display: grid; grid-template-columns: 120px 1fr; gap: 10px; font-size: 13.5px; align-items: baseline; }
+.quote-recap-row dt { color: #8496A8; font-size: 12.5px; }
+.quote-recap-row dd { margin: 0; color: var(--ink); }
+.quote-recap-empty { color: #B0BCC9; font-style: italic; }
+
+.quote-nav { display: flex; align-items: center; gap: 12px; margin-top: 24px; }
+.quote-nav-spacer { flex: 1; }
+.quote-skip { border-color: transparent; color: #8496A8; }
+.quote-submit-row { display: flex; flex-direction: column; gap: 8px; }
+.quote-submit-row .btn-orange { width: fit-content; }
+
+@media (max-width: 960px) {
+  .quote-nav { flex-wrap: wrap; }
+  .quote-nav .btn-orange { flex: 1 1 auto; justify-content: center; }
+  .quote-submit-row .btn-orange { width: 100%; }
+  .quote-recap-row { grid-template-columns: 1fr; gap: 1px; }
+}

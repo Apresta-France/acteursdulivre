@@ -158,12 +158,28 @@ $fmt = static function (?string $dt, string $empty = '—'): string {
         <?php else: ?>
           <ol class="admin-jalons">
             <?php foreach ($milestones as $step): ?>
+              <?php
+              $meta = [];
+              if (trim((string) ($step['delay'] ?? '')) !== '') {
+                  $meta[] = 'Délai : ' . trim((string) $step['delay']);
+              }
+              $quoteRevised = ($step['code'] ?? '') === 'quote' && !empty($step['completed_at']) && empty($step['is_done']);
+              if ($quoteRevised) {
+                  $meta[] = 'révision demandée';
+              }
+              ?>
               <li class="<?= !empty($step['is_skipped']) ? 'is-skip' : (!empty($step['is_current']) ? 'is-current' : '') ?>">
                 <span>
                   <?= e((string) ($step['title'] ?? '')) ?>
-                  <em><?= e((string) ($step['actor_label'] ?? '')) ?><?= !empty($step['amount_label']) ? ' · ' . e((string) $step['amount_label']) : '' ?></em>
+                  <em><?= e((string) ($step['actor_label'] ?? '')) ?><?= !empty($step['amount_label']) ? ' · ' . e((string) $step['amount_label']) : '' ?><?= $meta !== [] ? ' · ' . e(implode(' · ', $meta)) : '' ?></em>
+                  <?php if (trim((string) ($step['note'] ?? '')) !== ''): ?>
+                    <em><?= nl2br(e((string) $step['note'])) ?></em>
+                  <?php endif; ?>
+                  <?php if (!empty($step['file_name']) && !empty($step['file_href'])): ?>
+                    <em><a href="<?= e((string) $step['file_href']) ?>"><?= e((string) $step['file_name']) ?></a></em>
+                  <?php endif; ?>
                 </span>
-                <span class="admin-pill tone-<?= !empty($step['is_done']) ? 'green' : (!empty($step['is_current']) ? 'orange' : 'grey') ?>"><?= e((string) ($step['status_label'] ?? '')) ?></span>
+                <span class="admin-pill tone-<?= !empty($step['is_done']) ? 'green' : ($quoteRevised ? 'orange' : (!empty($step['is_current']) ? 'orange' : 'grey')) ?>"><?= $quoteRevised ? 'Révision' : e((string) ($step['status_label'] ?? '')) ?></span>
               </li>
             <?php endforeach; ?>
           </ol>

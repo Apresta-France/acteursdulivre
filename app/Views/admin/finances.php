@@ -31,10 +31,10 @@ $invoices = $invoices ?? [];
   <?php endif; ?>
   <div class="r-scroll">
     <table class="table">
-      <thead><tr><th>N°</th><th>Objet</th><th>Parties</th><th>Montant</th><th>Commission</th><th>Statut</th><th></th></tr></thead>
+      <thead><tr><th>N°</th><th>Objet</th><th>Parties</th><th>Montant</th><th>Commission</th><th>Devis</th><th>Statut</th><th></th></tr></thead>
       <tbody>
         <?php if ($orders === []): ?>
-          <tr><td colspan="7" class="admin-muted">Aucune commande.</td></tr>
+          <tr><td colspan="8" class="admin-muted">Aucune commande.</td></tr>
         <?php endif; ?>
         <?php foreach ($orders as $o): ?>
           <?php $dossier = (string) ($o['admin_href'] ?? '/admin/finances/' . (int) $o['id']); ?>
@@ -44,6 +44,12 @@ $invoices = $invoices ?? [];
             <td><?= e($o['parties']) ?></td>
             <td><?= e($o['amount_label']) ?></td>
             <td><?= e($o['commission_label'] ?: '—') ?></td>
+            <td>
+              <?php $qs = $o['quote_state'] ?? null; ?>
+              <?php if (is_array($qs)): ?>
+                <span class="admin-pill tone-<?= e((string) ($qs['tone'] ?? 'grey')) ?>"><?= e((string) ($qs['label'] ?? '')) ?></span>
+              <?php else: ?>—<?php endif; ?>
+            </td>
             <td><span class="admin-pill tone-<?= e((string) ($o['status_tone'] ?? 'navy')) ?>"><?= e($o['status_label']) ?></span></td>
             <td>
               <a class="admin-ghost" href="<?= e(url($dossier)) ?>">Ouvrir</a>

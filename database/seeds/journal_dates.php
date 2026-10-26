@@ -46,4 +46,5 @@ return [
     'acteurs-du-livre-ouvre-ses-portes' => '2026-10-06 08:00:00',
     'combien-de-pages-fera-ce-manuscrit' => '2026-10-12 09:30:00',
     'souscriptions-livre-deja-en-cours' => '2026-10-21 09:30:00',
+    'demande-devis-guidee' => '2026-10-26 09:30:00',
 ];

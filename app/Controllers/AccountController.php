@@ -871,7 +871,39 @@ final class AccountController
         foreach ($pickedOptions as $option) {
             $amount += (int) ($option['price'] ?? 0);
         }
-        $brief = $request->string('brief');
+
+        $note = trim($request->string('brief'));
+        if (mb_strlen($note) > 4000) {
+            flash('error', 'La précision est trop longue (4000 caractères maximum).');
+            flash('old', $request->all());
+            redirect('/espace/commande?prestation=' . rawurlencode((string) $service['slug']));
+        }
+        $brief = $note;
+        if ($request->string('q_mode') === '1') {
+            $trade = (string) ($service['cat'] ?? $service['category_name'] ?? '');
+            $raw = [];
+            foreach (\Adl\Data\Catalog::quoteQuestions($trade) as $question) {
+                $key = (string) $question['key'];
+                $raw[$key] = !empty($question['multi'])
+                    ? $request->strings('q_' . $key)
+                    : $request->string('q_' . $key);
+            }
+            [$answers, $missing] = \Adl\Data\Catalog::filterQuoteAnswers($trade, $raw);
+            if (($answers['delai'] ?? '') === \Adl\Data\Catalog::QUOTE_DATE_TRIGGER) {
+                $day = trim($request->string('q_date'));
+                if (preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $day, $m) && checkdate((int) $m[2], (int) $m[3], (int) $m[1])) {
+                    $answers['date'] = sprintf('%02d/%02d/%04d', (int) $m[3], (int) $m[2], (int) $m[1]);
+                }
+            }
+            if ($missing !== []) {
+                flash('error', 'Répondez d’abord aux questions : ' . implode(', ', $missing) . '.');
+                flash('old', $request->all());
+                redirect('/espace/commande?prestation=' . rawurlencode((string) $service['slug']));
+            }
+            $brief = \Adl\Data\Catalog::composeQuoteBrief($trade, $answers, $note);
+        }
+        $upload = $request->file('attachment');
+        $hasUpload = ($upload['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE;
 
         try {
             $opened = Order::openPendingForService(
@@ -884,12 +916,15 @@ final class AccountController
             );
             $order = $opened['order'];
             $existing = $opened['existing'];
-            if ($existing) {
-                Conversation::open((int) $user['id'], (int) $service['user_id'], [
+            $threadOrder = $existing ?? $order;
+            $thread = $threadOrder
+                ? Conversation::open((int) $user['id'], (int) $service['user_id'], [
                     'subject' => (string) $service['title'],
-                    'order_id' => (int) $existing['id'],
+                    'order_id' => (int) $threadOrder['id'],
                     'service_id' => (int) $service['id'],
-                ]);
+                ])
+                : null;
+            if ($existing) {
                 $currentCode = (string) ($existing['current_milestone']['code'] ?? 'quote');
                 $sameCart = (int) ($existing['amount'] ?? 0) === $amount
                     && (string) ($existing['brief'] ?? '') === $brief
@@ -910,23 +945,17 @@ final class AccountController
                 } else {
                     flash('saved', 'Cette commande est déjà ouverte. Le prestataire envoie le devis depuis le suivi.');
                 }
+                if ($hasUpload && $thread) {
+                    Conversation::send((int) $thread['id'], (int) $user['id'], '', $upload, null, notify: false);
+                }
                 redirect('/espace/suivi/' . (int) $existing['id']);
             }
             if (!$order) {
                 throw new \RuntimeException('Impossible d’ouvrir cette commande.');
             }
             Analytics::action('commande');
-            Conversation::open((int) $user['id'], (int) $service['user_id'], [
-                'subject' => (string) $service['title'],
-                'order_id' => (int) $order['id'],
-                'service_id' => (int) $service['id'],
-            ]);
-            if ($brief !== '') {
-                $thread = Conversation::open((int) $user['id'], (int) $service['user_id'], [
-                    'order_id' => (int) $order['id'],
-                    'service_id' => (int) $service['id'],
-                ]);
-                Conversation::send((int) $thread['id'], (int) $user['id'], $brief, notify: false);
+            if ($thread && ($brief !== '' || $hasUpload)) {
+                Conversation::send((int) $thread['id'], (int) $user['id'], $brief, $hasUpload ? $upload : null, null, notify: false);
             }
         } catch (\Throwable $e) {
             flash('error', user_error_message($e));
@@ -1171,11 +1200,21 @@ final class AccountController
                 throw new \RuntimeException('Cette commande est introuvable.');
             }
             $file = self::storeMilestoneFile($request, (int) $id, $code);
+            $note = $request->string('note');
+            if ($code === 'quote') {
+                $inclus = array_values(array_intersect(
+                    $request->strings('d_inclus'),
+                    \Adl\Data\Catalog::QUOTE_REPLY_INCLUS
+                ));
+                if ($inclus !== []) {
+                    $note = 'Comprend : ' . implode(' · ', $inclus) . "\n\n" . $note;
+                }
+            }
             OrderMilestone::complete((int) $id, (int) $user['id'], $code, [
                 'amount' => self::money($request->string('amount')),
                 'deposit_amount' => self::money($request->string('deposit_amount')),
                 'delay' => $request->string('delay'),
-                'note' => $request->string('note'),
+                'note' => trim($note),
                 'file_name' => $file['name'] ?? null,
                 'file_path' => $file['path'] ?? null,
             ]);
@@ -1191,6 +1230,13 @@ final class AccountController
     {
         $user = Auth::requireUser();
         $note = $request->string('note');
+        $reasons = array_values(array_intersect(
+            $request->strings('reasons'),
+            \Adl\Data\Catalog::QUOTE_REVISION_REASONS
+        ));
+        if ($reasons !== []) {
+            $note = 'Motif : ' . implode(' · ', $reasons) . ($note !== '' ? "\n\n" . $note : '');
+        }
         try {
             OrderMilestone::refuseQuote((int) $id, (int) $user['id'], $note);
             $ping = Conversation::jalonPings()['quote_refused'] ?? 'Devis refusé. Vous pouvez en proposer un nouveau dans le suivi.';
@@ -1198,7 +1244,7 @@ final class AccountController
                 $ping .= "\n\n" . $note;
             }
             self::pingOrderThread((int) $id, (int) $user['id'], $ping, false);
-            flash('saved', 'Devis refusé. Le prestataire peut proposer un nouveau devis. Précisez-lui ce qui ne convenait pas dans la messagerie si besoin.');
+            flash('saved', 'Révision demandée. Le prestataire peut proposer un devis ajusté depuis le suivi.');
         } catch (\Throwable $e) {
             flash('error', user_error_message($e));
         }

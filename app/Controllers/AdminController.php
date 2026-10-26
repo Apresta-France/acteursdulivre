@@ -37,6 +37,7 @@ use Adl\Models\NewsletterCampaign;
 use Adl\Models\NewsletterLetter;
 use Adl\Models\Order;
 use Adl\Models\OrderFile;
+use Adl\Models\OrderMilestone;
 use Adl\Models\Profile;
 use Adl\Models\Publisher;
 use Adl\Models\PublisherClaim;
@@ -910,6 +911,14 @@ final class AdminController
         if ($filtre !== 'tous' && count($orders) > 80) {
             $orders = array_slice($orders, 0, 80);
         }
+        $quoteStates = OrderMilestone::quoteStates(array_map(
+            static fn (array $o): int => (int) ($o['id'] ?? 0),
+            $orders
+        ));
+        foreach ($orders as &$o) {
+            $o['quote_state'] = $quoteStates[(int) ($o['id'] ?? 0)] ?? null;
+        }
+        unset($o);
         $invoices = Invoice::all();
         $this->page('finances', 'admin/finances', [
             'orders' => $orders,

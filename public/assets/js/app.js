@@ -1766,6 +1766,147 @@
     preview();
   }
 
+  /* ---- Parcours guidé « Demander un devis » ---- */
+  var qwiz = document.querySelector('[data-quote-wizard]');
+  if (qwiz) {
+    var qSteps = Array.prototype.slice.call(qwiz.querySelectorAll('[data-quote-step]'));
+    var qLast = parseInt(qwiz.getAttribute('data-quote-last') || String(qSteps.length), 10) || qSteps.length;
+    var qNav = qwiz.querySelector('[data-quote-nav]');
+    var qPrev = qwiz.querySelector('[data-quote-prev]');
+    var qNext = qwiz.querySelector('[data-quote-next]');
+    var qSkip = qwiz.querySelector('[data-quote-skip]');
+    var qProgress = qwiz.querySelector('[data-quote-progress]');
+    var qBar = qwiz.querySelector('[data-quote-bar]');
+    var qStepTitle = qwiz.querySelector('[data-quote-step-title]');
+    var qStepCount = qwiz.querySelector('[data-quote-step-count]');
+    var qDateWrap = qwiz.querySelector('[data-quote-date-wrap]');
+    var qDateTrigger = qDateWrap ? qDateWrap.getAttribute('data-quote-date-trigger') : '';
+    var qRecapMap = {};
+    try { qRecapMap = JSON.parse(qwiz.getAttribute('data-quote-recap-map') || '{}'); } catch (e) {}
+    var qCurrent = 1;
+
+    function qValues(name) {
+      var vals = [];
+      qwiz.querySelectorAll('input[name="' + name + '"]:checked').forEach(function (input) {
+        vals.push(input.value);
+      });
+      return vals;
+    }
+
+    function qStepValid(step) {
+      var required = (step.getAttribute('data-required') || '').split(',').filter(Boolean);
+      return required.every(function (key) {
+        return qValues('q_' + key).length > 0
+          || qValues('q_' + key + '[]').length > 0;
+      });
+    }
+
+    function qSyncDate() {
+      if (!qDateWrap) return;
+      var picked = qValues('q_delai')[0] || '';
+      qDateWrap.hidden = picked !== qDateTrigger;
+    }
+
+    function qRecap(target) {
+      if (!target) return;
+      target.innerHTML = '';
+      var rows = 0;
+      Object.keys(qRecapMap).forEach(function (name) {
+        var label = qRecapMap[name];
+        var value = '';
+        if (name === 'brief') {
+          var ta = qwiz.querySelector('textarea[name="brief"]');
+          value = ta ? ta.value.trim() : '';
+        } else if (name === 'q_date') {
+          var di = qwiz.querySelector('input[name="q_date"]');
+          var picked = qValues('q_delai')[0] || '';
+          value = (picked === qDateTrigger && di && di.value) ? di.value : '';
+        } else {
+          value = qValues(name).concat(qValues(name + '[]')).join(' · ');
+        }
+        if (value === '') return;
+        rows++;
+        var row = document.createElement('div');
+        row.className = 'quote-recap-row';
+        var dt = document.createElement('dt');
+        dt.textContent = label;
+        var dd = document.createElement('dd');
+        dd.textContent = value;
+        row.appendChild(dt);
+        row.appendChild(dd);
+        target.appendChild(row);
+      });
+      if (!rows) {
+        var empty = document.createElement('div');
+        empty.className = 'quote-recap-row';
+        empty.innerHTML = '<dd class="quote-recap-empty">Vos réponses s\u2019affichent au fil des choix.</dd>';
+        target.appendChild(empty);
+      }
+    }
+
+    function qRender() {
+      qSteps.forEach(function (step) {
+        step.classList.toggle('is-current', parseInt(step.getAttribute('data-quote-step'), 10) === qCurrent);
+      });
+      var titleEl = qSteps[qCurrent - 1] ? qSteps[qCurrent - 1].querySelector('.espace-group-title') : null;
+      if (qStepTitle) qStepTitle.textContent = titleEl ? titleEl.textContent : '';
+      if (qStepCount) qStepCount.textContent = 'Étape ' + qCurrent + ' sur ' + qLast;
+      if (qBar) qBar.style.width = Math.round((qCurrent / qLast) * 100) + '%';
+      if (qPrev) qPrev.hidden = qCurrent === 1;
+      if (qNext) qNext.hidden = qCurrent >= qLast;
+      if (qSkip) qSkip.hidden = true;
+      qSync();
+    }
+
+    function qSync() {
+      var step = qSteps[qCurrent - 1];
+      if (qNext) qNext.disabled = !(step && qStepValid(step));
+      qRecap(document.querySelector('[data-quote-recap-side]'));
+      qRecap(qwiz.querySelector('[data-quote-recap-final]'));
+    }
+
+    qwiz.classList.add('is-paged');
+    if (qNav) qNav.hidden = false;
+    if (qProgress) qProgress.hidden = false;
+    if (qPrev) qPrev.addEventListener('click', function () { if (qCurrent > 1) { qCurrent--; qRender(); } });
+    if (qNext) qNext.addEventListener('click', function () {
+      var step = qSteps[qCurrent - 1];
+      if (!step || !qStepValid(step)) return;
+      if (qCurrent < qLast) { qCurrent++; qRender(); }
+    });
+    qwiz.addEventListener('change', function () { qSyncDate(); qSync(); });
+    qwiz.addEventListener('input', function (e) {
+      if (e.target && (e.target.name === 'brief' || e.target.name === 'q_date')) qSync();
+    });
+    qwiz.addEventListener('keydown', function (e) {
+      if (e.key !== 'Enter' || !e.target || e.target.tagName === 'TEXTAREA' || e.target.type === 'submit') return;
+      if (qCurrent < qLast) {
+        e.preventDefault();
+        var step = qSteps[qCurrent - 1];
+        if (step && qStepValid(step)) { qCurrent++; qRender(); }
+      }
+    });
+    qRender();
+  }
+
+  /* ---- Formulaire de devis : raccourcis délai / acompte ---- */
+  document.querySelectorAll('[data-delay-fill]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var input = document.getElementById('jalon-delay');
+      if (input) input.value = btn.getAttribute('data-delay-fill') || '';
+    });
+  });
+  document.querySelectorAll('[data-deposit-fill]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var out = document.getElementById('jalon-deposit');
+      var amountEl = document.getElementById('jalon-amount');
+      var pct = parseFloat(btn.getAttribute('data-deposit-fill') || '0');
+      if (!out) return;
+      var amount = amountEl ? parseFloat(String(amountEl.value).replace(/\s/g, '').replace(',', '.')) || 0 : 0;
+      out.value = pct > 0 && amount > 0 ? String(Math.round(amount * pct / 100)) : '0';
+    });
+  });
+
   function showToast(message) {
     var existing = document.querySelector('.share-toast');
     if (existing) existing.remove();

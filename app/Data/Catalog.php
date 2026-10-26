@@ -349,6 +349,334 @@ final class Catalog
         'open' => 'À convenir',
     ];
 
+    /* ------------------------------------------------------------------
+     * Parcours guidé « Demander un devis »
+     * Questions à choix simples posées au porteur de projet ; les réponses
+     * sont composées en brief structuré pour le prestataire (pas de rédaction
+     * libre obligatoire). Chaque métier peut adapter les questions.
+     * ------------------------------------------------------------------ */
+
+    public const QUOTE_GENRES = [
+        'Roman', 'Policier & thriller', 'SF & fantasy', 'Jeunesse',
+        'Essai & document', 'Biographie & mémoires', 'Poésie & théâtre',
+        'Autre / pluridisciplinaire',
+    ];
+
+    public const QUOTE_BUDGETS = [
+        'Moins de 500 €', '500 à 1 000 €', '1 000 à 2 500 €',
+        'Plus de 2 500 €', 'À définir ensemble',
+    ];
+
+    public const QUOTE_DELAIS = [
+        'Le plus tôt possible', 'Sous 1 mois', 'Sous 3 mois',
+        'Date précise', 'Pas de contrainte',
+    ];
+
+    /** Option de QUOTE_DELAIS qui dévoile le champ date du formulaire. */
+    public const QUOTE_DATE_TRIGGER = 'Date précise';
+
+    public const QUOTE_ECHANGES = [
+        'Un échange avant de démarrer',
+        'Des points d’avancement réguliers',
+        'Peu importe, je fais confiance',
+    ];
+
+    /** Raccourcis de délai proposés au prestataire dans le formulaire de devis. */
+    public const QUOTE_REPLY_DELAYS = [
+        '1 semaine', '2 semaines', '3 semaines', '1 mois', '6 semaines', 'Plus d’un mois',
+    ];
+
+    /** Raccourcis d’acompte (« Sans acompte » met le champ à 0 ; les pourcentages se calculent sur le montant). */
+    public const QUOTE_REPLY_DEPOSITS = [
+        'Sans acompte' => '0', 'Acompte de 30 %' => '30', 'Acompte de 50 %' => '50',
+    ];
+
+    /** Ce que comprend le devis — multi-choix, composé en tête des précisions. */
+    public const QUOTE_REPLY_INCLUS = [
+        'Un aller-retour inclus', 'Deux allers-retours inclus', 'Échange de lancement',
+        'Fichiers sources remis', 'Suivi d’avancement',
+    ];
+
+    /** Motifs de révision proposés au client qui demande un nouveau devis. */
+    public const QUOTE_REVISION_REASONS = [
+        'Le montant dépasse mon budget', 'Le délai est trop long',
+        'Le périmètre ne convient pas', 'Autre chose',
+    ];
+
+    /**
+     * Questions propres à chaque métier :
+     * - volume_label / volume : l'unité qui fait sens (pages, visuels, tirage…)
+     * - stade_label / stade : où en est le projet
+     * - besoins : ce que couvre le devis (multi-choix)
+     * - extra : questions supplémentaires [{key, step, label, recap, options, required, multi}]
+     * '*' est le jeu générique pour les métiers non listés.
+     *
+     * @var array<string, array<string, mixed>>
+     */
+    public const QUOTE_WIZARD = [
+        'Écriture' => [
+            'volume_label' => 'Quel volume de texte ?',
+            'volume' => ['Une scène ou un chapitre', 'Moins de 100 pages', '100 à 250 pages', 'Plus de 250 pages'],
+            'stade_label' => 'Où en est le projet ?',
+            'stade' => ['Juste une idée', 'Des notes ou un plan', 'Un manuscrit partiel', 'Un texte complet à reprendre'],
+            'besoins' => ['Prête-plume (ghostwriting)', 'Réécriture complète', 'Construction du plan', 'Biographie ou mémoires', 'Je ne sais pas encore'],
+        ],
+        'Correction' => [
+            'volume_label' => 'Quel volume de texte ?',
+            'volume' => ['Moins de 100 pages', '100 à 250 pages', '250 à 500 pages', 'Plus de 500 pages'],
+            'stade_label' => 'Où en est le texte ?',
+            'stade' => ['Premier jet', 'Texte retravaillé', 'Version quasi finale', 'Déjà corrigé une fois'],
+            'besoins' => ['Correction orthotypographique', 'Réécriture et lissage du style', 'Préparation de copie', 'Relecture d’épreuves', 'Je ne sais pas encore'],
+        ],
+        'Bêta-lecture' => [
+            'volume_label' => 'Quel volume de texte ?',
+            'volume' => ['Moins de 100 pages', '100 à 250 pages', '250 à 500 pages', 'Plus de 500 pages'],
+            'stade_label' => 'Où en est le texte ?',
+            'stade' => ['Premier jet', 'Texte retravaillé', 'Version quasi finale'],
+            'besoins' => ['Rapport de lecture global', 'Retour sur les personnages', 'Retour sur le rythme et la structure', 'Fiche de lecture détaillée', 'Je ne sais pas encore'],
+        ],
+        'Illustration' => [
+            'volume_label' => 'Combien de visuels ?',
+            'volume' => ['1 visuel', '2 à 5 visuels', '6 à 15 visuels', 'Album complet (16 à 40 pages)'],
+            'stade_label' => 'Où en est l’idée ?',
+            'stade' => ['Une idée à préciser', 'Des références visuelles', 'Un brief détaillé prêt'],
+            'besoins' => ['Couverture', 'Illustrations intérieures', 'Album jeunesse complet', 'Character design', 'Visuels de promotion', 'Je ne sais pas encore'],
+        ],
+        'Traduction' => [
+            'volume_label' => 'Quel volume à traduire ?',
+            'volume' => ['Moins de 10 000 mots', '10 000 à 50 000 mots', '50 000 à 100 000 mots', 'Plus de 100 000 mots'],
+            'stade_label' => 'Où en est le texte source ?',
+            'stade' => ['Texte final prêt', 'Texte en relecture', 'Texte encore en cours'],
+            'besoins' => ['Traduction littéraire', 'Traduction technique', 'Révision de traduction', 'Localisation / adaptation', 'Je ne sais pas encore'],
+            'extra' => [
+                ['key' => 'langues', 'step' => 1, 'label' => 'Combinaison de langues', 'recap' => 'Langues', 'required' => true, 'options' => ['Anglais → Français', 'Français → Anglais', 'Espagnol → Français', 'Allemand → Français', 'Italien → Français', 'Autre combinaison']],
+            ],
+        ],
+        'Maquette' => [
+            'volume_label' => 'Quel volume à mettre en pages ?',
+            'volume' => ['Moins de 100 pages', '100 à 250 pages', '250 à 500 pages', 'Plus de 500 pages'],
+            'stade_label' => 'Où en est le fichier ?',
+            'stade' => ['Texte final prêt', 'Texte en correction', 'Direction artistique à définir'],
+            'besoins' => ['Mise en pages intérieure', 'Couverture', 'EPUB & numérique', 'Identité visuelle complète', 'Je ne sais pas encore'],
+        ],
+        'Édition' => [
+            'volume_label' => 'Quel volume de texte ?',
+            'volume' => ['Moins de 100 pages', '100 à 250 pages', '250 à 500 pages', 'Plus de 500 pages'],
+            'stade_label' => 'Où en est le projet ?',
+            'stade' => ['Projet éditorial à cadrer', 'Manuscrit en cours', 'Manuscrit terminé'],
+            'besoins' => ['Lecture et avis éditorial', 'Accompagnement vers la publication', 'Travail éditorial complet', 'Je ne sais pas encore'],
+        ],
+        'Impression' => [
+            'volume_label' => 'Quel tirage ?',
+            'volume' => ['1 à 50 exemplaires', '50 à 300 exemplaires', '300 à 1 000 exemplaires', 'Plus de 1 000 exemplaires'],
+            'stade_label' => 'Où en est le fichier ?',
+            'stade' => ['Fichier prêt à imprimer', 'Fichier à vérifier', 'Maquette encore à faire'],
+            'besoins' => ['Broché (dos collé)', 'Relié / cartonné', 'Spirale ou agrafé', 'Print-on-demand', 'BAT + suivi de fabrication', 'Je ne sais pas encore'],
+        ],
+        'Presse & com' => [
+            'volume_label' => 'Que faut-il promouvoir ?',
+            'volume' => ['Un ouvrage', 'Une collection', 'Un catalogue', 'Un événement'],
+            'stade_label' => 'Où en est la sortie ?',
+            'stade' => ['Sortie dans moins d’un mois', 'Sortie dans 1 à 3 mois', 'Ouvrage déjà paru', 'Pas de date encore'],
+            'besoins' => ['Dossier de presse', 'Relations presse', 'Réseaux sociaux', 'Community management', 'Événementiel', 'Je ne sais pas encore'],
+        ],
+        'Librairie' => [
+            'volume_label' => 'Quel stock ?',
+            'volume' => ['Quelques exemplaires', 'Une dizaine', 'Une cinquantaine', 'Un stock important'],
+            'stade_label' => 'Où en est l’ouvrage ?',
+            'stade' => ['Ouvrage déjà imprimé', 'En cours d’impression', 'Projet en préparation'],
+            'besoins' => ['Dépôt-vente', 'Mise en avant en rayon', 'Animation / dédicace', 'Vente en ligne', 'Je ne sais pas encore'],
+        ],
+        'Audio' => [
+            'volume_label' => 'Quelle durée finale ?',
+            'volume' => ['Moins de 2 heures', '2 à 6 heures', '6 à 12 heures', 'Plus de 12 heures'],
+            'stade_label' => 'Où en est le texte ?',
+            'stade' => ['Texte final prêt', 'Texte en relecture', 'Casting voix à faire'],
+            'besoins' => ['Narration voix seule', 'Enregistrement studio', 'Montage et mixage', 'Direction d’acteurs', 'Je ne sais pas encore'],
+        ],
+        'Agent littéraire' => [
+            'volume_label' => 'Quel volume de texte ?',
+            'volume' => ['Moins de 100 pages', '100 à 250 pages', '250 à 500 pages', 'Plus de 500 pages'],
+            'stade_label' => 'Où en est le manuscrit ?',
+            'stade' => ['Manuscrit en cours', 'Manuscrit terminé', 'Plusieurs projets'],
+            'besoins' => ['Représentation auprès d’éditeurs', 'Conseil de carrière', 'Négociation de contrat', 'Je ne sais pas encore'],
+        ],
+        'Coach littéraire' => [
+            'volume_label' => 'Quel accompagnement envisagez-vous ?',
+            'volume' => ['Quelques séances', 'Un cycle (5 à 10 séances)', 'Un mentorat long', 'À définir ensemble'],
+            'stade_label' => 'Où en est le texte ?',
+            'stade' => ['Juste une idée', 'En cours d’écriture', 'Texte bloqué', 'Manuscrit à finaliser'],
+            'besoins' => ['Coaching d’écriture', 'Mentorat', 'Atelier d’écriture', 'Accompagnement de plan', 'Suivi de manuscrit', 'Je ne sais pas encore'],
+        ],
+        'Iconographie' => [
+            'volume_label' => 'Combien de visuels ?',
+            'volume' => ['Quelques visuels', '10 à 30 visuels', '30 à 80 visuels', 'Un fonds complet'],
+            'stade_label' => 'Où en est le projet ?',
+            'stade' => ['Une liste d’idées', 'Des maquettes à illustrer', 'Un cahier des charges prêt'],
+            'besoins' => ['Recherche d’images', 'Gestion des droits', 'Archives et fonds', 'Sélection pour couverture', 'Je ne sais pas encore'],
+        ],
+        'Lecture éditoriale' => [
+            'volume_label' => 'Quel volume de texte ?',
+            'volume' => ['Moins de 100 pages', '100 à 250 pages', '250 à 500 pages', 'Plus de 500 pages'],
+            'stade_label' => 'Où en est le texte ?',
+            'stade' => ['Premier jet', 'Texte retravaillé', 'Version quasi finale'],
+            'besoins' => ['Rapport de lecture', 'Avis de publication', 'Recommandations de retravail', 'Je ne sais pas encore'],
+        ],
+        'Photographie' => [
+            'volume_label' => 'Quelle ampleur ?',
+            'volume' => ['Une séance', '2 à 5 prises de vue', 'Un reportage', 'Un ouvrage complet'],
+            'stade_label' => 'Où en est l’idée ?',
+            'stade' => ['Une idée à préciser', 'Des références visuelles', 'Un cahier des charges prêt'],
+            'besoins' => ['Portrait d’auteur', 'Photos d’ouvrage', 'Reportage', 'Photos de couverture', 'Je ne sais pas encore'],
+        ],
+        'Reliure' => [
+            'volume_label' => 'Quelle quantité ?',
+            'volume' => ['Un exemplaire', '2 à 10 exemplaires', '10 à 50 exemplaires', 'Une série'],
+            'stade_label' => 'Où en est l’ouvrage ?',
+            'stade' => ['Pages à relier', 'Ouvrage à restaurer', 'Projet d’édition limitée'],
+            'besoins' => ['Reliure brochée', 'Reliure cartonnée', 'Reliure artisanale', 'Restauration', 'Je ne sais pas encore'],
+        ],
+        'Juridique' => [
+            'volume_label' => 'Quel périmètre ?',
+            'volume' => ['Un document', 'Plusieurs documents', 'Un dossier complet', 'Un litige en cours'],
+            'stade_label' => 'Où en est la situation ?',
+            'stade' => ['Une question ponctuelle', 'Un projet à cadrer', 'Un différend né d’un contrat'],
+            'besoins' => ['Contrat d’édition', 'Cession de droits', 'Litige', 'Conseil général', 'Je ne sais pas encore'],
+        ],
+        '*' => [
+            'volume_label' => 'Quel périmètre ?',
+            'volume' => ['Petit périmètre', 'Périmètre moyen', 'Gros projet', 'À définir ensemble'],
+            'stade_label' => 'Où en est le projet ?',
+            'stade' => ['Une idée à préciser', 'Un projet cadré', 'Un dossier prêt'],
+            'besoins' => ['La prestation décrite', 'Une variante ou un complément', 'Je ne sais pas encore'],
+        ],
+    ];
+
+    /** Titres des étapes du parcours guidé (index = n° d'étape). */
+    private const QUOTE_STEP_TITLES = [
+        1 => 'Votre ouvrage',
+        2 => 'Votre besoin',
+        3 => 'Budget et calendrier',
+    ];
+
+    /**
+     * Configuration complète du parcours guidé pour un métier :
+     * les questions génériques fusionnées avec la configuration métier.
+     *
+     * @return array{steps: list<array{num: int, title: string, questions: list<array<string, mixed>>}>}
+     */
+    public static function quoteWizard(string $trade): array
+    {
+        $conf = self::QUOTE_WIZARD[$trade] ?? self::QUOTE_WIZARD['*'];
+        $questions = [
+            ['key' => 'genre', 'step' => 1, 'label' => 'Quel type d’ouvrage ?', 'recap' => 'Ouvrage', 'required' => true, 'options' => self::QUOTE_GENRES],
+            ['key' => 'volume', 'step' => 1, 'label' => (string) ($conf['volume_label'] ?? 'Quel volume ?'), 'recap' => 'Volume', 'required' => true, 'options' => (array) ($conf['volume'] ?? [])],
+        ];
+        foreach ((array) ($conf['extra'] ?? []) as $extra) {
+            $questions[] = $extra;
+        }
+        $questions[] = ['key' => 'stade', 'step' => 1, 'label' => (string) ($conf['stade_label'] ?? 'Où en est le projet ?'), 'recap' => 'Avancement', 'required' => true, 'options' => (array) ($conf['stade'] ?? [])];
+        $questions[] = ['key' => 'besoins', 'step' => 2, 'label' => 'De quoi avez-vous besoin ?', 'recap' => 'Besoin', 'multi' => true, 'required' => true, 'help' => 'Plusieurs choix possibles — le prestataire saura exactement ce que couvre le devis.', 'options' => (array) ($conf['besoins'] ?? [])];
+        $questions[] = ['key' => 'echanges', 'step' => 2, 'label' => 'Accompagnement souhaité', 'recap' => 'Suivi souhaité', 'multi' => true, 'required' => false, 'options' => self::QUOTE_ECHANGES];
+        $questions[] = ['key' => 'budget', 'step' => 3, 'label' => 'Quel budget envisagez-vous ?', 'recap' => 'Budget', 'required' => true, 'help' => 'Une fourchette suffit — elle évite les devis hors cadre.', 'options' => self::QUOTE_BUDGETS];
+        $questions[] = ['key' => 'delai', 'step' => 3, 'label' => 'Pour quand ?', 'recap' => 'Calendrier', 'required' => true, 'date_when' => self::QUOTE_DATE_TRIGGER, 'options' => self::QUOTE_DELAIS];
+
+        usort($questions, static function (array $a, array $b): int {
+            return ((int) ($a['step'] ?? 1)) <=> ((int) ($b['step'] ?? 1));
+        });
+
+        $steps = [];
+        foreach ($questions as $question) {
+            $num = (int) ($question['step'] ?? 1);
+            if (!isset($steps[$num])) {
+                $steps[$num] = ['num' => $num, 'title' => self::QUOTE_STEP_TITLES[$num] ?? 'Votre projet', 'questions' => []];
+            }
+            $steps[$num]['questions'][] = $question;
+        }
+
+        return ['steps' => array_values($steps)];
+    }
+
+    /**
+     * Liste à plat des questions du parcours guidé (validation, composition).
+     *
+     * @return list<array<string, mixed>>
+     */
+    public static function quoteQuestions(string $trade): array
+    {
+        $out = [];
+        foreach (self::quoteWizard($trade)['steps'] as $step) {
+            foreach ($step['questions'] as $question) {
+                $out[] = $question;
+            }
+        }
+        return $out;
+    }
+
+    /**
+     * Ne conserve que les réponses prévues par le parcours guidé.
+     *
+     * @param array<string, mixed> $raw valeurs par clé de question ('genre' => 'Roman', 'besoins' => [...])
+     * @return array{0: array<string, string|list<string>>, 1: list<string>} [réponses filtrées, libellés manquants]
+     */
+    public static function filterQuoteAnswers(string $trade, array $raw): array
+    {
+        $answers = [];
+        $missing = [];
+        foreach (self::quoteQuestions($trade) as $question) {
+            $key = (string) $question['key'];
+            $value = $raw[$key] ?? null;
+            if (!empty($question['multi'])) {
+                $picked = array_values(array_intersect(
+                    array_map('strval', is_array($value) ? $value : []),
+                    array_map('strval', (array) $question['options'])
+                ));
+                if ($picked !== []) {
+                    $answers[$key] = $picked;
+                } elseif (!empty($question['required'])) {
+                    $missing[] = (string) $question['label'];
+                }
+            } else {
+                $picked = trim((string) ($value ?? ''));
+                if (in_array($picked, array_map('strval', (array) $question['options']), true)) {
+                    $answers[$key] = $picked;
+                } elseif (!empty($question['required'])) {
+                    $missing[] = (string) $question['label'];
+                }
+            }
+        }
+        return [$answers, $missing];
+    }
+
+    /**
+     * Compose le brief structuré envoyé au prestataire à partir des réponses
+     * du parcours guidé. La précision libre ($note) est ajoutée telle quelle.
+     *
+     * @param array<string, string|list<string>> $answers
+     */
+    public static function composeQuoteBrief(string $trade, array $answers, string $note): string
+    {
+        $lines = [];
+        foreach (self::quoteQuestions($trade) as $question) {
+            $key = (string) $question['key'];
+            if (!array_key_exists($key, $answers)) {
+                continue;
+            }
+            $value = $answers[$key];
+            $text = is_array($value) ? implode(' · ', $value) : $value;
+            if ($key === 'delai' && $text === self::QUOTE_DATE_TRIGGER && !empty($answers['date'])) {
+                $text = 'Pour le ' . $answers['date'];
+            }
+            $lines[] = (string) $question['recap'] . ' : ' . $text;
+        }
+        $note = trim($note);
+        if ($note !== '') {
+            $lines[] = '';
+            $lines[] = $note;
+        }
+        return implode("\n", $lines);
+    }
+
     public const LEVELS = [
         'expert' => 'Experte / Expert',
         'confirme' => 'Confirmé',
