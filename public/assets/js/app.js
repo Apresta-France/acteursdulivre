@@ -4220,6 +4220,7 @@
     var syncUrl = box.getAttribute('data-sync');
     if (!syncUrl) return;
     var lastId = parseInt(box.getAttribute('data-last-id') || '0', 10) || 0;
+    var visioRev = box.getAttribute('data-visio-rev') || '';
     var timer = null;
     var busy = false;
 
@@ -4281,7 +4282,16 @@
           return res.json();
         })
         .then(function (data) {
-          if (data && data.messages) appendMessages(data.messages);
+          if (!data) return;
+          if (typeof data.visio_rev === 'string' && data.visio_rev !== visioRev) {
+            var typing = document.activeElement;
+            var inVisio = typing && typing.closest && typing.closest('.inbox-visio');
+            if (!inVisio) {
+              window.location.reload();
+              return;
+            }
+          }
+          if (data.messages) appendMessages(data.messages);
         })
         .catch(function () {})
         .then(function () {

@@ -38,6 +38,7 @@ use Adl\Models\Review;
 use Adl\Models\ReviewRequest;
 use Adl\Models\Service;
 use Adl\Models\User;
+use Adl\Models\VisioProposal;
 
 final class AccountController
 {
@@ -1888,6 +1889,7 @@ final class AccountController
             not_found('Cette conversation est introuvable.');
         }
         Conversation::markRead((int) $id, (int) $user['id']);
+        Notification::markSubjectRead((int) $user['id'], 'visio', 'conversation', (int) $id);
         $quoteStart = self::quoteStartContext($thread, $user);
         $quoteWait = null;
         if (!$quoteStart && (int) ($thread['order_id'] ?? 0) < 1) {
@@ -1903,6 +1905,11 @@ final class AccountController
             $quoteOld = $_SESSION['_old'];
             unset($_SESSION['_old']);
         }
+        $visioOld = [];
+        if (is_array($_SESSION['_visio_old'] ?? null)) {
+            $visioOld = $_SESSION['_visio_old'];
+            unset($_SESSION['_visio_old']);
+        }
         View::page('messagerie', [
             'title' => (string) ($thread['other']['name'] ?? 'Messagerie'),
             'threads' => Conversation::forUser((int) $user['id']),
@@ -1913,6 +1920,7 @@ final class AccountController
             'quoteWait' => $quoteWait,
             'quoteOld' => $quoteOld,
             'alreadyReported' => Conversation::hasOpenReport((int) $id, (int) $user['id']),
+            'visio' => VisioProposal::panel($thread, (int) $user['id'], $visioOld),
             'saved' => flash('saved'),
             'error' => flash('error'),
             'completeProfile' => !empty($_SESSION['_complete_profile']) && empty($_SESSION['_onboarding_snooze']) && Onboarding::isPending($user),
@@ -1947,7 +1955,10 @@ final class AccountController
             ];
         }
         header('Cache-Control: no-store');
-        json_response(['messages' => $payload]);
+        json_response([
+            'messages' => $payload,
+            'visio_rev' => VisioProposal::revision((int) $id),
+        ]);
     }
 
     public function messageReport(Request $request, string $id): void

@@ -21,6 +21,7 @@ final class Seo
         'favoris', 'avis', 'vitrine', 'parametres', 'facturation', 'statistiques', 'bienvenue',
         'recommandation', 'auteur', 'auteur-oeuvres', 'auteur-oeuvre', 'tribune', 'tribune-edit',
         'connexion', 'ecrire', 'inscription-sso', 'espace-maison', 'maison-edition-revendiquer', 'maison-edition-ajouter',
+        'visio',
         'salon-ajouter',
         'souscription-proposer',
     ];

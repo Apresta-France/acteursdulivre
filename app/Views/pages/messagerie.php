@@ -7,12 +7,13 @@ $quoteStart = is_array($quoteStart ?? null) ? $quoteStart : null;
 $quoteWait = trim((string) ($quoteWait ?? ''));
 $quoteOld = is_array($quoteOld ?? null) ? $quoteOld : [];
 $alreadyReported = !empty($alreadyReported);
+$visio = is_array($visio ?? null) ? $visio : [];
 ?>
 <div class="espace-page">
   <div class="espace-page-head">
     <div>
       <h1>Messagerie</h1>
-      <p>Les échanges autour des recherches, des devis et des commandes. Vous pouvez joindre un fichier (PDF, image, Word, 8&nbsp;Mo max.) et signaler une conversation qui sort du cadre.</p>
+      <p>Les échanges autour des recherches, des devis et des commandes. Le prestataire peut proposer une visio. Vous pouvez joindre un fichier (PDF, image, Word, 8&nbsp;Mo max.) et signaler une conversation qui sort du cadre.</p>
     </div>
   </div>
 
@@ -167,6 +168,7 @@ $alreadyReported = !empty($alreadyReported);
               </form>
             </section>
           <?php endif; ?>
+          <?php require ADL_ROOT . '/app/Views/partials/inbox-visio.php'; ?>
           <?php
             $inboxUserId = (int) (\Adl\Core\Auth::id() ?? 0);
             $inboxLastId = 0;
@@ -179,6 +181,7 @@ $alreadyReported = !empty($alreadyReported);
             data-inbox-thread
             data-sync="<?= e(url('/espace/messages/' . (int) $thread['id'] . '/sync')) ?>"
             data-last-id="<?= $inboxLastId ?>"
+            data-visio-rev="<?= e((string) ($visio['revision'] ?? '0')) ?>"
           >
             <?php foreach ($messages as $msg): ?>
               <?= inbox_message_html($msg, $inboxUserId) ?>

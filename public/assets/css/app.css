@@ -6519,6 +6519,97 @@ a.me-admin-kpi.is-on { border-color: #022746; }
 .inbox-compose .textarea { flex: 1 1 100%; }
 .inbox-compose-actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
 .inbox-compose-actions .btn-ghost { height: 50px; }
+.inbox-visio {
+  margin: 0;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--line);
+  background: #FBFCFE;
+}
+.inbox-visio.is-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.inbox-visio h2 {
+  margin: 0;
+  font-size: 18px;
+  color: var(--navy);
+}
+.inbox-visio p { margin: 0; color: #4A5A6B; font-size: 14px; line-height: 1.55; }
+.inbox-visio .btn-orange,
+.inbox-visio .btn-ghost { align-self: flex-start; }
+.inbox-visio-form { margin-top: 4px; }
+.inbox-visio-form > summary {
+  list-style: none;
+  width: fit-content;
+}
+.inbox-visio-form > summary::-webkit-details-marker { display: none; }
+.inbox-visio-form > summary::marker { content: ''; }
+.inbox-visio-form[open] > summary { margin-bottom: 12px; }
+.inbox-visio-form form,
+.inbox-visio form { display: flex; flex-direction: column; gap: 12px; align-items: flex-start; }
+.inbox-visio-form:not([open]) > form { display: none; }
+.visio-when { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; width: 100%; }
+.visio-choices { border: 0; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; width: 100%; }
+.visio-choices .field { margin: 0; }
+.visio-slot {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fff;
+  cursor: pointer;
+}
+.visio-slot:has(input:checked) { border-color: var(--orange); background: #FDF3F0; }
+.visio-slot input { margin-top: 3px; }
+.visio-slot.is-past { opacity: .55; cursor: default; }
+.visio-slot-list { margin: 0; padding-left: 18px; color: var(--navy); }
+.visio-slot-list li + li { margin-top: 4px; }
+.visio-alt, .visio-refuse { width: 100%; padding-top: 4px; border-top: 1px solid var(--line); }
+.visio-refuse textarea { width: 100%; }
+.visio-alt.is-focus, .visio-refuse.is-focus { outline: 2px solid #F4DFD8; border-radius: 10px; padding: 10px; }
+.visio-reason {
+  margin: 0;
+  padding: 10px 12px;
+  border-left: 3px solid var(--orange);
+  background: #fff;
+  color: var(--ink);
+  font-size: 14px;
+  line-height: 1.5;
+}
+.visio-url { word-break: break-all; font-size: 13px; color: #66768A; }
+.visio-hint { font-weight: 600; color: var(--navy); }
+.visio-page { max-width: 720px; margin: 0 auto; padding: 36px 20px 72px; }
+.visio-page h1 {
+  margin: 0 0 18px;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 32px;
+  color: #022746;
+}
+.visio-kicker {
+  margin: 0 0 6px;
+  font-size: 12px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: #8496A8;
+}
+.visio-page .inbox-visio {
+  margin-top: 8px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: #fff;
+}
+.inbox-thread:has(.inbox-visio.is-panel),
+.inbox-thread:has(.inbox-visio-form[open]) { max-height: none; }
+.inbox-thread:has(.inbox-visio.is-panel) .inbox-messages,
+.inbox-thread:has(.inbox-visio-form[open]) .inbox-messages {
+  flex: 0 0 auto;
+  min-height: 11rem;
+  max-height: 22rem;
+}
 .dropzone {
   flex: 1 1 100%;
   display: flex;
@@ -8902,6 +8993,10 @@ a.admin-kpi:hover { border-color: #C5CDD6; }
   .inbox-quote-fields { overflow: visible; }
   .inbox-quote-wait { padding: 14px; }
   .inbox-compose { padding: 12px; }
+  .visio-when { grid-template-columns: 1fr; }
+  .inbox-visio { padding: 14px; }
+  .visio-page { padding: 28px 16px 56px; }
+  .visio-page h1 { font-size: 28px; }
   .inbox-item { padding: 12px; gap: 10px; }
   .dropzone { min-height: 72px; padding: 12px; }
   .dropzone [data-dropzone-label] { display: none; }

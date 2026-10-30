@@ -88,8 +88,8 @@
   <?php if (!empty($isArticle) && !empty($article['img'])): ?>
   <link rel="preload" as="image" href="<?= e(img_fit((string) $article['img'], 1200)) ?>">
   <?php endif; ?>
-  <link rel="stylesheet" href="<?= e(asset('css/app.css')) ?>?v=m276">
-  <script src="<?= e(asset('js/app.js')) ?>?v=m122" defer></script>
+  <link rel="stylesheet" href="<?= e(asset('css/app.css')) ?>?v=m278">
+  <script src="<?= e(asset('js/app.js')) ?>?v=m123" defer></script>
   <link rel="icon" href="<?= e(asset('img/favicon.ico')) ?>?v=3" sizes="any">
   <link rel="icon" type="image/png" href="<?= e(asset('img/favicon-32x32.png')) ?>?v=3" sizes="32x32">
   <link rel="apple-touch-icon" href="<?= e(asset('img/apple-touch-icon.png')) ?>?v=3">

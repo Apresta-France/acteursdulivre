@@ -315,6 +315,10 @@ final class Conversation
         if ($orderId < 1) {
             return;
         }
+        $threads = Database::fetchAll('SELECT id FROM conversations WHERE order_id = ?', [$orderId]);
+        foreach ($threads as $thread) {
+            VisioProposal::deleteForConversation((int) ($thread['id'] ?? 0));
+        }
         Database::query('DELETE FROM conversations WHERE order_id = ?', [$orderId]);
     }
 

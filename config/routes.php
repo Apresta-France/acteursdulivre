@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Adl\Controllers\AccountController;
+use Adl\Controllers\VisioController;
 use Adl\Controllers\AdminController;
 use Adl\Controllers\AuthController;
 use Adl\Controllers\CronController;
@@ -195,7 +196,11 @@ return static function (Router $router): void {
     $router->get('/espace/messages/{id}/sync', [AccountController::class, 'messageSync']);
     $router->post('/espace/messages/{id}', [AccountController::class, 'messageSend']);
     $router->post('/espace/messages/{id}/devis', [AccountController::class, 'messageQuote']);
+    $router->post('/espace/messages/{id}/visio', [VisioController::class, 'propose']);
+    $router->post('/espace/messages/{id}/visio/reponse', [VisioController::class, 'respondInThread']);
     $router->post('/espace/messages/{id}/signaler', [AccountController::class, 'messageReport']);
+    $router->get('/visio/acteur-du-livre/{token}', [VisioController::class, 'show']);
+    $router->post('/visio/acteur-du-livre/{token}', [VisioController::class, 'respond']);
     $router->get('/espace/messages/{id}/fichier/{mid}', [AccountController::class, 'messageFile']);
     $router->get('/espace/notifications', [AccountController::class, 'notifications']);
     $router->post('/espace/notifications/lues', [AccountController::class, 'notificationsRead']);

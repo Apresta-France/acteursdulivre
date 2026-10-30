@@ -1014,6 +1014,16 @@ function time_ago(?string $datetime): string
     return format_deadline($dt->format('Y-m-d'));
 }
 
+function linkify_kmeet(string $html): string
+{
+    $linked = preg_replace(
+        '#(https://kmeet\.infomaniak\.com/acteur-du-livre-[a-z0-9]+)#',
+        '<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>',
+        $html
+    );
+    return is_string($linked) ? $linked : $html;
+}
+
 /** @param array<string, mixed> $msg */
 function inbox_message_html(array $msg, int $currentUserId): string
 {
@@ -1031,7 +1041,7 @@ function inbox_message_html(array $msg, int $currentUserId): string
     if ($body !== '' && $href !== '') {
         $html .= '<a class="msg-bubble is-link" href="' . e(url($href)) . '" title="Ouvrir le suivi de commande">' . nl2br(e($body)) . '</a>';
     } elseif ($body !== '') {
-        $html .= '<p>' . nl2br(e($body)) . '</p>';
+        $html .= '<p>' . linkify_kmeet(nl2br(e($body))) . '</p>';
     }
     if (!empty($msg['has_file'])) {
         $html .= '<a class="msg-file" href="' . e(url((string) ($msg['file_href'] ?? ''))) . '" title="Télécharger">';
