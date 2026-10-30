@@ -47,5 +47,6 @@ return [
     'combien-de-pages-fera-ce-manuscrit' => '2026-10-12 09:30:00',
     'souscriptions-livre-deja-en-cours' => '2026-10-21 09:30:00',
     'demande-devis-guidee' => '2026-10-26 09:30:00',
+    'proposer-une-visio' => '2026-10-30 09:30:00',
     '900-visites-par-jour' => '2026-11-02 09:30:00',
 ];
